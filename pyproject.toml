@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vibecommit"
+name = "vibe"
 version = "0.1.0"
-description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let vibecommit handle the rest."
+description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let vibe handle the rest."
 authors = [
   { name = "Adem Can", email = "ademfcan@gmail.com" }
 ]
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-vibecommit = "vibecommit.cli:app"
+vibe = "vibe.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
