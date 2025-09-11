@@ -1,5 +1,8 @@
+from pathlib import Path
+import shutil
 import subprocess
 import re
+import tempfile
 from typing import List, Optional, Union
 from ..data.models import DiffChunk, CommitGroup, CommitResult, Addition, Removal
 from .interface import GitInterface
@@ -30,31 +33,58 @@ class LocalGitInterface(GitInterface):
         diff_output = self.run_git(["diff", "HEAD", "--unified=0"] + path_args)
         return self._parse_diff(diff_output)
 
-    def commit(self, group: CommitGroup) -> CommitResult:
+    def commit_to_new_branch(self, group: CommitGroup) -> CommitResult:
         """
-        Apply patch to index and create commit.
+        Create a new branch from HEAD, apply the commit group as a commit,
+        and clean up the temporary worktree.
         """
-        # Apply patch to index
-        patch_text = group.to_patch()
-        subprocess.run(
-            ["git", "-C", self.repo_path, "apply", "--cached", "--unidiff-zero"],
-            input=patch_text,
-            text=True,
-            check=True
-        )
+        safe_branch_name = group.branch_name.replace("/", "-")
+        tmpdir = Path(tempfile.mkdtemp(prefix=f"wt-{safe_branch_name}-"))
 
-        # Commit
-        commit_message = group.commmit_message
-        if group.extended_message is not None:
-            commit_message += f"\n{group.extended_message}" 
+        try:
+            # 1. Create worktree + branch
+            subprocess.run(
+                ["git", "-C", self.repo_path, "worktree", "add", "-b", group.branch_name, str(tmpdir), "HEAD"],
+                check=True,
+                capture_output=True
+            )
 
-        # Run git commit and extract the commit hash from the output
-        commit_output = self.run_git(["commit", "-m", commit_message])
-        # Extract commit hash using regex from output like: "[master abcdef1] message"
-        import re
-        match = re.search(r"\[.* ([a-f0-9]+)\]", commit_output)
-        commit_hash = match.group(1) if match else ""
-        return CommitResult(commit_hash=commit_hash, group=group)
+            # 2. Apply patch to index inside worktree
+            patch_text = group.to_patch()
+            subprocess.run(
+                ["git", "-C", str(tmpdir), "apply", "--cached", "--unidiff-zero"],
+                input=patch_text,
+                text=True,
+                check=True
+            )
+
+            # 3. Commit
+            commit_message = group.commmit_message
+            if group.extended_message is not None:
+                commit_message += f"\n{group.extended_message}"
+
+            commit_output = subprocess.check_output(
+                ["git", "-C", str(tmpdir), "commit", "-m", commit_message],
+                text=True
+            )
+
+            match = re.search(r"\[.* ([a-f0-9]+)\]", commit_output)
+            commit_hash = match.group(1) if match else ""
+
+            return CommitResult(commit_hash=commit_hash, group=group)
+
+        finally:
+            # 4. Clean up worktree registration and directory
+            try:
+                subprocess.run(
+                    ["git", "-C", self.repo_path, "worktree", "remove", "--force", str(tmpdir)],
+                    check=True,
+                    capture_output=True
+                )
+            except Exception as e:
+                print(f"Warning: failed to remove worktree: {e}")
+
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     def reset(self) -> None:
         """Reset staged changes (keeping working directory intact)"""

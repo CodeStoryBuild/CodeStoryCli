@@ -403,6 +403,7 @@ class CommitGroup:
     """
     chunks: List[ExtendedDiffChunk]
     group_id: str
+    branch_name: str
     commmit_message: str
     extended_message: Optional[str] = None
     

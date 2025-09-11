@@ -65,22 +65,13 @@ class AIGitPipeline:
 
             raw_diff: List[DiffChunk] = self.git.get_working_diff(target)
 
-            for diff in raw_diff:
-                print(f"\n\n Patch: {diff.to_patch()}")
-
             p.advance(tr, 1)
 
             ck = p.add_task("Chunking Diff", total=1)
             
             chunks: List[DiffChunk] = self.chunker.chunk(raw_diff)
 
-            for diff in chunks:
-                print(f"\n\n Patch: {diff.to_patch()}")
-                self.apply_chunk_to_index(diff)
-
             p.advance(ck, 1)
-
-            return
 
             clr = p.add_task("Simplifying diff", total=100)
 
@@ -105,6 +96,7 @@ class AIGitPipeline:
         for group in grouped:
             console.rule(f"[bold green]AI Commit Suggestion")
             console.print(f"[bold]Commit Message:[/bold] {group.commmit_message}")
+            console.print(f"[bold]Branch Name:[/bold] {group.branch_name}")
             if group.extended_message:
                 console.print(f"[bold]Extended Message:[/bold] {group.extended_message}")
 
@@ -120,7 +112,7 @@ class AIGitPipeline:
 
             accept = inquirer.confirm(f"Accept and commit this group?", default=True)
             if accept:
-                commit_result = self.git.commit(group)
+                commit_result = self.git.commit_to_new_branch(group)
                 results.append(commit_result)
                 console.print(f"[green]Committed: {commit_result.commit_hash}[/green]")
             else:

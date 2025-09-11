@@ -1,16 +1,20 @@
+import os
 import typer
 import inquirer
 from rich.console import Console
+from dotenv import load_dotenv
 from vibe.core.chunker.max_line_chunker import MaxLineChunker
 from vibe.core.grouper.gemini_grouper import GeminiGrouper
 from vibe.core.git_interface.LocalGitInterface import LocalGitInterface
 from vibe.core.pipeline.runner import AIGitPipeline
 
+load_dotenv()
+
 console = Console()
 app = typer.Typer(help="Commit changes with AI-powered messages")
 git = LocalGitInterface(".")
 chk = MaxLineChunker(2)
-grp = GeminiGrouper("[Gemini-Api-Key]")
+grp = GeminiGrouper(os.getenv("GEMINIAPIKEY"))
 
 runner = AIGitPipeline(git, chk, grp)
 
