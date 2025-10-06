@@ -1,14 +1,14 @@
 from vibe.core.data.models import Addition, Removal, Move, Replacement
-from vibe.core.data.s_diff_chunk import StandardDiffChunk
+from vibe.core.data.utils import detect_replacements
 
 
 def test_detect_replacements_simple_replacement():
-    """Detects a single replacement."""
+    """Detect a single replacement."""
     input_changes = [
         Removal(1, "old line content"),
         Addition(1, "new line content")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 1
     assert isinstance(output[0], Replacement)
     assert output[0].old_content == "old line content"
@@ -16,12 +16,12 @@ def test_detect_replacements_simple_replacement():
     assert output[0].line_number == 1
 
 def test_detect_replacements_no_replacements_only_additions():
-    """No removals present, so no replacements can occur."""
+    """No removals: only additions."""
     input_changes = [
         Addition(1, "line A"),
         Addition(2, "line B")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Addition)
     assert isinstance(output[1], Addition)
@@ -29,12 +29,12 @@ def test_detect_replacements_no_replacements_only_additions():
     assert output[1].content == "line B"
 
 def test_detect_replacements_no_replacements_only_removals():
-    """No additions to pair with removals, so no replacements can occur."""
+    """No additions: only removals."""
     input_changes = [
         Removal(1, "line A"),
         Removal(2, "line B")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Removal)
     assert isinstance(output[1], Removal)
@@ -42,14 +42,14 @@ def test_detect_replacements_no_replacements_only_removals():
     assert output[1].content == "line B"
 
 def test_detect_replacements_multiple_replacements():
-    """Detects multiple consecutive replacements."""
+    """Detect multiple consecutive replacements."""
     input_changes = [
         Removal(1, "old 1"),
         Addition(1, "new 1"),
         Removal(2, "old 2"),
         Addition(2, "new 2")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Replacement)
     assert output[0].old_content == "old 1"
@@ -61,20 +61,20 @@ def test_detect_replacements_multiple_replacements():
     assert output[1].line_number == 2
 
 def test_detect_replacements_intervening_move():
-    """A move operation between a removal and addition prevents replacement."""
+    """Move between removal and addition prevents replacement."""
     input_changes = [
         Removal(1, "line A"),
         Move(content="line M", from_line=5, to_line=2), # Intervening move
-        Addition(3, "line A") # This should now be an Addition, not part of replacement
+    Addition(3, "line A")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 3
     assert isinstance(output[0], Removal) and output[0].content == "line A"
     assert isinstance(output[1], Move) and output[1].content == "line M"
     assert isinstance(output[2], Addition) and output[2].content == "line A"
 
 def test_detect_replacements_mixed_changes():
-    """A complex mix of additions, removals, moves, and replacements."""
+    """Complex mix of additions, removals, moves, replacements."""
     input_changes = [
         Removal(1, "old_A"),
         Addition(1, "new_A"),      # Replacement 1
@@ -85,7 +85,7 @@ def test_detect_replacements_mixed_changes():
         Removal(5, "standalone_removal"),
         Removal(6, "old_C"),       # No matching addition for this one
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 6
     assert isinstance(output[0], Replacement) and output[0].old_content == "old_A" and output[0].new_content == "new_A" and output[0].line_number == 1
     assert isinstance(output[1], Addition) and output[1].content == "standalone_add" and output[1].line_number == 2
@@ -101,7 +101,7 @@ def test_detect_replacements_end_of_list_removal():
         Addition(1, "line A"),
         Removal(2, "line B") # No addition after this
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Addition) and output[0].content == "line A"
     assert isinstance(output[1], Removal) and output[1].content == "line B"
@@ -112,7 +112,7 @@ def test_detect_replacements_start_of_list_addition():
         Addition(1, "line A"),
         Removal(2, "line B")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Addition) and output[0].content == "line A"
     assert isinstance(output[1], Removal) and output[1].content == "line B"
@@ -120,7 +120,7 @@ def test_detect_replacements_start_of_list_addition():
 def test_detect_replacements_empty_input():
     """Handles an empty list of changes."""
     input_changes = []
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert output == []
 
 def test_detect_replacements_replacement_with_same_content():
@@ -129,7 +129,7 @@ def test_detect_replacements_replacement_with_same_content():
         Removal(1, "same content"),
         Addition(1, "same content")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 1
     assert isinstance(output[0], Replacement)
     assert output[0].old_content == "same content"
@@ -146,7 +146,7 @@ def test_detect_replacements_multiple_removals_then_addition():
         Removal(2, "old 2"),
         Addition(3, "new")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 3
     assert isinstance(output[0], Removal) and output[0].content == "old 1"
     assert isinstance(output[1], Removal) and output[1].content == "old 2"
@@ -160,7 +160,7 @@ def test_detect_replacements_removal_then_addition_then_other():
         Removal(2, "R2"),
         Addition(3, "A3_standalone")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 3
     assert isinstance(output[0], Replacement) and output[0].old_content == "R1" and output[0].new_content == "A1"
     assert isinstance(output[1], Removal) and output[1].content == "R2"
@@ -172,7 +172,7 @@ def test_detect_replacements_only_move():
         Move(content="M1", from_line=1, to_line=10),
         Move(content="M2", from_line=2, to_line=11)
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Move) and output[0].content == "M1"
     assert isinstance(output[1], Move) and output[1].content == "M2"
@@ -183,7 +183,7 @@ def test_detect_replacements_last_element_removal():
         Addition(1, "add"),
         Removal(2, "remove")
     ]
-    output = StandardDiffChunk.detect_replacements(input_changes)
+    output = detect_replacements(input_changes)
     assert len(output) == 2
     assert isinstance(output[0], Addition)
     assert isinstance(output[1], Removal)

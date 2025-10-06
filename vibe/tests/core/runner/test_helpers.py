@@ -53,11 +53,11 @@ class DeterministicChunker(ChunkerInterface):
         # Group consecutive changes to avoid creating too many tiny chunks
         current_group = []
         
-        for i, ai_item in enumerate(chunk.ai_content):
+        for i, ai_item in enumerate(chunk.parsed_content):
             current_group.append(ai_item)
             
             # Create chunk every 2-3 items or at the end
-            if len(current_group) >= 2 or i == len(chunk.ai_content) - 1:
+            if len(current_group) >= 2 or i == len(chunk.parsed_content) - 1:
                 # Calculate correct old_start and new_start from the actual content
                 removals = [item for item in current_group if isinstance(item, Removal)]
                 additions = [item for item in current_group if isinstance(item, Addition)]
@@ -89,7 +89,7 @@ class DeterministicChunker(ChunkerInterface):
                 sub_chunk = StandardDiffChunk(
                     file_path=chunk.file_path,
                     content="\n".join(content_lines),
-                    ai_content=current_group.copy(),
+                    parsed_content=current_group.copy(),
                     old_start=old_start,
                     new_start=new_start
                 )
@@ -222,8 +222,8 @@ class DeterministicGrouper(GrouperInterface):
         if any(isinstance(chunk, RenameDiffChunk) for chunk in chunks):
             return "Rename"
         
-        additions = sum(1 for chunk in chunks for item in chunk.ai_content if isinstance(item, Addition))
-        removals = sum(1 for chunk in chunks for item in chunk.ai_content if isinstance(item, Removal))
+        additions = sum(1 for chunk in chunks for item in chunk.parsed_content if isinstance(item, Addition))
+        removals = sum(1 for chunk in chunks for item in chunk.parsed_content if isinstance(item, Removal))
         
         if additions > 0 and removals == 0:
             return "Add"

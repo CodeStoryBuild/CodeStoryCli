@@ -65,9 +65,6 @@ class AIGitPipeline:
             
             chunks: List[DiffChunk] = self.chunker.chunk(raw_diff)
 
-            for chunk in chunks:
-                print(chunk.to_patch())
-
             p.advance(ck, 1)
 
             clssfy = p.add_task("Grouping diff", total=1)
@@ -98,8 +95,6 @@ class AIGitPipeline:
             #     console.print(f"[bold]File:[/bold] {chunk.file_path}")
             #     console.print(f"[bold]AI Diff JSON:[/bold]")
             #     console.print(chunk.format_json())
-            #     console.print(f"[bold]Patch:[/bold]")
-            #     console.print(f"[dim]{chunk.to_patch()}")
 
             accept = inquirer.confirm(f"Accept this group?", default=True)
             if accept:

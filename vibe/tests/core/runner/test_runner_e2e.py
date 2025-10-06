@@ -37,7 +37,7 @@ def complex_git_repo():
         
         # Create initial files
         files_content = {
-            "README.md": "# Test Project\n\nA test project for end-to-end testing.\n",
+            "README.md": "# Test Project\n\nEnd-to-end testing project.\n",
             "src/main.py": "#!/usr/bin/env python3\n\ndef main():\n    print('Hello, World!')\n\nif __name__ == '__main__':\n    main()\n",
             "src/utils.py": "def helper_function():\n    return 'helper'\n\ndef another_helper():\n    return 'another'\n",
             "tests/test_main.py": "import unittest\nfrom src.main import main\n\nclass TestMain(unittest.TestCase):\n    def test_main(self):\n        pass\n",
@@ -155,7 +155,7 @@ def test_runner_with_file_deletion_and_addition(complex_git_repo, mock_inquirer_
     """Test pipeline with file deletions and new file additions."""
     repo_path = complex_git_repo
     
-    # Delete an existing file
+    # Remove an existing file
     (repo_path / "docs" / "api.md").unlink()
     
     # Add new files
@@ -207,7 +207,7 @@ def test_runner_with_file_deletion(complex_git_repo, mock_inquirer_accept_all):
     """Test pipeline with file deletion only."""
     repo_path = complex_git_repo
     
-    # Delete files
+    # Remove files
     (repo_path / "docs" / "api.md").unlink()
     (repo_path / "src" / "utils.py").unlink()
     

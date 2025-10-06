@@ -22,7 +22,7 @@ class PredicateChunker(ChunkerInterface):
             start_num = None
             last_num = None
 
-            for line in chunk.ai_content:
+            for line in chunk.parsed_content:
                 ln = line.line_number
                 if self.split_predicate(line.content):
                     # separator: close current piece if it contains at least one non-separator line

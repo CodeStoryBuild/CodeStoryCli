@@ -11,12 +11,6 @@ class DiffChunk(ABC):
     """
 
     @abstractmethod
-    def to_patch(self) -> str:
-        """
-        Generates a valid git patch hunk string from the chunk's data.
-        """
-    
-    @abstractmethod
     def format_json(
         self
     ) -> str:
