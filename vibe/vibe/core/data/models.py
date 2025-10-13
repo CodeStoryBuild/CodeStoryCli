@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from vibe.core.data.diff_chunk import DiffChunk
-from typing import List, Optional, Union
-
+from typing import List, Optional, Callable
 
 @dataclass
 class LineNumbered:
@@ -89,8 +88,16 @@ class HunkWrapper:
     hunk_lines: List[str]
     old_start: int
     new_start: int
+    old_len: int
+    new_len: int
     # old_file_path is None unless this hunk is part of a rename.
     old_file_path: Optional[str] = None
+    # file_mode is the mode of the new file (e.g., '100644', '100755')
+    file_mode: Optional[str] = None
+    # is_file_addition indicates this hunk is part of a new file being added
+    is_file_addition: bool = False
+    # is_file_deletion indicates this hunk is part of a file being deleted
+    is_file_deletion: bool = False
 
     @property
     def is_rename(self) -> bool:
@@ -100,3 +107,6 @@ class HunkWrapper:
     def file_path(self) -> str:
         # For backward compatibility or simple logic, provide a single file_path.
         return self.new_file_path
+
+
+ProgressCallback = Callable[[int], None]

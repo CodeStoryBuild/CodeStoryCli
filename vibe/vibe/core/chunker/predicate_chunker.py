@@ -2,6 +2,7 @@ from typing import List, Callable
 from .interface import ChunkerInterface
 from ..data.models import DiffChunk
 from ..data.s_diff_chunk import StandardDiffChunk
+from ..data.c_diff_chunk import CompositeDiffChunk
 
 
 class PredicateChunker(ChunkerInterface):
@@ -12,44 +13,70 @@ class PredicateChunker(ChunkerInterface):
         result: List[DiffChunk] = []
 
         for chunk in diff_chunks:
-            # only works with standard diff chunks
             if not isinstance(chunk, StandardDiffChunk):
                 result.append(chunk)
                 continue
 
-            # start_num = line number of the first non-separator line in current piece
-            # last_num  = line number of the most recent non-separator line seen
-            start_num = None
-            last_num = None
-
-            for line in chunk.parsed_content:
-                ln = line.line_number
-                if self.split_predicate(line.content):
-                    # separator: close current piece if it contains at least one non-separator line
-                    if (
-                        start_num is not None
-                        and last_num is not None
-                        and last_num >= start_num
-                    ):
-                        sub_chunk = chunk.extract_by_lines(start_num, last_num)
-                        if sub_chunk:
-                            result.append(sub_chunk)
-                    # reset to start a new piece after the separator(s)
-                    start_num = None
-                    last_num = None
-                    continue
-
-                # non-separator line: start or extend the current piece
-                if start_num is None:
-                    start_num = ln
-                    last_num = ln
+            # Split into atomic chunks first
+            atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
+            
+            # Group atomic chunks based on predicate
+            current_group: List[StandardDiffChunk] = []
+            separator_group: List[StandardDiffChunk] = []
+            
+            for atomic_chunk in atomic_chunks:
+                # Check if any line in the atomic chunk matches the predicate
+                matches_predicate = any(
+                    self.split_predicate(item.content)
+                    for item in atomic_chunk.parsed_content
+                )
+                
+                if matches_predicate:
+                    # Flush any current group before starting separator group
+                    if current_group:
+                        if len(current_group) == 1:
+                            result.append(current_group[0])
+                        else:
+                            result.append(CompositeDiffChunk(
+                                chunks=current_group,
+                                _file_path=chunk._file_path
+                            ))
+                        current_group = []
+                    
+                    # Add to separator group
+                    separator_group.append(atomic_chunk)
                 else:
-                    last_num = ln
-
-            # end of hunk: flush any remaining piece
-            if start_num is not None and last_num is not None and last_num >= start_num:
-                sub_chunk = chunk.extract_by_lines(start_num, last_num)
-                if sub_chunk:
-                    result.append(sub_chunk)
+                    # Flush separator group if we have one
+                    if separator_group:
+                        if len(separator_group) == 1:
+                            result.append(separator_group[0])
+                        else:
+                            result.append(CompositeDiffChunk(
+                                chunks=separator_group,
+                                _file_path=chunk._file_path
+                            ))
+                        separator_group = []
+                    
+                    # Add to current group
+                    current_group.append(atomic_chunk)
+            
+            # Flush any remaining groups
+            if separator_group:
+                if len(separator_group) == 1:
+                    result.append(separator_group[0])
+                else:
+                    result.append(CompositeDiffChunk(
+                        chunks=separator_group,
+                        _file_path=chunk._file_path
+                    ))
+            
+            if current_group:
+                if len(current_group) == 1:
+                    result.append(current_group[0])
+                else:
+                    result.append(CompositeDiffChunk(
+                        chunks=current_group,
+                        _file_path=chunk._file_path
+                    ))
 
         return result

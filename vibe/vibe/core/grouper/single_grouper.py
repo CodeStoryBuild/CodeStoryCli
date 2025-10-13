@@ -1,5 +1,5 @@
 import time
-from typing import List, Dict
+from typing import List
 
 from vibe.core.grouper.interface import GrouperInterface
 from ..data.models import CommitGroup
@@ -7,7 +7,7 @@ from ..data.diff_chunk import DiffChunk
 
 
 class SingleGrouper(GrouperInterface):
-    def group_chunks(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
+    def group_chunks(self, chunks: List[DiffChunk], message : str, on_progress = None) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""
         groups: List[CommitGroup] = []
         id = 0

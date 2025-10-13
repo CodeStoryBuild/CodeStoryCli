@@ -90,8 +90,9 @@ def format_content_json(parsed_content) -> str:
     Returns:
         A JSON string representing the structured diff.
     """
-    w_moves = detect_moves(parsed_content)
-    simplified_diff = detect_replacements(w_moves)
+    # w_moves = detect_moves(parsed_content)
+    # simplified_diff = detect_replacements(w_moves)
+    simplified_diff = parsed_content
 
     structured_changes = []
 

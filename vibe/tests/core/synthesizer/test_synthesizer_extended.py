@@ -7,7 +7,7 @@ from vibe.core.data.models import CommitGroup, Addition, Removal
 from vibe.core.data.s_diff_chunk import StandardDiffChunk
 
 # Assuming the synthesizer class is here
-from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
+from vibe.core.synthesizer.git_synthesizer_porcelain import GitSynthesizer
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
@@ -82,8 +82,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # A1: Add a line to file_a.txt after line 5.
     chunk_A1 = StandardDiffChunk(
-        file_path="file_a.txt",
-        content="+Line 6: Added by A1.",
+        _file_path="file_a.txt",
         parsed_content=[Addition(6, "Line 6: Added by A1.")],
         old_start=6,
         new_start=6,
@@ -91,8 +90,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # A2: Delete line 3 from file_a.txt.
     chunk_A2 = StandardDiffChunk(
-        file_path="file_a.txt",
-        content="-Line 3: An original line in A.",
+        _file_path="file_a.txt",
         parsed_content=[Removal(3, "Line 3: An original line in A.")],
         old_start=3,
         new_start=3,
@@ -100,8 +98,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # B1: Modify line 2 in file_b.txt.
     chunk_B1 = StandardDiffChunk(
-        file_path="file_b.txt",
-        content="-Line 2: value = 100\n+Line 2: value = 250 # Updated by B1",
+        _file_path="file_b.txt",
         parsed_content=[
             Removal(2, "Line 2: value = 100"),
             Addition(2, "Line 2: value = 250 # Updated by B1"),
@@ -112,8 +109,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # B2: Add a new setting to file_b.txt after line 5.
     chunk_B2 = StandardDiffChunk(
-        file_path="file_b.txt",
-        content='+Line 6: mode = "test" # Added by B2',
+        _file_path="file_b.txt",
         parsed_content=[Addition(6, 'Line 6: mode = "test" # Added by B2')],
         old_start=6,
         new_start=6,
@@ -222,8 +218,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
 
     # A1: Add a line to file_a.txt after line 5.
     chunk_A1 = StandardDiffChunk(
-        file_path="file_a.txt",
-        content="+Line 6: Added by A1.",
+        _file_path="file_a.txt",
         parsed_content=[Addition(6, "Line 6: Added by A1.")],
         old_start=6,
         new_start=6,
@@ -231,8 +226,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
 
     # A2: Delete line 3 from file_a.txt.
     chunk_A2 = StandardDiffChunk(
-        file_path="file_a.txt",
-        content="-Line 3: An original line in A.",
+        _file_path="file_a.txt",
         parsed_content=[Removal(3, "Line 3: An original line in A.")],
         old_start=3,
         new_start=3,
@@ -240,8 +234,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
 
     # B1: Modify line 2 in file_b.txt.
     chunk_B1 = StandardDiffChunk(
-        file_path="file_b.txt",
-        content="-Line 2: value = 100\n+Line 2: value = 250 # Updated by B1",
+        _file_path="file_b.txt",
         parsed_content=[
             Removal(2, "Line 2: value = 100"),
             Addition(2, "Line 2: value = 250 # Updated by B1"),
@@ -252,8 +245,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
 
     # B2: Add a new setting to file_b.txt after line 5.
     chunk_B2 = StandardDiffChunk(
-        file_path="file_b.txt",
-        content='+Line 6: mode = "test" # Added by B2',
+        _file_path="file_b.txt",
         parsed_content=[Addition(6, 'Line 6: mode = "test" # Added by B2')],
         old_start=6,
         new_start=6,

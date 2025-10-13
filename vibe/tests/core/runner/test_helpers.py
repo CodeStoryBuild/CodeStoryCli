@@ -34,7 +34,7 @@ class DeterministicChunker(ChunkerInterface):
         for chunk in diff_chunks:
             # Check if chunk should be split
             should_split = any(
-                keyword in chunk.content for keyword in self.split_keywords
+                keyword in chunk.format_json() for keyword in self.split_keywords
             )
 
             if should_split:
@@ -48,58 +48,45 @@ class DeterministicChunker(ChunkerInterface):
 
     def _split_chunk_by_lines(self, chunk: DiffChunk) -> List[DiffChunk]:
         """
-        Split a chunk into individual line-level chunks for testing.
+        Split a chunk into atomic chunks, then group them for testing.
+        Uses the split_into_atomic_chunks method from ChunkerInterface.
         """
+        from vibe.core.chunker.interface import ChunkerInterface
+        from vibe.core.data.c_diff_chunk import CompositeDiffChunk
+        
+        if not isinstance(chunk, StandardDiffChunk):
+            # only split standard diff chunks, not renames
+            return [chunk]
+        
+        if not chunk.parsed_content:
+            return [chunk]
+
+        # Split into atomic chunks
+        atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
+        
+        if not atomic_chunks:
+            return [chunk]
+        
+        # Group consecutive atomic chunks (2-3 chunks per group) to avoid too many tiny chunks
         sub_chunks = []
-
-        # Group consecutive changes to avoid creating too many tiny chunks
-        current_group = []
-
-        for i, ai_item in enumerate(chunk.parsed_content):
-            current_group.append(ai_item)
-
-            # Create chunk every 2-3 items or at the end
-            if len(current_group) >= 2 or i == len(chunk.parsed_content) - 1:
-                # Calculate correct old_start and new_start from the actual content
-                removals = [item for item in current_group if isinstance(item, Removal)]
-                additions = [
-                    item for item in current_group if isinstance(item, Addition)
-                ]
-
-                # old_start should be the first removal's line number, or one before first addition if no removals
-                if removals:
-                    old_start = min(r.line_number for r in removals)
-                elif additions:
-                    old_start = min(a.line_number for a in additions) - 1
-                else:
-                    old_start = chunk.old_start
-
-                # new_start should be the first addition's line number, or one before first removal if no additions
-                if additions:
-                    new_start = min(a.line_number for a in additions)
-                elif removals:
-                    new_start = min(r.line_number for r in removals) - 1
-                else:
-                    new_start = chunk.new_start
-
-                # Create content string from current group
-                content_lines = []
-                for item in current_group:
-                    if isinstance(item, Addition):
-                        content_lines.append(f"+{item.content}")
-                    elif isinstance(item, Removal):
-                        content_lines.append(f"-{item.content}")
-
-                sub_chunk = StandardDiffChunk(
-                    file_path=chunk.file_path,
-                    content="\n".join(content_lines),
-                    parsed_content=current_group.copy(),
-                    old_start=old_start,
-                    new_start=new_start,
-                )
-
-                sub_chunks.append(sub_chunk)
-                current_group = []
+        i = 0
+        while i < len(atomic_chunks):
+            # Determine the range for this sub-group (2-3 atomic chunks)
+            end_idx = min(i + 2, len(atomic_chunks))
+            chunk_group = atomic_chunks[i:end_idx]
+            
+            if len(chunk_group) == 1:
+                # Single atomic chunk, add as-is
+                sub_chunks.append(chunk_group[0])
+            else:
+                # Multiple atomic chunks, wrap in CompositeDiffChunk
+                sub_chunks.append(CompositeDiffChunk(
+                    chunks=chunk_group,
+                    _file_path=chunk._file_path
+                ))
+            
+            # Move to next group
+            i = end_idx
 
         return sub_chunks if sub_chunks else [chunk]
 
@@ -120,7 +107,7 @@ class DeterministicGrouper(GrouperInterface):
         self.group_by_file = group_by_file
         self.max_chunks_per_group = max_chunks_per_group
 
-    def group_chunks(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
+    def group_chunks(self, chunks: List[DiffChunk], message : str, on_progress = None) -> List[CommitGroup]:
         """
         Group chunks deterministically for predictable testing.
         """
@@ -137,14 +124,7 @@ class DeterministicGrouper(GrouperInterface):
         file_groups = {}
 
         for chunk in chunks:
-            if hasattr(chunk, "file_path"):
-                file_path = chunk.file_path
-            elif hasattr(chunk, "new_file_path"):
-                # Handle RenameDiffChunk - use new file path as key
-                file_path = chunk.new_file_path
-            else:
-                # Fallback for unknown chunk types
-                file_path = str(chunk)
+            file_path = chunk.file_path()
 
             if file_path not in file_groups:
                 file_groups[file_path] = []
@@ -175,7 +155,7 @@ class DeterministicGrouper(GrouperInterface):
 
         return groups
 
-    def _group_by_content_patterns(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
+    def _group_by_content_patterns(self, chunks: List[StandardDiffChunk]) -> List[CommitGroup]:
         """Group chunks by content patterns for more complex testing."""
         groups = []
         group_counter = 1
@@ -187,7 +167,7 @@ class DeterministicGrouper(GrouperInterface):
         other_chunks = []
 
         for chunk in chunks:
-            content = chunk.content.lower()
+            content = chunk.format_json().lower()
             if any(keyword in content for keyword in ["feature", "add", "new"]):
                 feature_chunks.append(chunk)
             elif any(keyword in content for keyword in ["refactor", "rename", "move"]):
@@ -226,9 +206,17 @@ class DeterministicGrouper(GrouperInterface):
     def _determine_action(self, chunks: List[DiffChunk]) -> str:
         """Determine the primary action for a group of chunks."""
         from vibe.core.data.r_diff_chunk import RenameDiffChunk
+        from vibe.core.data.empty_file_chunk import EmptyFileAdditionChunk
+        from vibe.core.data.file_deletion_chunk import FileDeletionChunk
 
         if any(isinstance(chunk, RenameDiffChunk) for chunk in chunks):
             return "Rename"
+        
+        if any(isinstance(chunk, EmptyFileAdditionChunk) for chunk in chunks):
+            return "Add"
+        
+        if any(isinstance(chunk, FileDeletionChunk) for chunk in chunks):
+            return "Remove"
 
         additions = sum(
             1

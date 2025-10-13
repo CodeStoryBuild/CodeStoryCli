@@ -4,10 +4,12 @@ from pathlib import Path
 import tempfile
 
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
+from vibe.core.synthesizer.git_synthesizer_porcelain import GitSynthesizer
 from vibe.core.data.models import CommitGroup, Addition, Removal
 from vibe.core.data.s_diff_chunk import StandardDiffChunk
 from vibe.core.data.r_diff_chunk import RenameDiffChunk
+from vibe.core.data.empty_file_chunk import EmptyFileAdditionChunk
+from vibe.core.data.file_deletion_chunk import FileDeletionChunk
 
 ## Fixtures
 
@@ -48,8 +50,7 @@ def test_basic_modification(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     chunk = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 3\n+line three",
+        _file_path="app.js",
         parsed_content=[Removal(3, "line 3"), Addition(3, "line three")],
         old_start=3,
         new_start=3,
@@ -86,11 +87,11 @@ def test_file_deletion(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     chunk = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 1\n-line 2\n-line 3\n-line 4\n-line 5",
+        _file_path="app.js",
         parsed_content=[Removal(i + 1, f"line {i+1}") for i in range(5)],
         old_start=1,
         new_start=1,
+        is_file_deletion=True
     )
     group = CommitGroup(chunks=[chunk], group_id="g1", commmit_message="Delete app.js")
 
@@ -103,7 +104,7 @@ def test_rename_file(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
-    chunk = RenameDiffChunk(
+    chunk = RenameDiffChunk.from_raw_patch(
         old_file_path="app.js", new_file_path="server.js", patch_content=""
     )
     group = CommitGroup(
@@ -130,8 +131,7 @@ def test_critical_line_shift_scenario(git_repo):
 
     # Add a header (second commit)
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="+line 0",
+        _file_path="app.js",
         parsed_content=[Addition(1, "line 0")],
         old_start=0,
         new_start=1,
@@ -140,8 +140,7 @@ def test_critical_line_shift_scenario(git_repo):
 
     # Update the footer (first commit)
     chunk2 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 5\n+line five",
+        _file_path="app.js",
         parsed_content=[Removal(5, "line 5"), Addition(5, "line five")],
         old_start=5,
         new_start=5,
@@ -206,8 +205,7 @@ def test_pure_addition_single_file(git_repo):
 
     # Add header line at the beginning
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="+header line",
+        _file_path="app.js",
         parsed_content=[Addition(1, "header line")],
         old_start=0,
         new_start=1,
@@ -215,8 +213,7 @@ def test_pure_addition_single_file(git_repo):
 
     # Add middle insertion after line 2
     chunk2 = StandardDiffChunk(
-        file_path="app.js",
-        content="+middle insertion",
+        _file_path="app.js",
         parsed_content=[Addition(3, "middle insertion")],
         old_start=2,
         new_start=3,
@@ -224,8 +221,7 @@ def test_pure_addition_single_file(git_repo):
 
     # Add footer line after line 5
     chunk3 = StandardDiffChunk(
-        file_path="app.js",
-        content="+footer line",
+        _file_path="app.js",
         parsed_content=[Addition(6, "footer line")],
         old_start=5,
         new_start=6,
@@ -265,8 +261,7 @@ def test_pure_addition_new_files(git_repo):
 
     # Add multiple new files
     chunk1 = StandardDiffChunk(
-        file_path="config.json",
-        content='+{\n+  "name": "test",\n+  "version": "1.0.0"\n+}',
+        _file_path="config.json",
         parsed_content=[
             Addition(1, "{"),
             Addition(2, '  "name": "test",'),
@@ -278,8 +273,7 @@ def test_pure_addition_new_files(git_repo):
     )
 
     chunk2 = StandardDiffChunk(
-        file_path="nested/deep/file.txt",
-        content="+content line 1\n+content line 2",
+        _file_path="nested/deep/file.txt",
         parsed_content=[Addition(1, "content line 1"), Addition(2, "content line 2")],
         old_start=1,
         new_start=1,
@@ -308,8 +302,7 @@ def test_pure_addition_multiple_groups(git_repo):
 
     # Add to existing file
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="+// Header comment",
+        _file_path="app.js",
         parsed_content=[Addition(1, "// Header comment")],
         old_start=0,
         new_start=1,
@@ -320,8 +313,7 @@ def test_pure_addition_multiple_groups(git_repo):
 
     # Add new file
     chunk2 = StandardDiffChunk(
-        file_path="README.md",
-        content="+# Project Title\n+\n+Description here",
+        _file_path="README.md",
         parsed_content=[
             Addition(1, "# Project Title"),
             Addition(2, ""),
@@ -352,16 +344,14 @@ def test_pure_deletion_partial_content(git_repo):
 
     # Remove lines 2 and 4
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 2",
+        _file_path="app.js",
         parsed_content=[Removal(2, "line 2")],
         old_start=2,
         new_start=2,
     )
 
     chunk2 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 4",
+        _file_path="app.js",
         parsed_content=[Removal(4, "line 4")],
         old_start=4,
         new_start=4,
@@ -409,19 +399,19 @@ def test_pure_deletion_entire_files(git_repo):
 
     # Remove all content
     chunk1 = StandardDiffChunk(
-        file_path="temp.txt",
-        content="-temporary content",
+        _file_path="temp.txt",
         parsed_content=[Removal(1, "temporary content")],
         old_start=1,
         new_start=1,
+        is_file_deletion=True
     )
 
     chunk2 = StandardDiffChunk(
-        file_path="config.json",
-        content='-{"test": true}',
+        _file_path="config.json",
         parsed_content=[Removal(1, '{"test": true}')],
         old_start=1,
         new_start=1,
+        is_file_deletion=True
     )
 
     group = CommitGroup(
@@ -458,15 +448,13 @@ def test_pure_deletion_multiple_groups(git_repo):
 
     # Remove from app.js
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 1",
+        _file_path="app.js",
         parsed_content=[Removal(1, "line 1")],
         old_start=1,
         new_start=1,
     )
     chunk1b = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 3",
+        _file_path="app.js",
         parsed_content=[Removal(3, "line 3")],
         old_start=3,
         new_start=3,
@@ -479,11 +467,11 @@ def test_pure_deletion_multiple_groups(git_repo):
 
     # Remove entire other.txt
     chunk2 = StandardDiffChunk(
-        file_path="other.txt",
-        content="-other line 1\n-other line 2",
+        _file_path="other.txt",
         parsed_content=[Removal(1, "other line 1"), Removal(2, "other line 2")],
         old_start=1,
         new_start=1,
+        is_file_deletion=True
     )
     group2 = CommitGroup(
         chunks=[chunk2], group_id="g2", commmit_message="Delete other.txt"
@@ -533,8 +521,7 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks = [
         # Modify file
         StandardDiffChunk(
-            file_path="app.js",
-            content="-line 1\n+modified line 1\n+new line after 1",
+            _file_path="app.js",
             parsed_content=[
                 Removal(1, "line 1"),
                 Addition(1, "modified line 1"),
@@ -545,8 +532,7 @@ def test_large_mixed_changes_single_group(git_repo):
         ),
         # Add nested file
         StandardDiffChunk(
-            file_path="src/models/user.py",
-            content="+class User:\n+    def __init__(self, name):\n+        self.name = name",
+            _file_path="src/models/user.py",
             parsed_content=[
                 Addition(1, "class User:"),
                 Addition(2, "    def __init__(self, name):"),
@@ -557,8 +543,7 @@ def test_large_mixed_changes_single_group(git_repo):
         ),
         # Modify nested file
         StandardDiffChunk(
-            file_path="src/utils.py",
-            content="-def helper():\n-    pass\n+def helper(param):\n+    return param * 2",
+            _file_path="src/utils.py",
             parsed_content=[
                 Removal(1, "def helper():"),
                 Removal(2, "    pass"),
@@ -570,30 +555,24 @@ def test_large_mixed_changes_single_group(git_repo):
         ),
         # Remove file
         StandardDiffChunk(
-            file_path="docs/readme.txt",
-            content="-Old documentation",
+            _file_path="docs/readme.txt",
             parsed_content=[Removal(1, "Old documentation")],
             old_start=1,
             new_start=1,
+            is_file_deletion=True
         ),
         # Rename and modify
-        RenameDiffChunk(
-            old_file_path="config.ini",
-            new_file_path="config/settings.ini",
-            patch_content="",
-        ),
-        StandardDiffChunk(
-            file_path="config/settings.ini",
-            content="-[section]\n-old_value=1\n+[database]\n+host=localhost\n+port=5432",
-            parsed_content=[
-                Removal(1, "[section]"),
-                Removal(2, "old_value=1"),
-                Addition(1, "[database]"),
-                Addition(2, "host=localhost"),
-                Addition(3, "port=5432"),
-            ],
-            old_start=1,
-            new_start=1,
+        RenameDiffChunk.from_raw_patch(
+                old_file_path="config.ini",
+                new_file_path="config/settings.ini",
+                patch_content=(
+                    "@@ -1,2 +1,3 @@\n"
+                    "-[section]\n"
+                    "-old_value=1\n"
+                    "+[database]\n"
+                    "+host=localhost\n"
+                    "+port=5432\n"
+                ),
         ),
     ]
 
@@ -669,8 +648,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     # Frontend changes
     group1_chunks = [
         StandardDiffChunk(
-            file_path="frontend/index.html",
-            content="-<html><body>Old</body></html>\n+<html><head><title>New</title></head><body>New</body></html>",
+            _file_path="frontend/index.html",
             parsed_content=[
                 Removal(1, "<html><body>Old</body></html>"),
                 Addition(
@@ -681,8 +659,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             new_start=1,
         ),
         StandardDiffChunk(
-            file_path="frontend/styles.css",
-            content="+body { margin: 0; }\n+.container { width: 100%; }",
+            _file_path="frontend/styles.css",
             parsed_content=[
                 Addition(1, "body { margin: 0; }"),
                 Addition(2, ".container { width: 100%; }"),
@@ -698,8 +675,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     # Backend changes
     group2_chunks = [
         StandardDiffChunk(
-            file_path="backend/server.py",
-            content="-print('old server')\n+from flask import Flask\n+app = Flask(__name__)\n+\n+@app.route('/')\n+def hello():\n+    return 'Hello World'",
+            _file_path="backend/server.py",
             parsed_content=[
                 Removal(1, "print('old server')"),
                 Addition(1, "from flask import Flask"),
@@ -713,8 +689,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             new_start=1,
         ),
         StandardDiffChunk(
-            file_path="backend/models.py",
-            content="+class User:\n+    pass\n+\n+class Post:\n+    pass",
+            _file_path="backend/models.py",
             parsed_content=[
                 Addition(1, "class User:"),
                 Addition(2, "    pass"),
@@ -733,13 +708,13 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     # Cleanup and restructure
     group3_chunks = [
         StandardDiffChunk(
-            file_path="shared.txt",
-            content="-shared content",
+            _file_path="shared.txt",
             parsed_content=[Removal(1, "shared content")],
             old_start=1,
             new_start=1,
+            is_file_deletion=True
         ),
-        RenameDiffChunk(
+        RenameDiffChunk.from_raw_patch(
             old_file_path="app.js", new_file_path="legacy/app.js", patch_content=""
         ),
     ]
@@ -792,8 +767,7 @@ def test_complex_interdependent_changes(git_repo):
     chunks = [
         # Rename function in utils.py
         StandardDiffChunk(
-            file_path="utils.py",
-            content="-def old_function():\n-    return 'old'\n+def new_function():\n+    return 'new'\n+\n+def helper():\n+    return 'helper'",
+            _file_path="utils.py",
             parsed_content=[
                 Removal(1, "def old_function():"),
                 Removal(2, "    return 'old'"),
@@ -808,8 +782,7 @@ def test_complex_interdependent_changes(git_repo):
         ),
         # Update imports in main.py
         StandardDiffChunk(
-            file_path="main.py",
-            content="-from utils import old_function\n-old_function()\n+from utils import new_function, helper\n+from config import NEW_CONFIG\n+\n+if NEW_CONFIG:\n+    result = new_function()\n+    helper()",
+            _file_path="main.py",
             parsed_content=[
                 Removal(1, "from utils import old_function"),
                 Removal(2, "old_function()"),
@@ -825,8 +798,7 @@ def test_complex_interdependent_changes(git_repo):
         ),
         # Update config.py
         StandardDiffChunk(
-            file_path="config.py",
-            content="-OLD_CONFIG = True\n+NEW_CONFIG = True\n+DEBUG = False",
+            _file_path="config.py",
             parsed_content=[
                 Removal(1, "OLD_CONFIG = True"),
                 Addition(1, "NEW_CONFIG = True"),
@@ -876,8 +848,7 @@ def test_empty_group_handling(git_repo):
 
     # No-op group
     no_op_chunk = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 1\n+line 1",
+        _file_path="app.js",
         parsed_content=[Removal(1, "line 1"), Addition(1, "line 1")],
         old_start=1,
         new_start=1,
@@ -901,8 +872,7 @@ def test_single_line_changes(git_repo):
 
     # Single character change
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 1\n+Line 1",  # Just capitalize L
+        _file_path="app.js",
         parsed_content=[Removal(1, "line 1"), Addition(1, "Line 1")],
         old_start=1,
         new_start=1,
@@ -910,16 +880,15 @@ def test_single_line_changes(git_repo):
 
     # Add single character file
     chunk2 = StandardDiffChunk(
-        file_path="single.txt",
-        content="+x",
+        _file_path="single.txt",
         parsed_content=[Addition(1, "x")],
         old_start=1,
         new_start=1,
     )
 
     # Empty file creation
-    chunk3 = StandardDiffChunk(
-        file_path="empty.txt", content="", parsed_content=[], old_start=1, new_start=1
+    chunk3 = EmptyFileAdditionChunk(
+        _file_path="empty.txt", file_mode="100644"
     )
 
     group = CommitGroup(
@@ -950,8 +919,7 @@ def test_boundary_line_numbers(git_repo):
 
     # Change at line 0
     chunk1 = StandardDiffChunk(
-        file_path="app.js",
-        content="+line 0",
+        _file_path="app.js",
         parsed_content=[Addition(1, "line 0")],
         old_start=0,
         new_start=1,
@@ -959,8 +927,7 @@ def test_boundary_line_numbers(git_repo):
 
     # Change at last line
     chunk2 = StandardDiffChunk(
-        file_path="app.js",
-        content="-line 5\n+line 5 modified",
+        _file_path="app.js",
         parsed_content=[Removal(5, "line 5"), Addition(5, "line 5 modified")],
         old_start=5,
         new_start=5,
@@ -968,8 +935,7 @@ def test_boundary_line_numbers(git_repo):
 
     # Add after last line
     chunk3 = StandardDiffChunk(
-        file_path="app.js",
-        content="+line 6",
+        _file_path="app.js",
         parsed_content=[Addition(6, "line 6")],
         old_start=6,
         new_start=6,
@@ -996,8 +962,7 @@ def test_unicode_and_special_characters(git_repo):
 
     # Unicode content
     chunk1 = StandardDiffChunk(
-        file_path="unicode.txt",
-        content="+Hello 世界 🌍\n+Café naïve résumé\n+Ελληνικά Русский العربية",
+        _file_path="unicode.txt",
         parsed_content=[
             Addition(1, "Hello 世界 🌍"),
             Addition(2, "Café naïve résumé"),
@@ -1009,8 +974,7 @@ def test_unicode_and_special_characters(git_repo):
 
     # Special characters and symbols
     chunk2 = StandardDiffChunk(
-        file_path="special.txt",
-        content='+#!/bin/bash\n+echo "$HOME"\n+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}\n+math: ∑(x²) = π/2',
+        _file_path="special.txt",
         parsed_content=[
             Addition(1, "#!/bin/bash"),
             Addition(2, 'echo "$HOME"'),
@@ -1050,24 +1014,21 @@ def test_conflicting_simultaneous_changes(git_repo):
     chunks = [
         # Remove line 2
         StandardDiffChunk(
-            file_path="app.js",
-            content="-line 2",
+            _file_path="app.js",
             parsed_content=[Removal(2, "line 2")],
             old_start=2,
             new_start=2,
         ),
         # Insert between lines 1 and 2 (which will be gone)
         StandardDiffChunk(
-            file_path="app.js",
-            content="+inserted line",
+            _file_path="app.js",
             parsed_content=[Addition(2, "inserted line")],
             old_start=2,
             new_start=2,
         ),
         # Modify line 3 (which will shift)
         StandardDiffChunk(
-            file_path="app.js",
-            content="-line 3\n+modified line 3",
+            _file_path="app.js",
             parsed_content=[Removal(3, "line 3"), Addition(3, "modified line 3")],
             old_start=3,
             new_start=3,
@@ -1107,8 +1068,7 @@ def test_very_large_file_changes(git_repo):
     # Chunks for each 10th line modification
     for i in range(10, 101, 10):
         chunk = StandardDiffChunk(
-            file_path="large.txt",
-            content=f"-line {i}\n+MODIFIED line {i}",
+            _file_path="large.txt",
             parsed_content=[Removal(i, f"line {i}"), Addition(i, f"MODIFIED line {i}")],
             old_start=i,
             new_start=i,
@@ -1118,8 +1078,7 @@ def test_very_large_file_changes(git_repo):
     # Chunks for insertions at various positions
     for i in [25, 50, 75]:
         chunk = StandardDiffChunk(
-            file_path="large.txt",
-            content=f"+INSERTED at {i}",
+            _file_path="large.txt",
             parsed_content=[Addition(i, f"INSERTED at {i}")],
             old_start=i - 1,
             new_start=i,  # Insert before line i
