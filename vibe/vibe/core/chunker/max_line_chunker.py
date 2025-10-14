@@ -13,8 +13,6 @@ Responsibilities:
 from typing import List
 from .interface import ChunkerInterface
 from ..data.models import DiffChunk
-from ..data.r_diff_chunk import RenameDiffChunk
-from ..data.s_diff_chunk import StandardDiffChunk
 from ..data.c_diff_chunk import CompositeDiffChunk
 
 
@@ -36,29 +34,25 @@ class MaxLineChunker(ChunkerInterface):
             diff_chunks: List of input DiffChunks to potentially split
 
         Returns:
-            List of DiffChunks, where any StandardDiffChunk exceeding max_chunks is split
-            into CompositeDiffChunks containing StandardDiffChunk atoms
+            List of DiffChunks, where any DiffChunks exceeding max_chunks is split
+            into DiffChunks containing DiffChunks atoms
         """
         result: List[DiffChunk] = []
 
         for chunk in diff_chunks:
-            if isinstance(chunk, StandardDiffChunk):
-                # Split into atomic chunks
-                atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
+            # Split into atomic chunks
+            atomic_chunks = chunk.split_into_atomic_chunks()
 
-                # If atomic chunks fit within limit, add them individually
-                if len(atomic_chunks) <= self.max_chunks:
-                    result.extend(atomic_chunks)
-                else:
-                    # Group atomic chunks into composite chunks
-                    for i in range(0, len(atomic_chunks), self.max_chunks):
-                        chunk_group = atomic_chunks[i : i + self.max_chunks]
-                        composite = CompositeDiffChunk(
-                            chunks=chunk_group, _file_path=chunk._file_path
-                        )
-                        result.append(composite)
+            # If atomic chunks fit within limit, add them individually
+            if len(atomic_chunks) <= self.max_chunks:
+                result.extend(atomic_chunks)
             else:
-                # Non-standard chunks (e.g., RenameDiffChunk) pass through unchanged
-                result.append(chunk)
+                # Group atomic chunks into composite chunks
+                for i in range(0, len(atomic_chunks), self.max_chunks):
+                    chunk_group = atomic_chunks[i : i + self.max_chunks]
+                    composite = CompositeDiffChunk(
+                        chunks=chunk_group, _file_path=chunk._file_path
+                    )
+                    result.append(composite)
 
         return result

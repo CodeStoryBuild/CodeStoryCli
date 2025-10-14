@@ -4,16 +4,14 @@ from rich.progress import Progress
 from rich.console import Console
 
 from vibe.core.data import models
-from vibe.core.data.r_diff_chunk import RenameDiffChunk
 from ..git_interface.interface import GitInterface
 from ..commands.git_commands import GitCommands
-from ..synthesizer.git_synthesizer_porcelain import GitSynthesizer
+from ..synthesizer.git_synthesizer import GitSynthesizer
 
-# from ..synthesizer.git_synthesizer_opt import GitSynthesizer
 from ..chunker.interface import ChunkerInterface
 from ..grouper.interface import GrouperInterface
-from ..data.models import DiffChunk, CommitGroup, CommitResult
-from ..data.s_diff_chunk import StandardDiffChunk
+from ..data.models import CommitGroup, CommitResult
+from ..data.diff_chunk import DiffChunk
 from ..checks.chunk_checks import chunks_disjoint
 
 import inquirer
@@ -68,9 +66,7 @@ class AIGitPipeline:
 
             raw_diff: List[DiffChunk] = self.commands.get_processed_diff(target)
 
-            if not chunks_disjoint(
-                [chunk for chunk in raw_diff if isinstance(chunk, StandardDiffChunk)]
-            ):
+            if not chunks_disjoint(raw_diff):
                 raise RuntimeError("initial diff chunks are not disjoint!")
             else:
                 for chunk in raw_diff:
@@ -83,9 +79,7 @@ class AIGitPipeline:
 
             chunks: List[DiffChunk] = self.chunker.chunk(raw_diff)
 
-            if not chunks_disjoint(
-                [chunk for chunk in chunks if isinstance(chunk, StandardDiffChunk)]
-            ):
+            if not chunks_disjoint(chunks):
                 raise RuntimeError("Chunked chunks are not disjoint!")
             else:
                 for chunk in chunks:
@@ -112,9 +106,7 @@ class AIGitPipeline:
         for group in grouped:
             full_chunks.extend(group.chunks)
 
-        if not chunks_disjoint(
-            [chunk for chunk in full_chunks if isinstance(chunk, StandardDiffChunk)]
-        ):
+        if not chunks_disjoint(full_chunks):
             raise RuntimeError("Grouped chunks are not disjoint!")
         else:
             for chunk in full_chunks:
@@ -126,7 +118,7 @@ class AIGitPipeline:
         final_groups = []
         for group in grouped:
             console.rule(f"[bold green]AI Commit Suggestion")
-            console.print(f"[bold]Commit Message:[/bold] {group.commmit_message}")
+            console.print(f"[bold]Commit Message:[/bold] {group.commit_message}")
             if group.extended_message:
                 console.print(
                     f"[bold]Extended Message:[/bold] {group.extended_message}"
@@ -134,13 +126,13 @@ class AIGitPipeline:
 
             affected_files = set()
             for chunk in group.chunks:
-                if isinstance(chunk, RenameDiffChunk):
+                if chunk.is_file_rename:
                     # Handle RenameDiffChunk
                     affected_files.add(
                         f"{chunk.old_file_path} -> {chunk.new_file_path}"
                     )
                 else:
-                    affected_files.add(chunk.file_path())
+                    affected_files.add(chunk.canonical_path())
             console.print(f"[bold]Affected Files:[/bold] {', '.join(affected_files)}")
 
             # for chunk in group.chunks:

@@ -20,15 +20,20 @@ Notes:
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 from ..data.models import CommitGroup, ProgressCallback
-from ..data.diff_chunk import DiffChunk
 
 
 class GrouperInterface(ABC):
     @abstractmethod
     def group_chunks(
         self,
-        chunks: List[DiffChunk],
+        chunks: List["Groupable"],
         message: str,
         on_progress: Optional[ProgressCallback] = None,
     ) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""
+
+
+class Groupable(ABC):
+    @abstractmethod
+    def format_json(self) -> Dict:
+        """Format the object as json, describing what it does"""

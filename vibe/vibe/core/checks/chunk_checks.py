@@ -1,11 +1,11 @@
 from collections import defaultdict
 from typing import List, Optional, Tuple
 
-from ..data.s_diff_chunk import StandardDiffChunk
-from ..data.models import Addition, Removal
+from ..data.diff_chunk import DiffChunk
+from ..data.line_changes import Addition, Removal
 
 
-def chunks_disjoint(chunks: List[StandardDiffChunk]) -> bool:
+def chunks_disjoint(chunks: List[DiffChunk]) -> bool:
     """
     Returns True if all diff chunks are fully disjoint.
 
@@ -19,7 +19,7 @@ def chunks_disjoint(chunks: List[StandardDiffChunk]) -> bool:
     """
 
     def _get_inclusive_ranges(
-        chunk: StandardDiffChunk,
+        chunk: DiffChunk,
     ) -> Tuple[Optional[Tuple[int, int]], Optional[Tuple[int, int]]]:
         """Return (old_start, old_end), (new_start, new_end) inclusive ranges."""
         old_lines = [
@@ -58,11 +58,15 @@ def chunks_disjoint(chunks: List[StandardDiffChunk]) -> bool:
 
     # Phase 1: Group all ranges by file
     for chunk in chunks:
+        if not chunk.has_content:
+            # no possible overlap if no content
+            continue
+
         o_range, n_range = _get_inclusive_ranges(chunk)
         if o_range:
-            old_ranges_by_file[chunk._file_path].append(o_range)
+            old_ranges_by_file[chunk.canonical_path()].append(o_range)
         if n_range:
-            new_ranges_by_file[chunk._file_path].append(n_range)
+            new_ranges_by_file[chunk.canonical_path()].append(n_range)
 
     # Phase 2: Check for overlaps within each file's range list
     all_old_disjoint = all(

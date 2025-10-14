@@ -365,7 +365,7 @@ def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_al
     # Check that commits were grouped by content type
     commit_messages = []
     for result in results:
-        commit_messages.append(result.group.commmit_message)
+        commit_messages.append(result.group.commit_message)
 
     # Should have different types of commits based on content
     message_text = " ".join(commit_messages).lower()

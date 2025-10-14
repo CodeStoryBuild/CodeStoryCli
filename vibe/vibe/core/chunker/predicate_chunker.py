@@ -1,7 +1,6 @@
 from typing import List, Callable
 from .interface import ChunkerInterface
 from ..data.models import DiffChunk
-from ..data.s_diff_chunk import StandardDiffChunk
 from ..data.c_diff_chunk import CompositeDiffChunk
 
 
@@ -13,16 +12,12 @@ class PredicateChunker(ChunkerInterface):
         result: List[DiffChunk] = []
 
         for chunk in diff_chunks:
-            if not isinstance(chunk, StandardDiffChunk):
-                result.append(chunk)
-                continue
-
             # Split into atomic chunks first
-            atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
+            atomic_chunks = chunk.split_into_atomic_chunks()
 
             # Group atomic chunks based on predicate
-            current_group: List[StandardDiffChunk] = []
-            separator_group: List[StandardDiffChunk] = []
+            current_group: List[DiffChunk] = []
+            separator_group: List[DiffChunk] = []
 
             for atomic_chunk in atomic_chunks:
                 # Check if any line in the atomic chunk matches the predicate
@@ -79,7 +74,7 @@ class PredicateChunker(ChunkerInterface):
                 else:
                     result.append(
                         CompositeDiffChunk(
-                            chunks=current_group, _file_path=chunk._file_path
+                            chunks=current_group, file_path=chunk._file_path
                         )
                     )
 

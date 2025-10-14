@@ -1,5 +1,5 @@
 from typing import List
-from ..data.models import DiffChunk
+from ..data.diff_chunk import DiffChunk
 
 
 class SimpleChunker:

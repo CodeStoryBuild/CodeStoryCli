@@ -3,12 +3,11 @@ Deterministic test helpers for predictable end-to-end testing.
 """
 
 from typing import List
-from dataclasses import dataclass
 from vibe.core.chunker.interface import ChunkerInterface
-from vibe.core.grouper.interface import GrouperInterface
+from vibe.core.grouper.interface import GrouperInterface, Groupable
 from vibe.core.data.diff_chunk import DiffChunk
-from vibe.core.data.s_diff_chunk import StandardDiffChunk
-from vibe.core.data.models import CommitGroup, Addition, Removal
+from vibe.core.data.models import CommitGroup
+from vibe.core.data.line_changes import Addition, Removal
 
 
 class DeterministicChunker(ChunkerInterface):
@@ -51,18 +50,10 @@ class DeterministicChunker(ChunkerInterface):
         Split a chunk into atomic chunks, then group them for testing.
         Uses the split_into_atomic_chunks method from ChunkerInterface.
         """
-        from vibe.core.chunker.interface import ChunkerInterface
         from vibe.core.data.c_diff_chunk import CompositeDiffChunk
 
-        if not isinstance(chunk, StandardDiffChunk):
-            # only split standard diff chunks, not renames
-            return [chunk]
-
-        if not chunk.parsed_content:
-            return [chunk]
-
         # Split into atomic chunks
-        atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
+        atomic_chunks = chunk.split_into_atomic_chunks()
 
         if not atomic_chunks:
             return [chunk]
@@ -107,7 +98,7 @@ class DeterministicGrouper(GrouperInterface):
         self.max_chunks_per_group = max_chunks_per_group
 
     def group_chunks(
-        self, chunks: List[DiffChunk], message: str, on_progress=None
+        self, chunks: List[Groupable], message: str, on_progress=None
     ) -> List[CommitGroup]:
         """
         Group chunks deterministically for predictable testing.
@@ -120,12 +111,12 @@ class DeterministicGrouper(GrouperInterface):
         else:
             return self._group_by_content_patterns(chunks)
 
-    def _group_by_file(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
+    def _group_by_file(self, chunks: List[Groupable]) -> List[CommitGroup]:
         """Group chunks by file path."""
         file_groups = {}
 
         for chunk in chunks:
-            file_path = chunk.file_path()
+            file_path = chunk.canonical_path()
 
             if file_path not in file_groups:
                 file_groups[file_path] = []
@@ -148,7 +139,7 @@ class DeterministicGrouper(GrouperInterface):
                     CommitGroup(
                         chunks=current_chunks,
                         group_id=f"g{group_counter}",
-                        commmit_message=commit_message,
+                        commit_message=commit_message,
                         extended_message=f"Deterministic group {group_counter} for {file_path}",
                     )
                 )
@@ -156,9 +147,7 @@ class DeterministicGrouper(GrouperInterface):
 
         return groups
 
-    def _group_by_content_patterns(
-        self, chunks: List[StandardDiffChunk]
-    ) -> List[CommitGroup]:
+    def _group_by_content_patterns(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
         """Group chunks by content patterns for more complex testing."""
         groups = []
         group_counter = 1
@@ -170,7 +159,7 @@ class DeterministicGrouper(GrouperInterface):
         other_chunks = []
 
         for chunk in chunks:
-            content = chunk.format_json().lower()
+            content = "\n".join(line.content.lower() for line in chunk.parsed_content)
             if any(keyword in content for keyword in ["feature", "add", "new"]):
                 feature_chunks.append(chunk)
             elif any(keyword in content for keyword in ["refactor", "rename", "move"]):
@@ -198,7 +187,7 @@ class DeterministicGrouper(GrouperInterface):
                         CommitGroup(
                             chunks=current_chunks,
                             group_id=f"g{group_counter}",
-                            commmit_message=base_message,
+                            commit_message=base_message,
                             extended_message=f"Deterministic {base_message.lower()} group {group_counter}",
                         )
                     )
@@ -208,17 +197,13 @@ class DeterministicGrouper(GrouperInterface):
 
     def _determine_action(self, chunks: List[DiffChunk]) -> str:
         """Determine the primary action for a group of chunks."""
-        from vibe.core.data.r_diff_chunk import RenameDiffChunk
-        from vibe.core.data.empty_file_chunk import EmptyFileAdditionChunk
-        from vibe.core.data.file_deletion_chunk import FileDeletionChunk
-
-        if any(isinstance(chunk, RenameDiffChunk) for chunk in chunks):
+        if any(chunk.is_file_rename for chunk in chunks):
             return "Rename"
 
-        if any(isinstance(chunk, EmptyFileAdditionChunk) for chunk in chunks):
+        if any(chunk.is_file_addition for chunk in chunks):
             return "Add"
 
-        if any(isinstance(chunk, FileDeletionChunk) for chunk in chunks):
+        if any(chunk.is_file_deletion for chunk in chunks):
             return "Remove"
 
         additions = sum(
