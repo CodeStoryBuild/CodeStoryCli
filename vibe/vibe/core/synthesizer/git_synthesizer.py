@@ -117,8 +117,12 @@ class GitSynthesizer:
                             old_path=old_file_path, new_path=new_file_path
                         )
                     )
-                    patch_lines.append("rename from {old_path}".format(old_path=old_file_path))
-                    patch_lines.append("rename to {new_path}".format(new_path=new_file_path))
+                    patch_lines.append(
+                        "rename from {old_path}".format(old_path=old_file_path)
+                    )
+                    patch_lines.append(
+                        "rename to {new_path}".format(new_path=new_file_path)
+                    )
                 elif single_chunk.is_file_deletion:
                     patch_lines.append(
                         "diff --git a/{file_path} b/{file_path}".format(
@@ -126,7 +130,9 @@ class GitSynthesizer:
                         )
                     )
                     patch_lines.append(
-                        "deleted file mode {mode}".format(mode=single_chunk.file_mode or "100644")
+                        "deleted file mode {mode}".format(
+                            mode=single_chunk.file_mode or "100644"
+                        )
                     )
                 elif single_chunk.is_file_addition:
                     patch_lines.append(
@@ -135,7 +141,9 @@ class GitSynthesizer:
                         )
                     )
                     patch_lines.append(
-                        "new file mode {mode}".format(mode=single_chunk.file_mode or "100644")
+                        "new file mode {mode}".format(
+                            mode=single_chunk.file_mode or "100644"
+                        )
                     )
                 elif single_chunk.is_standard_modification:
                     patch_lines.append(
