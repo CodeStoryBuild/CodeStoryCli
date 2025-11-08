@@ -1,5 +1,9 @@
 import typer
+from rich.console import Console
+from loguru import logger
+
 from vibe.core.context.commit_init import createPipeline
+from vibe.core.logging.logging import setup_logger
 
 
 # Define the main commit command
@@ -12,6 +16,15 @@ def main(
     Commits changes with AI-powered messages.
     """
     # TODO proper repo check first
+    console = Console()
+    setup_logger("commit", console)
+
+    logger.info(
+        "Commit command invoked: target={target} message_present={mp}",
+        target=target,
+        mp=message is not None,
+    )
+
     repo_path = "."
-    runner = createPipeline(repo_path, target)
+    runner = createPipeline(repo_path, target, console)
     runner.run(target, message)

@@ -65,6 +65,9 @@ class DiffChunk(Groupable):
 
     # the file mode from git diff (e.g., '100644', '100755')
     file_mode: Optional[str] = None
+    # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
+    contains_newline_marker: bool = False
+
     # the structured content of this chunk (list of Addition/Removal objects)
     parsed_content: Optional[List[Union[Addition, Removal]]] = None
 
@@ -155,7 +158,11 @@ class DiffChunk(Groupable):
             final_chunks = []
             for line in self.parsed_content:
                 sub_chunk = self.from_parsed_content_slice(
-                    self.old_file_path, self.new_file_path, self.file_mode, [line]
+                    self.old_file_path,
+                    self.new_file_path,
+                    self.file_mode,
+                    self.contains_newline_marker,
+                    [line],
                 )
                 final_chunks.append(sub_chunk)
             return final_chunks
@@ -185,6 +192,7 @@ class DiffChunk(Groupable):
                         self.old_file_path,
                         self.new_file_path,
                         self.file_mode,
+                        self.contains_newline_marker,
                         chunk_content,
                     )
                 else:  # Removal
@@ -192,6 +200,7 @@ class DiffChunk(Groupable):
                         self.old_file_path,
                         self.new_file_path,
                         self.file_mode,
+                        self.contains_newline_marker,
                         chunk_content,
                     )
             else:
@@ -200,6 +209,7 @@ class DiffChunk(Groupable):
                     self.old_file_path,
                     self.new_file_path,
                     self.file_mode,
+                    self.contains_newline_marker,
                     chunk_content,
                 )
 
@@ -217,6 +227,8 @@ class DiffChunk(Groupable):
         current_old_line = hunk.old_start
         current_new_line = hunk.new_start
 
+        contains_newline_marker = False
+
         for line in hunk.hunk_lines:
             if line.startswith("+"):
                 parsed_content.append(
@@ -229,10 +241,7 @@ class DiffChunk(Groupable):
                 )
                 current_old_line += 1
             elif line.strip() == "\\ No newline at end of file":
-                # will always be at the end of the diff (so put a large line number)
-                parsed_content.append(
-                    Addition(content=line.strip(), line_number=current_new_line)
-                )
+                contains_newline_marker = True
 
         return cls(
             new_file_path=hunk.new_file_path,
@@ -241,6 +250,7 @@ class DiffChunk(Groupable):
             parsed_content=parsed_content,
             old_start=hunk.old_start,
             new_start=hunk.new_start,
+            contains_newline_marker=contains_newline_marker,
         )
 
     @classmethod
@@ -249,6 +259,7 @@ class DiffChunk(Groupable):
         old_file_path: str,
         new_file_path: str,
         file_mode: str,
+        contains_newline_marker: bool,
         parsed_slice: List[Union[Addition, Removal]],
     ) -> "DiffChunk":
         """
@@ -280,6 +291,7 @@ class DiffChunk(Groupable):
             old_file_path=old_file_path,
             new_file_path=new_file_path,
             file_mode=file_mode,
+            contains_newline_marker=contains_newline_marker,
             parsed_content=parsed_slice,
             old_start=old_start,
             new_start=new_start,

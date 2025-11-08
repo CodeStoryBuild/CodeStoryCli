@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, List, Tuple
 from ..git_interface.interface import GitInterface
+from loguru import logger
 
 
 class DetachedHeadError(Exception):
@@ -44,19 +45,21 @@ class BranchSaver:
         # check that not a detached branch
         if not original_branch:
             msg = "Cannot backup: currently on a detached HEAD."
-            print(msg)
+            logger.error(msg)
             raise DetachedHeadError(msg)
 
         # check if branch is empty
         head_commit = (self._run(["rev-parse", "HEAD"]) or "").strip()
         if not head_commit:
-            print(f"Branch '{original_branch}' is empty: creating initial empty commit")
+            logger.info(
+                f"Branch '{original_branch}' is empty: creating initial empty commit"
+            )
             self._run(["commit", "--allow-empty", "-m", "Initial commit"])
 
         backup_branch = f"{self.BACKUP_PREFIX}{original_branch}"
         old_commit_hash = (self._run(["rev-parse", "HEAD"]) or "").strip()
 
-        print(f"{backup_branch=}")
+        logger.debug(f"Creating/Updating backup branch name={backup_branch}")
 
         # Create or update the backup branch to point to the current branch's HEAD
         self._run(["branch", "-f", backup_branch, original_branch])
@@ -93,13 +96,13 @@ class BranchSaver:
         original_branch = (self._run(["branch", "--show-current"]) or "").strip()
         if not original_branch:
             msg = "Cannot restore: currently on a detached HEAD."
-            print(msg)
+            logger.error(msg)
             raise DetachedHeadError(msg)
 
         backup_branch = f"{self.BACKUP_PREFIX}{original_branch}"
 
         if not self._branch_exists(backup_branch):
-            print(f"No backup branch found for {original_branch}")
+            logger.warning(f"No backup branch found for {original_branch}")
             return False
 
         try:
@@ -124,5 +127,5 @@ class BranchSaver:
             return True
 
         except Exception as e:
-            print(f"Failed to restore from backup: {e}")
+            logger.error(f"Failed to restore from backup: {e}")
             return False

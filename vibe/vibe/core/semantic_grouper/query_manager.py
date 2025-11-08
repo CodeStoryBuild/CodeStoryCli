@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from importlib.resources.abc import Traversable
 import json
 from typing import Dict, List, Tuple
+from loguru import logger
 
 from tree_sitter import Query, QueryCursor, Node
 from tree_sitter_language_pack import get_language
@@ -84,6 +85,25 @@ class QueryManager:
         )
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
         self._cursor_cache: Dict[str, Tuple[Query, QueryCursor]] = {}
+
+        # Log language configuration summary
+        lang_summaries = {}
+        for name, cfg in self.language_configs.items():
+            shared_classes = len(cfg.shared_token_queries)
+            shared_filters = sum(
+                len(v.token_filters) for v in cfg.shared_token_queries.values()
+            )
+            scope_count = len(cfg.scope_queries.queries)
+            lang_summaries[name] = {
+                "shared_classes": shared_classes,
+                "shared_filters": shared_filters,
+                "scope_queries": scope_count,
+            }
+        logger.info(
+            "Language config loaded: languages={n} details={details}",
+            n=len(self.language_configs),
+            details=lang_summaries,
+        )
 
     def _init_configs(
         self, language_config_path: Traversable

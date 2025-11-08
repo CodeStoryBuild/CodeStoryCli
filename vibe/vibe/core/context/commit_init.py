@@ -44,9 +44,7 @@ def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
     return True
 
 
-def createPipeline(repo_path: str, target: str):
-    console = Console()
-
+def createPipeline(repo_path: str, target: str, console: Console):
     git_interface = SubprocessGitInterface(repo_path)
     commands = GitCommands(git_interface)
 
