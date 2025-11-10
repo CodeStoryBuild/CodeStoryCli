@@ -62,7 +62,7 @@ class LangChainGrouper(LogicalGrouper):
         for i, chunk in enumerate(chunks):
             # Get the JSON representation of the chunk
             data = {}
-            change = json.loads(chunk.format_json())
+            change = chunk.format_json()
             data["change"] = change
             # Add a unique ID for reference
             data["chunk_id"] = str(i)
