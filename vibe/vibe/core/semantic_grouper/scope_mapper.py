@@ -20,7 +20,11 @@ class ScopeMapper:
         self.query_manager = query_manager
 
     def build_scope_map(
-        self, language_name: str, root_node: Node, file_name: str
+        self,
+        language_name: str,
+        root_node: Node,
+        file_name: str,
+        line_ranges: list[tuple[int, int]],
     ) -> ScopeMap:
         """
         PASS 1: Traverses the AST to build a map of line numbers to their scope.
@@ -29,6 +33,7 @@ class ScopeMapper:
             language_name: The programming language (e.g., "python", "javascript")
             root_node: The root node of the parsed AST
             file_name: Name of the file being processed (for debugging/context)
+            line_ranges: list of tuples (start_line, end_line), to filter the tree sitter queries for a file
 
         Returns:
             ScopeMap containing the mapping of line numbers to scope names
@@ -42,7 +47,7 @@ class ScopeMapper:
 
         # Run scope queries using the query manager
         scope_captures = self.query_manager.run_query(
-            language_name, root_node, is_scope_query=True
+            language_name, root_node, query_type="scope", line_ranges=line_ranges
         )
 
         # Extract scope nodes from captures

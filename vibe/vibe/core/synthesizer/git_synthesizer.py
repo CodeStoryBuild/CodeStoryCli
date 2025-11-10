@@ -12,7 +12,6 @@ from ..git_interface.interface import GitInterface
 from ..data.models import CommitGroup, CommitResult
 from ..data.diff_chunk import DiffChunk
 from ..data.line_changes import Addition, Removal
-from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..commands.git_const import DEVNULL
 
 
@@ -207,52 +206,58 @@ class GitSynthesizer:
                     key=lambda c: c.line_anchor,
                 )
 
-                if single_chunk.is_file_addition:
-                    # file additions are handled differently
-                    # since they are a new file, we need to merge all chunks into a new contigous hunk
-                    additions = []
-                    for sorted_chunk in sorted_file_chunks:
-                        additions.extend(sorted_chunk.parsed_content)
+                merged = self.merge_continous_same_type(sorted_file_chunks)
 
-                    hunk_header = f"@@ -{0},{0} +{1},{len(additions)} @@"
+                # if single_chunk.is_file_addition:
+                #     # file additions are handled differently
+                #     # since they are a new file, we need to merge all chunks into a new contigous hunk
+                #     additions = []
+                #     for sorted_chunk in sorted_file_chunks:
+                #         additions.extend(sorted_chunk.parsed_content)
+
+                #     hunk_header = f"@@ -{0},{0} +{1},{len(additions)} @@"
+                #     patch_lines.append(hunk_header)
+
+                #     for item in additions:
+                #         patch_lines.append(f"+{item.content}")
+
+                #     # you might hit edge case where it was an empty addition
+                #     # then the newline_marker_rem might have been marked because hit_add will never be true (in diff_chunk.py::from_hunk)
+                #     if single_chunk.contains_newline_fallback:
+                #         patch_lines.append("\\ No newline at end of file")
+                #         terminator_needed = False
+
+                # else:
+                # go over each chunk and generate the hunk headers and content
+                has_newline_fallback = False
+
+                for sorted_chunk in merged:
+                    removals = [
+                        p for p in sorted_chunk.parsed_content if isinstance(p, Removal)
+                    ]
+                    additions = [
+                        p
+                        for p in sorted_chunk.parsed_content
+                        if isinstance(p, Addition)
+                    ]
+
+                    old_len = len(removals)
+                    new_len = len(additions)
+
+                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@"
                     patch_lines.append(hunk_header)
 
-                    for item in additions:
-                        patch_lines.append(f"+{item.content}")
+                    for removal in removals:
+                        patch_lines.append(f"-{removal.content}")
 
-                    if single_chunk.contains_newline_marker:
-                        patch_lines.append("\\ No newline at end of file")
-                        terminator_needed = False
+                    for addition in additions:
+                        patch_lines.append(f"+{addition.content}")
 
-                else:
-                    # go over each chunk and generate the hunk headers and content
-                    for sorted_chunk in sorted_file_chunks:
-                        removals = [
-                            p
-                            for p in sorted_chunk.parsed_content
-                            if isinstance(p, Removal)
-                        ]
-                        additions = [
-                            p
-                            for p in sorted_chunk.parsed_content
-                            if isinstance(p, Addition)
-                        ]
+                    has_newline_fallback |= sorted_chunk.contains_newline_fallback
 
-                        old_len = len(removals)
-                        new_len = len(additions)
-
-                        hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@"
-                        patch_lines.append(hunk_header)
-
-                        for item in sorted_chunk.parsed_content:
-                            if isinstance(item, Removal):
-                                patch_lines.append(f"-{item.content}")
-                            elif isinstance(item, Addition):
-                                patch_lines.append(f"+{item.content}")
-
-                        if sorted_chunk.contains_newline_marker:
-                            patch_lines.append("\\ No newline at end of file")
-                            terminator_needed = False
+                if has_newline_fallback:
+                    patch_lines.append("\\ No newline at end of file")
+                    terminator_needed = False
 
             patches[file_path] = "\n".join(patch_lines) + (
                 "\n" if terminator_needed else ""
@@ -264,6 +269,67 @@ class GitSynthesizer:
             )
 
         return patches
+
+    def merge_continous_same_type(self, sorted_chunks: list[DiffChunk]):
+        new_chunks = []
+        for chunk in sorted_chunks:
+            sig = 1 if chunk.pure_addition() else (-1 if chunk.pure_deletion() else 0)
+            if new_chunks:
+                last, last_sig = new_chunks[-1]
+                if sig != 0 and sig == last_sig:
+                    # both "pure the same something"
+                    # check if they are continous
+                    if sig == 1:
+                        new_range = (
+                            chunk.new_start,
+                            chunk.new_start + chunk.new_len() - 1,
+                        )
+                        last_range = (
+                            last.new_start,
+                            last.new_start + last.new_len() - 1,
+                        )
+                    else:
+                        new_range = (
+                            chunk.old_start,
+                            chunk.old_start + chunk.old_len() - 1,
+                        )
+                        last_range = (
+                            last.old_start,
+                            last.old_start + last.old_len() - 1,
+                        )
+
+                    last_start, last_end = last_range
+                    new_start, new_end = new_range
+
+                    if last_end + 1 == new_start:
+                        # adjacent
+                        new_chunk = self.merge_two_single_type_chunks(last, chunk)
+                        new_chunks[-1] = (new_chunk, sig)
+                    elif last_end > new_start:
+                        # overlapping, this is something that should not happen
+                        logger.error(
+                            f"Overlapping chunks! chunk1:{last} chunk2:{chunk}"
+                        )
+                    else:
+                        # just a regular non-neighbor chunk
+                        new_chunks.append((chunk, sig))
+            else:
+                new_chunks.append((chunk, sig))
+
+        return [chunk for (chunk, _) in new_chunks]
+
+    def merge_two_single_type_chunks(self, old: "DiffChunk", new: "DiffChunk"):
+        return DiffChunk(
+            old_file_path=old.old_file_path,
+            new_file_path=old.new_file_path,
+            file_mode=old.file_mode,
+            contains_newline_fallback=old.contains_newline_fallback
+            or new.contains_newline_fallback,
+            contains_newline_marker_rem=old.contains_newline_marker_rem,
+            parsed_content=old.parsed_content + new.parsed_content,
+            old_start=old.old_start,
+            new_start=old.new_start,
+        )
 
     def _build_tree_from_changes(
         self,

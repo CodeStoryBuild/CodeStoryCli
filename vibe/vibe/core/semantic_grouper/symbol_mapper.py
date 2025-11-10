@@ -20,7 +20,11 @@ class SymbolMapper:
         self.query_manager = query_manager
 
     def build_symbol_map(
-        self, language_name: str, root_node: Node, scope_map: ScopeMap
+        self,
+        language_name: str,
+        root_node: Node,
+        defined_symbols: set[str],
+        line_ranges: list[tuple[int, int]],
     ) -> SymbolMap:
         """
         PASS 2: Builds a map of line numbers to their fully-qualified symbols.
@@ -29,13 +33,17 @@ class SymbolMapper:
             language_name: The programming language (e.g., "python", "javascript")
             root_node: The root node of the parsed AST
             scope_map: The scope map containing line-to-scope mappings
+            line_ranges: list of tuples (start_line, end_line), to filter the tree sitter queries for a file
 
         Returns:
             SymbolMap containing the mapping of line numbers to qualified symbols
         """
         # Run symbol queries using the query manager
         symbol_captures = self.query_manager.run_query(
-            language_name, root_node, is_scope_query=False
+            language_name,
+            root_node,
+            query_type="token_general",
+            line_ranges=line_ranges,
         )
 
         line_symbols_mut: Dict[int, Set[str]] = {}
@@ -43,19 +51,18 @@ class SymbolMapper:
         # Process each captured symbol
         for match_class, nodes in symbol_captures.items():
             for node in nodes:
-                text = node.text.decode("utf8", errors="replace")
                 start_line = node.start_point[0]
 
-                # Get scope name for this line
-                scope_name = scope_map.scope_lines.get(start_line)
+                text = node.text.decode("utf8", errors="replace")
 
-                # TODO work on making signature creation more customizable
-                # for example, should we require matching scopes for shared symbols,
-                # probably not, but maybe in certain cases
-                # qualified_symbol = f"{scope_name}:{match_class}:{text}"
-                qualified_symbol = f"{match_class}:{text}"
+                qualified_symbol = QueryManager.create_qualified_symbol(
+                    match_class, text
+                )
 
-                # Add the qualified symbol to the line's symbol set
-                line_symbols_mut.setdefault(start_line, set()).add(qualified_symbol)
+                if qualified_symbol in defined_symbols:
+                    # we can group on this symbol
+
+                    # Add the qualified symbol to the line's symbol set
+                    line_symbols_mut.setdefault(start_line, set()).add(qualified_symbol)
 
         return SymbolMap(line_symbols=line_symbols_mut)

@@ -1,29 +1,29 @@
 {
     "python": {
         "shared_token_queries": {
-            "function_class": {
-                "queries":[
-                    "function_definition name: (identifier)",
-                    "call function: (identifier)"
+            "identifier_class": {
+                "general_queries":[
+                    "((identifier) @placeholder)"
                 ],
-                "filters": ["print"]
-            }
-            ,
-            "class_class": [
-                    "class_definition name: (identifier)"
-                ],
-            "variable_class": [
-                    "assignment left: (identifier)",
-                    "attribute object: (identifier)"
+                "definition_queries": [
+                    "(assignment left: (identifier) @placeholder)",
+                    "(class_definition name: (identifier) @placeholder)",
+                    "(function_definition name: (identifier) @placeholder)",
+                    "(import_statement name: (dotted_name) @placeholder)",
+                    "(import_from_statement name: (dotted_name) @placeholder)",
+                    "(import_from_statement name: (aliased_import (identifier) @placeholder))",
+                    "(for_statement left: (identifier) @placeholder)",
+                    "(assignment left: (pattern_list (identifier) @placeholder))",
+                    "(assignment left: (tuple_pattern (identifier) @placeholder))"
                 ]
+            }
         },
         "scope_queries": [
-                "(function_definition)",
-                "(class_definition)"
+                "((function_definition) @placeholder)",
+                "((class_definition) @placeholder)"
             ]
         ,
-        "metadata": {
-            "ignore_nodes": ["comment", "string"]
-        }
+        "comment_queries": ["((comment) @placeholder)"],
+        "share_tokens_between_files": "False"
     }
 }

@@ -67,14 +67,9 @@ class SemanticGrouper:
             return [CompositeDiffChunk(chunks=chunks)]
 
         # Step 2: Build analysis contexts using ContextManager
-        try:
-            context_manager = ContextManager(
-                self.file_parser, self.file_reader, self.query_manager, diff_chunks
-            )
-        except Exception as e:
-            # If context building fails completely, put everything in fallback
-            logger.warning(f"Context building failed, using fallback group: {e}")
-            return [CompositeDiffChunk(chunks=chunks)]
+        context_manager = ContextManager(
+            self.file_parser, self.file_reader, self.query_manager, diff_chunks
+        )
 
         # Step 3: Generate signatures for each chunk
         chunk_signatures = self._generate_chunk_signatures(chunks, context_manager)
@@ -344,8 +339,8 @@ class SemanticGrouper:
         symbols = set()
 
         if start_line < 1 or end_line < start_line:
-            # Invalid line range
-            raise ValueError("Invalid line range!")
+            # Invalid line range (eg empty hunk)
+            return (symbols, None)
 
         # Convert from 1-indexed chunks to 0-indexed scope/symbol maps
         # Get scope from the first line (LCA scope)
@@ -356,7 +351,7 @@ class SemanticGrouper:
         )
         logger.debug(f"symbol_map snapshot: {context.symbol_map}")
 
-        # Collect symbols from all lines in the range
+        # Collect symbols from fall lines in the range
         for line in range(start_line, end_line + 1):
             # Convert 1-indexed line to 0-indexed for map access
             zero_indexed_line = line - 1
