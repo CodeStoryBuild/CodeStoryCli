@@ -313,6 +313,8 @@ class GitSynthesizer:
                     else:
                         # just a regular non-neighbor chunk
                         new_chunks.append((chunk, sig))
+                else:
+                    new_chunks.append((chunk, sig))
             else:
                 new_chunks.append((chunk, sig))
 
