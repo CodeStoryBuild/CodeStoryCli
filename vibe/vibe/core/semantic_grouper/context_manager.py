@@ -231,9 +231,7 @@ class ContextManager:
                 self._shared_context_cache[language] = context
             # TODO change all these to custom subclassed exceptions
             except Exception as e:
-                logger.warning(
-                    f"Failed to build shared context for {language}: {e}"
-                )
+                logger.warning(f"Failed to build shared context for {language}: {e}")
 
     def _build_all_contexts(self) -> None:
         """

@@ -33,7 +33,9 @@ class SemanticGrouper:
     fallback group for safety.
     """
 
-    def group_chunks(self, chunks: List[Chunk], context_manager : ContextManager) -> List[CompositeDiffChunk]:
+    def group_chunks(
+        self, chunks: List[Chunk], context_manager: ContextManager
+    ) -> List[CompositeDiffChunk]:
         """
         Group chunks semantically based on overlapping symbol signatures.
 
@@ -48,7 +50,6 @@ class SemanticGrouper:
         """
         if not chunks:
             return []
-
 
         # Step 2: Generate signatures for each chunk
         chunk_signatures = self._generate_chunk_signatures(chunks, context_manager)
@@ -172,7 +173,7 @@ class SemanticGrouper:
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
                 return None
-        
+
         logger.debug(f"{total_signature=} {total_scope=} {diff_chunks=}")
 
         return (total_signature, total_scope)
@@ -231,7 +232,7 @@ class SemanticGrouper:
         chunk_scope = set()
 
         if diff_chunk.is_standard_modification:
-            
+
             # For modifications, analyze both old and new line ranges
             file_path = diff_chunk.canonical_path()
 
@@ -319,18 +320,18 @@ class SemanticGrouper:
             return (range_symbols, range_scope)
 
         # convert to zero indexed
-        start_index = start_line-1
-        end_index = end_line-1
+        start_index = start_line - 1
+        end_index = end_line - 1
 
         # Collect symbols from fall lines in the range
         for line in range(start_index, end_index + 1):
             line_symbols = context.symbol_map.line_symbols.get(line)
-            
+
             if line_symbols:
                 range_symbols.update(line_symbols)
 
             scopes = context.scope_map.scope_lines.get(line)
-            
+
             if scopes:
                 range_scope.update(scopes)
 

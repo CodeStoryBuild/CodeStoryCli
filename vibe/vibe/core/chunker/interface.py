@@ -29,5 +29,7 @@ from ..semantic_grouper.context_manager import ContextManager
 
 class MechanicalChunker(ABC):
     @abstractmethod
-    def chunk(self, diff_chunks: List[Chunk], context_manager : ContextManager) -> List[Chunk]:
+    def chunk(
+        self, diff_chunks: List[Chunk], context_manager: ContextManager
+    ) -> List[Chunk]:
         """Split hunks into smaller chunks or sub-hunks"""

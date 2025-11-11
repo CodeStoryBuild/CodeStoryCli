@@ -10,18 +10,18 @@ def test_pure_comment_lines_python():
     # Arrange: sample Python content with various comment patterns
     content = "\n".join(
         [
-            "# top-level comment",          # 0: pure comment
-            "x = 1  # inline comment",      # 1: not pure
-            "   # indented comment",        # 2: pure comment
-            "",                              # 3: empty -> not counted
-            "def f(): pass",                # 4: code
-            "    # inside function",        # 5: pure comment
-            "    pass  # trailing",         # 6: not pure
-            "# multi 1",                    # 7: pure comment
-            "# multi 2",                    # 8: pure comment
-            "\"\"\"",                    # 9: pure comment
-            "# multi 2",                    # 10: pure comment (double match)
-            "\"\"\"",                    # 11: pure comment
+            "# top-level comment",  # 0: pure comment
+            "x = 1  # inline comment",  # 1: not pure
+            "   # indented comment",  # 2: pure comment
+            "",  # 3: empty -> not counted
+            "def f(): pass",  # 4: code
+            "    # inside function",  # 5: pure comment
+            "    pass  # trailing",  # 6: not pure
+            "# multi 1",  # 7: pure comment
+            "# multi 2",  # 8: pure comment
+            '"""',  # 9: pure comment
+            "# multi 2",  # 10: pure comment (double match)
+            '"""',  # 11: pure comment
         ]
     )
 
