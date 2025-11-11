@@ -3,6 +3,7 @@ from importlib.resources import files
 import inquirer
 from rich.console import Console
 
+
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
