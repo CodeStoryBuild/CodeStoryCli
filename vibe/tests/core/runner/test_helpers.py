@@ -4,9 +4,10 @@ Deterministic test helpers for predictable end-to-end testing.
 
 from typing import List
 from vibe.core.chunker.interface import MechanicalChunker
-from vibe.core.grouper.interface import LogicalGrouper, Groupable
+from vibe.core.grouper.interface import LogicalGrouper
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.models import CommitGroup
+from vibe.core.data.chunk import Chunk
 from vibe.core.data.line_changes import Addition, Removal
 
 
@@ -96,7 +97,7 @@ class DeterministicGrouper(LogicalGrouper):
         self.max_chunks_per_group = max_chunks_per_group
 
     def group_chunks(
-        self, chunks: List[Groupable], message: str, on_progress=None
+        self, chunks: List[Chunk], message: str, on_progress=None
     ) -> List[CommitGroup]:
         """
         Group chunks deterministically for predictable testing.
@@ -109,7 +110,7 @@ class DeterministicGrouper(LogicalGrouper):
         else:
             return self._group_by_content_patterns(chunks)
 
-    def _group_by_file(self, chunks: List[Groupable]) -> List[CommitGroup]:
+    def _group_by_file(self, chunks: List[Chunk]) -> List[CommitGroup]:
         """Group chunks by file path."""
         file_groups = {}
 

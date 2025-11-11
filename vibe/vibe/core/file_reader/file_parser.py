@@ -9,7 +9,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class ParsedFile:
     """Contains the parsed AST root and detected language for a file."""
-
+    content_bytes: bytes
     root_node: Node
     detected_language: str
     line_ranges: list[tuple[int, int]]
@@ -83,6 +83,7 @@ class FileParser:
             root_node = tree.root_node
 
             return ParsedFile(
+                content_bytes=content_bytes,
                 root_node=root_node,
                 detected_language=detected_language,
                 line_ranges=line_ranges,

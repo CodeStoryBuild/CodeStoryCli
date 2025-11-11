@@ -23,7 +23,6 @@ class Chunk(Protocol):
 
     def get_chunks(self) -> list[DiffChunk]:
         """
-        List of hunk ranges this chunk covers, indexed by the canonical file path
-        Each tuple is structured (old_start, old_len, new_start, new_len)
+        Get all diff chunks inside the chunk
         """
         ...

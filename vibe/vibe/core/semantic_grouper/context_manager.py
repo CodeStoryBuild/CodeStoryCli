@@ -8,6 +8,7 @@ from vibe.core.data.diff_chunk import DiffChunk
 from .query_manager import QueryManager
 from .scope_mapper import ScopeMapper, ScopeMap
 from .symbol_mapper import SymbolMapper, SymbolMap
+from .comment_mapper import CommentMapper, CommentMap
 from .symbol_extractor import SymbolExtractor
 from loguru import logger
 
@@ -20,6 +21,7 @@ class AnalysisContext:
     parsed_file: ParsedFile
     scope_map: ScopeMap
     symbol_map: SymbolMap
+    comment_map: CommentMap
     symbols: set[str]
     is_old_version: bool
 
@@ -55,6 +57,7 @@ class ContextManager:
         self.scope_mapper = ScopeMapper(query_manager)
         self.symbol_mapper = SymbolMapper(query_manager)
         self.symbol_extractor = SymbolExtractor(query_manager)
+        self.comment_mapper = CommentMapper(query_manager)
 
         # Context storage: (file_type (language name)) -> SharedContext
         self._shared_context_cache: Dict[str, SharedContext] = {}
@@ -295,14 +298,24 @@ class ContextManager:
             parsed_file.line_ranges,
         )
 
+        comment_map = self.comment_mapper.build_comment_map(
+            parsed_file.detected_language,
+            parsed_file.root_node,
+            parsed_file.content_bytes,
+            parsed_file.line_ranges,
+        )
+
         context = AnalysisContext(
             file_path=file_path,
             parsed_file=parsed_file,
             scope_map=scope_map,
             symbol_map=symbol_map,
+            comment_map=comment_map,
             symbols=symbols,
             is_old_version=is_old_version,
         )
+
+        logger.debug(f"{context=}")
 
         return context
 

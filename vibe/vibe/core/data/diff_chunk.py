@@ -8,11 +8,10 @@ from loguru import logger
 from ..data.line_changes import Addition, Removal
 from ..data.hunk_wrapper import HunkWrapper
 from ..data.utils import format_content_json
-from ..grouper.interface import Groupable
 
 
 @dataclass(frozen=True)
-class DiffChunk(Groupable):
+class DiffChunk:
     """
     Represents a single diff chunk.
 

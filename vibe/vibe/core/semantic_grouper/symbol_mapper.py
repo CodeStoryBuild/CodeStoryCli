@@ -59,12 +59,12 @@ class SymbolMapper:
 
                 if qualified_symbol in defined_symbols:
                     start_line = node.start_point[0]
-                    end_line = node.start_point[1]
+                    end_line = node.end_point[0]
 
                     for i in range(start_line, end_line + 1):
                         # we can group on this symbol
 
                         # Add the qualified symbol to the line's symbol set
-                        line_symbols_mut.setdefault(start_line, set()).add(qualified_symbol)
+                        line_symbols_mut.setdefault(i, set()).add(qualified_symbol)
 
         return SymbolMap(line_symbols=line_symbols_mut)

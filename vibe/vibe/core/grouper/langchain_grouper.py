@@ -5,9 +5,10 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from .interface import LogicalGrouper, Groupable
+from .interface import LogicalGrouper
 from ..data.models import CommitGroup, ProgressCallback
 from ..data.utils import flatten_diff_chunks
+from ..data.chunk import Chunk
 
 
 class ChangeGroup(BaseModel):
@@ -16,7 +17,7 @@ class ChangeGroup(BaseModel):
     group_id: str
     commit_message: str
     extended_message: Optional[str]
-    changes: List[str]  # List of chunk IDs that belong to this group
+    changes: List[int]  # List of chunk IDs that belong to this group
     description: Optional[str]  # Brief description of why these changes are grouped
 
 
@@ -56,25 +57,26 @@ class LangChainGrouper(LogicalGrouper):
         self.chat_model = chat_model
         self.output_parser = PydanticOutputParser(pydantic_object=GroupingResponse)
 
-    def _prepare_changes(self, chunks: List[Groupable]) -> str:
+    def _prepare_changes(self, chunks: List[Chunk]) -> str:
         """Convert chunks to a structured format for LLM analysis."""
+        total_chunks = self.get_total_chunks_per_file(chunks)
         changes = []
         for i, chunk in enumerate(chunks):
             # Get the JSON representation of the chunk
             data = {}
-            change = chunk.format_json()
+            change = self.get_descriptive_patch(chunk, total_chunks)
             data["change"] = change
             # Add a unique ID for reference
-            data["chunk_id"] = str(i)
+            data["chunk_id"] = i
             changes.append(data)
         return json.dumps({"changes": changes}, indent=2)
 
     def _create_commit_groups(
-        self, response: GroupingResponse, chunks: List[Groupable]
+        self, response: GroupingResponse, chunks: List[Chunk]
     ) -> List[CommitGroup]:
         """Convert LLM's response into CommitGroup objects."""
         # Create a lookup map for chunks
-        chunk_map = {str(i): chunk for i, chunk in enumerate(chunks)}
+        chunk_map = {i: chunk for i, chunk in enumerate(chunks)}
 
         commit_groups = []
         for group in response.groups:
@@ -119,7 +121,7 @@ class LangChainGrouper(LogicalGrouper):
 
     def group_chunks(
         self,
-        chunks: List[Groupable],
+        chunks: List[Chunk],
         message: str,
         on_progress: Optional[ProgressCallback] = None,
     ) -> List[CommitGroup]:
@@ -127,7 +129,7 @@ class LangChainGrouper(LogicalGrouper):
         Group chunks using LangChain chat model to analyze intentions and relationships.
 
         Args:
-            chunks: List of Groupable objects to analyze and group
+            chunks: List of Chunk objects to analyze and group
             message: Optional user guidance message
             on_progress: Optional callback for progress updates
 

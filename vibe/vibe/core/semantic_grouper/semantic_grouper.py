@@ -6,9 +6,9 @@ from vibe.core.data.chunk import Chunk
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
 from vibe.core.file_reader.protocol import FileReader
+from .query_manager import QueryManager
 from vibe.core.file_reader.file_parser import FileParser
 from .context_manager import ContextManager, AnalysisContext
-from .query_manager import QueryManager
 from .union_find import UnionFind
 from loguru import logger
 
@@ -33,17 +33,7 @@ class SemanticGrouper:
     fallback group for safety.
     """
 
-    def __init__(
-        self,
-        file_parser: FileParser,
-        file_reader: FileReader,
-        query_manager: QueryManager,
-    ):
-        self.file_parser = file_parser
-        self.file_reader = file_reader
-        self.query_manager = query_manager
-
-    def group_chunks(self, chunks: List[Chunk]) -> List[CompositeDiffChunk]:
+    def group_chunks(self, chunks: List[Chunk], context_manager : ContextManager) -> List[CompositeDiffChunk]:
         """
         Group chunks semantically based on overlapping symbol signatures.
 
@@ -59,22 +49,11 @@ class SemanticGrouper:
         if not chunks:
             return []
 
-        # Step 1: Flatten chunks into DiffChunks
-        diff_chunks = self._flatten_chunks(chunks)
 
-        if not diff_chunks:
-            # All chunks were empty, return fallback group
-            return [CompositeDiffChunk(chunks=chunks)]
-
-        # Step 2: Build analysis contexts using ContextManager
-        context_manager = ContextManager(
-            self.file_parser, self.file_reader, self.query_manager, diff_chunks
-        )
-
-        # Step 3: Generate signatures for each chunk
+        # Step 2: Generate signatures for each chunk
         chunk_signatures = self._generate_chunk_signatures(chunks, context_manager)
 
-        # Step 4: Separate chunks that can be analyzed from those that cannot
+        # Step 3: Separate chunks that can be analyzed from those that cannot
         analyzable_chunks = []
         fallback_chunks = []
 
@@ -193,8 +172,8 @@ class SemanticGrouper:
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
                 raise RuntimeError(e)
-                return None  # Signal failure explicitly
-        print(f"{total_signature=} {total_scope=}")
+        
+        logger.debug(f"{total_signature=} {total_scope=} {diff_chunks=}")
 
         return (total_signature, total_scope)
 
@@ -336,8 +315,7 @@ class SemanticGrouper:
         range_scope = set()
 
         if start_line < 1 or end_line < start_line:
-            # Invalid line range (eg empty hunk)
-            logger.warning(f"Invalid line range with start_line({start_line}) < 1 or end_line({end_line}) < start_line({start_line})")
+            # Chunks that are pure deletions can fall into this
             return (range_symbols, range_scope)
 
         # convert to zero indexed

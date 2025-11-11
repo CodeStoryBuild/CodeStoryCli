@@ -15,8 +15,12 @@ from ..branch_saver.branch_saver import BranchSaver
 
 from ..chunker.interface import MechanicalChunker
 from ..grouper.interface import LogicalGrouper
-from ..data.models import CommitGroup, CommitResult
-from ..checks.chunk_checks import chunks_disjoint
+from ..data.models import CommitResult
+
+from ..file_reader.protocol import FileReader
+from ..file_reader.file_parser import FileParser
+from ..semantic_grouper.query_manager import QueryManager
+from ..semantic_grouper.context_manager import ContextManager
 
 from ..semantic_grouper.semantic_grouper import SemanticGrouper
 
@@ -36,6 +40,9 @@ class AIGitPipeline:
         logical_grouper: LogicalGrouper,
         synthesizer: GitSynthesizer,
         branch_saver: BranchSaver,
+        file_reader: FileReader,
+        file_parser: FileParser,
+        query_manager: QueryManager,
         original_branch: str,
         new_branch: str,
         base_commit_hash: str,
@@ -51,6 +58,9 @@ class AIGitPipeline:
 
         self.synthesizer = synthesizer
         self.branch_saver = branch_saver
+        self.file_reader = file_reader
+        self.file_parser = file_parser
+        self.query_manager = query_manager
 
         self.original_branch = original_branch
         self.new_branch = new_branch
@@ -88,12 +98,21 @@ class AIGitPipeline:
 
         # start tracking progress
         with Progress() as p:
+            # init context_manager
+            flat_chunks = [diff_chunk for chunk in raw_diff for diff_chunk in chunk.get_chunks()]
+            context_manager = ContextManager(
+                self.file_parser, self.file_reader, self.query_manager, flat_chunks
+            )
+
+
             # create smallest mechanically valid chunks
             ck = p.add_task("Creating smallest mechanical chunks...", total=1)
             t_mech0 = perf_counter()
-            mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(raw_diff)
+            mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(raw_diff, context_manager)
             t_mech1 = perf_counter()
             p.advance(ck, 1)
+
+            logger.debug(f"{mechanical_chunks=}")
 
             logger.info(
                 "Mechanical chunking summary: mechanical_chunks={count}",
@@ -107,9 +126,11 @@ class AIGitPipeline:
             # group semantically dependent chunks
             sem_grp = p.add_task("Linking semantically related chunks...", total=1)
             t_sem0 = perf_counter()
-            semantic_chunks = self.semantic_grouper.group_chunks(mechanical_chunks)
+            semantic_chunks = self.semantic_grouper.group_chunks(mechanical_chunks, context_manager)
             t_sem1 = perf_counter()
             p.advance(sem_grp, 1)
+            logger.debug(f"{semantic_chunks=}")
+
 
             logger.info(
                 "Semantic grouping summary: semantic_groups={groups}",
