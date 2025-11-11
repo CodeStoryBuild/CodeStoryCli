@@ -217,18 +217,23 @@ class ContextManager:
 
         for language, parsed_files in languages.items():
             defined_symbols: set[str] = set()
-
-            for parsed_file in parsed_files:
-                defined_symbols.update(
-                    self.symbol_extractor.extract_defined_symbols(
-                        parsed_file.detected_language,
-                        parsed_file.root_node,
-                        parsed_file.line_ranges,
+            try:
+                for parsed_file in parsed_files:
+                    defined_symbols.update(
+                        self.symbol_extractor.extract_defined_symbols(
+                            parsed_file.detected_language,
+                            parsed_file.root_node,
+                            parsed_file.line_ranges,
+                        )
                     )
-                )
 
-            context = SharedContext(defined_symbols)
-            self._shared_context_cache[language] = context
+                context = SharedContext(defined_symbols)
+                self._shared_context_cache[language] = context
+            # TODO change all these to custom subclassed exceptions
+            except Exception as e:
+                logger.warning(
+                    f"Failed to build shared context for {language}: {e}"
+                )
 
     def _build_all_contexts(self) -> None:
         """

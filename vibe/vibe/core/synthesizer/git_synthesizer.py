@@ -324,16 +324,14 @@ class GitSynthesizer:
 
     @staticmethod
     def merge_two_single_type_chunks(old: "DiffChunk", new: "DiffChunk"):
-        return DiffChunk(
+        return DiffChunk.from_parsed_content_slice(
             old_file_path=old.old_file_path,
             new_file_path=old.new_file_path,
             file_mode=old.file_mode,
             contains_newline_fallback=old.contains_newline_fallback
             or new.contains_newline_fallback,
             contains_newline_marker_rem=old.contains_newline_marker_rem,
-            parsed_content=old.parsed_content + new.parsed_content,
-            old_start=old.old_start,
-            new_start=old.new_start,
+            parsed_slice=old.parsed_content + new.parsed_content,
         )
 
     def _build_tree_from_changes(

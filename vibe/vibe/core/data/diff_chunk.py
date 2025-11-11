@@ -237,7 +237,7 @@ class DiffChunk:
         current_old_line = hunk.old_start
         current_new_line = hunk.new_start
 
-        contains_newline_marker_add = False
+        contains_newline_fallback = False
         contains_newline_marker_rem = False
 
         for line in hunk.hunk_lines:
@@ -257,7 +257,7 @@ class DiffChunk:
                         parsed_content[-1].content + "\n\\ No newline at end of file"
                     )
                 else:
-                    contains_newline_marker_add = True
+                    contains_newline_fallback = True
 
         return cls(
             new_file_path=hunk.new_file_path,
@@ -266,7 +266,7 @@ class DiffChunk:
             parsed_content=parsed_content,
             old_start=hunk.old_start,
             new_start=hunk.new_start,
-            contains_newline_fallback=contains_newline_marker_add,
+            contains_newline_fallback=contains_newline_fallback,
             contains_newline_marker_rem=contains_newline_marker_rem,
         )
 
@@ -276,7 +276,7 @@ class DiffChunk:
         old_file_path: str,
         new_file_path: str,
         file_mode: str,
-        contains_newline_marker_add: bool,
+        contains_newline_fallback: bool,
         contains_newline_marker_rem: bool,
         parsed_slice: List[Union[Addition, Removal]],
     ) -> "DiffChunk":
@@ -309,7 +309,7 @@ class DiffChunk:
             old_file_path=old_file_path,
             new_file_path=new_file_path,
             file_mode=file_mode,
-            contains_newline_fallback=contains_newline_marker_add,
+            contains_newline_fallback=contains_newline_fallback,
             contains_newline_marker_rem=contains_newline_marker_rem,
             parsed_content=parsed_slice,
             old_start=old_start,
