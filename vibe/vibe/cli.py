@@ -13,6 +13,7 @@ from vibe.core.pipeline.runner import AIGitPipeline
 
 from vibe.commands import commit
 from vibe.commands import expand
+from vibe.commands import clean
 
 # Disable showing locals in tracebacks (way too much text)
 install(show_locals=False)
@@ -27,6 +28,7 @@ app = typer.Typer(
 # attach commands
 app.command(name="commit")(commit.main)
 app.command(name="expand")(expand.main)
+app.command(name="clean")(clean.main)
 
 
 @app.callback(invoke_without_command=True)
