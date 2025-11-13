@@ -95,7 +95,7 @@ class GitCommands:
                 )
             elif not old_path and not new_path:
                 raise ValueError("Could not parse file paths from diff block!")
-        
+
             # Parse hunks within the block
             hunk_start_indices = [
                 i for i, line in enumerate(lines) if line.startswith("@@ ")

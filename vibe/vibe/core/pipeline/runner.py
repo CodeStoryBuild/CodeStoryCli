@@ -205,7 +205,9 @@ class AIGitPipeline:
             # Pretty-print the diff for this group
             diff_text = patch_map.get(idx, "") or "(no diff)"
             syntax = Syntax(diff_text, "diff", theme="ansi_dark", word_wrap=False)
-            self.console.print(Panel(syntax, title=f"Diff for #{num}", border_style="cyan"))
+            self.console.print(
+                Panel(syntax, title=f"Diff for #{num}", border_style="cyan")
+            )
 
             logger.info(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
