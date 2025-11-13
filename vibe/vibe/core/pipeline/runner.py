@@ -217,10 +217,16 @@ class AIGitPipeline:
             )
 
         # Single confirmation for all groups (unified for commit and expand)
-        apply_all = inquirer.confirm(
-            "Apply all proposed commits?",
-            default=False,
-        )
+        if self.enforce_all_accept:
+            apply_all = True
+            self.console.print(
+                "[yellow]Auto-confirm:[/yellow] Applying all proposed commits."
+            )
+        else:
+            apply_all = inquirer.confirm(
+                "Apply all proposed commits?",
+                default=False,
+            )
 
         if not apply_all:
             self.console.print("[yellow]No changes applied.[/yellow]")

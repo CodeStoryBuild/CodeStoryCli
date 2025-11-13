@@ -19,7 +19,9 @@ from vibe.core.grouper.langchain_grouper import LangChainGrouper
 from vibe.core.file_reader.git_file_reader import GitFileReader
 
 
-def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
+def verify_repo(
+    commands: GitCommands, console: Console, target: str, auto_yes: bool = False
+) -> bool:
     # Step -1: ensure we're inside a git repository
     if not commands.is_git_repo():
         raise RuntimeError(
@@ -28,10 +30,16 @@ def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
 
     # Step 0: clean working area
     if commands.need_reset():
-        unstage = inquirer.confirm(
-            "Staged changes detected, you must unstage all changes. Do you accept?",
-            default=False,
-        )
+        if auto_yes:
+            unstage = True
+            console.print(
+                "[yellow]Auto-confirm:[/yellow] Unstaging all changes to proceed."
+            )
+        else:
+            unstage = inquirer.confirm(
+                "Staged changes detected, you must unstage all changes. Do you accept?",
+                default=False,
+            )
 
         if unstage:
             commands.reset()
@@ -51,7 +59,9 @@ def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
     return True
 
 
-def createPipeline(repo_path: str, target: str, console: Console):
+def createPipeline(
+    repo_path: str, target: str, console: Console, auto_yes: bool = False
+):
     git_interface = SubprocessGitInterface(repo_path)
     commands = GitCommands(git_interface)
 
@@ -63,7 +73,7 @@ def createPipeline(repo_path: str, target: str, console: Console):
 
     # first, we need to turn the verify the repo is in a certain state
     console.print("[green] Verifying Repo State... [/green]")
-    if not verify_repo(commands, console, target):
+    if not verify_repo(commands, console, target, auto_yes=auto_yes):
         # cannot proceed
         return None
 
@@ -103,6 +113,7 @@ def createPipeline(repo_path: str, target: str, console: Console):
         new_branch,
         base_commit_hash,
         new_commit_hash,
+        enforce_all_accept=auto_yes,
     )
 
     return pipeline
