@@ -145,12 +145,8 @@ class GitSynthesizer:
                 patch_lines.append(
                     b"diff --git a/" + old_file_path + b" b/" + new_file_path
                 )
-                patch_lines.append(
-                    b"rename from " + old_file_path
-                )
-                patch_lines.append(
-                    b"rename to " + new_file_path
-                )
+                patch_lines.append(b"rename from " + old_file_path)
+                patch_lines.append(b"rename to " + new_file_path)
             elif single_chunk.is_file_deletion:
                 # possible edge case: file deletion with multiple chunks
                 if current_count < total_expected:
@@ -196,12 +192,8 @@ class GitSynthesizer:
             if single_chunk.is_file_deletion and current_count < total_expected:
                 new_file_header = old_file_header
 
-            patch_lines.append(
-                b"--- " + old_file_header
-            )
-            patch_lines.append(
-                b"+++ " + new_file_header
-            )
+            patch_lines.append(b"--- " + old_file_header)
+            patch_lines.append(b"+++ " + new_file_header)
 
             if not multiple_chunks and not single_chunk.has_content:
                 patch_lines.append(b"@@ -0,0 +0,0 @@")
@@ -229,7 +221,9 @@ class GitSynthesizer:
                     old_len = len(removals)
                     new_len = len(additions)
 
-                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@".encode('utf-8')
+                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@".encode(
+                        "utf-8"
+                    )
                     patch_lines.append(hunk_header)
 
                     for removal in removals:
@@ -245,10 +239,10 @@ class GitSynthesizer:
 
             file_patch = b"\n".join(patch_lines)
             has_newline = file_patch.endswith(b"\n")
-            
+
             if not has_newline:
                 file_patch += b"\n"
-            
+
             # else no need for a \n
 
             patches[file_path] = file_patch
@@ -259,7 +253,7 @@ class GitSynthesizer:
             )
 
         return patches
-    
+
     @staticmethod
     def _is_contiguous(last_chunk: "DiffChunk", current_chunk: "DiffChunk") -> bool:
         """
@@ -283,7 +277,7 @@ class GitSynthesizer:
             and current_chunk.old_len() > 0
             and (last_chunk.old_start + last_chunk.old_len()) == current_chunk.old_start
         )
-        
+
         # A special case for a pure removal followed immediately by a pure addition
         # e.g., @@ -5,1 +4,0 @@ followed by @@ -4,0 +5,1 @@
         # These are contiguous if the new_start of the addition matches the old_start
@@ -295,7 +289,6 @@ class GitSynthesizer:
         )
 
         return can_merge_on_new or can_merge_on_old or is_adjacent_replace
-
 
     @staticmethod
     def merge_chunks(sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
@@ -337,17 +330,21 @@ class GitSynthesizer:
             merged_parsed_content = []
             removals = []
             additions = []
-            
+
             # Also combine the newline markers.
             contains_newline_fallback = False
             contains_newline_marker = False
 
             for chunk in group:
-                removals.extend([c for c in chunk.parsed_content if isinstance(c, Removal)])
-                additions.extend([c for c in chunk.parsed_content if isinstance(c, Addition)])
+                removals.extend(
+                    [c for c in chunk.parsed_content if isinstance(c, Removal)]
+                )
+                additions.extend(
+                    [c for c in chunk.parsed_content if isinstance(c, Addition)]
+                )
                 contains_newline_fallback |= chunk.contains_newline_fallback
                 contains_newline_marker |= chunk.contains_newline_marker
-            
+
             merged_parsed_content.extend(removals)
             merged_parsed_content.extend(additions)
 
@@ -442,14 +439,18 @@ class GitSynthesizer:
                 "Tree object created: tree_hash={tree}",
                 tree=new_tree_hash,
             )
-            
+
             # Clean up the worktree before returning
             try:
-                self._run_git_binary("worktree", "remove", "--force", str(worktree_path))
+                self._run_git_binary(
+                    "worktree", "remove", "--force", str(worktree_path)
+                )
             except RuntimeError:
                 # If worktree removal fails, it will be cleaned up when temp_dir is removed
-                logger.warning("Failed to remove worktree, will be cleaned up with temp directory")
-            
+                logger.warning(
+                    "Failed to remove worktree, will be cleaned up with temp directory"
+                )
+
             return new_tree_hash
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:

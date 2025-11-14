@@ -19,7 +19,7 @@ def get_total_chunks_per_file(chunks: list[DiffChunk]):
 def get_descriptive_patch(chunks: list[DiffChunk], total_chunks: dict[bytes, int]):
     diff = GitSynthesizer._generate_unified_diff(chunks, total_chunks)
 
-    return b"".join(diff.values()).decode('utf-8', errors='replace')
+    return b"".join(diff.values()).decode("utf-8", errors="replace")
 
 
 def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:

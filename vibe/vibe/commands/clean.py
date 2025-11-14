@@ -30,14 +30,14 @@ def main(
 
     console = Console()
     setup_logger("clean", console)
-    
+
     logger.info(
         "Clean command invoked: ignore={ignore} min_size={min_size} auto_yes={auto}",
         ignore=ignore or [],
         min_size=min_size,
         auto=yes,
     )
-    
+
     runner = CleanRunner(".")
     ok = runner.run(
         CleanOptions(ignore=ignore or [], min_size=min_size, auto_yes=yes),

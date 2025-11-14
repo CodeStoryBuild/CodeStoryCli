@@ -72,7 +72,9 @@ class AIGitPipeline:
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
 
-    def run(self, target: str = None, message: str = None, auto_yes : bool = False) -> List[CommitResult]:
+    def run(
+        self, target: str = None, message: str = None, auto_yes: bool = False
+    ) -> List[CommitResult]:
         _t_start = perf_counter()
         # Initial invocation summary
         logger.info(
@@ -92,7 +94,17 @@ class AIGitPipeline:
         logger.info(
             "Raw diff summary: chunks={count} files={files}",
             count=len(raw_diff),
-            files=len({path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path for c in raw_diff for path in c.canonical_paths()}),
+            files=len(
+                {
+                    (
+                        path.decode("utf-8", errors="replace")
+                        if isinstance(path, bytes)
+                        else path
+                    )
+                    for c in raw_diff
+                    for path in c.canonical_paths()
+                }
+            ),
         )
         logger.info("Timing: raw_diff_generation_ms={ms}", ms=int((t1 - t0) * 1000))
 
@@ -181,20 +193,38 @@ class AIGitPipeline:
         patch_map = get_patches(ai_groups)
         for idx, group in enumerate(ai_groups):
             num = idx + 1
-            logger.debug("Proposed commit #{num}: {message}", num=num, message=group.commit_message)
+            logger.debug(
+                "Proposed commit #{num}: {message}",
+                num=num,
+                message=group.commit_message,
+            )
             if group.extended_message:
-                logger.debug("Extended message: {message}", message=group.extended_message)
+                logger.debug(
+                    "Extended message: {message}", message=group.extended_message
+                )
 
             affected_files = set()
             for chunk in group.chunks:
                 for diff_chunk in chunk.get_chunks():
                     if diff_chunk.is_file_rename:
-                        old_path = diff_chunk.old_file_path.decode('utf-8', errors='replace') if isinstance(diff_chunk.old_file_path, bytes) else diff_chunk.old_file_path
-                        new_path = diff_chunk.new_file_path.decode('utf-8', errors='replace') if isinstance(diff_chunk.new_file_path, bytes) else diff_chunk.new_file_path
+                        old_path = (
+                            diff_chunk.old_file_path.decode("utf-8", errors="replace")
+                            if isinstance(diff_chunk.old_file_path, bytes)
+                            else diff_chunk.old_file_path
+                        )
+                        new_path = (
+                            diff_chunk.new_file_path.decode("utf-8", errors="replace")
+                            if isinstance(diff_chunk.new_file_path, bytes)
+                            else diff_chunk.new_file_path
+                        )
                         affected_files.add(f"{old_path} -> {new_path}")
                     else:
                         path = diff_chunk.canonical_path()
-                        affected_files.add(path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path)
+                        affected_files.add(
+                            path.decode("utf-8", errors="replace")
+                            if isinstance(path, bytes)
+                            else path
+                        )
 
             files_preview = ", ".join(sorted(affected_files))
             if len(files_preview) > 120:
@@ -245,12 +275,24 @@ class AIGitPipeline:
             for ch in group.chunks:
                 for dc in ch.get_chunks():
                     if dc.is_file_rename:
-                        old_path = dc.old_file_path.decode('utf-8', errors='replace') if isinstance(dc.old_file_path, bytes) else dc.old_file_path
-                        new_path = dc.new_file_path.decode('utf-8', errors='replace') if isinstance(dc.new_file_path, bytes) else dc.new_file_path
+                        old_path = (
+                            dc.old_file_path.decode("utf-8", errors="replace")
+                            if isinstance(dc.old_file_path, bytes)
+                            else dc.old_file_path
+                        )
+                        new_path = (
+                            dc.new_file_path.decode("utf-8", errors="replace")
+                            if isinstance(dc.new_file_path, bytes)
+                            else dc.new_file_path
+                        )
                         affected_files_summary.add(f"{old_path} -> {new_path}")
                     else:
                         path = dc.canonical_path()
-                        affected_files_summary.add(path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path)
+                        affected_files_summary.add(
+                            path.decode("utf-8", errors="replace")
+                            if isinstance(path, bytes)
+                            else path
+                        )
         commit_count = len(plan_success) if isinstance(plan_success, list) else 0
         logger.info(
             "Pipeline summary: raw_chunks={raw} mechanical={mech} semantic_groups={sem} proposed_groups={prop} accepted_groups={acc} commits_created={commits} files_changed={files} total_ms={total}",

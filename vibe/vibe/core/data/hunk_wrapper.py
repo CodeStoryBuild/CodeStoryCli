@@ -25,7 +25,9 @@ class HunkWrapper:
 
     @staticmethod
     def create_empty_content(
-        new_file_path: Optional[bytes], old_file_path: Optional[bytes], file_mode: Optional[bytes] = None
+        new_file_path: Optional[bytes],
+        old_file_path: Optional[bytes],
+        file_mode: Optional[bytes] = None,
     ) -> "HunkWrapper":
         return HunkWrapper(
             new_file_path=new_file_path,
