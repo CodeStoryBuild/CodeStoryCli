@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Callable
 
 from rich.console import Console
+from loguru import logger
 
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.expand.service import ExpandService
@@ -38,15 +39,12 @@ class CleanRunner:
     def run(self, options: CleanOptions, console: Console) -> bool:
         commits = self._get_first_parent_commits()
         if len(commits) < 2:
-            console.print(
-                "[yellow]Nothing to do: fewer than 2 commits on branch.[/yellow]"
-            )
+            logger.info("Nothing to do: fewer than 2 commits on branch")
             return True
 
         targets = commits[:-1]  # skip root
         total = len(targets)
-        console.rule("[bold green]vibe clean")
-        console.print(f"[green]Considering {total} commits (HEAD -> second).[/green]")
+        logger.info("Starting vibe clean operation on {total} commits", total=total)
 
         expanded = 0
         skipped = 0
@@ -55,45 +53,43 @@ class CleanRunner:
             short = commit[:7]
 
             if self._is_merge(commit):
-                console.print(f"[yellow]Skip merge commit {short}.[/yellow]")
+                logger.debug("Skipping merge commit {commit}", commit=short)
                 skipped += 1
                 continue
 
             if self._is_ignored(commit, options.ignore):
-                console.print(f"[yellow]Skip ignored {short}.[/yellow]")
+                logger.debug("Skipping ignored commit {commit}", commit=short)
                 skipped += 1
                 continue
 
             if options.min_size is not None:
                 changes = self._count_line_changes(commit)
                 if changes is None:
-                    console.print(
-                        f"[yellow]Skip {short}: unable to count changes.[/yellow]"
-                    )
+                    logger.debug("Skipping {commit}: unable to count changes", commit=short)
                     skipped += 1
                     continue
                 if changes < options.min_size:
-                    console.print(
-                        f"[yellow]Skip {short}: {changes} < min-size {options.min_size}.[/yellow]"
+                    logger.debug(
+                        "Skipping {commit}: {changes} < min-size {min_size}",
+                        commit=short, changes=changes, min_size=options.min_size
                     )
                     skipped += 1
                     continue
 
-            console.rule(f"[bold cyan]{idx}/{total} Expanding {short}")
+            logger.info("Expanding commit {commit} ({idx}/{total})", commit=short, idx=idx, total=total)
             ok = self.expand_service.expand_commit(
                 commit,
                 console=console,
                 auto_yes=options.auto_yes
             )
             if not ok:
-                console.print(
-                    f"[red]Expansion failed or declined at {short}. Stopping.[/red]"
-                )
+                logger.error("Expansion failed or declined at {commit}. Stopping", commit=short)
                 return False
             expanded += 1
 
-        console.print(
-            f"[bold green]Clean complete.[/bold green] Expanded={expanded}, skipped={skipped}"
+        logger.info(
+            "Clean operation complete: expanded={expanded}, skipped={skipped}",
+            expanded=expanded, skipped=skipped
         )
         return True
 
