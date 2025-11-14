@@ -25,22 +25,27 @@ def main(
         "-y",
         help="Automatically confirm rewrites without prompting.",
     ),
+    start_from: Optional[str] = typer.Argument(
+        None,
+        help="Commit hash (or prefix) to start cleaning from (inclusive). If not provided, starts from HEAD.",
+    ),
 ):
-    """Run 'vibe expand' iteratively from HEAD to the second commit with filtering."""
+    """Run 'vibe expand' iteratively from HEAD (or start_from) to the second commit with filtering."""
 
     console = Console()
     setup_logger("clean", console)
 
     logger.info(
-        "Clean command invoked: ignore={ignore} min_size={min_size} auto_yes={auto}",
+        "Clean command invoked: ignore={ignore} min_size={min_size} auto_yes={auto} start_from={start_from}",
         ignore=ignore or [],
         min_size=min_size,
         auto=yes,
+        start_from=start_from,
     )
 
     runner = CleanRunner(".")
     ok = runner.run(
-        CleanOptions(ignore=ignore or [], min_size=min_size, auto_yes=yes),
+        CleanOptions(ignore=ignore or [], min_size=min_size, auto_yes=yes, start_from=start_from),
         console=console,
     )
     if not ok:
