@@ -113,7 +113,6 @@ def createPipeline(
         new_branch,
         base_commit_hash,
         new_commit_hash,
-        enforce_all_accept=auto_yes,
     )
 
     return pipeline

@@ -7,7 +7,6 @@ from loguru import logger
 
 from ..data.line_changes import Addition, Removal
 from ..data.hunk_wrapper import HunkWrapper
-from ..data.utils import format_content_json
 
 
 @dataclass(frozen=True)
@@ -66,7 +65,7 @@ class DiffChunk:
     file_mode: Optional[bytes] = None
     # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
     contains_newline_fallback: bool = False
-    contains_newline_marker_rem: bool = False
+    contains_newline_marker: bool = False
 
     # the structured content of this chunk (list of Addition/Removal objects)
     parsed_content: Optional[List[Union[Addition, Removal]]] = None
@@ -102,128 +101,37 @@ class DiffChunk:
     def pure_deletion(self) -> bool:
         return self.new_len() == 0 and self.has_content
 
-    def format_json(self) -> str:
+    def split_into_atomic_chunks(self) -> List["DiffChunk"]:
         """
-        Converts a structured diff object into a standardized JSON format
-        optimized for LLM comprehension.
-
-        Args:
-            file_path: The path of the file being modified.
-            change_list: The list of changes in the diff chunk object.
-
-        Returns:
-            A JSON string representing the structured diff.
+        Splits a DiffChunk into a list of the most granular, yet still valid,
+        atomic DiffChunks.
         """
-
-        if self.has_content:
-            changes = format_content_json(self.parsed_content)
-        elif self.is_file_rename:
-            changes = {
-                "type": "Rename",
-                "old_file_path": self.old_file_path.decode('utf-8', errors='replace') if isinstance(self.old_file_path, bytes) else self.old_file_path,
-                "new_file_path": self.new_file_path.decode('utf-8', errors='replace') if isinstance(self.new_file_path, bytes) else self.new_file_path,
-            }
-        elif self.is_file_addition:
-            changes = {
-                "type": "FileAddition",
-                "new_file_path": self.new_file_path.decode('utf-8', errors='replace') if isinstance(self.new_file_path, bytes) else self.new_file_path,
-            }
-        elif self.is_file_deletion:
-            changes = {
-                "type": "FileDeletion",
-                "old_file_path": self.old_file_path.decode('utf-8', errors='replace') if isinstance(self.old_file_path, bytes) else self.old_file_path,
-            }
-        else:
-            logger.warning(
-                "A diff chunk with no content and no special purpouse was found!: {chunk}".format(
-                    chunk=self
-                )
-            )
-
-        return json.dumps(changes, indent=2)
-
-    def split_into_atomic_chunks(
-        self,
-    ) -> List["DiffChunk"]:
-        """
-        A list of the most granular, yet still valid, DiffChunks.
-        """
-        # cannot split non-content hunks
+        # If the chunk has no content (e.g., a file mode change), it is already atomic.
         if not self.has_content:
             return [self]
 
-        # Group by relative positions for mixed chunks
+        # These initial checks are critical for establishing a valid starting point.
         if self.old_start is None or self.new_start is None:
+            logger.warning(f"Cannot split chunk with invalid start lines: {self}")
             return [self]
 
-        removals = [item for item in self.parsed_content if isinstance(item, Removal)]
-        additions = [item for item in self.parsed_content if isinstance(item, Addition)]
-
-        # Pure chunks (only additions or only removals)
-        if not (removals and additions):
-            final_chunks = []
-            for line in self.parsed_content:
-                sub_chunk = self.from_parsed_content_slice(
-                    self.old_file_path,
-                    self.new_file_path,
-                    self.file_mode,
-                    self.contains_newline_fallback,
-                    self.contains_newline_marker_rem,
-                    [line],
-                )
-                final_chunks.append(sub_chunk)
-            return final_chunks
-
-        # Mixed chunks (both additions and removals)
-        # Group by relative position to match modifications
-        rel_removals = {(r.line_number - self.old_start): r for r in removals}
-        rel_additions = {(a.line_number - self.new_start): a for a in additions}
-
-        # All relative positions
-        all_positions = sorted(set(rel_removals.keys()) | set(rel_additions.keys()))
+        # only try to be smart and split hunks if its a pure addition or deletion
+        # otherwise, things get messy fast
+        if not self.pure_addition() or self.pure_deletion():
+            return [self]
 
         final_chunks = []
-        for pos in all_positions:
-            chunk_content = []
-            if pos in rel_removals:
-                chunk_content.append(rel_removals[pos])
-            if pos in rel_additions:
-                chunk_content.append(rel_additions[pos])
 
-            # Calculate appropriate start positions for this atomic chunk
-            if len(chunk_content) == 1:
-                # Pure addition or removal
-                item = chunk_content[0]
-                if isinstance(item, Addition):
-                    sub_chunk = self.from_parsed_content_slice(
-                        self.old_file_path,
-                        self.new_file_path,
-                        self.file_mode,
-                        self.contains_newline_fallback,
-                        self.contains_newline_marker_rem,
-                        chunk_content,
-                    )
-                else:  # Removal
-                    sub_chunk = self.from_parsed_content_slice(
-                        self.old_file_path,
-                        self.new_file_path,
-                        self.file_mode,
-                        self.contains_newline_fallback,
-                        self.contains_newline_marker_rem,
-                        chunk_content,
-                    )
-            else:
-                # Matched modification
-                sub_chunk = self.from_parsed_content_slice(
-                    self.old_file_path,
-                    self.new_file_path,
-                    self.file_mode,
-                    self.contains_newline_fallback,
-                    self.contains_newline_marker_rem,
-                    chunk_content,
-                )
-
-            final_chunks.append(sub_chunk)
+        for line in self.parsed_content:
+            atomic_chunk = DiffChunk.from_parsed_content_slice(
+                old_file_path=self.old_file_path,
+                new_file_path=self.new_file_path,
+                file_mode=self.file_mode,
+                contains_newline_fallback=self.contains_newline_fallback,
+                contains_newline_marker=self.contains_newline_marker,
+                parsed_slice=[line],
+            )
+            final_chunks.append(atomic_chunk)
 
         return final_chunks
 
@@ -232,11 +140,7 @@ class DiffChunk:
         """
         Sanitize text for use in a Git patch.
         """
-        # Replace non-breaking space with a regular space
-        content = content.replace(b'\xa0', b' ')
-
-        # TODO add more sanitization filters
-        return content.rstrip()
+        return content
 
     @classmethod
     def from_hunk(cls, hunk: HunkWrapper) -> "DiffChunk":
@@ -249,7 +153,7 @@ class DiffChunk:
         current_new_line = hunk.new_start
 
         contains_newline_fallback = False
-        contains_newline_marker_rem = False
+        contains_newline_marker = False
 
         for line in hunk.hunk_lines:
             sanitized_content = DiffChunk._sanitize_patch_content(line[1:])
@@ -264,6 +168,7 @@ class DiffChunk:
                 )
                 current_old_line += 1
             elif line.strip() == b"\\ No newline at end of file":
+                contains_newline_marker = True
                 if parsed_content:
                     parsed_content[-1].content = (
                         parsed_content[-1].content + b"\n\\ No newline at end of file"
@@ -279,7 +184,7 @@ class DiffChunk:
             old_start=hunk.old_start,
             new_start=hunk.new_start,
             contains_newline_fallback=contains_newline_fallback,
-            contains_newline_marker_rem=contains_newline_marker_rem,
+            contains_newline_marker=contains_newline_marker,
         )
 
     @classmethod
@@ -289,13 +194,9 @@ class DiffChunk:
         new_file_path: Optional[bytes],
         file_mode: Optional[bytes],
         contains_newline_fallback: bool,
-        contains_newline_marker_rem: bool,
+        contains_newline_marker: bool,
         parsed_slice: List[Union[Addition, Removal]],
     ) -> "DiffChunk":
-        """
-        Creates a DiffChunk from a slice of parsed Addition/Removal objects.
-        This factory method correctly calculates the start lines and content.
-        """
         if not parsed_slice:
             raise ValueError("parsed_slice cannot be empty")
 
@@ -303,15 +204,25 @@ class DiffChunk:
         additions = [item for item in parsed_slice if isinstance(item, Addition)]
 
         if removals and not additions:
-            # Pure Deletion: The 'new_start' is anchored to the line *before* the removal.
+            # Pure Deletion
             old_start = removals[0].line_number
-            new_start = max(0, old_start - 1)
+            # If the file is being deleted (new_file_path is None), start is 0
+            if new_file_path is None:
+                new_start = 0
+            else:
+                new_start = max(0, old_start - 1)
+
         elif additions and not removals:
-            # Pure Addition: The 'old_start' is anchored to the line *before* the addition.
+            # Pure Addition
             new_start = additions[0].line_number
-            old_start = max(0, new_start - 1)
+            # If the file is new (old_file_path is None), start is 0
+            if old_file_path is None:
+                old_start = 0
+            else:
+                old_start = max(0, new_start - 1)
+
         elif removals and additions:
-            # Modification: Both start lines are taken directly from the first items.
+            # Modification (Standard Hunk)
             old_start = removals[0].line_number
             new_start = additions[0].line_number
         else:
@@ -322,7 +233,7 @@ class DiffChunk:
             new_file_path=new_file_path,
             file_mode=file_mode,
             contains_newline_fallback=contains_newline_fallback,
-            contains_newline_marker_rem=contains_newline_marker_rem,
+            contains_newline_marker=contains_newline_marker,
             parsed_content=parsed_slice,
             old_start=old_start,
             new_start=new_start,
@@ -344,43 +255,3 @@ class DiffChunk:
             return [self.new_file_path]
         else:
             return [self.old_file_path]
-
-    def format_json(self) -> str:
-        """
-        Converts a structured diff object into a standardized JSON format
-        optimized for LLM comprehension.
-
-        Args:
-            file_path: The path of the file being modified.
-            change_list: The list of changes in the diff chunk object.
-
-        Returns:
-            A JSON string representing the structured diff.
-        """
-
-        if self.has_content:
-            changes = format_content_json(self.parsed_content)
-        elif self.is_file_rename:
-            changes = {
-                "type": "Rename",
-                "old_file_path": self.old_file_path,
-                "new_file_path": self.new_file_path,
-            }
-        elif self.is_file_addition:
-            changes = {
-                "type": "FileAddition",
-                "new_file_path": self.new_file_path,
-            }
-        elif self.is_file_deletion:
-            changes = {
-                "type": "FileDeletion",
-                "old_file_path": self.old_file_path,
-            }
-        else:
-            logger.warning(
-                "A diff chunk with no content and no special purpouse was found!: {chunk}".format(
-                    chunk=self
-                )
-            )
-
-        return json.dumps(changes, indent=2)

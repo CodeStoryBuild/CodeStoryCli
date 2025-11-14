@@ -23,6 +23,7 @@
                 "((decorated_definition) @placeholder)",
                 "((while_statement) @placeholder)",
                 "((list) @placeholder)",
+                "((expression_statement) @placeholder)",
                 "((call) @placeholder)",
                 "((dictionary) @placeholder)",
                 "((class_definition) @placeholder)",

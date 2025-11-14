@@ -7,7 +7,6 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from .interface import LogicalGrouper
 from ..data.models import CommitGroup, ProgressCallback
-from ..data.utils import flatten_diff_chunks
 from ..data.chunk import Chunk
 from ..synthesizer.utils import get_patches_chunk
 
@@ -163,11 +162,6 @@ class LangChainGrouper(LogicalGrouper):
             optional_guidance_message=optional_guidance_message,
             changes_json=changes_json,
         )
-
-        # Expected number of groups for progress estimation
-        estimated_groups = min(
-            len(chunks), 5
-        )  # Heuristic: assume most changes will be grouped
 
         # Stream the response
         accumulated_content = ""

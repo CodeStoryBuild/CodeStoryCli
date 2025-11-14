@@ -22,15 +22,6 @@ class CompositeDiffChunk:
         if len(self.chunks) <= 0:
             raise RuntimeError("Chunks must be a nonempty list!")
 
-    def format_json(self) -> str:
-        """
-        Formats all child chunks as JSON, separated by newlines.
-
-        Returns:
-            A JSON string representing all child chunks.
-        """
-        return "\n".join([chunk.format_json() for chunk in self.chunks])
-
     def canonical_paths(self):
         """
         Return the canonical paths for this composite chunk.
