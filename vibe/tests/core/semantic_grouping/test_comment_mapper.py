@@ -1,4 +1,3 @@
-from pathlib import Path
 from importlib.resources import files
 
 from vibe.core.file_reader.file_parser import FileParser

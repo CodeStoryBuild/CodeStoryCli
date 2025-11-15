@@ -18,7 +18,7 @@ def main(
         "-y",
         help="Automatically accept rewrite confirmation (non-interactive).",
     ),
-):
+) -> None:
     """Expand a past commit into smaller logical commits safely."""
     console = Console()
     setup_logger("expand", console)

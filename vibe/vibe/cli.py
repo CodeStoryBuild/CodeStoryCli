@@ -1,15 +1,7 @@
 import typer
-from rich.console import Console
 from rich.traceback import install
 from dotenv import load_dotenv
-
-
-from vibe.core.chunker.simple_chunker import SimpleChunker
-from vibe.core.chunker.atomic_chunker import AtomicChunker
-from vibe.core.grouper.random_size_grouper import RandomSizeGrouper
-from vibe.core.grouper.single_grouper import SingleGrouper
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-from vibe.core.pipeline.runner import AIGitPipeline
+import sys
 
 from vibe.commands import commit
 from vibe.commands import expand
@@ -18,6 +10,12 @@ from vibe.commands import clean
 # Disable showing locals in tracebacks (way too much text)
 install(show_locals=False)
 load_dotenv()
+
+# force utf-8 encoding
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # create app
 app = typer.Typer(
@@ -32,7 +30,7 @@ app.command(name="clean")(clean.main)
 
 
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context):
+def main(ctx: typer.Context) -> None:
     """
     Global setup callback. Initialize shared objects here.
     """
@@ -44,4 +42,4 @@ def main(ctx: typer.Context):
 
 if __name__ == "__main__":
     # start app
-    app()
+    app(prog_name="vibe")

@@ -44,10 +44,10 @@ def main():
         "--name",
         "vibe",
         "--clean",  # Clean PyInstaller cache and remove temporary files
-        "--copy-metadata",
+        "--collect-all",
         "readchar",  # Include package metadata for readchar
-        "--add-data",
-        f"vibe/vibe{separator}vibe/vibe",  # Include package data
+        "--collect-all",
+        f"vibe",  # Include package data
         "vibe/vibe/cli.py",  # Main script to execute
     ]
 

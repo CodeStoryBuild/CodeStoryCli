@@ -1,4 +1,5 @@
 from platformdirs import user_log_path
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -9,7 +10,7 @@ LOG_DIR = user_log_path(appname="VibeCommit")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def setup_logger(command_name: str, console: Console):
+def setup_logger(command_name: str, console: Console) -> Path:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     logfile = LOG_DIR / f"{command_name}_{timestamp}.log"
 

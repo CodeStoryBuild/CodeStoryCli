@@ -122,7 +122,7 @@ class CleanRunner:
             if resolved is None:
                 raise ValueError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
-        
+
         out = self.git.run_git_text(["rev-list", "--first-parent", start_ref]) or ""
         return [l.strip() for l in out.splitlines() if l.strip()]
 

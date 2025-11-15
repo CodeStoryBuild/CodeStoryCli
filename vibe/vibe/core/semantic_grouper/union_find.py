@@ -1,16 +1,19 @@
+from typing import Hashable, Iterable
+
+
 class UnionFind:
     """Union-Find (Disjoint Set Union) with path compression and union by rank."""
 
-    def __init__(self, elements):
+    def __init__(self, elements: Iterable[Hashable]) -> None:
         self.parent = {el: el for el in elements}
         self.rank = {el: 0 for el in elements}  # Tracks tree depth
 
-    def find(self, i):
+    def find(self, i: Hashable) -> Hashable:
         if self.parent[i] != i:
             self.parent[i] = self.find(self.parent[i])  # Path compression
         return self.parent[i]
 
-    def union(self, i, j):
+    def union(self, i: Hashable, j: Hashable) -> None:
         root_i = self.find(i)
         root_j = self.find(j)
 
