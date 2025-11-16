@@ -1,4 +1,4 @@
-from .cli import app
+from .cli import run_app
 
 if __name__ == "__main__":
-    app(prog_name="vibe")
+    run_app()
