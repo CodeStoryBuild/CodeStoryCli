@@ -126,7 +126,7 @@
                     "(class_declaration name: (identifier) @placeholder)",
                     "(interface_declaration name: (identifier) @placeholder)",
                     "(enum_declaration name: (identifier) @placeholder)",
-                    "(import_declaration (asterisk))",
+                    "(import_declaration (asterisk) @placeholder)",
                     "(import_declaration (scoped_identifier) @placeholder)"
                 ]
             }
