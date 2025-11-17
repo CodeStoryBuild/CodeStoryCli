@@ -82,12 +82,14 @@ class ExpandService:
         with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
             rewrite_branch: Optional[str] = None
             temp_branch = f"vibe-expand-{_short(resolved)}"
+            wt1_created = False
 
             try:
                 logger.info(
                     "Creating temporary worktree at {parent}", parent=_short(parent)
                 )
                 _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
+                wt1_created = True
                 wt1_git = SubprocessGitInterface(wt1_dir)
 
                 _run_git(wt1_git, ["checkout", "-b", temp_branch])
@@ -113,6 +115,7 @@ class ExpandService:
 
                 # Prepare rebase of upstream commits onto the new base in a separate worktree
                 with TemporaryDirectory(prefix="vibe-expand-wt2-") as wt2_dir:
+                    wt2_created = False
                     try:
                         rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
                         logger.info("Preparing rebase in isolated worktree")
@@ -127,6 +130,7 @@ class ExpandService:
                                 head_hash,
                             ],
                         )
+                        wt2_created = True
                         wt2_git = SubprocessGitInterface(wt2_dir)
 
                         # Rebase: move commits after resolved onto new_base
@@ -181,16 +185,18 @@ class ExpandService:
                         return True
 
                     finally:
-                        # Clean up git worktree
-                        _cleanup_worktree(self.git, wt2_dir)
+                        # Clean up git worktree (if it was created)
+                        if wt2_created:
+                            _cleanup_worktree(self.git, wt2_dir)
                         # Delete temporary rewrite branch if it exists
                         if rewrite_branch:
                             _run_git(self.git, ["branch", "-D", rewrite_branch])
 
             finally:
-                # Clean up git worktree
-                _cleanup_worktree(self.git, wt1_dir)
-                # Delete temp expand branch
+                # Clean up git worktree (if it was created)
+                if wt1_created:
+                    _cleanup_worktree(self.git, wt1_dir)
+                # Delete temp expand branch (if it exists)
                 _run_git(self.git, ["branch", "-D", temp_branch])
 
         return False
