@@ -30,11 +30,15 @@ class Symbol:
 
 @dataclass
 class AnalysedHunk:
-    """An internal representation of a single, continuous hunk range."""
+    """An internal representation of a single, continuous hunk range.
+    
+    NOTE: Uses abs_new_line (absolute new file positions from original diff)
+    for semantic analysis purposes only. These are NOT for patch generation!
+    """
 
     parent_chunk: Chunk  # Reference to the original Chunk
-    new_start: int
-    new_end: int
+    abs_new_start: int  # Absolute position in new file (from original diff)
+    abs_new_end: int    # Absolute position in new file (from original diff)
 
     # Fields to be populated by semantic analysis
     structural_scope_id: str = ""

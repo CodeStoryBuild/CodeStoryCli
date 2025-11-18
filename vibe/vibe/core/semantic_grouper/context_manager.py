@@ -157,7 +157,14 @@ class ContextManager:
         if is_old_range:
             return (chunk.old_start - 1, chunk.old_start + chunk.old_len() - 2)
         else:
-            return (chunk.new_start - 1, chunk.new_start + chunk.new_len() - 2)
+            # For new file ranges, use abs_new_line (absolute position from original diff)
+            # This is ONLY for semantic grouping purposes!
+            start = chunk.get_abs_new_line_start()
+            end = chunk.get_abs_new_line_end()
+            if start is None or end is None:
+                # No additions in this chunk, use old_start as fallback
+                return (chunk.old_start - 1, chunk.old_start - 1)
+            return (start - 1, end - 1)
 
     def _generate_parsed_files(self) -> None:
         for (file_path, is_old_version), line_ranges in self._required_contexts.items():

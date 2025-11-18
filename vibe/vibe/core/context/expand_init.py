@@ -33,6 +33,7 @@ def create_expand_pipeline(
     commands = GitCommands(git_interface)
 
     chunker = AtomicChunker()
+    print(type(chunker))
     # chunker = SimpleChunker()
     logical_grouper = SingleGrouper()
     # logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))

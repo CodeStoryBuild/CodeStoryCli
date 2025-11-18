@@ -18,6 +18,19 @@ class DiffChunk:
     - Must contain enough information to reconstruct a patch for Git
     - Preserves file path, line numbers, and content
     - Can be serialized into a unified diff format
+    
+    CRITICAL COORDINATE SYSTEM:
+    - old_start: ALWAYS in ORIGINAL/OLD file coordinates. This is the anchor.
+    - new_start: DOES NOT EXIST as a stored field! It's calculated on-the-fly
+      during patch generation based on old_start + cumulative_offset.
+    - Addition.old_line: Position in old file where addition occurs
+    - Addition.abs_new_line: Absolute new file position (ONLY for semantic grouping)
+    - Removal.old_line: Line being removed from old file  
+    - Removal.abs_new_line: Absolute new file position (ONLY for semantic grouping)
+    
+    This design ensures chunks can be split, recombined, and applied in ANY order
+    while maintaining 100% correctness. The new_start values are calculated ONLY
+    when generating patches, based on the cumulative effect of all prior chunks.
     """
 
     # if old path == new path, this is just the file path (no rename, or new addition/deletion)
@@ -74,16 +87,14 @@ class DiffChunk:
     def has_content(self) -> bool:
         return self.parsed_content is not None and len(self.parsed_content) > 0
 
-    # starting line number in the old file (for patch)
+    # starting line number in the old file (ONLY coordinate we store!)
     old_start: Optional[int] = None
-    # starting line number in the new file (for patch)
-    new_start: Optional[int] = None
+    # new_start is NEVER stored - it's calculated during patch generation!
 
     @property
-    def line_anchor(self) -> tuple[int | None, int | None]:
-        """Return some value to get an idea of where the chunk is anchored."""
-
-        return (self.old_start, self.new_start)
+    def line_anchor(self) -> int:
+        """Return the old file line anchor for sorting chunks."""
+        return self.old_start or 0
 
     def old_len(self) -> int:
         if self.parsed_content is None:
@@ -94,6 +105,93 @@ class DiffChunk:
         if self.parsed_content is None:
             return 0
         return sum(1 for c in self.parsed_content if isinstance(c, Addition))
+    
+    def get_abs_new_line_start(self) -> Optional[int]:
+        """Get the absolute new file line start (for semantic grouping ONLY!).
+        
+        This finds the abs_new_line value from the first Addition in the chunk.
+        Returns None if there are no additions.
+        """
+        if not self.parsed_content:
+            return None
+        for item in self.parsed_content:
+            if isinstance(item, Addition):
+                return item.abs_new_line
+        return None
+    
+    def get_abs_new_line_end(self) -> Optional[int]:
+        """Get the absolute new file line end (for semantic grouping ONLY!).
+        
+        This finds the abs_new_line value from the last Addition in the chunk.
+        Returns None if there are no additions.
+        """
+        if not self.parsed_content:
+            return None
+        for item in reversed(self.parsed_content):
+            if isinstance(item, Addition):
+                return item.abs_new_line
+        return None
+    
+    def get_min_abs_line(self) -> int:
+        """Get the minimum absolute line number for sorting chunks.
+        
+        This returns the minimum of all abs_new_line values in the chunk.
+        Used for determining relative positioning of chunks.
+        Falls back to old_start if no abs_new_line values exist.
+        """
+        if not self.parsed_content:
+            return self.old_start or 0
+        
+        abs_lines = [item.abs_new_line for item in self.parsed_content]
+        return min(abs_lines) if abs_lines else (self.old_start or 0)
+    
+    def get_old_line_range(self) -> tuple[int, int]:
+        """Get the range of old file lines this chunk covers.
+        
+        Returns (start, end) inclusive range in old file coordinates.
+        """
+        if not self.old_start:
+            return (0, 0)
+        return (self.old_start, self.old_start + self.old_len() - 1)
+    
+    def get_abs_new_line_range(self) -> tuple[Optional[int], Optional[int]]:
+        """Get the range of absolute new file lines this chunk covers.
+        
+        Returns (start, end) inclusive range in absolute new file coordinates.
+        Returns (None, None) if no additions exist.
+        """
+        start = self.get_abs_new_line_start()
+        end = self.get_abs_new_line_end()
+        if start is None or end is None:
+            return (None, None)
+        return (start, end)
+    
+    def get_sort_key(self) -> tuple[int, int]:
+        """Get a sort key for maintaining correct chunk order.
+        
+        Returns (old_start, min_abs_new_line) tuple.
+        This ensures chunks are sorted by old file position first,
+        then by new file position for chunks at the same old position.
+        """
+        return (self.old_start or 0, self.get_min_abs_line())
+    
+    def is_disjoint_from(self, other: "DiffChunk") -> bool:
+        """Check if this chunk is disjoint from another chunk (in old file coordinates).
+        
+        Two chunks are disjoint if their old file ranges don't overlap.
+        This is the key property that allows chunks to be applied in any order.
+        """
+        if not other or self.canonical_path() != other.canonical_path():
+            # Different files are always disjoint
+            return True
+        
+        self_start = self.old_start or 0
+        self_end = self_start + self.old_len()
+        other_start = other.old_start or 0
+        other_end = other_start + other.old_len()
+        
+        # Disjoint if one ends before the other starts
+        return self_end <= other_start or other_end <= self_start
 
     def pure_addition(self) -> bool:
         return self.old_len() == 0 and self.has_content
@@ -111,13 +209,13 @@ class DiffChunk:
             return [self]
 
         # These initial checks are critical for establishing a valid starting point.
-        if self.old_start is None or self.new_start is None:
+        if self.old_start is None:
             logger.warning(f"Cannot split chunk with invalid start lines: {self}")
             return [self]
 
         # only try to be smart and split hunks if its a pure addition or deletion
         # otherwise, things get messy fast
-        if not self.pure_addition() or self.pure_deletion():
+        if not (self.pure_addition() or self.pure_deletion()):
             return [self]
 
         final_chunks = []
@@ -148,6 +246,11 @@ class DiffChunk:
         """
         Construct a DiffChunk from a single, parsed HunkWrapper.
         This is the standard factory for this class.
+        
+        CRITICAL: We store BOTH coordinate systems:
+        - old_line: Position in old file (used for patch generation)
+        - abs_new_line: Absolute position in new file from original diff
+          (ONLY used for semantic grouping, never for patch generation)
         """
         parsed_content: List[Union[Addition, Removal]] = []
         current_old_line = hunk.old_start
@@ -159,13 +262,27 @@ class DiffChunk:
         for line in hunk.hunk_lines:
             sanitized_content = DiffChunk._sanitize_patch_content(line[1:])
             if line.startswith(b"+"):
+                # For additions:
+                # - old_line: where in old file this addition occurs (line before insertion)
+                # - abs_new_line: absolute position in new file (from original diff)
                 parsed_content.append(
-                    Addition(content=sanitized_content, line_number=current_new_line)
+                    Addition(
+                        old_line=current_old_line,
+                        abs_new_line=current_new_line,
+                        content=sanitized_content
+                    )
                 )
                 current_new_line += 1
             elif line.startswith(b"-"):
+                # For removals:
+                # - old_line: the line being removed from old file
+                # - abs_new_line: where this removal "lands" in new file
                 parsed_content.append(
-                    Removal(content=sanitized_content, line_number=current_old_line)
+                    Removal(
+                        old_line=current_old_line,
+                        abs_new_line=current_new_line,
+                        content=sanitized_content
+                    )
                 )
                 current_old_line += 1
             elif line.strip() == b"\\ No newline at end of file":
@@ -183,7 +300,6 @@ class DiffChunk:
             file_mode=hunk.file_mode,
             parsed_content=parsed_content,
             old_start=hunk.old_start,
-            new_start=hunk.new_start,
             contains_newline_fallback=contains_newline_fallback,
             contains_newline_marker=contains_newline_marker,
         )
@@ -198,34 +314,29 @@ class DiffChunk:
         contains_newline_marker: bool,
         parsed_slice: List[Union[Addition, Removal]],
     ) -> "DiffChunk":
+        """Create a DiffChunk from a slice of parsed content.
+        
+        CRITICAL: We ONLY calculate old_start here. new_start does NOT exist!
+        The old_start is derived from the old_line values in the parsed content.
+        """
         if not parsed_slice:
             raise ValueError("parsed_slice cannot be empty")
 
         removals = [item for item in parsed_slice if isinstance(item, Removal)]
         additions = [item for item in parsed_slice if isinstance(item, Addition)]
 
-        if removals and not additions:
-            # Pure Deletion
-            old_start = removals[0].line_number
-            # If the file is being deleted (new_file_path is None), start is 0
-            if new_file_path is None:
-                new_start = 0
-            else:
-                new_start = max(0, old_start - 1)
-
-        elif additions and not removals:
-            # Pure Addition
-            new_start = additions[0].line_number
-            # If the file is new (old_file_path is None), start is 0
+        # Calculate old_start based on the first change in old file coordinates
+        if removals:
+            # If there are removals, old_start is the first removal's old_line
+            old_start = removals[0].old_line
+        elif additions:
+            # If only additions, old_start is where we're inserting in the old file
+            # For pure additions, old_line represents the line AFTER which we insert
+            # So old_start should be old_line (or 0 for new files)
             if old_file_path is None:
-                old_start = 0
+                old_start = 0  # New file
             else:
-                old_start = max(0, new_start - 1)
-
-        elif removals and additions:
-            # Modification (Standard Hunk)
-            old_start = removals[0].line_number
-            new_start = additions[0].line_number
+                old_start = additions[0].old_line
         else:
             raise ValueError("Invalid input parsed_slice")
 
@@ -237,7 +348,6 @@ class DiffChunk:
             contains_newline_marker=contains_newline_marker,
             parsed_content=parsed_slice,
             old_start=old_start,
-            new_start=new_start,
         )
 
     # chunk protocol

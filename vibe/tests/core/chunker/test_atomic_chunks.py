@@ -42,11 +42,11 @@ def assert_is_atomic(chunk: DiffChunk):
             len(removals) == 1 and len(additions) == 1
         ), f"Atomic chunk with 2 items must have 1 removal and 1 addition, got {len(removals)} removals and {len(additions)} additions"
 
-        # Check that they're at matching relative positions
+        # Check that they're at matching relative positions in old file
         removal = removals[0]
         addition = additions[0]
-        rel_removal = removal.line_number - chunk.old_start
-        rel_addition = addition.line_number - chunk.new_start
+        rel_removal = removal.old_line - chunk.old_start
+        rel_addition = addition.old_line - chunk.old_start
 
         assert (
             rel_removal == rel_addition
@@ -572,4 +572,3 @@ def test_atomic_chunks_are_contiguous():
         assert atomic_chunk.parsed_content is not None
         # The __post_init__ validation will raise if not contiguous
         assert atomic_chunk.old_start is not None
-        assert atomic_chunk.new_start is not None

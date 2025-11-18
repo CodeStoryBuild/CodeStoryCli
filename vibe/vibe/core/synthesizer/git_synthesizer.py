@@ -68,6 +68,81 @@ class GitSynthesizer:
         return filename.rstrip(b"\t").strip()  # remove trailing tabs
 
     @staticmethod
+    def _validate_chunks_are_disjoint(chunks: List[DiffChunk]) -> bool:
+        """Validate that all chunks are pairwise disjoint in old file coordinates.
+        
+        This is a critical invariant: chunks must not overlap in the old file
+        for them to be safely applied in any order.
+        
+        Returns True if all chunks are disjoint, raises RuntimeError otherwise.
+        """
+        from itertools import groupby
+        
+        # Group by file
+        sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
+        for file_path, file_chunks_iter in groupby(sorted_chunks, key=lambda c: c.canonical_path()):
+            file_chunks = list(file_chunks_iter)
+            
+            # Sort by old_start within each file
+            file_chunks.sort(key=lambda c: c.old_start or 0)
+            
+            # Check each adjacent pair for overlap
+            for i in range(len(file_chunks) - 1):
+                chunk_a = file_chunks[i]
+                chunk_b = file_chunks[i + 1]
+                
+                if not chunk_a.is_disjoint_from(chunk_b):
+                    raise RuntimeError(
+                        f"INVARIANT VIOLATION: Chunks are not disjoint!\n"
+                        f"File: {file_path}\n"
+                        f"Chunk A: old_start={chunk_a.old_start}, old_len={chunk_a.old_len()}\n"
+                        f"Chunk B: old_start={chunk_b.old_start}, old_len={chunk_b.old_len()}\n"
+                        f"These chunks overlap in old file coordinates!"
+                    )
+        
+        return True
+
+    @staticmethod
+    def _calculate_hunk_starts(
+        file_change_type: str,
+        old_start: int,
+        is_pure_addition: bool,
+        cumulative_offset: int
+    ) -> tuple[int, int]:
+        """
+        Calculate the old_start and new_start for a hunk header based on file change type.
+        
+        Args:
+            file_change_type: One of "added", "deleted", "modified", "renamed"
+            old_start: The old_start from the chunk (in old file coordinates)
+            is_pure_addition: Whether this is a pure addition (old_len == 0)
+            cumulative_offset: Cumulative net lines added so far
+            
+        Returns:
+            Tuple of (hunk_old_start, hunk_new_start) for the @@ header
+        """
+        if file_change_type == "added":
+            # File addition: old side is always -0,0
+            hunk_old_start = 0
+            # new_start adjustment: +1 unless already at line 1
+            hunk_new_start = old_start + cumulative_offset + (1 if old_start != 1 else 0)
+        elif file_change_type == "deleted":
+            # File deletion: new side is always +0,0
+            hunk_old_start = old_start
+            hunk_new_start = 0
+        elif is_pure_addition:
+            # Pure addition (not a new file): @@ -N,0 +M,len @@
+            hunk_old_start = old_start
+            # new_start adjustment: +1 unless already at line 1
+            hunk_new_start = old_start + cumulative_offset + (1 if old_start != 1 else 0)
+        else:
+            # Deletion, modification, or rename: @@ -N,len +M,len @@
+            hunk_old_start = old_start
+            hunk_new_start = old_start + cumulative_offset
+            
+        return (hunk_old_start, hunk_new_start)
+
+    @staticmethod
     def _generate_unified_diff(
         chunks: List[DiffChunk], total_chunks_per_file: Dict[bytes, int]
     ) -> Dict[bytes, bytes]:
@@ -75,6 +150,9 @@ class GitSynthesizer:
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
         This method is stateful and correctly recalculates hunk headers for subsets of chunks.
         """
+        # CRITICAL VALIDATION: Ensure chunks are disjoint before generating patches
+        GitSynthesizer._validate_chunks_are_disjoint(chunks)
+        
         patches: Dict[bytes, bytes] = {}
 
         sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
@@ -89,8 +167,25 @@ class GitSynthesizer:
 
             current_count = len(file_chunks)
             total_expected = total_chunks_per_file.get(file_path, current_count)
+            
             patch_lines = []
             single_chunk = file_chunks[0]
+
+            # we need all chunks to mark as deletion
+            file_deletion = single_chunk.is_file_deletion and current_count >= total_expected
+            file_addition = single_chunk.is_file_addition
+            standard_modification = single_chunk.is_standard_modification or (single_chunk.is_file_deletion and current_count < total_expected)
+            file_rename = single_chunk.is_file_rename
+            
+            # Determine file change type for hunk calculation
+            if file_addition:
+                file_change_type = "added"
+            elif file_deletion:
+                file_change_type = "deleted"
+            elif file_rename:
+                file_change_type = "renamed"
+            else:
+                file_change_type = "modified"
 
             old_file_path = (
                 GitSynthesizer.sanitize_filename(single_chunk.old_file_path)
@@ -103,26 +198,31 @@ class GitSynthesizer:
                 else None
             )
 
-            if single_chunk.is_standard_modification:
-                patch_lines.append(
-                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
-                )
-            elif single_chunk.is_file_rename:
+            if standard_modification:
+                if single_chunk.is_file_deletion:
+                    # use old file and "pretend its a modification as we dont have all deletion chunks yet"
+                    patch_lines.append(
+                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
+                    )
+                else:    
+                    patch_lines.append(
+                        b"diff --git a/" + new_file_path + b" b/" + new_file_path
+                    )
+            elif file_rename:
                 patch_lines.append(
                     b"diff --git a/" + old_file_path + b" b/" + new_file_path
                 )
                 patch_lines.append(b"rename from " + old_file_path)
                 patch_lines.append(b"rename to " + new_file_path)
-            elif single_chunk.is_file_deletion:
+            elif file_deletion:
                 # Treat partial deletions as a modification for the header
                 patch_lines.append(
                     b"diff --git a/" + old_file_path + b" b/" + old_file_path
                 )
-                if current_count >= total_expected:
-                    patch_lines.append(
-                        b"deleted file mode " + (single_chunk.file_mode or b"100644")
-                    )
-            elif single_chunk.is_file_addition:
+                patch_lines.append(
+                    b"deleted file mode " + (single_chunk.file_mode or b"100644")
+                )
+            elif file_addition:
                 patch_lines.append(
                     b"diff --git a/" + new_file_path + b" b/" + new_file_path
                 )
@@ -141,31 +241,41 @@ class GitSynthesizer:
             if not any(c.has_content for c in file_chunks):
                 patch_lines.append(b"@@ -0,0 +0,0 @@")
             else:
-                # Sort chunks by their original line anchor to process them in order.
-                sorted_file_chunks = sorted(file_chunks, key=lambda c: c.line_anchor)
-                merged = GitSynthesizer.merge_chunks(sorted_file_chunks)
+                # Sort chunks by their sort key (old_start, then abs_new_line)
+                # This maintains correct ordering even for chunks at the same old_start
+                sorted_file_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
+                # you must merge chunks to get valid patches
+                sorted_file_chunks = GitSynthesizer.merge_chunks(sorted_file_chunks)
 
-                # These counters track the end of the *last* hunk we wrote to the patch.
-                last_hunk_end_old = 0
-                last_hunk_end_new = 0
+                # CRITICAL: new_start is calculated HERE and ONLY HERE!
+                # We calculate it based on old_start + cumulative_offset.
+                # 
+                # The cumulative_offset tracks how many net lines have been added
+                # (additions - deletions) by all prior chunks in this file.
+                #
+                # For each chunk:
+                # - old_start tells us where the change occurs in the old file
+                # - new_start = old_start + cumulative_offset (where it lands in new file)
+                
+                cumulative_offset = 0  # Net lines added so far (additions - deletions)
 
-                for chunk in merged:
+                for chunk in sorted_file_chunks:
                     if not chunk.has_content:
                         continue
 
                     old_len = chunk.old_len()
                     new_len = chunk.new_len()
+                    is_pure_addition = (old_len == 0)
 
-                    # The `old_start` is always relative to the original file, so it's our stable anchor.
-                    # The `new_start` must be recalculated based on the state of the patch so far.
-                    # The number of unchanged lines between the last hunk and this one is the key.
-                    # This gap is calculated from the old file's perspective.
-                    gap_since_last_hunk = chunk.old_start - last_hunk_end_old
+                    # Use the helper function to calculate hunk starts
+                    hunk_old_start, hunk_new_start = GitSynthesizer._calculate_hunk_starts(
+                        file_change_type=file_change_type,
+                        old_start=chunk.old_start,
+                        is_pure_addition=is_pure_addition,
+                        cumulative_offset=cumulative_offset
+                    )
 
-                    # The new start line is where the last hunk ended in the new file, plus the gap.
-                    recalculated_new_start = last_hunk_end_new + gap_since_last_hunk
-
-                    hunk_header = f"@@ -{chunk.old_start},{old_len} +{recalculated_new_start},{new_len} @@".encode(
+                    hunk_header = f"@@ -{hunk_old_start},{old_len} +{hunk_new_start},{new_len} @@".encode(
                         "utf-8"
                     )
                     patch_lines.append(hunk_header)
@@ -176,9 +286,8 @@ class GitSynthesizer:
                         elif isinstance(item, Addition):
                             patch_lines.append(b"+" + item.content)
 
-                    # Update the trackers for the next iteration.
-                    last_hunk_end_old = chunk.old_start + old_len
-                    last_hunk_end_new = recalculated_new_start + new_len
+                    # Update cumulative offset for next chunk
+                    cumulative_offset += new_len - old_len
 
                 # Handle the no-newline marker for the last chunk in the file
                 if (
@@ -197,36 +306,16 @@ class GitSynthesizer:
         """
         Determines if two DiffChunks are contiguous and can be merged.
 
-        Chunks are considered contiguous if their line number ranges are adjacent
-        on EITHER the old file side OR the new file side. This correctly handles
-        all cases: pure additions, pure deletions, and mixed modifications
-        being adjacent to other chunk types.
+        Since we ONLY have old_start (no new_start), we check contiguity
+        based on old file coordinates only.
+        
+        Chunks are contiguous if their old_start + old_len touch or overlap.
         """
-        # Check for contiguity on the "new file" (additions) side
-        can_merge_on_new = (
-            last_chunk.new_len() > 0
-            and current_chunk.new_len() > 0
-            and (last_chunk.new_start + last_chunk.new_len()) == current_chunk.new_start
-        )
-
-        # Check for contiguity on the "old file" (removals) side
-        can_merge_on_old = (
-            last_chunk.old_len() > 0
-            and current_chunk.old_len() > 0
-            and (last_chunk.old_start + last_chunk.old_len()) == current_chunk.old_start
-        )
-
-        # A special case for a pure removal followed immediately by a pure addition
-        # e.g., @@ -5,1 +4,0 @@ followed by @@ -4,0 +5,1 @@
-        # These are contiguous if the new_start of the addition matches the old_start
-        # of the deletion.
-        is_adjacent_replace = (
-            last_chunk.pure_deletion()
-            and current_chunk.pure_addition()
-            and last_chunk.old_start == current_chunk.new_start
-        )
-
-        return can_merge_on_new or can_merge_on_old or is_adjacent_replace
+        # Check for contiguity on the "old file" side
+        last_old_end = (last_chunk.old_start or 0) + last_chunk.old_len()
+        current_old_start = current_chunk.old_start or 0
+        
+        return last_old_end >= current_old_start
 
     @staticmethod
     def merge_chunks(sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
@@ -346,9 +435,11 @@ class GitSynthesizer:
                             "--recount",
                             "--whitespace=nowarn",
                             "--unidiff-zero",
+                            "--verbose",
                             cwd=worktree_path,
                             stdin_content=combined_patch,
                         )
+                        print(combined_patch)
                     except RuntimeError as e:
                         raise RuntimeError(
                             "FATAL: Git apply failed for combined patch stream.\n"

@@ -248,21 +248,23 @@ class SemanticGrouper:
 
             # New version signature
             new_context = context_manager.get_context(file_path, False)
-            if new_context and diff_chunk.new_start is not None:
-                new_end = diff_chunk.new_start + diff_chunk.new_len() - 1
+            abs_new_start = diff_chunk.get_abs_new_line_start()
+            if new_context and abs_new_start is not None:
+                abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
                 new_signature, new_scope = self._get_signature_for_line_range(
-                    diff_chunk.new_start, new_end, new_context
+                    abs_new_start, abs_new_end, new_context
                 )
                 signature.update(new_signature)
-                chunk_scope.update(old_scope)
+                chunk_scope.update(new_scope)
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
             new_context = context_manager.get_context(diff_chunk.new_file_path, False)
-            if new_context and diff_chunk.new_start is not None:
-                new_end = diff_chunk.new_start + diff_chunk.new_len() - 1
+            abs_new_start = diff_chunk.get_abs_new_line_start()
+            if new_context and abs_new_start is not None:
+                abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
                 signature, chunk_scope = self._get_signature_for_line_range(
-                    diff_chunk.new_start, new_end, new_context
+                    abs_new_start, abs_new_end, new_context
                 )
 
         elif diff_chunk.is_file_deletion:
@@ -287,10 +289,11 @@ class SemanticGrouper:
                 signature.update(old_signature)
                 chunk_scope.update(old_scope)
 
-            if new_context and diff_chunk.new_start is not None:
-                new_end = diff_chunk.new_start + diff_chunk.new_len() - 1
+            abs_new_start = diff_chunk.get_abs_new_line_start()
+            if new_context and abs_new_start is not None:
+                abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
                 new_signature, new_scope = self._get_signature_for_line_range(
-                    diff_chunk.new_start, new_end, new_context
+                    abs_new_start, abs_new_end, new_context
                 )
                 signature.update(new_signature)
                 chunk_scope.update(new_scope)

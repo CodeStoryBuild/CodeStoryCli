@@ -81,7 +81,3 @@ def main(
         logger.error(f"Expand operation failed: {e.message}")
         raise typer.Exit(1)
         
-    except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {str(e)}")
-        logger.exception("Unexpected error in expand command")
-        raise typer.Exit(1)

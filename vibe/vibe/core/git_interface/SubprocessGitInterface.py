@@ -42,6 +42,7 @@ class SubprocessGitInterface(GitInterface):
                     f"git stdout (text): {result.stdout[:2000]}"
                     + ("...(truncated)" if len(result.stdout) > 2000 else "")
                 )
+            
             if result.stderr:
                 logger.warning(
                     f"git stderr (text): {result.stderr[:2000]}"
@@ -87,6 +88,8 @@ class SubprocessGitInterface(GitInterface):
                     f"git stderr (binary): {result.stderr[:2000]!r}"
                     + ("...(truncated)" if len(result.stderr) > 2000 else "")
                 )
+            print(result.stdout)
+            print(result.stderr)
             logger.debug(f"git returncode: {result.returncode}")
             return result.stdout
         except subprocess.CalledProcessError as e:

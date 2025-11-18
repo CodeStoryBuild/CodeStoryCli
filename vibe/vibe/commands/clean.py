@@ -111,8 +111,3 @@ def main(
             console.print(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Clean operation failed: {e.message}")
         raise typer.Exit(1)
-        
-    except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {str(e)}")
-        logger.exception("Unexpected error in clean command")
-        raise typer.Exit(1)

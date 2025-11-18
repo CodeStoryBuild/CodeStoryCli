@@ -182,7 +182,7 @@ class AIGitPipeline:
         if not ai_groups:
             logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
-            return False
+            return []
 
         logger.info("Proposed commits preview")
         # Prepare pretty diffs for each proposed group
@@ -251,7 +251,7 @@ class AIGitPipeline:
         if not apply_all:
             logger.info("No changes applied")
             logger.info("User declined applying commits")
-            return False
+            return []
 
         logger.info(
             "Accepted groups summary: accepted_groups={groups}",

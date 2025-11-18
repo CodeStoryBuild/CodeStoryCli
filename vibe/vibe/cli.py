@@ -95,11 +95,6 @@ def run_app():
         console = Console()
         console.print("\n[yellow]Operation cancelled by user[/yellow]")
         raise typer.Exit(130)
-    except Exception as e:
-        console = Console()
-        console.print(f"[red]Unexpected error:[/red] {e}")
-        console.print("[dim]Please report this issue if it persists.[/dim]")
-        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
