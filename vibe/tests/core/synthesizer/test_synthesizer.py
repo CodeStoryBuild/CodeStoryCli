@@ -341,7 +341,7 @@ def test_pure_addition_new_files(git_repo):
 
     assert (repo_path / "nested" / "deep" / "file.txt").exists()
     nested_content = (repo_path / "nested" / "deep" / "file.txt").read_text()
-    assert "content line 1\ncontent line 2\n" == nested_content
+    assert nested_content == "content line 1\ncontent line 2\n"
 
 
 def test_pure_addition_multiple_groups(git_repo):

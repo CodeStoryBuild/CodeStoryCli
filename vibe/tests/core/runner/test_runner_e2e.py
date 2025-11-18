@@ -218,7 +218,7 @@ def test_runner_with_file_deletion_and_addition(
 
     # Check that deleted file is gone and new files exist
     assert not (repo_path / "docs" / "api.md").exists()
-    for file_path in new_files.keys():
+    for file_path in new_files:
         assert (repo_path / file_path).exists()
 
     # Verify commits were made
