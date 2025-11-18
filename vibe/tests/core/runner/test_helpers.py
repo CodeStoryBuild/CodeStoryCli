@@ -2,13 +2,13 @@
 Deterministic test helpers for predictable end-to-end testing.
 """
 
-from typing import List
+
 from vibe.core.chunker.interface import MechanicalChunker
-from vibe.core.grouper.interface import LogicalGrouper
-from vibe.core.data.diff_chunk import DiffChunk
-from vibe.core.data.models import CommitGroup
 from vibe.core.data.chunk import Chunk
+from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
+from vibe.core.data.models import CommitGroup
+from vibe.core.grouper.interface import LogicalGrouper
 
 
 class DeterministicChunker(MechanicalChunker):
@@ -17,14 +17,14 @@ class DeterministicChunker(MechanicalChunker):
     This chunker will split chunks at specific keywords or patterns to create predictable results.
     """
 
-    def __init__(self, split_keywords: List[str] = None):
+    def __init__(self, split_keywords: list[str] = None):
         """
         Initialize with optional keywords that trigger chunk splitting.
         Default splits on 'SPLIT_HERE' comments.
         """
         self.split_keywords = split_keywords or ["SPLIT_HERE", "# SPLIT", "// SPLIT"]
 
-    def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:
+    def chunk(self, diff_chunks: list[DiffChunk]) -> list[DiffChunk]:
         """
         Split chunks when split keywords are found in the content.
         For testing, we'll keep chunks as-is unless they contain split markers.
@@ -47,7 +47,7 @@ class DeterministicChunker(MechanicalChunker):
 
         return result_chunks
 
-    def _split_chunk_by_lines(self, chunk: DiffChunk) -> List[DiffChunk]:
+    def _split_chunk_by_lines(self, chunk: DiffChunk) -> list[DiffChunk]:
         """
         Split a chunk into atomic chunks, then group them for testing.
         Uses the split_into_atomic_chunks method from ChunkerInterface.
@@ -98,8 +98,8 @@ class DeterministicGrouper(LogicalGrouper):
         self.max_chunks_per_group = max_chunks_per_group
 
     def group_chunks(
-        self, chunks: List[Chunk], message: str, on_progress=None
-    ) -> List[CommitGroup]:
+        self, chunks: list[Chunk], message: str, on_progress=None
+    ) -> list[CommitGroup]:
         """
         Group chunks deterministically for predictable testing.
         """
@@ -111,7 +111,7 @@ class DeterministicGrouper(LogicalGrouper):
         else:
             return self._group_by_content_patterns(chunks)
 
-    def _group_by_file(self, chunks: List[Chunk]) -> List[CommitGroup]:
+    def _group_by_file(self, chunks: list[Chunk]) -> list[CommitGroup]:
         """Group chunks by file path."""
         file_groups = {}
 
@@ -147,7 +147,7 @@ class DeterministicGrouper(LogicalGrouper):
 
         return groups
 
-    def _group_by_content_patterns(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
+    def _group_by_content_patterns(self, chunks: list[DiffChunk]) -> list[CommitGroup]:
         """Group chunks by content patterns for more complex testing."""
         groups = []
         group_counter = 1
@@ -195,7 +195,7 @@ class DeterministicGrouper(LogicalGrouper):
 
         return groups
 
-    def _determine_action(self, chunks: List[DiffChunk]) -> str:
+    def _determine_action(self, chunks: list[DiffChunk]) -> str:
         """Determine the primary action for a group of chunks."""
         if any(chunk.is_file_rename for chunk in chunks):
             return "Rename"

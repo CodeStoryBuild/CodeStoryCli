@@ -2,6 +2,6 @@
 
 __all__ = [
     "exceptions",
-    "validation", 
+    "validation",
     "logging",
 ]

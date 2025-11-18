@@ -1,16 +1,15 @@
 import json
-import logging
-from typing import List, Optional, Set
-from pydantic import BaseModel
+
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from .interface import LogicalGrouper
-from ..data.models import CommitGroup, ProgressCallback
-from ..data.chunk import Chunk
-from ..synthesizer.utils import get_patches_chunk
 from loguru import logger
+from pydantic import BaseModel
+
+from ..data.chunk import Chunk
+from ..data.models import CommitGroup, ProgressCallback
+from ..synthesizer.utils import get_patches_chunk
+from .interface import LogicalGrouper
 
 
 class ChangeGroup(BaseModel):
@@ -18,15 +17,15 @@ class ChangeGroup(BaseModel):
 
     group_id: str
     commit_message: str
-    extended_message: Optional[str]
-    changes: List[int]  # List of chunk IDs that belong to this group
-    description: Optional[str]  # Brief description of why these changes are grouped
+    extended_message: str | None
+    changes: list[int]  # List of chunk IDs that belong to this group
+    description: str | None  # Brief description of why these changes are grouped
 
 
 class GroupingResponse(BaseModel):
     """Container for the complete grouping response."""
 
-    groups: List[ChangeGroup]
+    groups: list[ChangeGroup]
 
 
 SYSTEM_PROMPT = """You are an expert code reviewer analyzing code changes.
@@ -59,7 +58,7 @@ class LangChainGrouper(LogicalGrouper):
         self.chat_model = chat_model
         self.output_parser = PydanticOutputParser(pydantic_object=GroupingResponse)
 
-    def _prepare_changes(self, chunks: List[Chunk]) -> str:
+    def _prepare_changes(self, chunks: list[Chunk]) -> str:
         """Convert chunks to a structured format for LLM analysis."""
         changes = []
         diff_map = get_patches_chunk(chunks)
@@ -73,8 +72,8 @@ class LangChainGrouper(LogicalGrouper):
         return json.dumps({"changes": changes}, indent=2)
 
     def _create_commit_groups(
-        self, response: GroupingResponse, original_chunks: List[Chunk]
-    ) -> List[CommitGroup]:
+        self, response: GroupingResponse, original_chunks: list[Chunk]
+    ) -> list[CommitGroup]:
         """
         Convert LLM's response into CommitGroup objects, with mitigations for
         duplicate and unassigned chunks.
@@ -82,11 +81,11 @@ class LangChainGrouper(LogicalGrouper):
         # Create a lookup map for chunks from the original list
         chunk_map = {i: chunk for i, chunk in enumerate(original_chunks)}
 
-        commit_groups: List[CommitGroup] = []
-        assigned_chunk_ids: Set[int] = set()  # Track chunks that have been assigned
+        commit_groups: list[CommitGroup] = []
+        assigned_chunk_ids: set[int] = set()  # Track chunks that have been assigned
 
         for group_response in response.groups:
-            group_chunks: List[Chunk] = []
+            group_chunks: list[Chunk] = []
             for chunk_id in group_response.changes:
                 if chunk_id not in chunk_map:
                     logger.warning(
@@ -116,8 +115,8 @@ class LangChainGrouper(LogicalGrouper):
                 )
 
         # Mitigation 2: Handle chunks not assigned by the LLM
-        unassigned_chunks: List[Chunk] = []
-        unassigned_chunk_ids: List[int] = []
+        unassigned_chunks: list[Chunk] = []
+        unassigned_chunk_ids: list[int] = []
         for i, chunk in enumerate(original_chunks):
             if i not in assigned_chunk_ids:
                 unassigned_chunks.append(chunk)
@@ -159,10 +158,10 @@ class LangChainGrouper(LogicalGrouper):
 
     def group_chunks(
         self,
-        chunks: List[Chunk],
+        chunks: list[Chunk],
         message: str,
-        on_progress: Optional[ProgressCallback] = None,
-    ) -> List[CommitGroup]:
+        on_progress: ProgressCallback | None = None,
+    ) -> list[CommitGroup]:
         """
         Group chunks using LangChain chat model to analyze intentions and relationships.
 

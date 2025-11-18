@@ -1,4 +1,4 @@
-from typing import Hashable, Iterable
+from collections.abc import Hashable, Iterable
 
 
 class UnionFind:
@@ -6,7 +6,7 @@ class UnionFind:
 
     def __init__(self, elements: Iterable[Hashable]) -> None:
         self.parent = {el: el for el in elements}
-        self.rank = {el: 0 for el in elements}  # Tracks tree depth
+        self.rank = dict.fromkeys(elements, 0)  # Tracks tree depth
 
     def find(self, i: Hashable) -> Hashable:
         if self.parent[i] != i:

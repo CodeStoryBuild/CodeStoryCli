@@ -1,18 +1,16 @@
 import os
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Optional, Callable
 
-from rich.console import Console
 from loguru import logger
-
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from rich.console import Console
 from vibe.core.context.expand_init import create_expand_pipeline
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
 def _run_git(
-    git: SubprocessGitInterface, args: list[str], cwd: Optional[str] = None
-) -> Optional[str]:
+    git: SubprocessGitInterface, args: list[str], cwd: str | None = None
+) -> str | None:
     return git.run_git_text(args, cwd=cwd)
 
 
@@ -80,7 +78,7 @@ class ExpandService:
 
         # Use TemporaryDirectory context managers for automatic cleanup
         with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
-            rewrite_branch: Optional[str] = None
+            rewrite_branch: str | None = None
             temp_branch = f"vibe-expand-{_short(resolved)}"
             wt1_created = False
 

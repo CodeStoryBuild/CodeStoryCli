@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Optional, List, Tuple
-from ..git_interface.interface import GitInterface
+
 from loguru import logger
+
+from ..git_interface.interface import GitInterface
 
 
 class DetachedHeadError(Exception):
@@ -20,10 +21,10 @@ class BranchSaver:
 
     def _run(
         self,
-        args: List[str],
-        cwd: Optional[Path] = None,
-        input_text: Optional[str] = None,
-    ) -> Optional[str]:
+        args: list[str],
+        cwd: Path | None = None,
+        input_text: str | None = None,
+    ) -> str | None:
         """Run a git command via the GitInterface and return stdout as string."""
         return self.git.run_git_text(args, cwd=cwd, input_text=input_text)
 
@@ -32,7 +33,7 @@ class BranchSaver:
         result = self._run(["rev-parse", "--verify", "--quiet", branch_name])
         return result is not None and result.strip() != ""
 
-    def save_working_state(self) -> Tuple[str, str, str]:
+    def save_working_state(self) -> tuple[str, str, str]:
         """
         Save the current working directory into a backup branch.
 
@@ -86,7 +87,7 @@ class BranchSaver:
             new_commit_hash,
         )
 
-    def restore_from_backup(self, exclude_path: Optional[str] = None) -> bool:
+    def restore_from_backup(self, exclude_path: str | None = None) -> bool:
         """
         Restore state from the backup branch for the current branch.
 

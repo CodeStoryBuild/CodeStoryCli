@@ -1,13 +1,13 @@
-import pytest
 import subprocess
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
-from vibe.core.data.models import CommitGroup
+import pytest
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.hunk_wrapper import HunkWrapper
+from vibe.core.data.models import CommitGroup
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
 
 ## Fixtures
 
@@ -137,7 +137,6 @@ def test_rename_file(git_repo):
     ).read_text() == "line 1\nline 2\nline 3\nline 4\nline 5\n"
 
 
-import subprocess
 
 # ... (imports and other setup)
 

@@ -1,4 +1,5 @@
 from itertools import groupby
+
 from ..data.chunk import Chunk
 from ..data.diff_chunk import DiffChunk
 from ..data.models import CommitGroup

@@ -14,7 +14,7 @@ class VibeError(Exception):
     All vibe-specific exceptions should inherit from this class
     to enable consistent error handling throughout the application.
     """
-    
+
     def __init__(self, message: str, details: str = None):
         """
         Initialize a VibeError.
@@ -135,7 +135,7 @@ def api_key_missing(service: str) -> ConfigurationError:
     """Create a ConfigurationError for missing API keys."""
     return ConfigurationError(
         f"Missing API key for {service}",
-        f"Set the API key using environment variable or run setup command"
+        "Set the API key using environment variable or run setup command"
     )
 
 

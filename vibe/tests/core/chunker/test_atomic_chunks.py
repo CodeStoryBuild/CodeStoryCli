@@ -9,11 +9,9 @@ These tests ensure that the atomic chunk splitting functionality respects core i
 """
 
 import pytest
-
+from vibe.core.checks.chunk_checks import chunks_disjoint
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
-from vibe.core.checks.chunk_checks import chunks_disjoint
-
 
 # # ============================================================================
 # Helper Functions

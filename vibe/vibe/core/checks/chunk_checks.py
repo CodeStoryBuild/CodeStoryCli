@@ -1,11 +1,10 @@
 from collections import defaultdict
-from typing import List, Optional, Tuple
 
 from ..data.diff_chunk import DiffChunk
 from ..data.line_changes import Addition, Removal
 
 
-def chunks_disjoint(chunks: List[DiffChunk]) -> bool:
+def chunks_disjoint(chunks: list[DiffChunk]) -> bool:
     """
     Returns True if all diff chunks are fully disjoint.
 
@@ -20,7 +19,7 @@ def chunks_disjoint(chunks: List[DiffChunk]) -> bool:
 
     def _get_inclusive_ranges(
         chunk: DiffChunk,
-    ) -> Tuple[Optional[Tuple[int, int]], Optional[Tuple[int, int]]]:
+    ) -> tuple[tuple[int, int] | None, tuple[int, int] | None]:
         """Return (old_start, old_end), (new_start, new_end) inclusive ranges."""
         old_lines = [
             i.line_number for i in chunk.parsed_content if isinstance(i, Removal)
@@ -33,7 +32,7 @@ def chunks_disjoint(chunks: List[DiffChunk]) -> bool:
         new_range = (min(new_lines), max(new_lines)) if new_lines else None
         return old_range, new_range
 
-    def _check_no_overlap(ranges: List[Tuple[int, int]]) -> bool:
+    def _check_no_overlap(ranges: list[tuple[int, int]]) -> bool:
         """
         Check that no ranges in the sorted list overlap.
         Ranges are inclusive [start, end].

@@ -1,11 +1,10 @@
+import json
 from dataclasses import dataclass
 from importlib.resources import files
-import json
-from pathlib import Path
-from typing import Dict, List, Tuple, Literal
-from loguru import logger
+from typing import Literal
 
-from tree_sitter import Query, QueryCursor, Node
+from loguru import logger
+from tree_sitter import Node, Query, QueryCursor
 from tree_sitter_language_pack import get_language
 
 
@@ -25,7 +24,7 @@ class LanguageConfig:
 
     @classmethod
     def from_json_dict(cls, name: str, json_dict: dict) -> "LanguageConfig":
-        shared_token_queries: Dict[str, SharedTokenQueries] = {}
+        shared_token_queries: dict[str, SharedTokenQueries] = {}
         for token_class, items in json_dict.get("shared_token_queries", {}).items():
             if isinstance(items, dict):
                 general_queries = items.get("general_queries", [])
@@ -51,7 +50,7 @@ class LanguageConfig:
     def __get_source(self, queries: list[str], capture_class) -> str:
         lines = []
         for query in queries:
-            if not "@placeholder" in query:
+            if "@placeholder" not in query:
                 logger.error(
                     f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!"
                 )
@@ -69,7 +68,7 @@ class LanguageConfig:
         for each configured filter. Each predicate line uses the capture name so
         the predicate has access to the node text.
         """
-        lines: List[str] = []
+        lines: list[str] = []
         for capture_class, capture_queries in self.shared_token_queries.items():
             queries = (
                 capture_queries.general_queries
@@ -108,11 +107,11 @@ class QueryManager:
 
         resource = files("vibe").joinpath("resources/language_config.json")
         content_text = resource.read_text(encoding="utf-8")
-        self._language_configs: Dict[str, LanguageConfig] = self._init_configs(
+        self._language_configs: dict[str, LanguageConfig] = self._init_configs(
             content_text
         )
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
-        self._cursor_cache: Dict[str, Tuple[Query, QueryCursor]] = {}
+        self._cursor_cache: dict[str, tuple[Query, QueryCursor]] = {}
 
         # Log language configuration summary
         lang_summaries = {}
@@ -132,11 +131,11 @@ class QueryManager:
             details=lang_summaries,
         )
 
-    def _init_configs(self, config_content: str) -> Dict[str, LanguageConfig]:
+    def _init_configs(self, config_content: str) -> dict[str, LanguageConfig]:
         try:
             config = json.loads(config_content)
 
-            configs: Dict[str, LanguageConfig] = {}
+            configs: dict[str, LanguageConfig] = {}
             # iterate .items() to get (name, config)
             for language_name, language_config in config.items():
                 configs[language_name] = LanguageConfig.from_json_dict(

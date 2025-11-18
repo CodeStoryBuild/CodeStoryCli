@@ -1,19 +1,14 @@
 from rich.console import Console
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-from vibe.core.file_reader.file_parser import FileParser
-from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
-from vibe.core.commands.git_commands import GitCommands
-from vibe.core.semantic_grouper.semantic_grouper import SemanticGrouper
-from vibe.core.semantic_grouper.query_manager import QueryManager
-from vibe.core.pipeline.runner import AIGitPipeline
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.chunker.atomic_chunker import AtomicChunker
-from vibe.core.chunker.simple_chunker import SimpleChunker
-from vibe.core.grouper.langchain_grouper import LangChainGrouper
-from vibe.core.grouper.single_grouper import SingleGrouper
+from vibe.core.commands.git_commands import GitCommands
+from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.file_reader.git_file_reader import GitFileReader
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.grouper.single_grouper import SingleGrouper
+from vibe.core.pipeline.runner import AIGitPipeline
+from vibe.core.semantic_grouper.query_manager import QueryManager
+from vibe.core.semantic_grouper.semantic_grouper import SemanticGrouper
+from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
 
 
 def create_expand_pipeline(

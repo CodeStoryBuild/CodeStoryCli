@@ -1,12 +1,9 @@
-from itertools import groupby
-from typing import Optional, List, Union
 from dataclasses import dataclass
-import json
 
 from loguru import logger
 
-from ..data.line_changes import Addition, Removal
 from ..data.hunk_wrapper import HunkWrapper
+from ..data.line_changes import Addition, Removal
 
 
 @dataclass(frozen=True)
@@ -37,8 +34,8 @@ class DiffChunk:
     # if old path (!None) != new path (!None), this is a rename operation
     # if old path is None and new path is not None, this is a new file addition
     # if old path is not None and new path is None, this is a file deletion
-    old_file_path: Optional[bytes] = None
-    new_file_path: Optional[bytes] = None
+    old_file_path: bytes | None = None
+    new_file_path: bytes | None = None
 
     def canonical_path(self) -> bytes | None:
         """
@@ -75,20 +72,20 @@ class DiffChunk:
         return self.old_file_path is not None and self.new_file_path is None
 
     # the file mode from git diff (e.g., b'100644', b'100755')
-    file_mode: Optional[bytes] = None
+    file_mode: bytes | None = None
     # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
     contains_newline_fallback: bool = False
     contains_newline_marker: bool = False
 
     # the structured content of this chunk (list of Addition/Removal objects)
-    parsed_content: Optional[List[Union[Addition, Removal]]] = None
+    parsed_content: list[Addition | Removal] | None = None
 
     @property
     def has_content(self) -> bool:
         return self.parsed_content is not None and len(self.parsed_content) > 0
 
     # starting line number in the old file (ONLY coordinate we store!)
-    old_start: Optional[int] = None
+    old_start: int | None = None
     # new_start is NEVER stored - it's calculated during patch generation!
 
     @property
@@ -105,8 +102,8 @@ class DiffChunk:
         if self.parsed_content is None:
             return 0
         return sum(1 for c in self.parsed_content if isinstance(c, Addition))
-    
-    def get_abs_new_line_start(self) -> Optional[int]:
+
+    def get_abs_new_line_start(self) -> int | None:
         """Get the absolute new file line start (for semantic grouping ONLY!).
         
         This finds the abs_new_line value from the first Addition in the chunk.
@@ -118,8 +115,8 @@ class DiffChunk:
             if isinstance(item, Addition):
                 return item.abs_new_line
         return None
-    
-    def get_abs_new_line_end(self) -> Optional[int]:
+
+    def get_abs_new_line_end(self) -> int | None:
         """Get the absolute new file line end (for semantic grouping ONLY!).
         
         This finds the abs_new_line value from the last Addition in the chunk.
@@ -131,7 +128,7 @@ class DiffChunk:
             if isinstance(item, Addition):
                 return item.abs_new_line
         return None
-    
+
     def get_min_abs_line(self) -> int:
         """Get the minimum absolute line number for sorting chunks.
         
@@ -141,10 +138,10 @@ class DiffChunk:
         """
         if not self.parsed_content:
             return self.old_start or 0
-        
+
         abs_lines = [item.abs_new_line for item in self.parsed_content]
         return min(abs_lines) if abs_lines else (self.old_start or 0)
-    
+
     def get_old_line_range(self) -> tuple[int, int]:
         """Get the range of old file lines this chunk covers.
         
@@ -153,8 +150,8 @@ class DiffChunk:
         if not self.old_start:
             return (0, 0)
         return (self.old_start, self.old_start + self.old_len() - 1)
-    
-    def get_abs_new_line_range(self) -> tuple[Optional[int], Optional[int]]:
+
+    def get_abs_new_line_range(self) -> tuple[int | None, int | None]:
         """Get the range of absolute new file lines this chunk covers.
         
         Returns (start, end) inclusive range in absolute new file coordinates.
@@ -165,7 +162,7 @@ class DiffChunk:
         if start is None or end is None:
             return (None, None)
         return (start, end)
-    
+
     def get_sort_key(self) -> tuple[int, int]:
         """Get a sort key for maintaining correct chunk order.
         
@@ -174,7 +171,7 @@ class DiffChunk:
         then by new file position for chunks at the same old position.
         """
         return (self.old_start or 0, self.get_min_abs_line())
-    
+
     def is_disjoint_from(self, other: "DiffChunk") -> bool:
         """Check if this chunk is disjoint from another chunk (in old file coordinates).
         
@@ -184,12 +181,12 @@ class DiffChunk:
         if not other or self.canonical_path() != other.canonical_path():
             # Different files are always disjoint
             return True
-        
+
         self_start = self.old_start or 0
         self_end = self_start + self.old_len()
         other_start = other.old_start or 0
         other_end = other_start + other.old_len()
-        
+
         # Disjoint if one ends before the other starts
         return self_end <= other_start or other_end <= self_start
 
@@ -199,7 +196,7 @@ class DiffChunk:
     def pure_deletion(self) -> bool:
         return self.new_len() == 0 and self.has_content
 
-    def split_into_atomic_chunks(self) -> List["DiffChunk"]:
+    def split_into_atomic_chunks(self) -> list["DiffChunk"]:
         """
         Splits a DiffChunk into a list of the most granular, yet still valid,
         atomic DiffChunks.
@@ -252,7 +249,7 @@ class DiffChunk:
         - abs_new_line: Absolute position in new file from original diff
           (ONLY used for semantic grouping, never for patch generation)
         """
-        parsed_content: List[Union[Addition, Removal]] = []
+        parsed_content: list[Addition | Removal] = []
         current_old_line = hunk.old_start
         current_new_line = hunk.new_start
 
@@ -307,12 +304,12 @@ class DiffChunk:
     @classmethod
     def from_parsed_content_slice(
         cls,
-        old_file_path: Optional[bytes],
-        new_file_path: Optional[bytes],
-        file_mode: Optional[bytes],
+        old_file_path: bytes | None,
+        new_file_path: bytes | None,
+        file_mode: bytes | None,
         contains_newline_fallback: bool,
         contains_newline_marker: bool,
-        parsed_slice: List[Union[Addition, Removal]],
+        parsed_slice: list[Addition | Removal],
     ) -> "DiffChunk":
         """Create a DiffChunk from a slice of parsed content.
         

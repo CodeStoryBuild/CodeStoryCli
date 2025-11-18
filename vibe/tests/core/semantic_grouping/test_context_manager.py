@@ -2,11 +2,10 @@
 Test script for ContextManager to validate it works correctly.
 """
 
-from typing import Optional
-from vibe.core.file_reader.protocol import FileReader
-from vibe.core.file_reader.file_parser import FileParser
+
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
+from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.semantic_grouper.context_manager import ContextManager
 from vibe.core.semantic_grouper.query_manager import QueryManager
 
@@ -48,7 +47,7 @@ class Calculator:
 """,
         }
 
-    def read(self, path: str, old_content: bool = False) -> Optional[str]:
+    def read(self, path: str, old_content: bool = False) -> str | None:
         """Read file content based on path and version."""
         return self.files.get((path, old_content))
 

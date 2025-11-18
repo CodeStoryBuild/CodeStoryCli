@@ -1,17 +1,17 @@
 import time
-from typing import List
 
 from vibe.core.grouper.interface import LogicalGrouper
-from ..data.models import CommitGroup
+
 from ..data.chunk import Chunk
+from ..data.models import CommitGroup
 
 
 class SingleGrouper(LogicalGrouper):
     def group_chunks(
-        self, chunks: List[Chunk], message: str, on_progress=None
-    ) -> List[CommitGroup]:
+        self, chunks: list[Chunk], message: str, on_progress=None
+    ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""
-        groups: List[CommitGroup] = []
+        groups: list[CommitGroup] = []
         id = 0
         g_time = time.time()
         for chunk in chunks:

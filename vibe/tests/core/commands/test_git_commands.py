@@ -1,9 +1,7 @@
-import pytest
-from unittest.mock import MagicMock, patch
 from vibe.core.commands.git_commands import GitCommands
-from vibe.core.data.hunk_wrapper import HunkWrapper
-from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
+from vibe.core.data.diff_chunk import DiffChunk
+from vibe.core.data.hunk_wrapper import HunkWrapper
 from vibe.core.git_interface.interface import GitInterface
 
 

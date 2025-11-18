@@ -5,18 +5,17 @@ These tests create temporary git repositories and test the complete pipeline
 from git diff extraction through chunking, grouping, and commit synthesis.
 """
 
-import pytest
 import subprocess
 import tempfile
-import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
+import pytest
+from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.pipeline.runner import AIGitPipeline
-from vibe.core.chunker.simple_chunker import SimpleChunker
-from .test_helpers import DeterministicGrouper
 
+from .test_helpers import DeterministicGrouper
 
 # --- Test Fixtures ---
 

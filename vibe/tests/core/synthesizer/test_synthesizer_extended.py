@@ -1,15 +1,15 @@
 import subprocess
+
 import pytest
-from pathlib import Path
+from vibe.core.data.diff_chunk import DiffChunk
+from vibe.core.data.line_changes import Addition, Removal
 
 # Assuming your models are importable like this
 from vibe.core.data.models import CommitGroup
-from vibe.core.data.line_changes import Addition, Removal
-from vibe.core.data.diff_chunk import DiffChunk
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 # Assuming the synthesizer class is here
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
 # Helper fixture to create a repo with two files

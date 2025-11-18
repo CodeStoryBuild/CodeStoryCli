@@ -1,32 +1,25 @@
-from typing import List
 from time import perf_counter
-
-from rich.progress import Progress
-from rich.console import Console
-
-from ..data.composite_diff_chunk import CompositeDiffChunk
-from ..data.chunk import Chunk
-from ..git_interface.interface import GitInterface
-from ..commands.git_commands import GitCommands
-from ..synthesizer.git_synthesizer import GitSynthesizer
-from ..branch_saver.branch_saver import BranchSaver
-from typing import Optional
-from ..synthesizer.utils import get_patches
-
-from ..chunker.interface import MechanicalChunker
-from ..grouper.interface import LogicalGrouper
-from ..data.models import CommitResult
-
-from ..file_reader.protocol import FileReader
-from ..file_reader.file_parser import FileParser
-from ..semantic_grouper.query_manager import QueryManager
-from ..semantic_grouper.context_manager import ContextManager
-
-from ..semantic_grouper.semantic_grouper import SemanticGrouper
-
 
 import inquirer
 from loguru import logger
+from rich.console import Console
+from rich.progress import Progress
+
+from ..branch_saver.branch_saver import BranchSaver
+from ..chunker.interface import MechanicalChunker
+from ..commands.git_commands import GitCommands
+from ..data.chunk import Chunk
+from ..data.composite_diff_chunk import CompositeDiffChunk
+from ..data.models import CommitResult
+from ..file_reader.file_parser import FileParser
+from ..file_reader.protocol import FileReader
+from ..git_interface.interface import GitInterface
+from ..grouper.interface import LogicalGrouper
+from ..semantic_grouper.context_manager import ContextManager
+from ..semantic_grouper.query_manager import QueryManager
+from ..semantic_grouper.semantic_grouper import SemanticGrouper
+from ..synthesizer.git_synthesizer import GitSynthesizer
+from ..synthesizer.utils import get_patches
 
 
 class AIGitPipeline:
@@ -39,7 +32,7 @@ class AIGitPipeline:
         semantic_grouper: SemanticGrouper,
         logical_grouper: LogicalGrouper,
         synthesizer: GitSynthesizer,
-        branch_saver: Optional[BranchSaver],
+        branch_saver: BranchSaver | None,
         file_reader: FileReader,
         file_parser: FileParser,
         query_manager: QueryManager,
@@ -70,7 +63,7 @@ class AIGitPipeline:
 
     def run(
         self, target: str = None, message: str = None, auto_yes: bool = False
-    ) -> List[CommitResult]:
+    ) -> list[CommitResult]:
         _t_start = perf_counter()
         # Initial invocation summary
         logger.info(
@@ -82,7 +75,7 @@ class AIGitPipeline:
         )
         # Diff between the base commit and the backup branch commit - all working directory changes
         t0 = perf_counter()
-        raw_diff: List[Chunk] = self.commands.get_processed_working_diff(
+        raw_diff: list[Chunk] = self.commands.get_processed_working_diff(
             self.base_commit_hash, self.new_commit_hash, target
         )
         t1 = perf_counter()
