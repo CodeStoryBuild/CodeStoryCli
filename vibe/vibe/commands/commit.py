@@ -3,7 +3,7 @@ import typer
 from loguru import logger
 from rich.console import Console
 
-from vibe.core.context.commit_init import createPipeline
+from vibe.core.context.commit_init import create_commit_pipeline
 from vibe.core.exceptions import GitError, ValidationError, VibeError
 from vibe.core.logging.logging import setup_logger
 from vibe.core.validation import (
@@ -37,6 +37,9 @@ def main(
         
         # Auto-accept all suggestions
         vibe commit --yes
+        
+        # Use specific model
+        vibe --model openai:gpt-4 commit
     """
     console = Console()
 
@@ -60,9 +63,14 @@ def main(
             auto_yes=yes
         )
 
+        # Get model from context (set in CLI callback)
+        model = ctx.obj.get("model") if ctx.obj else None
+
         # Create and run pipeline
         repo_path = "."
-        runner = createPipeline(repo_path, str(validated_target), console, auto_yes=yes)
+        runner = create_commit_pipeline(
+            repo_path, str(validated_target), console, auto_yes=yes, model=model
+        )
 
         result = runner.run(str(validated_target), validated_message, auto_yes=yes)
 

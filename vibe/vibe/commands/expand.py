@@ -27,6 +27,9 @@ def main(
         
         # Expand with auto-confirmation
         vibe expand abc123 --yes
+        
+        # Use specific model
+        vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
     """
     console = Console()
 
@@ -44,8 +47,11 @@ def main(
             auto_yes=yes
         )
 
+        # Get model from context (set in CLI callback)
+        model = ctx.obj.get("model") if ctx.obj else None
+
         # Execute expansion
-        service = ExpandService(".")
+        service = ExpandService(".", model=model)
         success = service.expand_commit(validated_hash, console=console, auto_yes=yes)
 
         if not success:

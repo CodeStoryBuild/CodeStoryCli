@@ -1,9 +1,12 @@
+from langchain_core.language_models.chat_models import BaseChatModel
 from rich.console import Console
+
 from vibe.core.chunker.atomic_chunker import AtomicChunker
 from vibe.core.commands.git_commands import GitCommands
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.file_reader.git_file_reader import GitFileReader
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.grouper.langchain_grouper import LangChainGrouper
 from vibe.core.grouper.single_grouper import SingleGrouper
 from vibe.core.pipeline.runner import AIGitPipeline
 from vibe.core.semantic_grouper.query_manager import QueryManager
@@ -16,6 +19,7 @@ def create_expand_pipeline(
     base_commit_hash: str,
     new_commit_hash: str,
     console: Console,
+    model: BaseChatModel | None = None,
 ):
     """
     Create an AIGitPipeline configured to operate on an arbitrary commit range
@@ -30,8 +34,12 @@ def create_expand_pipeline(
     chunker = AtomicChunker()
     print(type(chunker))
     # chunker = SimpleChunker()
-    logical_grouper = SingleGrouper()
-    # logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
+    
+    # Use provided model or default to SingleGrouper (no AI)
+    if model:
+        logical_grouper = LangChainGrouper(model)
+    else:
+        logical_grouper = SingleGrouper()
 
     # For expand, we don't take a working backup; synthesizer writes to the current
     # checked-out temp branch within the worktree.

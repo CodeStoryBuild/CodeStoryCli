@@ -1,11 +1,14 @@
 import inquirer
+from langchain_core.language_models.chat_models import BaseChatModel
 from rich.console import Console
+
 from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.chunker.atomic_chunker import AtomicChunker
 from vibe.core.commands.git_commands import GitCommands
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.file_reader.git_file_reader import GitFileReader
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.grouper.langchain_grouper import LangChainGrouper
 from vibe.core.grouper.single_grouper import SingleGrouper
 from vibe.core.pipeline.runner import AIGitPipeline
 from vibe.core.semantic_grouper.query_manager import QueryManager
@@ -53,16 +56,24 @@ def verify_repo(
     return True
 
 
-def createPipeline(
-    repo_path: str, target: str, console: Console, auto_yes: bool = False
+def create_commit_pipeline(
+    repo_path: str,
+    target: str,
+    console: Console,
+    auto_yes: bool = False,
+    model: BaseChatModel | None = None,
 ):
     git_interface = SubprocessGitInterface(repo_path)
     commands = GitCommands(git_interface)
 
     chunker = AtomicChunker()
     # chunker = SimpleChunker()
-    logical_grouper = SingleGrouper()
-    # logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
+    
+    # Use provided model or default to SingleGrouper (no AI)
+    if model:
+        logical_grouper = LangChainGrouper(model)
+    else:
+        logical_grouper = SingleGrouper()
 
     branch_saver = BranchSaver(git_interface)
 

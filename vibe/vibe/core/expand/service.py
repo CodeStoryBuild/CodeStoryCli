@@ -2,8 +2,10 @@ import os
 import shutil
 from tempfile import TemporaryDirectory
 
+from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 from rich.console import Console
+
 from vibe.core.context.expand_init import create_expand_pipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
@@ -35,9 +37,10 @@ def _cleanup_worktree(git: SubprocessGitInterface, path: str):
 class ExpandService:
     """Core orchestration for expanding a commit safely using temporary worktrees."""
 
-    def __init__(self, repo_path: str = "."):
+    def __init__(self, repo_path: str = ".", model: BaseChatModel | None = None):
         self.repo_path = repo_path
         self.git = SubprocessGitInterface(repo_path)
+        self.model = model
 
     def expand_commit(self, commit_hash: str, console: Console, auto_yes: bool) -> bool:
         # Ensure we're in a git repo
@@ -102,6 +105,7 @@ class ExpandService:
                     base_commit_hash=parent,
                     new_commit_hash=resolved,
                     console=console,
+                    model=self.model,
                 )
                 plan = pipeline.run(target=".", auto_yes=auto_yes)
                 if plan:
