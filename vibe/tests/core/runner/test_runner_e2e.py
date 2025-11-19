@@ -433,7 +433,7 @@ def test_runner_with_staged_changes_reset(complex_git_repo):
         mock_confirm.return_value = True
 
         pipeline = AIGitPipeline(git_interface, chunker, grouper)
-        results = pipeline.run()
+        pipeline.run()
 
     # Verify that pipeline handled the situation
     # Should either reset and process, or handle appropriately
