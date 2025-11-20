@@ -70,6 +70,9 @@ class ContextManager:
         self._parsed_files: dict[tuple[str, bool], ParsedFile] = {}
         self._generate_parsed_files()
 
+        if not self._parsed_files:
+            logger.warning("Empty parsed files!")
+
         # First, build shared context
         self._build_shared_contexts()
 
@@ -175,6 +178,7 @@ class ContextManager:
             )
             content = self.file_reader.read(path_str, old_content=is_old_version)
             if content is None:
+                logger.warning(f"Content read for {path_str} is None")
                 continue
 
             # Parse the file (file_parser expects string path)
@@ -182,6 +186,7 @@ class ContextManager:
                 path_str, content, self.simplify_overlapping_ranges(line_ranges)
             )
             if parsed_file is None:
+                logger.warning(f"Parsed file for {path_str} is None")
                 continue
 
             self._parsed_files[(file_path, is_old_version)] = parsed_file
@@ -252,8 +257,10 @@ class ContextManager:
         for (file_path, is_old_version), parsed_file in self._parsed_files.items():
             try:
                 context = self._build_context(file_path, is_old_version, parsed_file)
-                if context:
+                if context is not None:
                     self._context_cache[(file_path, is_old_version)] = context
+                else:
+                    logger.warning(f"Failed to build context for {file_path} (old={is_old_version}): context is None")
             except Exception as e:
                 # Log error but continue with other files
                 logger.warning(
