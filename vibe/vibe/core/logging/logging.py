@@ -37,7 +37,7 @@ class StructuredLogger:
 
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logfile = LOG_DIR / f"{self.command_name}_{timestamp}.log"
+        logfile = LOG_DIR / f"vibe_{timestamp}.log"
 
         # Console sink with Rich formatting
         def console_sink(message):
@@ -69,35 +69,30 @@ class StructuredLogger:
             self.console.print(text)
 
         # Add console sink with appropriate level
-        logger.add(
-            console_sink,
-            level=console_level,
-            format="{message}",
-            catch=True
-        )
+        logger.add(console_sink, level=console_level, format="{message}", catch=True)
 
         # File sink with detailed formatting
         logger.add(
             logfile,
             level="DEBUG",
             format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-                   "<level>{level: <8}</level> | "
-                   "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
-                   "<level>{message}</level>",
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+            "<level>{message}</level>",
             rotation="10 MB",
             retention="14 days",
             compression="gz",
             catch=True,
             backtrace=True,
-            diagnose=True
+            diagnose=True,
         )
 
         # Log initialization
         logger.bind(
-            command=self.command_name,
-            logfile=str(logfile),
-            log_level=log_level
+            command=self.command_name, logfile=str(logfile), log_level=log_level
         ).info("Logger initialized")
+
+        logger.info(f"Log File Created At: {logfile}")
 
         self.logfile = logfile
 
@@ -109,12 +104,12 @@ class StructuredLogger:
 def setup_logger(command_name: str, console: Console, debug: bool = False) -> Path:
     """
     Set up enhanced logging for a command.
-    
+
     Args:
         command_name: Name of the command being executed
         console: Rich console for output
         debug: Enable debug logging
-        
+
     Returns:
         Path to the log file
     """
@@ -130,24 +125,21 @@ def setup_logger(command_name: str, console: Console, debug: bool = False) -> Pa
 def log_performance(func_name: str, duration_ms: int, **kwargs) -> None:
     """
     Log performance metrics with structured data.
-    
+
     Args:
         func_name: Name of the function being measured
         duration_ms: Duration in milliseconds
         **kwargs: Additional metrics to log
     """
     logger.bind(
-        performance=True,
-        function=func_name,
-        duration_ms=duration_ms,
-        **kwargs
+        performance=True, function=func_name, duration_ms=duration_ms, **kwargs
     ).info(f"Performance: {func_name} completed in {duration_ms}ms")
 
 
 def log_operation(operation: str, success: bool, **details) -> None:
     """
     Log operation results with structured data.
-    
+
     Args:
         operation: Name of the operation
         success: Whether the operation succeeded
@@ -156,26 +148,22 @@ def log_operation(operation: str, success: bool, **details) -> None:
     level = "info" if success else "error"
     status = "SUCCESS" if success else "FAILED"
 
-    logger.bind(
-        operation=operation,
-        success=success,
-        **details
-    ).__getattribute__(level)(f"Operation {operation}: {status}")
+    logger.bind(operation=operation, success=success, **details).__getattribute__(
+        level
+    )(f"Operation {operation}: {status}")
 
 
 def log_user_action(action: str, **context) -> None:
     """
     Log user actions for audit and debugging.
-    
+
     Args:
         action: Description of the user action
         **context: Additional context about the action
     """
-    logger.bind(
-        user_action=True,
-        action=action,
-        **context
-    ).info(f"User action: {action}")
+    logger.bind(user_action=True, action=action, **context).info(
+        f"User action: {action}"
+    )
 
 
 def setup_debug_logging() -> None:
@@ -192,10 +180,10 @@ def get_log_directory() -> Path:
 def cleanup_old_logs(days: int = 14) -> int:
     """
     Clean up log files older than the specified number of days.
-    
+
     Args:
         days: Number of days to keep logs
-        
+
     Returns:
         Number of files cleaned up
     """

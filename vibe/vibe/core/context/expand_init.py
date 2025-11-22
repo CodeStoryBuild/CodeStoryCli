@@ -34,7 +34,7 @@ def create_expand_pipeline(
     chunker = AtomicChunker()
     print(type(chunker))
     # chunker = SimpleChunker()
-    
+
     # Use provided model or default to SingleGrouper (no AI)
     if model:
         logical_grouper = LangChainGrouper(model)

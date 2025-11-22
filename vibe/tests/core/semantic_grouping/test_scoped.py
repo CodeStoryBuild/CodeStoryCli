@@ -1,4 +1,3 @@
-
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.semantic_grouper.query_manager import QueryManager
 from vibe.core.semantic_grouper.scope_mapper import ScopeMapper

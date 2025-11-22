@@ -1,4 +1,3 @@
-
 import typer
 from loguru import logger
 from rich.console import Console
@@ -37,14 +36,14 @@ def main(
     ),
 ) -> None:
     """Run 'vibe expand' iteratively from HEAD (or start_from) to the second commit with filtering.
-    
+
     Examples:
         # Clean all commits with auto-confirmation
         vibe clean --yes
-        
+
         # Clean starting from a specific commit
         vibe clean abc123 --min-size 5
-        
+
         # Clean while ignoring certain commits
         vibe clean --ignore def456 --ignore ghi789
     """
@@ -68,7 +67,7 @@ def main(
             ignore_patterns=validated_ignore,
             min_size=validated_min_size,
             auto_yes=yes,
-            start_from=validated_start_from
+            start_from=validated_start_from,
         )
 
         # Execute cleaning
@@ -78,7 +77,7 @@ def main(
                 ignore=validated_ignore,
                 min_size=validated_min_size,
                 auto_yes=yes,
-                start_from=validated_start_from
+                start_from=validated_start_from,
             ),
             console=console,
         )

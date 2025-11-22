@@ -1,4 +1,3 @@
-
 import typer
 from loguru import logger
 from rich.console import Console
@@ -20,14 +19,14 @@ def main(
     ),
 ) -> None:
     """Expand a past commit into smaller logical commits safely.
-    
+
     Examples:
         # Expand a specific commit
         vibe expand abc123
-        
+
         # Expand with auto-confirmation
         vibe expand abc123 --yes
-        
+
         # Use specific model
         vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
     """
@@ -41,11 +40,7 @@ def main(
         # Setup logging
         setup_logger("expand", console)
 
-        logger.info(
-            "Expand command started",
-            commit_hash=validated_hash,
-            auto_yes=yes
-        )
+        logger.info("Expand command started", commit_hash=validated_hash, auto_yes=yes)
 
         # Get model from context (set in CLI callback)
         model = ctx.obj.get("model") if ctx.obj else None

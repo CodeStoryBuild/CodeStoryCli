@@ -19,7 +19,9 @@ from vibe.core.data.line_changes import Addition, Removal
 # ============================================================================
 
 
-def create_mock_diff_chunk(file_path: str = "test.py", num_changes: int = 5) -> DiffChunk:
+def create_mock_diff_chunk(
+    file_path: str = "test.py", num_changes: int = 5
+) -> DiffChunk:
     """Create a mock DiffChunk for testing."""
     mock_chunk = Mock(spec=DiffChunk)
     mock_chunk.canonical_path.return_value = file_path
@@ -45,18 +47,22 @@ def create_mock_diff_chunk(file_path: str = "test.py", num_changes: int = 5) -> 
 
 def assert_chunker_interface_compliance(chunker: MechanicalChunker):
     """Assert that a chunker implements the required interface."""
-    assert hasattr(chunker, 'chunk'), "Chunker must have chunk method"
+    assert hasattr(chunker, "chunk"), "Chunker must have chunk method"
     assert callable(chunker.chunk), "chunk must be callable"
 
 
 def assert_chunk_output_valid(output_chunks: list, original_chunks: list):
     """Assert that chunker output is valid."""
     assert isinstance(output_chunks, list), "Output must be a list"
-    assert len(output_chunks) >= len(original_chunks), "Output should have at least as many chunks as input"
+    assert len(output_chunks) >= len(original_chunks), (
+        "Output should have at least as many chunks as input"
+    )
 
     for chunk in output_chunks:
         # Each output item should be a valid chunk-like object
-        assert hasattr(chunk, 'canonical_path'), "Output chunks must have canonical_path method"
+        assert hasattr(chunk, "canonical_path"), (
+            "Output chunks must have canonical_path method"
+        )
 
 
 # ============================================================================
@@ -126,7 +132,7 @@ def test_chunker_preserves_file_paths(name, chunker_class, chunker_kwargs):
 
     # All output chunks should maintain the same file path
     for output_chunk in result:
-        if hasattr(output_chunk, 'canonical_path'):
+        if hasattr(output_chunk, "canonical_path"):
             assert output_chunk.canonical_path() == "src/important.py"
 
 
@@ -211,7 +217,9 @@ class TestChunkerErrorHandling:
             chunker.chunk([1, 2, 3])  # Not chunk objects
 
     @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
-    def test_chunker_handles_malformed_chunks(self, name, chunker_class, chunker_kwargs):
+    def test_chunker_handles_malformed_chunks(
+        self, name, chunker_class, chunker_kwargs
+    ):
         """Test chunkers with malformed chunk objects."""
         chunker = chunker_class(**chunker_kwargs)
 
@@ -269,7 +277,7 @@ class TestChunkerIntegration:
         # If both have same length, compare their canonical paths
         if len(result1) > 0 and len(result2) > 0:
             for r1, r2 in zip(result1, result2, strict=False):
-                if hasattr(r1, 'canonical_path') and hasattr(r2, 'canonical_path'):
+                if hasattr(r1, "canonical_path") and hasattr(r2, "canonical_path"):
                     assert r1.canonical_path() == r2.canonical_path()
 
 
@@ -293,6 +301,7 @@ class TestChunkerPerformance:
             chunks.append(chunk)
 
         import time
+
         start_time = time.time()
 
         result = chunker.chunk(chunks)
@@ -300,11 +309,15 @@ class TestChunkerPerformance:
         end_time = time.time()
 
         # Should complete in reasonable time (less than 1 second for this test)
-        assert end_time - start_time < 1.0, f"{name} took too long: {end_time - start_time}s"
+        assert end_time - start_time < 1.0, (
+            f"{name} took too long: {end_time - start_time}s"
+        )
         assert isinstance(result, list)
 
     @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
-    def test_chunker_performance_large_chunks(self, name, chunker_class, chunker_kwargs):
+    def test_chunker_performance_large_chunks(
+        self, name, chunker_class, chunker_kwargs
+    ):
         """Test chunker performance with large input chunks."""
         chunker = chunker_class(**chunker_kwargs)
 
@@ -312,6 +325,7 @@ class TestChunkerPerformance:
         large_chunk = create_mock_diff_chunk("large_file.py", 100)
 
         import time
+
         start_time = time.time()
 
         result = chunker.chunk([large_chunk])
@@ -319,7 +333,7 @@ class TestChunkerPerformance:
         end_time = time.time()
 
         # Should complete in reasonable time
-        assert end_time - start_time < 1.0, f"{name} took too long: {end_time - start_time}s"
+        assert end_time - start_time < 1.0, (
+            f"{name} took too long: {end_time - start_time}s"
+        )
         assert isinstance(result, list)
-
-

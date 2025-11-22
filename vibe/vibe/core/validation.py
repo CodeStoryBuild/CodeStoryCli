@@ -15,13 +15,13 @@ from .exceptions import FileSystemError, GitError, ValidationError
 def validate_commit_hash(value: str) -> str:
     """
     Validate and normalize a git commit hash.
-    
+
     Args:
         value: The commit hash string to validate
-        
+
     Returns:
         The normalized (lowercase) commit hash
-        
+
     Raises:
         ValidationError: If the commit hash format is invalid
     """
@@ -31,10 +31,10 @@ def validate_commit_hash(value: str) -> str:
     value = value.strip()
 
     # Git accepts partial hashes (4-40 chars, hex only)
-    if not re.match(r'^[a-fA-F0-9]{4,40}$', value):
+    if not re.match(r"^[a-fA-F0-9]{4,40}$", value):
         raise ValidationError(
             f"Invalid commit hash format: {value}",
-            "Commit hashes must be 4-40 hexadecimal characters"
+            "Commit hashes must be 4-40 hexadecimal characters",
         )
 
     return value.lower()
@@ -43,13 +43,13 @@ def validate_commit_hash(value: str) -> str:
 def validate_target_path(value: str) -> Path:
     """
     Validate that a target path exists and is accessible.
-    
+
     Args:
         value: The path string to validate
-        
+
     Returns:
         The validated Path object
-        
+
     Raises:
         ValidationError: If the path doesn't exist or isn't accessible
         FileSystemError: If there are permission issues
@@ -65,13 +65,13 @@ def validate_target_path(value: str) -> Path:
     if not path.exists():
         raise ValidationError(
             f"Path does not exist: {value}",
-            "Please check that the path is correct and accessible"
+            "Please check that the path is correct and accessible",
         )
 
     if not (path.is_dir() or path.is_file()):
         raise ValidationError(
             f"Path is not a valid file or directory: {value}",
-            "Please specify a valid file or directory path"
+            "Please specify a valid file or directory path",
         )
 
     # Check if we have read access
@@ -83,7 +83,7 @@ def validate_target_path(value: str) -> Path:
     except PermissionError:
         raise FileSystemError(
             f"Permission denied accessing: {value}",
-            "Please check file/directory permissions"
+            "Please check file/directory permissions",
         )
     except UnicodeDecodeError:
         # Binary files are OK, we just can't read them as text
@@ -95,13 +95,13 @@ def validate_target_path(value: str) -> Path:
 def validate_message_length(value: str | None) -> str | None:
     """
     Validate commit message length and content.
-    
+
     Args:
         value: The commit message to validate (can be None)
-        
+
     Returns:
         The trimmed commit message or None
-        
+
     Raises:
         ValidationError: If the message is invalid
     """
@@ -119,14 +119,14 @@ def validate_message_length(value: str | None) -> str | None:
     if len(value) > 1000:
         raise ValidationError(
             "Commit message is too long (maximum 1000 characters)",
-            f"Current length: {len(value)} characters"
+            f"Current length: {len(value)} characters",
         )
 
     # Check for potentially problematic characters
-    if '\x00' in value:
+    if "\x00" in value:
         raise ValidationError(
             "Commit message contains null bytes",
-            "Please remove null characters from the message"
+            "Please remove null characters from the message",
         )
 
     return value
@@ -135,13 +135,13 @@ def validate_message_length(value: str | None) -> str | None:
 def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
     """
     Validate ignore patterns for commit hashes.
-    
+
     Args:
         patterns: List of commit hash patterns to ignore
-        
+
     Returns:
         List of validated patterns
-        
+
     Raises:
         ValidationError: If any pattern is invalid
     """
@@ -161,16 +161,16 @@ def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
             continue
 
         # Validate as potential commit hash prefix
-        if not re.match(r'^[a-fA-F0-9]+$', pattern):
+        if not re.match(r"^[a-fA-F0-9]+$", pattern):
             raise ValidationError(
                 f"Invalid ignore pattern: {pattern}",
-                "Patterns must be hexadecimal characters (commit hash prefixes)"
+                "Patterns must be hexadecimal characters (commit hash prefixes)",
             )
 
         if len(pattern) > 40:
             raise ValidationError(
                 f"Ignore pattern too long: {pattern}",
-                "Commit hash patterns cannot exceed 40 characters"
+                "Commit hash patterns cannot exceed 40 characters",
             )
 
         validated_patterns.append(pattern.lower())
@@ -181,13 +181,13 @@ def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
 def validate_min_size(value: int | None) -> int | None:
     """
     Validate minimum size parameter.
-    
+
     Args:
         value: The minimum size value
-        
+
     Returns:
         The validated size or None
-        
+
     Raises:
         ValidationError: If the size is invalid
     """
@@ -198,15 +198,11 @@ def validate_min_size(value: int | None) -> int | None:
         raise ValidationError("Minimum size must be an integer")
 
     if value < 1:
-        raise ValidationError(
-            "Minimum size must be positive",
-            f"Got: {value}"
-        )
+        raise ValidationError("Minimum size must be positive", f"Got: {value}")
 
     if value > 10000:
         raise ValidationError(
-            "Minimum size is too large (maximum 10000)",
-            f"Got: {value}"
+            "Minimum size is too large (maximum 10000)", f"Got: {value}"
         )
 
     return value
@@ -215,31 +211,27 @@ def validate_min_size(value: int | None) -> int | None:
 def validate_git_repository(path: str = ".") -> None:
     """
     Validate that we're in a git repository.
-    
+
     Args:
         path: Path to check for git repository
-        
+
     Raises:
         GitError: If git is not available or not in a repository
     """
     # Check if git is available
     try:
         result = subprocess.run(
-            ["git", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            cwd=path
+            ["git", "--version"], capture_output=True, text=True, timeout=5, cwd=path
         )
         if result.returncode != 0:
             raise GitError(
                 "Git is not working properly",
-                f"Git version check failed: {result.stderr}"
+                f"Git version check failed: {result.stderr}",
             )
     except FileNotFoundError:
         raise GitError(
             "Git is not installed or not in PATH",
-            "Please install git and ensure it's available in your PATH"
+            "Please install git and ensure it's available in your PATH",
         )
     except subprocess.TimeoutExpired:
         raise GitError("Git command timed out")
@@ -253,12 +245,12 @@ def validate_git_repository(path: str = ".") -> None:
             capture_output=True,
             text=True,
             timeout=5,
-            cwd=path
+            cwd=path,
         )
         if result.returncode != 0:
             raise GitError(
                 f"Not a git repository: {path}",
-                "Run 'git init' to initialize a repository or navigate to an existing one"
+                "Run 'git init' to initialize a repository or navigate to an existing one",
             )
     except subprocess.SubprocessError as e:
         raise GitError(f"Failed to check git repository status: {e}")
@@ -267,14 +259,14 @@ def validate_git_repository(path: str = ".") -> None:
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
     """
     Sanitize user input to prevent security issues.
-    
+
     Args:
         user_input: The input string to sanitize
         max_length: Maximum allowed length
-        
+
     Returns:
         The sanitized input string
-        
+
     Raises:
         ValidationError: If input is invalid
     """
@@ -285,9 +277,8 @@ def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
         raise ValidationError(f"Input too long (max {max_length} characters)")
 
     # Remove null bytes and non-printable control characters (except newlines/tabs)
-    sanitized = ''.join(
-        char for char in user_input
-        if char.isprintable() or char in '\n\t\r'
+    sanitized = "".join(
+        char for char in user_input if char.isprintable() or char in "\n\t\r"
     )
 
     return sanitized.strip()

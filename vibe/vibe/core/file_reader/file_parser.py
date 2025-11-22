@@ -7,6 +7,7 @@ from tree_sitter_language_pack import get_parser
 
 from loguru import logger
 
+
 @dataclass(frozen=True)
 class ParsedFile:
     """Contains the parsed AST root and detected language for a file."""
@@ -160,5 +161,7 @@ class FileParser:
             return "c"
 
         # If no mapping found, return None
-        logger.warning(f"No mapping found from lexer to language for lexer: {lexer_name}")
+        logger.warning(
+            f"No mapping found from lexer to language for lexer: {lexer_name}"
+        )
         return None

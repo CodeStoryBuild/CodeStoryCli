@@ -1,4 +1,3 @@
-
 import typer
 from loguru import logger
 from rich.console import Console
@@ -27,17 +26,17 @@ def main(
 ) -> None:
     """
     Commits changes with AI-powered messages.
-    
+
     Examples:
         # Commit all changes interactively
         vibe commit
-        
+
         # Commit specific directory with message
         vibe commit src/ "Refactor user authentication"
-        
+
         # Auto-accept all suggestions
         vibe commit --yes
-        
+
         # Use specific model
         vibe --model openai:gpt-4 commit
     """
@@ -60,7 +59,7 @@ def main(
             "Commit command started",
             target=str(validated_target),
             has_message=validated_message is not None,
-            auto_yes=yes
+            auto_yes=yes,
         )
 
         # Get model from context (set in CLI callback)
@@ -80,7 +79,7 @@ def main(
 
         logger.info(
             "Commit command completed successfully",
-            commits_created=len(result) if isinstance(result, list) else 0
+            commits_created=len(result) if isinstance(result, list) else 0,
         )
 
     except ValidationError as e:

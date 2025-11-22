@@ -137,7 +137,9 @@ class SemanticGrouper:
 
     def _generate_signature_for_chunk(
         self, diff_chunks: list[DiffChunk], context_manager: ContextManager
-    ) -> tuple[set[str], set[str]] | None:  # Return type is now Optional[tuple[Set[str], Optional[str]]]
+    ) -> (
+        tuple[set[str], set[str]] | None
+    ):  # Return type is now Optional[tuple[Set[str], Optional[str]]]
         """
         Generate a semantic signature for a single chunk.
         Returns tuple of (symbols, scope) if analysis succeeds, None if analysis fails.
@@ -227,7 +229,6 @@ class SemanticGrouper:
         chunk_scope = set()
 
         if diff_chunk.is_standard_modification:
-
             # For modifications, analyze both old and new line ranges
             file_path = diff_chunk.canonical_path()
 

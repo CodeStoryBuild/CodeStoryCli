@@ -50,7 +50,6 @@ class SymbolMapper:
         # Process each captured symbol
         for match_class, nodes in symbol_captures.items():
             for node in nodes:
-
                 text = node.text.decode("utf8", errors="replace")
 
                 qualified_symbol = QueryManager.create_qualified_symbol(

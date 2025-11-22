@@ -8,9 +8,10 @@ from pathlib import Path
 from loguru import logger
 
 from ..commands.git_const import DEVNULL
+from ..data.immutable_chunk import ImmutableChunk
 from ..data.diff_chunk import DiffChunk
 from ..data.line_changes import Addition, Removal
-from ..data.models import CommitGroup, CommitResult
+from ..data.commit_group import CommitGroup
 from ..git_interface.interface import GitInterface
 
 
@@ -69,17 +70,19 @@ class GitSynthesizer:
     @staticmethod
     def _validate_chunks_are_disjoint(chunks: list[DiffChunk]) -> bool:
         """Validate that all chunks are pairwise disjoint in old file coordinates.
-        
+
         This is a critical invariant: chunks must not overlap in the old file
         for them to be safely applied in any order.
-        
+
         Returns True if all chunks are disjoint, raises RuntimeError otherwise.
         """
         from itertools import groupby
 
         # Group by file
         sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
-        for file_path, file_chunks_iter in groupby(sorted_chunks, key=lambda c: c.canonical_path()):
+        for file_path, file_chunks_iter in groupby(
+            sorted_chunks, key=lambda c: c.canonical_path()
+        ):
             file_chunks = list(file_chunks_iter)
 
             # Sort by old_start within each file
@@ -106,17 +109,17 @@ class GitSynthesizer:
         file_change_type: str,
         old_start: int,
         is_pure_addition: bool,
-        cumulative_offset: int
+        cumulative_offset: int,
     ) -> tuple[int, int]:
         """
         Calculate the old_start and new_start for a hunk header based on file change type.
-        
+
         Args:
             file_change_type: One of "added", "deleted", "modified", "renamed"
             old_start: The old_start from the chunk (in old file coordinates)
             is_pure_addition: Whether this is a pure addition (old_len == 0)
             cumulative_offset: Cumulative net lines added so far
-            
+
         Returns:
             Tuple of (hunk_old_start, hunk_new_start) for the @@ header
         """
@@ -124,7 +127,9 @@ class GitSynthesizer:
             # File addition: old side is always -0,0
             hunk_old_start = 0
             # new_start adjustment: +1 unless already at line 1
-            hunk_new_start = old_start + cumulative_offset + (1 if old_start != 1 else 0)
+            hunk_new_start = (
+                old_start + cumulative_offset + (1 if old_start != 1 else 0)
+            )
         elif file_change_type == "deleted":
             # File deletion: new side is always +0,0
             hunk_old_start = old_start
@@ -133,7 +138,9 @@ class GitSynthesizer:
             # Pure addition (not a new file): @@ -N,0 +M,len @@
             hunk_old_start = old_start
             # new_start adjustment: +1 unless already at line 1
-            hunk_new_start = old_start + cumulative_offset + (1 if old_start != 1 else 0)
+            hunk_new_start = (
+                old_start + cumulative_offset + (1 if old_start != 1 else 0)
+            )
         else:
             # Deletion, modification, or rename: @@ -N,len +M,len @@
             hunk_old_start = old_start
@@ -143,18 +150,30 @@ class GitSynthesizer:
 
     @staticmethod
     def _generate_unified_diff(
-        chunks: list[DiffChunk], total_chunks_per_file: dict[bytes, int]
+        chunks: list[DiffChunk | ImmutableChunk],
+        total_chunks_per_file: dict[bytes, int],
     ) -> dict[bytes, bytes]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
         This method is stateful and correctly recalculates hunk headers for subsets of chunks.
         """
-        # CRITICAL VALIDATION: Ensure chunks are disjoint before generating patches
-        GitSynthesizer._validate_chunks_are_disjoint(chunks)
+        regular_chunks = [chunk for chunk in chunks if isinstance(chunk, DiffChunk)]
+        immutable_chunks = [
+            chunk for chunk in chunks if isinstance(chunk, ImmutableChunk)
+        ]
+
+        # Ensure chunks are disjoint before generating patches
+        GitSynthesizer._validate_chunks_are_disjoint(regular_chunks)
 
         patches: dict[bytes, bytes] = {}
 
-        sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
+        # process immutable chunks
+        for immutable_chunk in immutable_chunks:
+            # add newline delimiter to sepatate from other patches in the stream
+            patches[immutable_chunk.canonical_path] = immutable_chunk.file_patch + b"\n"
+
+        # process regular chunks
+        sorted_chunks = sorted(regular_chunks, key=lambda c: c.canonical_path())
 
         for file_path, file_chunks_iter in groupby(
             sorted_chunks, key=lambda c: c.canonical_path()
@@ -171,9 +190,13 @@ class GitSynthesizer:
             single_chunk = file_chunks[0]
 
             # we need all chunks to mark as deletion
-            file_deletion = single_chunk.is_file_deletion and current_count >= total_expected
+            file_deletion = (
+                single_chunk.is_file_deletion and current_count >= total_expected
+            )
             file_addition = single_chunk.is_file_addition
-            standard_modification = single_chunk.is_standard_modification or (single_chunk.is_file_deletion and current_count < total_expected)
+            standard_modification = single_chunk.is_standard_modification or (
+                single_chunk.is_file_deletion and current_count < total_expected
+            )
             file_rename = single_chunk.is_file_rename
 
             # Determine file change type for hunk calculation
@@ -264,14 +287,16 @@ class GitSynthesizer:
 
                     old_len = chunk.old_len()
                     new_len = chunk.new_len()
-                    is_pure_addition = (old_len == 0)
+                    is_pure_addition = old_len == 0
 
                     # Use the helper function to calculate hunk starts
-                    hunk_old_start, hunk_new_start = GitSynthesizer._calculate_hunk_starts(
-                        file_change_type=file_change_type,
-                        old_start=chunk.old_start,
-                        is_pure_addition=is_pure_addition,
-                        cumulative_offset=cumulative_offset
+                    hunk_old_start, hunk_new_start = (
+                        GitSynthesizer._calculate_hunk_starts(
+                            file_change_type=file_change_type,
+                            old_start=chunk.old_start,
+                            is_pure_addition=is_pure_addition,
+                            cumulative_offset=cumulative_offset,
+                        )
                     )
 
                     hunk_header = f"@@ -{hunk_old_start},{old_len} +{hunk_new_start},{new_len} @@".encode()
@@ -286,7 +311,8 @@ class GitSynthesizer:
                     # Update cumulative offset for next chunk
                     cumulative_offset += new_len - old_len
 
-                # Handle the no-newline marker for the last chunk in the file
+                # Handle the no-newline marker fallback for the last chunk in the file
+                # (added if a hunk has only this marker and thus no other changes to attach itself to)
                 if (
                     sorted_file_chunks
                     and sorted_file_chunks[-1].contains_newline_marker
@@ -305,7 +331,7 @@ class GitSynthesizer:
 
         Since we ONLY have old_start (no new_start), we check contiguity
         based on old file coordinates only.
-        
+
         Chunks are contiguous if their old_start + old_len touch or overlap.
         """
         # Check for contiguity on the "old file" side
@@ -388,7 +414,7 @@ class GitSynthesizer:
     def _build_tree_from_changes(
         self,
         base_commit_hash: str,
-        chunks_for_commit: list[DiffChunk],
+        chunks_for_commit: list[DiffChunk | ImmutableChunk],
         total_chunks_per_file: dict[bytes, int],
     ) -> str:
         """
@@ -441,7 +467,6 @@ class GitSynthesizer:
                         raise RuntimeError(
                             "FATAL: Git apply failed for combined patch stream.\n"
                             f"--- ERROR DETAILS ---\n{e}\n"
-                            f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
                         )
 
                 # 1. Define a path for a temporary index file INSIDE the worktree.
@@ -494,7 +519,7 @@ class GitSynthesizer:
 
     def execute_plan(
         self, groups: list[CommitGroup], base_commit: str, branch_to_update: str
-    ) -> list[CommitResult]:
+    ) -> bool:
         """
         Executes the synthesis plan. For each group, it creates a new commit
         by applying the CUMULATIVE set of changes from all processed groups
@@ -504,19 +529,18 @@ class GitSynthesizer:
 
         # Build a global map of total chunk counts per file
         # this will be used for file deletions where you want to adjust the patch header if not all deletion chunks are present
-        all_chunks = []
+        all_diff_chunks = []
         for group in groups:
             for chunk in group.chunks:
-                all_chunks.extend(chunk.get_chunks())
+                if isinstance(chunk, DiffChunk):
+                    all_diff_chunks.extend(chunk.get_chunks())
 
         total_chunks_per_file = {}
         for file_path, file_chunks_iter in groupby(
-            sorted(all_chunks, key=lambda c: c.canonical_path()),
+            sorted(all_diff_chunks, key=lambda c: c.canonical_path()),
             key=lambda c: c.canonical_path(),
         ):
             total_chunks_per_file[file_path] = len(list(file_chunks_iter))
-
-        results: list[CommitResult] = []
 
         # 1. Establish the constant starting point for all tree builds.
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
@@ -525,14 +549,11 @@ class GitSynthesizer:
         last_synthetic_commit_hash = original_base_commit_hash
         cumulative_chunks: list[DiffChunk] = []
 
-        # Determine if we are on a branch or detached HEAD for the final update.
-        current_branch = self._run_git_decoded("rev-parse", "--abbrev-ref", "HEAD")
-
         logger.info(
             "Execute plan summary: groups={groups} base_commit={base} branch_to_update={branch}",
             groups=len(groups),
             base=original_base_commit_hash,
-            branch=current_branch,
+            branch=branch_to_update,
         )
         for group in groups:
             try:
@@ -542,7 +563,10 @@ class GitSynthesizer:
                 # Flatten composite chunks into primitives
                 primitive_chunks: list[DiffChunk] = []
                 for chunk in cumulative_chunks:
-                    primitive_chunks.extend(chunk.get_chunks())
+                    if isinstance(chunk, ImmutableChunk):
+                        primitive_chunks.append(chunk)
+                    else:
+                        primitive_chunks.extend(chunk.get_chunks())
 
                 # 4. Build a new tree from scratch.
                 #    - ALWAYS start from the original base commit's state.
@@ -574,7 +598,6 @@ class GitSynthesizer:
 
                 # 6. The commit we just made becomes the parent for the NEXT loop iteration.
                 last_synthetic_commit_hash = new_commit_hash
-                results.append(CommitResult(commit_hash=new_commit_hash, group=group))
 
             except Exception as e:
                 raise RuntimeError(
@@ -587,15 +610,15 @@ class GitSynthesizer:
         if final_commit_hash != original_base_commit_hash:
             # Update the branch ref dynamically
             self._run_git_binary(
-                "update-ref", f"refs/heads/{current_branch}", final_commit_hash
+                "update-ref", f"refs/heads/{branch_to_update}", final_commit_hash
             )
             # Update the working directory to reflect the new branch state
             self._run_git_binary("reset", "--hard", final_commit_hash)
             logger.info(
                 "Branch updated: branch={branch} new_head={head} commits_created={count}",
-                branch=current_branch,
+                branch=branch_to_update,
                 head=final_commit_hash,
-                count=len(results),
+                count=len(groups),
             )
 
-        return results
+        return True

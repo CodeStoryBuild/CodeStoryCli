@@ -104,7 +104,6 @@ class QueryManager:
     """
 
     def __init__(self):
-
         resource = files("vibe").joinpath("resources/language_config.json")
         content_text = resource.read_text(encoding="utf-8")
         self._language_configs: dict[str, LanguageConfig] = self._init_configs(

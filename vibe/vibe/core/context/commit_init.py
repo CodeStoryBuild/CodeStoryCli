@@ -68,7 +68,7 @@ def create_commit_pipeline(
 
     chunker = AtomicChunker()
     # chunker = SimpleChunker()
-    
+
     # Use provided model or default to SingleGrouper (no AI)
     if model:
         logical_grouper = LangChainGrouper(model)

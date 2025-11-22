@@ -112,7 +112,11 @@ def test_model_inference():
     test_cases = [
         ("openai:gpt-4", "openai", "gpt-4"),
         ("gemini:gemini-2.0-flash-exp", "gemini", "gemini-2.0-flash-exp"),
-        ("anthropic:claude-3-5-sonnet-20241022", "anthropic", "claude-3-5-sonnet-20241022"),
+        (
+            "anthropic:claude-3-5-sonnet-20241022",
+            "anthropic",
+            "claude-3-5-sonnet-20241022",
+        ),
     ]
 
     for model_str, expected_provider, expected_model in test_cases:

@@ -39,13 +39,14 @@ def version_callback(value: bool):
 
 def setup_signal_handlers():
     """Set up graceful shutdown on Ctrl+C."""
+
     def signal_handler(sig, frame):
         console = Console()
         console.print("\n[yellow]Operation cancelled by user[/yellow]")
         raise typer.Exit(130)  # Standard exit code for Ctrl+C
 
     signal.signal(signal.SIGINT, signal_handler)
-    if hasattr(signal, 'SIGTERM'):
+    if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, signal_handler)
 
 
@@ -66,21 +67,20 @@ app.command(name="clean")(clean.main)
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
-        False, "--version", "-V",
+        False,
+        "--version",
+        "-V",
         callback=version_callback,
-        help="Show version and exit"
+        help="Show version and exit",
     ),
     model: Optional[str] = typer.Option(
         None,
         "--model",
         "-m",
-        help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.0-flash-exp)"
+        help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.0-flash-exp)",
     ),
     api_key: Optional[str] = typer.Option(
-        None,
-        "--api-key",
-        "-k",
-        help="API key for the model provider"
+        None, "--api-key", "-k", help="API key for the model provider"
     ),
 ) -> None:
     """

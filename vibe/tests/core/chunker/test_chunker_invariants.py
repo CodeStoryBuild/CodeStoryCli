@@ -56,9 +56,9 @@ CHUNKERS = [
 
 def run_chunker_invariants(chunker, orig):
     out_chunks = chunker.chunk([orig])
-    assert chunks_reconstruct_input(
-        out_chunks, orig
-    ), "Output chunks do not reconstruct input"
+    assert chunks_reconstruct_input(out_chunks, orig), (
+        "Output chunks do not reconstruct input"
+    )
     assert chunks_disjoint(out_chunks), "Output chunks are not pairwise disjoint"
 
 

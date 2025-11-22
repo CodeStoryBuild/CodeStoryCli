@@ -18,9 +18,11 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
+from typing import Callable
 
 from ..data.chunk import Chunk
-from ..data.models import CommitGroup, ProgressCallback
+from ..data.immutable_chunk import ImmutableChunk
+from ..data.commit_group import CommitGroup
 
 
 class LogicalGrouper(ABC):
@@ -28,7 +30,8 @@ class LogicalGrouper(ABC):
     def group_chunks(
         self,
         chunks: list[Chunk],
+        immut_chunks: list[ImmutableChunk],
         message: str,
-        on_progress: ProgressCallback | None = None,
+        on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""
