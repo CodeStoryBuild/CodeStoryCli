@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from loguru import logger
 from rich.console import Console
-from vibe.core.expand.service import ExpandService
+from vibe.pipelines.expand_pipeline import ExpandPipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
@@ -17,7 +17,7 @@ class CleanOptions:
     start_from: str | None = None
 
 
-class CleanRunner:
+class CleanPipeline:
     """Iteratively expand commits from HEAD down to the second commit.
 
     Filtering rules:
@@ -30,11 +30,11 @@ class CleanRunner:
         self,
         repo_path: str = ".",
         git: SubprocessGitInterface | None = None,
-        expand_service: ExpandService | None = None,
+        expand_service: ExpandPipeline | None = None,
     ):
         self.repo_path = repo_path
         self.git = git or SubprocessGitInterface(repo_path)
-        self.expand_service = expand_service or ExpandService(repo_path)
+        self.expand_service = expand_service or ExpandPipeline(repo_path)
 
     def run(self, options: CleanOptions, console: Console) -> bool:
         commits = self._get_first_parent_commits(options.start_from)
@@ -86,7 +86,7 @@ class CleanRunner:
                 idx=idx,
                 total=total,
             )
-            ok = self.expand_service.expand_commit(
+            ok = self.expand_service.run(
                 commit, console=console, auto_yes=options.auto_yes
             )
             if not ok:

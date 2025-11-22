@@ -4,9 +4,9 @@ from tempfile import TemporaryDirectory
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
-from rich.console import Console
 
-from vibe.core.context.expand_init import create_expand_pipeline
+from vibe.context import GlobalContext, ExpandContext
+from vibe.pipelines.commit_pipeline import CommitPipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
@@ -16,10 +16,7 @@ def _run_git(
     return git.run_git_text(args, cwd=cwd)
 
 
-def _is_ancestor(git: SubprocessGitInterface, commit: str, ref: str) -> bool:
-    # Returns True if commit is ancestor of ref
-    # Success: empty stdout, exit 0 => run_git_text returns "" (not None)
-    return _run_git(git, ["merge-base", "--is-ancestor", commit, ref]) is not None
+
 
 
 def _short(hash_: str) -> str:
@@ -34,71 +31,35 @@ def _cleanup_worktree(git: SubprocessGitInterface, path: str):
             shutil.rmtree(path, ignore_errors=True)
 
 
-class ExpandService:
+class ExpandPipeline:
     """Core orchestration for expanding a commit safely using temporary worktrees."""
+    def __init__(self, global_context : GlobalContext, expand_context : ExpandContext, commit_pipeline : CommitPipeline):
+        self.global_context = global_context
+        self.expand_context = expand_context
+        self.commit_pipeline = commit_pipeline
 
-    def __init__(self, repo_path: str = ".", model: BaseChatModel | None = None):
-        self.repo_path = repo_path
-        self.git = SubprocessGitInterface(repo_path)
-        self.model = model
-
-    def expand_commit(self, commit_hash: str, console: Console, auto_yes: bool) -> bool:
-        # Ensure we're in a git repo
-        if not _run_git(self.git, ["rev-parse", "--is-inside-work-tree"]):
-            logger.error("Not a git repository")
-            return False
-
-        # Resolve current branch and head
-        current_branch = (
-            _run_git(self.git, ["rev-parse", "--abbrev-ref", "HEAD"]) or ""
-        ).strip()
-        head_hash = (_run_git(self.git, ["rev-parse", "HEAD"]) or "").strip()
-
-        if not current_branch:
-            logger.error("Detached HEAD is not supported for expand")
-            return False
-
-        # Verify commit exists and is on current branch history
-        resolved = (_run_git(self.git, ["rev-parse", commit_hash]) or "").strip()
-        if not resolved:
-            logger.error("Commit not found: {commit}", commit=commit_hash)
-            return False
-
-        if not _is_ancestor(self.git, resolved, head_hash):
-            logger.error(
-                "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported",
-                commit=_short(resolved),
-                head=_short(head_hash),
-            )
-            return False
-
-        # Determine parent commit (base)
-        parent = _run_git(self.git, ["rev-parse", f"{resolved}^"])
-        if parent is None:
-            logger.error("Expanding the root commit is not yet supported")
-            return False
-        parent = parent.strip()
+    def run(self) -> bool:
 
         # Use TemporaryDirectory context managers for automatic cleanup
         with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
             rewrite_branch: str | None = None
-            temp_branch = f"vibe-expand-{_short(resolved)}"
+            temp_branch = f"vibe-expand-{_short(self.commit_pipeline.branch_to_update or "tmp")}"
             wt1_created = False
 
             try:
                 logger.info(
-                    "Creating temporary worktree at {parent}", parent=_short(parent)
+                    "Creating temporary worktree at {parent}", parent=_short(self.commit_pipeline.base_commit_hash)
                 )
-                _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
+                _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, self.commit_pipeline.base_commit_hash])
                 wt1_created = True
                 wt1_git = SubprocessGitInterface(wt1_dir)
 
-                _run_git(wt1_git, ["checkout", "-b", temp_branch])
+                wt1_git.run_git_text(["checkout", "-b", temp_branch])
 
                 # Run expand pipeline on diff(parent, resolved)
                 logger.info(
                     "Analyzing and proposing groups for commit {commit}",
-                    commit=_short(resolved),
+                    commit=_short(self.commit_pipeline.base_commit_hash),
                 )
                 pipeline = create_expand_pipeline(
                     wt1_dir,

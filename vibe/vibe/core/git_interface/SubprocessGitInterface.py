@@ -11,7 +11,10 @@ from .interface import GitInterface
 class SubprocessGitInterface(GitInterface):
     def __init__(self, repo_path: str | Path | None = None) -> None:
         # Ensure repo_path is a Path object for consistency
-        self.repo_path = Path(repo_path) if repo_path else Path(".")
+        if isinstance(repo_path, Path):
+            self.repo_path = repo_path
+        else:
+            self.repo_path = Path(repo_path)
 
     def run_git_text(
         self,
@@ -45,7 +48,7 @@ class SubprocessGitInterface(GitInterface):
                 )
 
             if result.stderr:
-                logger.warning(
+                logger.debug(
                     f"git stderr (text): {result.stderr[:2000]}"
                     + ("...(truncated)" if len(result.stderr) > 2000 else "")
                 )
@@ -85,7 +88,7 @@ class SubprocessGitInterface(GitInterface):
             if result.stdout:
                 logger.debug(f"git stdout (binary length): {len(result.stdout)} bytes")
             if result.stderr:
-                logger.warning(
+                logger.debug(
                     f"git stderr (binary): {result.stderr[:2000]!r}"
                     + ("...(truncated)" if len(result.stderr) > 2000 else "")
                 )

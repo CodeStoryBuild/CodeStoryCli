@@ -12,6 +12,7 @@ def time_block(block_name: str):
     A context manager to time the execution of a code block and log the result.
     """
 
+    logger.debug(f"Starting {block_name}")
     start_time = perf_counter()
 
     try:
@@ -21,7 +22,7 @@ def time_block(block_name: str):
         duration_ms = int((end_time - start_time) * 1000)
 
         logger.info(
-            f"Timing: {block_name}_ms={duration_ms}",
+            f"Finished {block_name}. Timing(ms)={duration_ms}",
         )
 
 

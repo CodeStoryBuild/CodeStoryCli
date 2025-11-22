@@ -2,21 +2,49 @@ import typer
 from loguru import logger
 from rich.console import Console
 
-from vibe.core.exceptions import GitError, ValidationError, VibeError
-from vibe.core.expand.service import ExpandService
-from vibe.core.logging.logging import setup_logger
-from vibe.core.validation import validate_commit_hash, validate_git_repository
+from vibe.pipelines.expand_pipeline import ExpandPipeline
+from vibe.pipelines.commit_init import create_commit_pipeline
+from vibe.core.git_interface.interface import GitInterface
+from vibe.core.validation import validate_commit_hash
+from vibe.context import GlobalContext, ExpandContext
+from vibe.core.commands.git_const import EMPTYTREEHASH
+
+
+def get_info(git_interface : GitInterface, expand_context: ExpandContext):
+    
+    # Resolve current branch and head
+    current_branch = git_interface.run_git_text(["rev-parse", "--abbrev-ref", "HEAD"]).strip() or ""
+    head_hash = git_interface.run_git_text(["rev-parse", "HEAD"]).strip() or ""
+
+    if not current_branch:
+        logger.error("Detached HEAD is not supported for expand")
+        return False
+
+    # Verify commit exists and is on current branch history
+    resolved = git_interface.run_git_text(["rev-parse", expand_context.commit_hash]).strip() or ""
+    if not resolved:
+        logger.error("Commit not found: {commit}", commit=expand_context.commit_hash)
+        return False
+
+    if not git_interface.run_git_text(["merge-base", "--is-ancestor", resolved, head_hash]):
+        logger.error(
+            "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported",
+            commit=resolved[:7],
+            head=resolved[:7],
+        )
+        return False
+
+    # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
+    parent = git_interface.run_git_text(["rev-parse", f"{resolved}^"]).strip() or EMPTYTREEHASH
+
+    return parent, resolved, current_branch
+
+
 
 
 def main(
     ctx: typer.Context,
     commit_hash: str = typer.Argument(..., help="Commit hash to expand"),
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Automatically accept rewrite confirmation (non-interactive).",
-    ),
 ) -> None:
     """Expand a past commit into smaller logical commits safely.
 
@@ -30,49 +58,24 @@ def main(
         # Use specific model
         vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
     """
-    console = Console()
+    validated_hash = validate_commit_hash(commit_hash)
 
-    try:
-        # Validate inputs
-        validate_git_repository(".")
-        validated_hash = validate_commit_hash(commit_hash)
+    global_context : GlobalContext = ctx.obj
+    expand_context = ExpandContext(validated_hash)
 
-        # Setup logging
-        setup_logger("expand", console)
+    logger.info("Expand command started", expand_context=expand_context)
 
-        logger.info("Expand command started", commit_hash=validated_hash, auto_yes=yes)
+    base_hash, new_hash, base_branch = get_info(global_context.git_interface, expand_context)
+    commit_pipeline = create_commit_pipeline(global_context, base_hash, new_hash, base_branch)
 
-        # Get model from context (set in CLI callback)
-        model = ctx.obj.get("model") if ctx.obj else None
+    # Execute expansion
+    service = ExpandPipeline(".", model=model)
+    success = service.run(validated_hash, console=console, auto_yes=auto_yes)
 
-        # Execute expansion
-        service = ExpandService(".", model=model)
-        success = service.expand_commit(validated_hash, console=console, auto_yes=yes)
-
-        if not success:
-            console.print("[red]Failed to expand commit[/red]")
-            logger.error("Expand operation failed")
-            raise typer.Exit(1)
-
-        logger.info("Expand command completed successfully")
-        console.print("[green]Commit expanded successfully![/green]")
-
-    except ValidationError as e:
-        console.print(f"[red]Validation Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
+    if not success:
+        console.print("[red]Failed to expand commit[/red]")
+        logger.error("Expand operation failed")
         raise typer.Exit(1)
 
-    except GitError as e:
-        console.print(f"[red]Git Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Git operation failed: {e.message}")
-        raise typer.Exit(1)
-
-    except VibeError as e:
-        console.print(f"[red]Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Expand operation failed: {e.message}")
-        raise typer.Exit(1)
+    logger.info("Expand command completed successfully")
+    console.print("[green]Commit expanded successfully![/green]")

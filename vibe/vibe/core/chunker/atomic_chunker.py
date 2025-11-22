@@ -15,6 +15,9 @@ class AtomicChunker(MechanicalChunker):
     pure comment line (as determined via `CommentMap`).
     """
 
+    def __init__(self, split_hunks: bool = True):
+        self.split_hunks = split_hunks
+
     @staticmethod
     def _is_blank(line_text: bytes) -> bool:
         return line_text.strip() == b""
@@ -71,7 +74,7 @@ class AtomicChunker(MechanicalChunker):
     ) -> list[Chunk]:
         mechanical_chunks: list[Chunk] = []
         for chunk in diff_chunks:
-            if isinstance(chunk, DiffChunk):
+            if self.split_hunks and isinstance(chunk, DiffChunk):
                 atomic_chunks = chunk.split_into_atomic_chunks()
                 mechanical_chunks.extend(
                     self._group_by_chunk_predicate(
