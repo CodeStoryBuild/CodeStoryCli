@@ -186,7 +186,7 @@ class DiffGenerator:
                 # (added if a hunk has only this marker and thus no other changes to attach itself to)
                 if (
                     sorted_file_chunks
-                    and sorted_file_chunks[-1].contains_newline_marker
+                    and sorted_file_chunks[-1].contains_newline_fallback
                 ):
                     patch_lines.append(b"\\ No newline at end of file")
 

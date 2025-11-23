@@ -110,6 +110,12 @@ class SynthesizerError(VibeError):
 
     pass
 
+class ExpansionError(VibeError):
+    """
+    Errors during expand command run
+    """
+    pass
+
 
 # Convenience functions for creating common errors
 def git_not_found() -> GitError:

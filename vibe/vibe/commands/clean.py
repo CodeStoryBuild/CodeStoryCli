@@ -1,19 +1,22 @@
 import typer
 from loguru import logger
-from rich.console import Console
 
-from vibe.core.exceptions import GitError, ValidationError, VibeError
-from vibe.pipelines.clean_pipeline import CleanOptions, CleanPipeline
-from vibe.core.logging.logging import setup_logger
+from vibe.pipelines.clean_pipeline import CleanPipeline
 from vibe.core.validation import (
     validate_commit_hash,
-    validate_git_repository,
     validate_ignore_patterns,
     validate_min_size,
 )
+from vibe.core.logging.utils import time_block
+from vibe.context import CleanContext
+
+from .expand import main as expand_main
+
+from functools import partial
 
 
 def main(
+    ctx: typer.Context,
     ignore: list[str] | None = typer.Option(
         None,
         "--ignore",
@@ -28,6 +31,10 @@ def main(
         None,
         help="Commit hash (or prefix) to start cleaning from (inclusive). If not provided, starts from HEAD.",
     ),
+    skip_merge: bool | None = typer.Argument(
+        False,
+        help="Should the clean command skip cleaning merge commits?",
+    ),
 ) -> None:
     """Run 'vibe expand' iteratively from HEAD (or start_from) to the second commit with filtering.
 
@@ -41,10 +48,8 @@ def main(
         # Clean while ignoring certain commits
         vibe clean --ignore def456 --ignore ghi789
     """
-    console = Console()
-
-    # Validate inputs
-    validate_git_repository(".")
+    expand_command = partial(expand_main, ctx)
+    
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
     validated_start_from = None
@@ -52,33 +57,28 @@ def main(
     if start_from:
         validated_start_from = validate_commit_hash(start_from)
 
-    # Setup logging
-    setup_logger("clean", console)
+    global_context = ctx.obj
+    clean_context = CleanContext(
+        ignore=validated_ignore,
+        min_size=validated_min_size,
+        start_from=validated_start_from,
+        skip_merge=skip_merge,
+    )
 
     logger.info(
         "Clean command started",
         ignore_patterns=validated_ignore,
         min_size=validated_min_size,
-        auto_yes=yes,
         start_from=validated_start_from,
     )
 
     # Execute cleaning
-    runner = CleanPipeline(".")
-    success = runner.run(
-        CleanOptions(
-            ignore=validated_ignore,
-            min_size=validated_min_size,
-            auto_yes=yes,
-            start_from=validated_start_from,
-        ),
-        console=console,
-    )
+    with time_block("Clean Runner E2E"):
+        runner = CleanPipeline(global_context, clean_context, expand_command)
+        success = runner.run()
 
-    if not success:
-        console.print("[red]Clean operation failed[/red]")
+    if success:
+        logger.info("Clean command completed successfully")        
+    else:
         logger.error("Clean operation failed")
         raise typer.Exit(1)
-
-    logger.info("Clean command completed successfully")
-    console.print("[green]Repository cleaned successfully![/green]")

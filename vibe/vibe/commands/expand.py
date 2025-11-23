@@ -7,8 +7,8 @@ from vibe.pipelines.commit_init import create_commit_pipeline
 from vibe.core.git_interface.interface import GitInterface
 from vibe.core.validation import validate_commit_hash
 from vibe.core.exceptions import GitError, DetachedHeadError
+from vibe.core.logging.utils import time_block
 from vibe.context import GlobalContext, ExpandContext, CommitContext
-from vibe.core.commands.git_const import EMPTYTREEHASH
 
 
 def get_info(git_interface: GitInterface, expand_context: ExpandContext):
@@ -49,9 +49,15 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
     parent = (
-        git_interface.run_git_text_out(["rev-parse", f"{resolved}^"]).strip()
-        or EMPTYTREEHASH
+        git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
     )
+
+    if not parent:
+        raise GitError(
+            "Expanding the root commit is not supported yet!"
+        )
+
+    parent = parent.strip()
 
     return parent, resolved, current_branch
 
@@ -91,8 +97,9 @@ def main(
     )
 
     # Execute expansion
-    service = ExpandPipeline(global_context, expand_context, commit_pipeline)
-    final_head = service.run()
+    with time_block("Expand Pipeline E2E"):
+        service = ExpandPipeline(global_context, expand_context, commit_pipeline)
+        final_head = service.run()
 
     if final_head is not None:
         final_head = final_head.strip()

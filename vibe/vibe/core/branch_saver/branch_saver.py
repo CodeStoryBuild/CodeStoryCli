@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from loguru import logger
+from vibe.core.exceptions import DetachedHeadError
 
 from ..git_interface.interface import GitInterface
 
