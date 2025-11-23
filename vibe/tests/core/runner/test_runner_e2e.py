@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-from vibe.pipelines.commmit_pipeline import CommitPipeline
+from vibe.pipelines.commit_pipeline import CommitPipeline
 
 from .test_helpers import DeterministicGrouper
 

@@ -1,161 +1,140 @@
-import os
-import shutil
-from tempfile import TemporaryDirectory
-
-from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
-
 from vibe.context import GlobalContext, ExpandContext
 from vibe.pipelines.commit_pipeline import CommitPipeline
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
-
-def _run_git(
-    git: SubprocessGitInterface, args: list[str], cwd: str | None = None
-) -> str | None:
-    return git.run_git_text(args, cwd=cwd)
-
-
-
+# Assuming GitInterface is imported or available in the context
+# from vibe.core.git_interface.interface import GitInterface
 
 
 def _short(hash_: str) -> str:
     return (hash_ or "")[:7]
 
 
-def _cleanup_worktree(git: SubprocessGitInterface, path: str):
-    try:
-        _run_git(git, ["worktree", "remove", "--force", path])
-    finally:
-        if os.path.exists(path):
-            shutil.rmtree(path, ignore_errors=True)
-
-
 class ExpandPipeline:
-    """Core orchestration for expanding a commit safely using temporary worktrees."""
-    def __init__(self, global_context : GlobalContext, expand_context : ExpandContext, commit_pipeline : CommitPipeline):
+    """
+    Core orchestration for expanding a commit.
+
+    This implementation manipulates the Git Object Database directly to re-parent
+    downstream commits onto the expanded history without using worktrees or
+    intermediate filesystem operations.
+    """
+
+    def __init__(
+        self,
+        global_context: GlobalContext,
+        expand_context: ExpandContext,
+        commit_pipeline: CommitPipeline,
+    ):
         self.global_context = global_context
         self.expand_context = expand_context
         self.commit_pipeline = commit_pipeline
+        # Use the abstract interface as requested
+        self.git = self.global_context.git_interface
 
-    def run(self) -> bool:
+    def run(self) -> str:
+        base_hash = self.commit_pipeline.base_commit_hash
 
-        # Use TemporaryDirectory context managers for automatic cleanup
-        with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
-            rewrite_branch: str | None = None
-            temp_branch = f"vibe-expand-{_short(self.commit_pipeline.branch_to_update or "tmp")}"
-            wt1_created = False
+        logger.info(
+            "Starting expansion for base {base}",
+            base=_short(base_hash),
+        )
 
-            try:
+        # 1. Run the expansion pipeline
+        # This generates the new commit(s) in the object database.
+        # Returns the hash of the *last* commit in the new sequence.
+        new_commit_hash = self.commit_pipeline.run()
+
+        if not new_commit_hash:
+            logger.warning("Commit pipeline returned no hash. Aborting.")
+            return None
+
+        # 2. Identify the downstream commits to reparent
+        # We need the list of commits strictly after the base_hash.
+        # The first commit in this list is the one we just expanded/replaced (resolved).
+        # We want to keep everything *after* that first one.
+        try:
+            # --ancestry-path ensures we follow the direct chain
+            rev_list_out = self.global_context.git_interface.run_git_text_out(
+                ["rev-list", "--reverse", "--ancestry-path", f"{base_hash}..HEAD"]
+            )
+            original_chain = rev_list_out.splitlines() if rev_list_out else []
+        except RuntimeError:
+            logger.error("Failed to read commit history.")
+            return None
+
+        if not original_chain:
+            # Edge case: The base was HEAD (or detached), nothing to replay.
+            # We simply update HEAD to the new result.
+            logger.info("No downstream history found. Updating HEAD directly.")
+            final_head = new_commit_hash
+        else:
+            # original_chain[0] is the commit we just expanded (resolved).
+            # original_chain[1:] are the commits we need to move (reparent).
+            commits_to_reparent = original_chain[1:]
+
+            if not commits_to_reparent:
+                logger.info("No additional downstream commits to preserve.")
+                final_head = new_commit_hash
+            else:
                 logger.info(
-                    "Creating temporary worktree at {parent}", parent=_short(self.commit_pipeline.base_commit_hash)
+                    "Reparenting {count} downstream commits...",
+                    count=len(commits_to_reparent),
                 )
-                _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, self.commit_pipeline.base_commit_hash])
-                wt1_created = True
-                wt1_git = SubprocessGitInterface(wt1_dir)
 
-                wt1_git.run_git_text(["checkout", "-b", temp_branch])
+                current_parent = new_commit_hash
 
-                # Run expand pipeline on diff(parent, resolved)
-                logger.info(
-                    "Analyzing and proposing groups for commit {commit}",
-                    commit=_short(self.commit_pipeline.base_commit_hash),
-                )
-                pipeline = create_expand_pipeline(
-                    wt1_dir,
-                    base_commit_hash=parent,
-                    new_commit_hash=resolved,
-                    console=console,
-                    model=self.model,
-                )
-                plan = pipeline.run(target=".", auto_yes=auto_yes)
-                if plan:
-                    new_base = (_run_git(wt1_git, ["rev-parse", "HEAD"]) or "").strip()
-                    logger.info("Created new base at {base}", base=_short(new_base))
+                for commit in commits_to_reparent:
+                    # 3. Extract metadata from the existing commit
+                    # %T  = Tree Hash (we preserve this exactly)
+                    # %an = Author Name
+                    # %ae = Author Email
+                    # %ad = Author Date
+                    # %B  = Raw Body (Commit Message)
+                    meta = self.global_context.git_interface.run_git_text_out(
+                        [
+                            "show",
+                            "-s",
+                            "--format=%T%n%an%n%ae%n%ad%n%cn%n%ce%n%cd%n%B",
+                            commit,
+                        ]
+                    )
 
-                    # Prepare rebase of upstream commits onto the new base in a separate worktree
-                    with TemporaryDirectory(prefix="vibe-expand-wt2-") as wt2_dir:
-                        wt2_created = False
-                        try:
-                            rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
-                            logger.info("Preparing rebase in isolated worktree")
-                            _run_git(
-                                self.git,
-                                [
-                                    "worktree",
-                                    "add",
-                                    "-b",
-                                    rewrite_branch,
-                                    wt2_dir,
-                                    head_hash,
-                                ],
-                            )
-                            wt2_created = True
-                            wt2_git = SubprocessGitInterface(wt2_dir)
+                    lines = meta.splitlines()
+                    # Safety check on output format
+                    if len(lines) < 7:
+                        logger.error(f"Failed to parse metadata for commit {commit}")
+                        return None
 
-                            # Rebase: move commits after resolved onto new_base
-                            # git rebase --onto <new_base> <resolved> <rewrite_branch>
-                            rebase_ok = (
-                                _run_git(
-                                    wt2_git,
-                                    [
-                                        "rebase",
-                                        "--onto",
-                                        new_base,
-                                        resolved,
-                                        rewrite_branch,
-                                    ],
-                                )
-                                is not None
-                            )
-                            if not rebase_ok:
-                                # Try to abort if needed
-                                _run_git(wt2_git, ["rebase", "--abort"])
-                                logger.error("Rebase failed during expansion")
-                                return False
+                    tree_hash = lines[0]
+                    author_name = lines[1]
+                    author_email = lines[2]
+                    author_date = lines[3]
+                    committer_name = lines[4]
+                    committer_email = lines[5]
+                    committer_date = lines[6]
+                    # Reassemble message (lines 4 to end), preserving newlines
+                    message = "\n".join(lines[7:])
 
-                            new_head = (
-                                _run_git(wt2_git, ["rev-parse", rewrite_branch]) or ""
-                            ).strip()
+                    # 4. Create new commit object in ODB
+                    # We inject the original author info via env vars so the
+                    # resulting commit looks identical to the original, just moved.
+                    env = {
+                        "GIT_AUTHOR_NAME": author_name,
+                        "GIT_AUTHOR_EMAIL": author_email,
+                        "GIT_AUTHOR_DATE": author_date,
+                        "GIT_COMMITTER_NAME": committer_name,
+                        "GIT_COMMITTER_EMAIL": committer_email,
+                        "GIT_COMMITTER_DATE": committer_date,
+                    }
 
-                            # Update original branch ref and working tree
-                            if (
-                                _run_git(
-                                    self.git,
-                                    [
-                                        "update-ref",
-                                        f"refs/heads/{current_branch}",
-                                        new_head,
-                                    ],
-                                )
-                                is None
-                            ):
-                                logger.error(
-                                    "Failed to update branch ref for {branch}",
-                                    branch=current_branch,
-                                )
-                                return False
+                    # git commit-tree <tree> -p <new_parent>
+                    # Input is the commit message
+                    current_parent = self.global_context.git_interface.run_git_text_out(
+                        ["commit-tree", tree_hash, "-p", current_parent],
+                        input_text=message,
+                        env=env,
+                    )
 
-                            # If on that branch, sync working tree
-                            _run_git(self.git, ["reset", "--hard", new_head])
-                            logger.info(
-                                "Commit expansion successful for {commit}",
-                                commit=_short(resolved),
-                            )
-                            return True
+                final_head = current_parent
 
-                        finally:
-                            # Clean up git worktree (if it was created)
-                            if wt2_created:
-                                _cleanup_worktree(self.git, wt2_dir)
-                            # Delete temporary rewrite branch if it exists
-                            if rewrite_branch:
-                                _run_git(self.git, ["branch", "-D", rewrite_branch])
-            finally:
-                # Clean up git worktree (if it was created)
-                if wt1_created:
-                    _cleanup_worktree(self.git, wt1_dir)
-                # Delete temp expand branch (if it exists)
-                _run_git(self.git, ["branch", "-D", temp_branch])
-
-        return False
+        return final_head

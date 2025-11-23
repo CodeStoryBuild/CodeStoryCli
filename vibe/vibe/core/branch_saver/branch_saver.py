@@ -5,9 +5,6 @@ from loguru import logger
 from ..git_interface.interface import GitInterface
 
 
-
-
-
 class BranchSaver:
     """Save working directory changes into a branch-specific backup branch and restore them."""
 
@@ -23,7 +20,7 @@ class BranchSaver:
         input_text: str | None = None,
     ) -> str | None:
         """Run a git command via the GitInterface and return stdout as string."""
-        return self.git.run_git_text(args, cwd=cwd, input_text=input_text)
+        return self.git.run_git_text_out(args, cwd=cwd, input_text=input_text)
 
     def _branch_exists(self, branch_name: str) -> bool:
         """Check if a branch exists using `git rev-parse --verify --quiet`."""

@@ -32,6 +32,7 @@ app.command(name="commit")(commit.main)
 app.command(name="expand")(expand.main)
 app.command(name="clean")(clean.main)
 
+
 def setup_config_args(**kwargs):
     config_args = {}
 
@@ -40,6 +41,7 @@ def setup_config_args(**kwargs):
             config_args[key] = item
 
     return config_args
+
 
 @app.callback(invoke_without_command=True)
 def main(
@@ -91,24 +93,34 @@ def main(
         console.print(ctx.get_help())
         console.print("\n[dim]Run 'vibe --help' for more information.[/dim]")
         raise typer.Exit()
-    
+
     setup_logger(ctx.invoked_subcommand)
 
-    config_args = setup_config_args(model=model, api_key=api_key, model_temperature = model_temperature, verbose = verbose, auto_accept = auto_accept)
-    
-    
+    config_args = setup_config_args(
+        model=model,
+        api_key=api_key,
+        model_temperature=model_temperature,
+        verbose=verbose,
+        auto_accept=auto_accept,
+    )
+
     local_config_path = Path("vibeconfig.toml")
     env_prefix = "VIBE_"
     global_config_path = Path(user_config_dir("Vibe")) / "vibeconfig.toml"
 
-    config, used_configs = ConfigLoader.get_full_config(GlobalConfig, config_args, local_config_path, env_prefix, global_config_path, custom_config)
+    config, used_configs = ConfigLoader.get_full_config(
+        GlobalConfig,
+        config_args,
+        local_config_path,
+        env_prefix,
+        global_config_path,
+        custom_config,
+    )
     logger.info(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context
 
     validate_git_repository(global_context.git_interface)
-
-
 
 
 def run_app():
@@ -124,7 +136,7 @@ def run_app():
         load_dotenv()
         # launch cli
         app(prog_name="vibe")
-    
+
     except ValidationError as e:
         console.print(f"[red]Validation Error:[/red] {e.message}")
         if e.details:
@@ -144,7 +156,7 @@ def run_app():
             console.print(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Vibe operation failed: {e.message}")
         raise typer.Exit(1)
-    
+
     except KeyboardInterrupt:
         console = Console()
         console.print("\n[yellow]Operation cancelled by user[/yellow]")

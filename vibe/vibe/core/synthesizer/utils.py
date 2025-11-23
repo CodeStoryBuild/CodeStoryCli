@@ -4,6 +4,7 @@ from ..data.diff_chunk import DiffChunk
 from ..data.commit_group import CommitGroup
 from .diff_generator import DiffGenerator
 
+
 def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
     flattened_chunks = []
     for chunk in chunks:
@@ -21,7 +22,7 @@ def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
             combined_patch = b"".join(patch for _, patch in ordered_items)
         else:
             combined_patch = ""
-        
+
         patch_map[i] = combined_patch.decode("utf-8", errors="replace")
 
     return patch_map
@@ -53,7 +54,7 @@ def get_patches(groups: list[CommitGroup]) -> dict[int, str]:
             combined_patch = b"".join(patch for _, patch in ordered_items)
         else:
             combined_patch = b""
-        
+
         patch_map[i] = combined_patch.decode("utf-8", errors="replace")
 
     return patch_map

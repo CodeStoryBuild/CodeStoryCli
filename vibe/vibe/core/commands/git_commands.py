@@ -40,7 +40,7 @@ class GitCommands:
         Uses binary mode to avoid encoding issues with Unicode characters in diffs.
         """
         path_args = ["--"] + ([target] if target else [])
-        diff_output_bytes = self.git.run_git_binary(
+        diff_output_bytes = self.git.run_git_binary_out(
             ["diff", base_hash, new_hash, "--binary", "--unified=0", f"-M{similarity}"]
             + path_args
         )
@@ -55,7 +55,7 @@ class GitCommands:
         binary_files: set[bytes] = set()
         cmd = ["diff", "--numstat", base, new]
         try:
-            numstat_output = self.git.run_git_binary(cmd)
+            numstat_output = self.git.run_git_binary_out(cmd)
         except Exception:
             return binary_files
 
@@ -305,28 +305,28 @@ class GitCommands:
 
     def reset(self) -> None:
         """Reset staged changes (keeping working directory intact)"""
-        self.git.run_git_text(["reset"])
+        self.git.run_git_text_out(["reset"])
 
     def track_untracked(self, target: str | None = None) -> None:
         """
         Make untracked files tracked without staging their content, using 'git add -N'.
         """
         if target:
-            self.git.run_git_text(["add", "-N", target])
+            self.git.run_git_text_out(["add", "-N", target])
         else:
             # Track all untracked files
-            untracked = self.git.run_git_text(
+            untracked = self.git.run_git_text_out(
                 ["ls-files", "--others", "--exclude-standard"]
             ).splitlines()
             if not untracked:
                 return
-            self.git.run_git_text(["add", "-N"] + untracked)
+            self.git.run_git_text_out(["add", "-N"] + untracked)
 
     def need_reset(self) -> bool:
         """Checks if there are staged changes that need to be reset"""
         # 'git diff --cached --quiet' exits with 1 if there are staged changes, 0 otherwise
         try:
-            self.git.run_git_text(["diff", "--cached", "--quiet"])
+            self.git.run_git_text_out(["diff", "--cached", "--quiet"])
             return False  # No staged changes (exit code 0)
         except Exception:
             return True  # Staged changes exist (exit code 1)
@@ -334,14 +334,14 @@ class GitCommands:
     def need_track_untracked(self, target: str | None = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
         path_args = [target] if target else []
-        untracked_files = self.git.run_git_text(
+        untracked_files = self.git.run_git_text_out(
             ["ls-files", "--others", "--exclude-standard"] + path_args
         )
         return bool(untracked_files.strip())
 
     def is_git_repo(self) -> bool:
         """Return True if current cwd is inside a git work tree, else False."""
-        result = self.git.run_git_text(["rev-parse", "--is-inside-work-tree"])
+        result = self.git.run_git_text_out(["rev-parse", "--is-inside-work-tree"])
         # When not a repo, run_git_text returns None; treat as False
         return bool(result and result.strip() == "true")
 
@@ -443,10 +443,10 @@ class GitCommands:
         """
         Returns the name of the currently checked out branch.
         """
-        return self.git.run_git_text(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
+        return self.git.run_git_text_out(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
 
     def get_current_base_commit_hash(self) -> str:
         """
         Returns the commit hash of the current HEAD (base commit).
         """
-        return self.git.run_git_text(["rev-parse", "HEAD"]).strip()
+        return self.git.run_git_text_out(["rev-parse", "HEAD"]).strip()

@@ -6,7 +6,6 @@ from loguru import logger
 from rich.console import Console
 from rich.progress import Progress
 
-from ..core.branch_saver.branch_saver import BranchSaver
 from ..core.chunker.interface import MechanicalChunker
 from ..core.commands.git_commands import GitCommands
 from ..core.data.chunk import Chunk
@@ -38,8 +37,8 @@ def progress_bar(p: Progress, step_name: str):
 class CommitPipeline:
     def __init__(
         self,
-        global_context : GlobalContext,
-        commit_context : CommitContext,
+        global_context: GlobalContext,
+        commit_context: CommitContext,
         git: GitInterface,
         commands: GitCommands,
         mechanical_chunker: MechanicalChunker,
@@ -51,12 +50,10 @@ class CommitPipeline:
         query_manager: QueryManager,
         base_commit_hash: str,
         new_commit_hash: str,
-        branch_to_update: Optional[str],
-        branch_saver: Optional[BranchSaver],
     ):
         self.global_context = global_context
         self.commit_context = commit_context
-        
+
         self.git = git
         self.commands = commands
 
@@ -65,12 +62,9 @@ class CommitPipeline:
         self.logical_grouper = logical_grouper
 
         self.synthesizer = synthesizer
-        self.branch_saver = branch_saver
         self.file_reader = file_reader
         self.file_parser = file_parser
         self.query_manager = query_manager
-
-        self.branch_to_update = branch_to_update
 
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
@@ -86,17 +80,19 @@ class CommitPipeline:
         )
         # Diff between the base commit and the backup branch commit - all working directory changes
         with time_block("raw_diff_generation_ms"):
-            raw_chunks, immmutable_chunks = self.commands.get_processed_working_diff(
-                self.base_commit_hash, self.new_commit_hash, str(self.commit_context.target)
+            raw_chunks, immutable_chunks = self.commands.get_processed_working_diff(
+                self.base_commit_hash,
+                self.new_commit_hash,
+                str(self.commit_context.target) if self.commit_context.target else None,
             )
 
         log_chunks(
             "raw_diff_generation_ms (with immutable groups)",
             raw_chunks,
-            immmutable_chunks,
+            immutable_chunks,
         )
 
-        if not (raw_chunks or immmutable_chunks):
+        if not (raw_chunks or immutable_chunks):
             logger.info("No changes to process, exiting")
             return
 
@@ -147,7 +143,10 @@ class CommitPipeline:
             # take these semantically valid chunks, and now group them into logical commits
             with time_block("semantic_grouping"):
                 ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
-                    semantic_chunks, immmutable_chunks, self.commit_context.target, on_progress=on_progress
+                    semantic_chunks,
+                    immutable_chunks,
+                    self.commit_context.message,
+                    on_progress=on_progress,
                 )
 
         if not ai_groups:
@@ -244,17 +243,15 @@ class CommitPipeline:
         )
 
         with time_block("Executing Synthesizer Pipeline"):
-            plan_success = self.synthesizer.execute_plan(
+            new_commit_hash = self.synthesizer.execute_plan(
                 ai_groups,
                 self.commands.get_current_base_commit_hash(),
-                self.branch_to_update,
             )
 
         # Final pipeline summary
-        commit_count = len(plan_success) if isinstance(plan_success, list) else 0
         logger.info(
-            "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} final_groups={acc} commits_created={commits} files_changed={files}",
-            raw=len(raw_chunks) + len(immmutable_chunks),
+            "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} final_groups={acc} files_changed={files}",
+            raw=len(raw_chunks) + len(immutable_chunks),
             mech=len(
                 mechanical_chunks if raw_chunks else []
             ),  # if only immutable chunks, there are no mechanical chunks
@@ -262,14 +259,7 @@ class CommitPipeline:
                 semantic_chunks if raw_chunks else []
             ),  # if only immutable chunks, there are no semantic chunks
             acc=len(ai_groups),
-            commits=commit_count,
             files=len(all_affected_files),
         )
 
-        # TODO, this is flaky and can break in many ways, one being if the target is still an entire repo but just not "."
-        if plan_success and self.commit_context.target != "." and self.branch_saver is not None:
-            # we have overriden main branch with plan changes
-            # if the target is not the whole repo (eg "."), then we want to bring back the other changes
-            self.branch_saver.restore_from_backup(exclude_path=self.commit_context.target)
-
-        return plan_success
+        return new_commit_hash or None

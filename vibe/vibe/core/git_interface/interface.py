@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from subprocess import CompletedProcess
 
 
 class GitInterface(ABC):
@@ -9,7 +10,7 @@ class GitInterface(ABC):
     """
 
     @abstractmethod
-    def run_git_text(
+    def run_git_text_out(
         self,
         args: list[str],
         input_text: str | None = None,
@@ -19,7 +20,7 @@ class GitInterface(ABC):
         """Run a git command with text input/output. Returns None on error."""
 
     @abstractmethod
-    def run_git_binary(
+    def run_git_binary_out(
         self,
         args: list[str],
         input_bytes: bytes | None = None,
@@ -27,3 +28,23 @@ class GitInterface(ABC):
         cwd: str | Path | None = None,
     ) -> bytes | None:
         """Run a git command with binary input/output. Returns None on error."""
+
+    @abstractmethod
+    def run_git_text(
+        self,
+        args: list[str],
+        input_text: str | None = None,
+        env: dict | None = None,
+        cwd: str | Path | None = None,
+    ) -> CompletedProcess[str] | None:
+        """Run a git command with text response output. Returns None on error."""
+
+    @abstractmethod
+    def run_git_binary(
+        self,
+        args: list[str],
+        input_bytes: bytes | None = None,
+        env: dict | None = None,
+        cwd: str | Path | None = None,
+    ) -> CompletedProcess[bytes] | None:
+        """Run a git command with binary response output. Returns None on error."""

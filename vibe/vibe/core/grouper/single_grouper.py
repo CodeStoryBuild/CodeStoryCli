@@ -17,26 +17,26 @@ class SingleGrouper(LogicalGrouper):
     ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""
         groups: list[CommitGroup] = []
-        id = 0
+        id_ = 0
         g_time = time.time()
         for chunk in chunks:
             group = CommitGroup(
                 [chunk],
-                str(id),
-                f"AUTOGEN{int(g_time)}-Group-{id}",
+                str(id_),
+                f"AUTOGEN{int(g_time)}-Group-{id_}",
                 "Auto gen commit message",
             )
             groups.append(group)
-            id += 1
+            id_ += 1
 
         for chunk in immut_chunks:
             group = CommitGroup(
                 [chunk],
-                str(id),
-                f"AUTOGEN{int(g_time)}-Group-{id}",
+                str(id_),
+                f"AUTOGEN{int(g_time)}-Group-{id_}",
                 "Auto gen commit message",
             )
             groups.append(group)
-            id += 1
+            id_ += 1
 
         return groups

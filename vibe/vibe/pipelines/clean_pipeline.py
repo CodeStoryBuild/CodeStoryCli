@@ -117,16 +117,19 @@ class CleanPipeline:
         start_ref = start_from or "HEAD"
         if start_from:
             # Resolve the commit hash first to ensure it exists
-            resolved = self.git.run_git_text(["rev-parse", start_from])
+            resolved = self.git.run_git_text_out(["rev-parse", start_from])
             if resolved is None:
                 raise ValueError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
 
-        out = self.git.run_git_text(["rev-list", "--first-parent", start_ref]) or ""
+        out = self.git.run_git_text_out(["rev-list", "--first-parent", start_ref]) or ""
         return [l.strip() for l in out.splitlines() if l.strip()]
 
     def _is_merge(self, commit: str) -> bool:
-        line = self.git.run_git_text(["rev-list", "--parents", "-n", "1", commit]) or ""
+        line = (
+            self.git.run_git_text_out(["rev-list", "--parents", "-n", "1", commit])
+            or ""
+        )
         parts = line.strip().split()
         # format: <commit> <p1> [<p2> ...]
         return len(parts) > 2
@@ -139,7 +142,7 @@ class CleanPipeline:
     def _count_line_changes(self, commit: str) -> int | None:
         # Sum additions + deletions between parent and commit.
         # Use numstat for robust parsing; binary files show '-' which we treat as 0.
-        out = self.git.run_git_text(["diff", "--numstat", f"{commit}^", commit])
+        out = self.git.run_git_text_out(["diff", "--numstat", f"{commit}^", commit])
         if out is None:
             return None
         total = 0
