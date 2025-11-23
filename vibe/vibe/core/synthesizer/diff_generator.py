@@ -1,15 +1,24 @@
 from itertools import groupby
 from vibe.core.commands.git_const import DEVNULLBYTES
+from vibe.core.data.chunk import Chunk
 from vibe.core.data.diff_chunk import DiffChunk
+from vibe.core.data.commit_group import CommitGroup
 from vibe.core.data.immutable_chunk import ImmutableChunk
 from vibe.core.data.line_changes import Addition, Removal
 
 
 class DiffGenerator:
-    def __init__(self, all_chunks_flattened: list[DiffChunk | ImmutableChunk]):
-        diff_chunks = [
-            chunk for chunk in all_chunks_flattened if isinstance(chunk, DiffChunk)
-        ]
+    def __init__(self, all_chunks: list[Chunk | ImmutableChunk | CommitGroup]):
+        diff_chunks = []
+        for chunk in all_chunks:
+            if isinstance(chunk, Chunk):
+                diff_chunks.extend(chunk.get_chunks())
+            elif isinstance(chunk, CommitGroup):
+                for group_chunk in chunk.chunks:
+                    if isinstance(group_chunk, Chunk):
+                        diff_chunks.extend(group_chunk.get_chunks())
+            # else skip Immutable Chunks, they dont use total chunks per file
+
         self.total_chunks_per_file = self.__get_total_chunks_per_file(diff_chunks)
 
     def __get_total_chunks_per_file(self, chunks: list[DiffChunk]):
@@ -57,20 +66,20 @@ class DiffGenerator:
                 continue
 
             current_count = len(file_chunks)
-            total_expected = self.total_chunks_per_file.get(file_path, current_count)
+            total_expected = self.total_chunks_per_file.get(file_path)
 
             patch_lines = []
             single_chunk = file_chunks[0]
 
             # we need all chunks to mark as deletion
             file_deletion = (
-                single_chunk.is_file_deletion and current_count >= total_expected
+                all([file_chunk.is_file_deletion for file_chunk in file_chunks]) and current_count >= total_expected
             )
-            file_addition = single_chunk.is_file_addition
-            standard_modification = single_chunk.is_standard_modification or (
-                single_chunk.is_file_deletion and current_count < total_expected
+            file_addition = all([file_chunk.is_file_addition for file_chunk in file_chunks])
+            standard_modification = all([file_chunk.is_standard_modification for file_chunk in file_chunks]) or (
+                all([file_chunk.is_file_deletion for file_chunk in file_chunks]) and current_count < total_expected
             )
-            file_rename = single_chunk.is_file_rename
+            file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
 
             # Determine file change type for hunk calculation
             if file_addition:

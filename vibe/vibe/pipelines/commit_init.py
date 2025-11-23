@@ -24,11 +24,10 @@ def create_commit_pipeline(
     chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
 
     # Use provided model or default to SingleGrouper (no AI)
-    # if global_ctx.model is not None:
-    #     logical_grouper = LangChainGrouper(global_ctx.model)
-    # else:
-    #     logger.warning("Using no ai grouping as commit_pipeline recieved no model!")
-    logical_grouper = SingleGrouper()
+    if global_ctx.model is not None:
+        logical_grouper = LangChainGrouper(global_ctx.model)
+    else:
+        logger.warning("Using no ai grouping as commit_pipeline recieved no model!")
 
     if new_commit_hash is None:
         logger.info("[red] Failed to backup working state, exiting. [/red]")

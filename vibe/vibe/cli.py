@@ -106,6 +106,7 @@ def main(
     local_config_path = Path("vibeconfig.toml")
     env_prefix = "VIBE_"
     global_config_path = Path(user_config_dir("Vibe")) / "vibeconfig.toml"
+    custom_config_path = Path(custom_config) if custom_config else None
 
     config, used_configs = ConfigLoader.get_full_config(
         GlobalConfig,
@@ -113,7 +114,7 @@ def main(
         local_config_path,
         env_prefix,
         global_config_path,
-        custom_config,
+        custom_config_path,
     )
     logger.info(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))

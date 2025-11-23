@@ -1,8 +1,9 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from .diff_chunk import DiffChunk
 
 
+@runtime_checkable
 class Chunk(Protocol):
     def canonical_paths(self) -> list[bytes]:
         """

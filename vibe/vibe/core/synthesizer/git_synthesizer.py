@@ -128,15 +128,7 @@ class GitSynthesizer:
         Executes the synthesis plan using pure Git plumbing.
         Returns the hash of the final commit.
         """
-
-        # Collect all chunks for diff generator context
-        all_diff_chunks = []
-        for group in groups:
-            for chunk in group.chunks:
-                if isinstance(chunk, DiffChunk):
-                    all_diff_chunks.extend(chunk.get_chunks())
-
-        diff_generator = DiffGenerator(all_diff_chunks)
+        diff_generator = DiffGenerator(groups)
 
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
 
