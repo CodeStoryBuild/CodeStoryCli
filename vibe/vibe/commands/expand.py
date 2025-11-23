@@ -48,14 +48,10 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
         )
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
-    parent = (
-        git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
-    )
+    parent = git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
 
     if not parent:
-        raise GitError(
-            "Expanding the root commit is not supported yet!"
-        )
+        raise GitError("Expanding the root commit is not supported yet!")
 
     parent = parent.strip()
 

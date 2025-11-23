@@ -49,7 +49,7 @@ def main(
         vibe clean --ignore def456 --ignore ghi789
     """
     expand_command = partial(expand_main, ctx)
-    
+
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
     validated_start_from = None
@@ -78,7 +78,7 @@ def main(
         success = runner.run()
 
     if success:
-        logger.info("Clean command completed successfully")        
+        logger.info("Clean command completed successfully")
     else:
         logger.error("Clean operation failed")
         raise typer.Exit(1)

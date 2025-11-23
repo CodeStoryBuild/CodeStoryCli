@@ -73,11 +73,17 @@ class DiffGenerator:
 
             # we need all chunks to mark as deletion
             file_deletion = (
-                all([file_chunk.is_file_deletion for file_chunk in file_chunks]) and current_count >= total_expected
+                all([file_chunk.is_file_deletion for file_chunk in file_chunks])
+                and current_count >= total_expected
             )
-            file_addition = all([file_chunk.is_file_addition for file_chunk in file_chunks])
-            standard_modification = all([file_chunk.is_standard_modification for file_chunk in file_chunks]) or (
-                all([file_chunk.is_file_deletion for file_chunk in file_chunks]) and current_count < total_expected
+            file_addition = all(
+                [file_chunk.is_file_addition for file_chunk in file_chunks]
+            )
+            standard_modification = all(
+                [file_chunk.is_standard_modification for file_chunk in file_chunks]
+            ) or (
+                all([file_chunk.is_file_deletion for file_chunk in file_chunks])
+                and current_count < total_expected
             )
             file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
 
