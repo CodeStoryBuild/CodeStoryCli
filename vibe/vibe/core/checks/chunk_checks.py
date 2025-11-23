@@ -22,10 +22,14 @@ def chunks_disjoint(chunks: list[DiffChunk]) -> bool:
     ) -> tuple[tuple[int, int] | None, tuple[int, int] | None]:
         """Return (old_start, old_end), (new_start, new_end) inclusive ranges."""
         old_lines = [
-            i.line_number for i in chunk.parsed_content if isinstance(i, Removal)
+            i.line_number
+            for i in chunk.parsed_content
+            if isinstance(i, Removal)
         ]
         new_lines = [
-            i.line_number for i in chunk.parsed_content if isinstance(i, Addition)
+            i.line_number
+            for i in chunk.parsed_content
+            if isinstance(i, Addition)
         ]
 
         old_range = (min(old_lines), max(old_lines)) if old_lines else None

@@ -6,7 +6,9 @@ from vibe.core.data.line_changes import Addition, Removal
 
 # Assuming your models are importable like this
 from vibe.core.data.commit_group import CommitGroup
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 
 # Assuming the synthesizer class is here
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
@@ -25,7 +27,9 @@ def multi_file_git_repo(tmp_path):
         ["git", "config", "user.name", "Test User"], cwd=repo_path, check=True
     )
     subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo_path,
+        check=True,
     )
 
     # Create file_a.txt
@@ -304,8 +308,12 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     )
 
     assert len(log_output) == 2
-    assert "feat: Add new content to files" in log_output[0]  # HEAD is now group1
-    assert "refactor: Modify existing content" in log_output[1]  # Parent is now group2
+    assert (
+        "feat: Add new content to files" in log_output[0]
+    )  # HEAD is now group1
+    assert (
+        "refactor: Modify existing content" in log_output[1]
+    )  # Parent is now group2
 
     # 3. Verify the diff of the FIRST new commit (HEAD~1) contains ONLY {A2, B1}
     commit1_diff = subprocess.run(

@@ -114,7 +114,9 @@ class GitSynthesizer:
             if os.path.exists(temp_index_path):
                 os.unlink(temp_index_path)
 
-    def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
+    def _create_commit(
+        self, tree_hash: str, parent_hash: str, message: str
+    ) -> str:
         return self._run_git_decoded(
             "commit-tree", tree_hash, "-p", parent_hash, "-m", message
         )
@@ -130,7 +132,9 @@ class GitSynthesizer:
         """
         diff_generator = DiffGenerator(groups)
 
-        original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
+        original_base_commit_hash = self._run_git_decoded(
+            "rev-parse", base_commit
+        )
 
         # Track state
         last_synthetic_commit_hash = original_base_commit_hash

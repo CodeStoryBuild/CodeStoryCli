@@ -16,7 +16,11 @@ from vibe.core.logging.logging import setup_logger
 
 
 from vibe.core.config.config_loader import ConfigLoader
-from vibe.runtimeutil import ensure_utf8_output, setup_signal_handlers, version_callback
+from vibe.runtimeutil import (
+    ensure_utf8_output,
+    setup_signal_handlers,
+    version_callback,
+)
 from vibe.context import GlobalConfig, GlobalContext
 
 
@@ -72,7 +76,9 @@ def main(
         None, "--api-key", help="API key for the model provider"
     ),
     model_temperature: float = typer.Option(
-        0.7, "--temperature", help="What temperature to use when creating the AI model"
+        0.7,
+        "--temperature",
+        help="What temperature to use when creating the AI model",
     ),
     verbose: Optional[bool] = typer.Option(
         False,

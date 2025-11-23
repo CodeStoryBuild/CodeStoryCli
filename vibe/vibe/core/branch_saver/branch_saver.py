@@ -37,7 +37,9 @@ class BranchSaver:
         - Returns the old commit hash (main's HEAD), the new commit hash (backup branch's HEAD),
           and the backup branch name.
         """
-        original_branch = (self._run(["branch", "--show-current"]) or "").strip()
+        original_branch = (
+            self._run(["branch", "--show-current"]) or ""
+        ).strip()
         # check that not a detached branch
         if not original_branch:
             msg = "Cannot backup: currently on a detached HEAD."
@@ -88,7 +90,9 @@ class BranchSaver:
         - Applies all changes as uncommitted, unstaged changes.
         - If `exclude_paths` is provided, those paths will not be touched during the restore.
         """
-        original_branch = (self._run(["branch", "--show-current"]) or "").strip()
+        original_branch = (
+            self._run(["branch", "--show-current"]) or ""
+        ).strip()
         if not original_branch:
             msg = "Cannot restore: currently on a detached HEAD."
             logger.error(msg)
@@ -102,7 +106,14 @@ class BranchSaver:
 
         try:
             # Build the restore command dynamically
-            cmd = ["restore", "--source", backup_branch, "--staged", "--worktree", "--"]
+            cmd = [
+                "restore",
+                "--source",
+                backup_branch,
+                "--staged",
+                "--worktree",
+                "--",
+            ]
 
             # Add the pathspecs
             if exclude_path is not None:

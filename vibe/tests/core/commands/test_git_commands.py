@@ -189,8 +189,12 @@ def test_get_processed_diff_merges(monkeypatch):
 
 def test_merge_overlapping_chunks_disjoint():
     gc, _ = make_git_commands()
-    d1 = DiffChunk.from_hunk(HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 1, 0, 1))
-    d2 = DiffChunk.from_hunk(HunkWrapper("foo.txt", "foo.txt", ["+ b"], 10, 10, 0, 1))
+    d1 = DiffChunk.from_hunk(
+        HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 1, 0, 1)
+    )
+    d2 = DiffChunk.from_hunk(
+        HunkWrapper("foo.txt", "foo.txt", ["+ b"], 10, 10, 0, 1)
+    )
     merged = gc.merge_overlapping_chunks([d1, d2])
     assert len(merged) == 2
     assert all(isinstance(x, DiffChunk) for x in merged)
@@ -198,8 +202,12 @@ def test_merge_overlapping_chunks_disjoint():
 
 def test_merge_overlapping_chunks_overlap():
     gc, _ = make_git_commands()
-    d1 = DiffChunk.from_hunk(HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 1, 0, 1))
-    d2 = DiffChunk.from_hunk(HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 2, 0, 1))
+    d1 = DiffChunk.from_hunk(
+        HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 1, 0, 1)
+    )
+    d2 = DiffChunk.from_hunk(
+        HunkWrapper("foo.txt", "foo.txt", ["+ a"], 1, 2, 0, 1)
+    )
     merged = gc.merge_overlapping_chunks([d1, d2])
     assert len(merged) == 1
     assert isinstance(merged[0], CompositeDiffChunk)

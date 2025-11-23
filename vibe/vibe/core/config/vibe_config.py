@@ -13,7 +13,9 @@ from loguru import logger
 class VibeConfig:
     """Configuration for vibe application."""
 
-    model_provider: Optional[str] = None  # e.g., "openai", "gemini", "anthropic"
+    model_provider: Optional[str] = (
+        None  # e.g., "openai", "gemini", "anthropic"
+    )
     model_name: Optional[str] = None  # e.g., "gpt-4", "gemini-2.5-flash"
     api_key: Optional[str] = None
     temperature: float = 0.7

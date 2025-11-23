@@ -86,7 +86,9 @@ class SubprocessGitInterface(GitInterface):
                 cwd=effective_cwd,
             )
             if result.stdout:
-                logger.debug(f"git stdout (binary length): {len(result.stdout)} bytes")
+                logger.debug(
+                    f"git stdout (binary length): {len(result.stdout)} bytes"
+                )
             if result.stderr:
                 logger.debug(
                     f"git stderr (binary): {result.stderr[:2000]!r}"
@@ -170,7 +172,9 @@ class SubprocessGitInterface(GitInterface):
                 cwd=effective_cwd,
             )
             if result.stdout:
-                logger.debug(f"git stdout (binary length): {len(result.stdout)} bytes")
+                logger.debug(
+                    f"git stdout (binary length): {len(result.stdout)} bytes"
+                )
             if result.stderr:
                 logger.debug(
                     f"git stderr (binary): {result.stderr[:2000]!r}"

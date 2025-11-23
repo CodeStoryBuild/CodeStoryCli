@@ -10,7 +10,10 @@ class SymbolExtractor:
         self.query_manager = query_manager
 
     def extract_defined_symbols(
-        self, language_name: str, root_node: Node, line_ranges: list[tuple[int, int]]
+        self,
+        language_name: str,
+        root_node: Node,
+        line_ranges: list[tuple[int, int]],
     ) -> set[str]:
         """
         PASS 2: Builds a map of line numbers to their fully-qualified symbols.

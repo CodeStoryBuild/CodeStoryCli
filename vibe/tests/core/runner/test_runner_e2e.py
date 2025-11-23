@@ -12,7 +12,9 @@ from unittest.mock import patch
 
 import pytest
 from vibe.core.chunker.simple_chunker import SimpleChunker
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 from vibe.pipelines.commit_pipeline import CommitPipeline
 
 from .test_helpers import DeterministicGrouper
@@ -39,7 +41,9 @@ def complex_git_repo():
             check=True,
         )
         subprocess.run(
-            ["git", "config", "user.name", "Test User"], cwd=repo_path, check=True
+            ["git", "config", "user.name", "Test User"],
+            cwd=repo_path,
+            check=True,
         )
 
         # Create initial project structure
@@ -82,7 +86,9 @@ def mock_inquirer_accept_all():
 # --- Test Cases ---
 
 
-def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_all):
+def test_runner_basic_file_modification(
+    complex_git_repo, mock_inquirer_accept_all
+):
     """Test basic file modification through the complete pipeline."""
     repo_path = complex_git_repo
 
@@ -115,7 +121,9 @@ def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_a
 
     assert log_output  # Should have new commits
     assert (
-        "src/main.py" in log_output or "Modify" in log_output or "Update" in log_output
+        "src/main.py" in log_output
+        or "Modify" in log_output
+        or "Update" in log_output
     )
 
     # Verify file content matches exactly line-by-line
@@ -283,7 +291,10 @@ def test_runner_with_file_deletion(complex_git_repo, mock_inquirer_accept_all):
 
     # Verify the deleted files are tracked in git history
     status_output = subprocess.run(
-        ["git", "status", "--short"], cwd=repo_path, text=True, capture_output=True
+        ["git", "status", "--short"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # After pipeline runs and commits, there should be no pending changes
@@ -296,7 +307,9 @@ def test_runner_with_file_rename(complex_git_repo):
 
     # Rename a file using git mv (this creates a rename diff)
     subprocess.run(
-        ["git", "mv", "src/utils.py", "src/utilities.py"], cwd=repo_path, check=True
+        ["git", "mv", "src/utils.py", "src/utilities.py"],
+        cwd=repo_path,
+        check=True,
     )
 
     # Also modify the renamed file
@@ -331,7 +344,9 @@ def test_runner_with_file_rename(complex_git_repo):
     )
 
 
-def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_all):
+def test_runner_content_based_grouping(
+    complex_git_repo, mock_inquirer_accept_all
+):
     """Test pipeline with content-based grouping strategy."""
     repo_path = complex_git_repo
 
@@ -414,7 +429,9 @@ def test_runner_with_staged_changes_reset(complex_git_repo):
 
     # Make some changes and stage them
     main_file = repo_path / "src" / "main.py"
-    new_content = main_file.read_text().replace("Hello, World!", "Hello, Staged!")
+    new_content = main_file.read_text().replace(
+        "Hello, World!", "Hello, Staged!"
+    )
     main_file.write_text(new_content)
     subprocess.run(["git", "add", "src/main.py"], cwd=repo_path, check=True)
 
@@ -488,7 +505,9 @@ if __name__ == '__main__':
 
     # Verify results
     assert results is not None
-    assert len(results) > 1  # Should have multiple commits due to chunking and grouping
+    assert (
+        len(results) > 1
+    )  # Should have multiple commits due to chunking and grouping
 
     # Each commit should be small due to chunking and grouping limits
     for result in results:
@@ -523,7 +542,9 @@ def large_codebase_repo():
             check=True,
         )
         subprocess.run(
-            ["git", "config", "user.name", "Developer"], cwd=repo_path, check=True
+            ["git", "config", "user.name", "Developer"],
+            cwd=repo_path,
+            check=True,
         )
 
         # Create realistic project structure
@@ -576,7 +597,9 @@ def large_codebase_repo():
         # Initial commit
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(
-            ["git", "commit", "-m", "Initial codebase"], cwd=repo_path, check=True
+            ["git", "commit", "-m", "Initial codebase"],
+            cwd=repo_path,
+            check=True,
         )
 
         yield repo_path
@@ -1178,7 +1201,9 @@ bcrypt==3.2.0
     )
 
     # Verify middleware/auth.py content
-    actual_middleware = (repo_path / "src" / "middleware" / "auth.py").read_text()
+    actual_middleware = (
+        repo_path / "src" / "middleware" / "auth.py"
+    ).read_text()
     assert actual_middleware == middleware_new, (
         f"File src/middleware/auth.py content mismatch:\nExpected:\n{middleware_new}\n\nActual:\n{actual_middleware}"
     )
@@ -1419,7 +1444,9 @@ class ProductController:
     )
 
     # Add integration test for database connection handling
-    (repo_path / "tests" / "integration" / "test_database_connections.py").write_text(
+    (
+        repo_path / "tests" / "integration" / "test_database_connections.py"
+    ).write_text(
         """import unittest
 from src.utils.database import Database
 from src.utils.connection_pool import ConnectionPool
@@ -1828,7 +1855,9 @@ with Database('sqlite:///app.db') as db:
     actual_test_db_connections = (
         repo_path / "tests" / "integration" / "test_database_connections.py"
     ).read_text()
-    assert actual_test_db_connections == expected_test_database_connections_py, (
+    assert (
+        actual_test_db_connections == expected_test_database_connections_py
+    ), (
         f"File tests/integration/test_database_connections.py content mismatch:\nExpected:\n{expected_test_database_connections_py}\n\nActual:\n{actual_test_db_connections}"
     )
 
@@ -1838,7 +1867,9 @@ with Database('sqlite:///app.db') as db:
     )
 
 
-def test_runner_mixed_operations_chaos(large_codebase_repo, mock_inquirer_accept_all):
+def test_runner_mixed_operations_chaos(
+    large_codebase_repo, mock_inquirer_accept_all
+):
     """Test chaotic real-world scenario with adds, deletes, renames, and modifications."""
     repo_path = large_codebase_repo
 
@@ -1862,7 +1893,12 @@ def test_runner_mixed_operations_chaos(large_codebase_repo, mock_inquirer_accept
     )
 
     subprocess.run(
-        ["git", "mv", "src/controllers/user_controller.py", "src/controllers/users.py"],
+        [
+            "git",
+            "mv",
+            "src/controllers/user_controller.py",
+            "src/controllers/users.py",
+        ],
         cwd=repo_path,
         check=True,
     )
@@ -2303,14 +2339,16 @@ python -m pytest tests/
         )
 
     # Verify renamed/modified file contents match exactly
-    actual_formatters = (repo_path / "src" / "utils" / "formatters.py").read_text(
-        encoding="utf-8"
-    )
+    actual_formatters = (
+        repo_path / "src" / "utils" / "formatters.py"
+    ).read_text(encoding="utf-8")
     assert actual_formatters == expected_formatters, (
         f"File src/utils/formatters.py content mismatch:\nExpected:\n{expected_formatters}\n\nActual:\n{actual_formatters}"
     )
 
-    actual_user = (repo_path / "src" / "models" / "user.py").read_text(encoding="utf-8")
+    actual_user = (repo_path / "src" / "models" / "user.py").read_text(
+        encoding="utf-8"
+    )
     assert actual_user == expected_user_py, (
         f"File src/models/user.py content mismatch:\nExpected:\n{expected_user_py}\n\nActual:\n{actual_user}"
     )

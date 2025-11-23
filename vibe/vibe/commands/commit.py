@@ -16,7 +16,9 @@ from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.commands.git_commands import GitCommands
 
 
-def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:
+def verify_repo(
+    commands: GitCommands, target: str, auto_yes: bool = False
+) -> bool:
     # Step -1: ensure we're inside a git repository
     if not commands.is_git_repo():
         raise RuntimeError(
@@ -90,7 +92,9 @@ def main(
         str(commit_context.target),
         global_context.auto_accept,
     ):
-        raise ValidationError("Cannot proceed without unstaging changes, exiting.")
+        raise ValidationError(
+            "Cannot proceed without unstaging changes, exiting."
+        )
 
     # next we create our base/new commits + backup branch for later
     branch_saver = BranchSaver(global_context.git_interface)

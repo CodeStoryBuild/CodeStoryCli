@@ -147,7 +147,8 @@ def invalid_commit_hash(commit_hash: str) -> ValidationError:
 def path_not_found(path: str) -> ValidationError:
     """Create a ValidationError for non-existent paths."""
     return ValidationError(
-        f"Path not found: {path}", "Please check that the path exists and is accessible"
+        f"Path not found: {path}",
+        "Please check that the path exists and is accessible",
     )
 
 

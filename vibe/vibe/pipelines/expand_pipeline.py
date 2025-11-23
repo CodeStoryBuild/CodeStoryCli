@@ -55,7 +55,12 @@ class ExpandPipeline:
         try:
             # --ancestry-path ensures we follow the direct chain
             rev_list_out = self.global_context.git_interface.run_git_text_out(
-                ["rev-list", "--reverse", "--ancestry-path", f"{base_hash}..HEAD"]
+                [
+                    "rev-list",
+                    "--reverse",
+                    "--ancestry-path",
+                    f"{base_hash}..HEAD",
+                ]
             )
             original_chain = rev_list_out.splitlines() if rev_list_out else []
         except RuntimeError:
@@ -129,11 +134,13 @@ class ExpandPipeline:
 
                     # git commit-tree <tree> -p <new_parent>
                     # Input is the commit message
-                    current_parent = self.global_context.git_interface.run_git_text_out(
-                        ["commit-tree", tree_hash, "-p", current_parent],
-                        input_text=message,
-                        env=env,
-                    ).strip()  # git commit tree add trailing newline
+                    current_parent = (
+                        self.global_context.git_interface.run_git_text_out(
+                            ["commit-tree", tree_hash, "-p", current_parent],
+                            input_text=message,
+                            env=env,
+                        ).strip()
+                    )  # git commit tree add trailing newline
 
                 final_head = current_parent
 

@@ -80,10 +80,14 @@ class CommitPipeline:
         )
         # Diff between the base commit and the backup branch commit - all working directory changes
         with time_block("raw_diff_generation_ms"):
-            raw_chunks, immutable_chunks = self.commands.get_processed_working_diff(
-                self.base_commit_hash,
-                self.new_commit_hash,
-                str(self.commit_context.target) if self.commit_context.target else None,
+            raw_chunks, immutable_chunks = (
+                self.commands.get_processed_working_diff(
+                    self.base_commit_hash,
+                    self.new_commit_hash,
+                    str(self.commit_context.target)
+                    if self.commit_context.target
+                    else None,
+                )
             )
 
         log_chunks(
@@ -106,14 +110,19 @@ class CommitPipeline:
                     for diff_chunk in chunk.get_chunks()
                 ]
                 context_manager = ContextManager(
-                    self.file_parser, self.file_reader, self.query_manager, flat_chunks
+                    self.file_parser,
+                    self.file_reader,
+                    self.query_manager,
+                    flat_chunks,
                 )
 
                 # create smallest mechanically valid chunks
                 with progress_bar(p, "Creating Mechanical Chunks"):
                     with time_block("mechanical_chunking"):
-                        mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
-                            raw_chunks, context_manager
+                        mechanical_chunks: list[Chunk] = (
+                            self.mechanical_chunker.chunk(
+                                raw_chunks, context_manager
+                            )
                         )
 
                 log_chunks(
@@ -129,12 +138,16 @@ class CommitPipeline:
                         )
 
                 log_chunks(
-                    "Semantic Chunks (without immutable groups)", semantic_chunks, []
+                    "Semantic Chunks (without immutable groups)",
+                    semantic_chunks,
+                    [],
                 )
             else:
                 semantic_chunks = []
 
-            ai_grp = p.add_task("Using AI to create meaningfull commits....", total=1)
+            ai_grp = p.add_task(
+                "Using AI to create meaningfull commits....", total=1
+            )
 
             def on_progress(percent):
                 # percent is 0-100, progress bar expects 0-1
@@ -142,11 +155,13 @@ class CommitPipeline:
 
             # take these semantically valid chunks, and now group them into logical commits
             with time_block("logical_grouping"):
-                ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
-                    semantic_chunks,
-                    immutable_chunks,
-                    self.commit_context.message,
-                    on_progress=on_progress,
+                ai_groups: list[CommitGroup] = (
+                    self.logical_grouper.group_chunks(
+                        semantic_chunks,
+                        immutable_chunks,
+                        self.commit_context.message,
+                        on_progress=on_progress,
+                    )
                 )
 
         if not ai_groups:
@@ -169,7 +184,8 @@ class CommitPipeline:
             )
             if group.extended_message:
                 logger.debug(
-                    "Extended message: {message}", message=group.extended_message
+                    "Extended message: {message}",
+                    message=group.extended_message,
                 )
 
             affected_files = set()
@@ -261,4 +277,6 @@ class CommitPipeline:
             files=len(all_affected_files),
         )
 
-        return new_commit_hash or self.new_commit_hash  # fallback to the current commit
+        return (
+            new_commit_hash or self.new_commit_hash
+        )  # fallback to the current commit

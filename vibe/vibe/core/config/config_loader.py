@@ -85,7 +85,9 @@ class ConfigLoader:
 
     @staticmethod
     def build(
-        config_model: type[BaseModel], type_adapter: TypeAdapter, sources: list[dict]
+        config_model: type[BaseModel],
+        type_adapter: TypeAdapter,
+        sources: list[dict],
     ):
         """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
 

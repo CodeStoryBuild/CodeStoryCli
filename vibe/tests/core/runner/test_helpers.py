@@ -21,7 +21,11 @@ class DeterministicChunker(MechanicalChunker):
         Initialize with optional keywords that trigger chunk splitting.
         Default splits on 'SPLIT_HERE' comments.
         """
-        self.split_keywords = split_keywords or ["SPLIT_HERE", "# SPLIT", "// SPLIT"]
+        self.split_keywords = split_keywords or [
+            "SPLIT_HERE",
+            "# SPLIT",
+            "// SPLIT",
+        ]
 
     def chunk(self, diff_chunks: list[DiffChunk]) -> list[DiffChunk]:
         """
@@ -85,7 +89,9 @@ class DeterministicGrouper(LogicalGrouper):
     A deterministic grouper that groups chunks based on file patterns and content for testing.
     """
 
-    def __init__(self, group_by_file: bool = True, max_chunks_per_group: int = 3):
+    def __init__(
+        self, group_by_file: bool = True, max_chunks_per_group: int = 3
+    ):
         """
         Initialize with grouping strategy.
 
@@ -146,7 +152,9 @@ class DeterministicGrouper(LogicalGrouper):
 
         return groups
 
-    def _group_by_content_patterns(self, chunks: list[DiffChunk]) -> list[CommitGroup]:
+    def _group_by_content_patterns(
+        self, chunks: list[DiffChunk]
+    ) -> list[CommitGroup]:
         """Group chunks by content patterns for more complex testing."""
         groups = []
         group_counter = 1
@@ -158,10 +166,14 @@ class DeterministicGrouper(LogicalGrouper):
         other_chunks = []
 
         for chunk in chunks:
-            content = "\n".join(line.content.lower() for line in chunk.parsed_content)
+            content = "\n".join(
+                line.content.lower() for line in chunk.parsed_content
+            )
             if any(keyword in content for keyword in ["feature", "add", "new"]):
                 feature_chunks.append(chunk)
-            elif any(keyword in content for keyword in ["refactor", "rename", "move"]):
+            elif any(
+                keyword in content for keyword in ["refactor", "rename", "move"]
+            ):
                 refactor_chunks.append(chunk)
             elif any(keyword in content for keyword in ["fix", "bug", "error"]):
                 bug_fix_chunks.append(chunk)
