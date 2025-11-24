@@ -5,6 +5,7 @@ from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.commit_group import CommitGroup
 from vibe.core.data.immutable_chunk import ImmutableChunk
 from vibe.core.data.line_changes import Addition, Removal
+from loguru import logger
 
 
 class DiffGenerator:
@@ -308,7 +309,7 @@ class DiffGenerator:
             hunk_old_start = 0
             # new_start adjustment: +1 unless already at line 1
             hunk_new_start = (
-                old_start + cumulative_offset + (1 if old_start != 1 else 0)
+                old_start + cumulative_offset + 1
             )
         elif file_change_type == "deleted":
             # File deletion: new side is always +0,0
@@ -319,7 +320,7 @@ class DiffGenerator:
             hunk_old_start = old_start
             # new_start adjustment: +1 unless already at line 1
             hunk_new_start = (
-                old_start + cumulative_offset + (1 if old_start != 1 else 0)
+                old_start + cumulative_offset + 1
             )
         else:
             # Deletion, modification, or rename: @@ -N,len +M,len @@
@@ -328,22 +329,41 @@ class DiffGenerator:
 
         return (hunk_old_start, hunk_new_start)
 
+        
     def __is_contiguous(
         self, last_chunk: "DiffChunk", current_chunk: "DiffChunk"
     ) -> bool:
         """
         Determines if two DiffChunks are contiguous and can be merged.
-
-        Since we ONLY have old_start (no new_start), we check contiguity
-        based on old file coordinates only.
-
-        Chunks are contiguous if their old_start + old_len touch or overlap.
+        
+        We check contiguity based STRICTLY on old file coordinates.
         """
-        # Check for contiguity on the "old file" side
+        # Always use old_len to determine the end in the old file.
+        # Pure additions have old_len=0, meaning they end where they start.
         last_old_end = (last_chunk.old_start or 0) + last_chunk.old_len()
         current_old_start = current_chunk.old_start or 0
 
-        return last_old_end >= current_old_start
+        # 1. Strict Overlap: Always merge (handles standard modifications)
+        if last_old_end > current_old_start:
+            return True
+
+        # 2. Touching: Merge only if types are compatible (Same Type)
+        if last_old_end == current_old_start:
+            # Pure Add + Pure Add (at same line) -> Merge
+            if last_chunk.pure_addition() and current_chunk.pure_addition():
+                return True
+            # Pure Del + Pure Del (adjacent lines) -> Merge
+            if last_chunk.pure_deletion() and current_chunk.pure_deletion():
+                return True
+            
+            # Mixed types (Del then Add) touching -> Do NOT merge.
+            # Keeping them separate ensures the Addition is anchored 
+            # correctly after the Deletion is applied.
+            return False
+
+        # Disjoint
+        return False
+
 
     def __merge_chunks(
         self, sorted_chunks: list["DiffChunk"]
@@ -369,8 +389,11 @@ class DiffGenerator:
             if self.__is_contiguous(last_chunk, current_chunk):
                 current_group.append(current_chunk)
             else:
+                logger.debug(f"Current merge group: {current_group}")
                 groups.append(current_group)
                 current_group = [current_chunk]
+        
+        logger.debug(f"Current merge group: {current_group}")    
         groups.append(current_group)
 
         # Step 2: Merge each group into a single new DiffChunk.

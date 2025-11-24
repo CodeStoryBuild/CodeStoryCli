@@ -131,11 +131,13 @@ class CommitPipeline:
                     [],
                 )
 
-                with progress_bar(p, "Creating Semantic Groups"):
-                    with time_block("semantic_grouping"):
-                        semantic_chunks = self.semantic_grouper.group_chunks(
-                            mechanical_chunks, context_manager
-                        )
+                # with progress_bar(p, "Creating Semantic Groups"):
+                #     with time_block("semantic_grouping"):
+                #         semantic_chunks = self.semantic_grouper.group_chunks(
+                #             mechanical_chunks, context_manager
+                #         )
+                # for testing
+                semantic_chunks = mechanical_chunks
 
                 log_chunks(
                     "Semantic Chunks (without immutable groups)",
