@@ -3,20 +3,31 @@ name: Build and Release
 on:
   push:
     branches:
-      - '*release*'  # Triggers on any branch containing 'release' in its name
+      - '*release*'
     tags:
-      - 'v*'         # e.g. v1.2.3
-      - 'release*'   # e.g. release-1.2.3 or release1.2.3
-      - 'release/*'  # e.g. release/1.2.3
+      - 'v*'
 
 jobs:
-  build:
-    name: Build ${{ matrix.os }} executable
+  build_and_package:
+    name: Build & Package ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            platform: windows
+            exe_name: dslate.exe
+            installer_ext: .exe
+          - os: ubuntu-latest
+            platform: linux
+            exe_name: dslate
+            installer_ext: .deb
+          - os: macos-latest
+            platform: macos
+            exe_name: dslate
+            installer_ext: .pkg
 
     steps:
       - name: Checkout code
@@ -31,86 +42,158 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install pyinstaller pytest
           pip install -e .
 
-      - name: Build executable
+      # --- BUILD STEP ---
+      - name: Build Binary (Folder Mode)
         run: python build_exe.py
 
-      - name: Rename executable for OS
+      # --- TEST STEP (Run immediately to save time) ---
+      - name: Run Integration Tests
+        shell: bash
         run: |
-          $os_name = "${{ matrix.os }}"
-          if ($os_name -eq "windows-latest") {
-            mv dist/dslate.exe dist/dslate-windows.exe
-          } elseif ($os_name -eq "ubuntu-latest") {
-            mv dist/dslate dist/dslate-linux
-          } elseif ($os_name -eq "macos-latest") {
-            mv dist/dslate dist/dslate-macos
-          }
-        shell: pwsh
-
-      - name: Upload executable artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dslate-${{ matrix.os }}
-          path: |
-            dist/dslate-*
-
-  test:
-    name: Test ${{ matrix.os }} executable
-    needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        include:
-          - os: windows-latest
-            artifact_name: dslate-windows-latest
-            exe_path: artifacts/dslate-windows-latest/dslate-windows.exe
-          - os: ubuntu-latest
-            artifact_name: dslate-ubuntu-latest
-            exe_path: artifacts/dslate-ubuntu-latest/dslate-linux
-          - os: macos-latest
-            artifact_name: dslate-macos-latest
-            exe_path: artifacts/dslate-macos-latest/dslate-macos
-
-    steps:
-      - name: Checkout Code for Test Setup
-        uses: actions/checkout@v4
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: artifacts/${{ matrix.artifact_name }}
-
-      - name: Set up Python for Test Runner
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: 'pip'
-
-      - name: Install Test Dependencies and Run Tests
-        run: |
-          pip install pytest
-          
-          if [ "${{ runner.os }}" != "Windows" ]; then
-            chmod +x ${{ matrix.exe_path }}
+          # Locate the binary
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            EXE_PATH="dist/dslate/${{ matrix.exe_name }}"
+          else
+            EXE_PATH="dist/dslate/${{ matrix.exe_name }}"
+            chmod +x "$EXE_PATH"
           fi
           
+          echo "Testing binary at: $EXE_PATH"
+          
+          # Run pytest using the built binary
+          export CLI_ARTIFACT_PATH="$EXE_PATH"
           pytest -vv dslate/dslate/tests/integration
-        shell: bash
-        env:
-          CLI_ARTIFACT_PATH: ${{ matrix.exe_path }}
+
+      # --- PACKAGING STEPS ---
+
+      # 1. WINDOWS: Inno Setup
+      - name: Create Windows Installer (Inno Setup)
+        if: matrix.os == 'windows-latest'
+        uses: Minionguyjosh/setup-inno-setup@v1
+        with:
+          version: "6.2.2"
+      
+      - name: Compile Windows Installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Create a dynamic Inno Setup script
+          $issContent = @"
+          [Setup]
+          AppName=dslate
+          AppVersion=1.0
+          DefaultDirName={autopf}\dslate
+          DefaultGroupName=dslate
+          OutputBaseFilename=dslate-installer-windows
+          OutputDir=dist\installers
+          Compression=lzma
+          SolidCompression=yes
+          ChangesEnvironment=yes
+
+          [Files]
+          Source: "dist\dslate\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Registry]
+          ; Add to PATH
+          Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+            ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
+            Check: NeedsAddPath('{app}')
+
+          [Code]
+          function NeedsAddPath(Param: string): boolean;
+          var
+            OrigPath: string;
+          begin
+            if not RegQueryStringValue(HKEY_LOCAL_MACHINE,
+              'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+              'Path', OrigPath)
+            then begin
+              Result := True;
+              exit;
+            end;
+            Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+          end;
+          "@
+          
+          $issContent | Out-File -FilePath "setup.iss" -Encoding ASCII
+          
+          # Run the compiler
+          ISCC.exe setup.iss
+
+      # 2. LINUX: Build .deb
+      - name: Create Linux Installer (.deb)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          VERSION="${{ github.ref_name }}"
+          # Clean version string (remove 'v' or 'release')
+          VERSION=$(echo "$VERSION" | sed -E 's/^(v|release[-/]?)//')
+          # Fallback if not a version tag
+          if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then VERSION="0.0.1"; fi
+          
+          mkdir -p dist/package/usr/lib/dslate
+          mkdir -p dist/package/usr/bin
+          mkdir -p dist/installers
+          
+          # Copy files to /usr/lib/dslate
+          cp -r dist/dslate/* dist/package/usr/lib/dslate/
+          
+          # Create symlink in /usr/bin
+          ln -s /usr/lib/dslate/dslate dist/package/usr/bin/dslate
+          
+          # Create DEBIAN control file
+          mkdir -p dist/package/DEBIAN
+          cat > dist/package/DEBIAN/control <<EOF
+          Package: dslate
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Your Name <your@email.com>
+          Description: dslate CLI tool
+          EOF
+          
+          # Build .deb
+          dpkg-deb --build dist/package dist/installers/dslate-installer-linux.deb
+
+      # 3. MACOS: Build .pkg
+      - name: Create macOS Installer (.pkg)
+        if: matrix.os == 'macos-latest'
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION=$(echo "$VERSION" | sed -E 's/^(v|release[-/]?)//')
+          if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then VERSION="1.0"; fi
+          
+          mkdir -p dist/installers
+          
+          # pkgbuild builds a component package
+          # We install to /usr/local/dslate and rely on user adding path, 
+          # OR strictly install to /usr/local/bin (Apple prefers /usr/local for 3rd party)
+          
+          # Simple approach: Payload-free package that moves the files
+          # Or Standard approach:
+          
+          pkgbuild --root dist/dslate \
+                   --identifier com.dslate.cli \
+                   --version "$VERSION" \
+                   --install-location /usr/local/bin \
+                   dist/installers/dslate-installer-macos.pkg
+
+      - name: Upload Installer Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.platform }}
+          path: dist/installers/*
 
   release:
     permissions:
         contents: write
     name: Create Release
-    needs: [build, test]
+    needs: [build_and_package]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/') && contains(github.ref, 'release') || startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')
     
     steps:
       - name: Download all artifacts
@@ -118,34 +201,21 @@ jobs:
         with:
           path: artifacts
 
-      - name: Display structure of downloaded artifacts
+      - name: Display structure
         run: ls -R artifacts/
-        shell: bash
 
-      - name: Extract version from ref name (branch or tag)
+      - name: Extract version
         id: get_version
         run: |
-          ref_name="${{ github.ref_name }}"
-          # Match: v1.2.3, 1.2.3, release-1.2.3, release/1.2.3
-          if [[ $ref_name =~ ^(v|release[-/]?)?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            version="${BASH_REMATCH[2]}"
-          else
-            version="$(date +'%Y%m%d%H%M')"
-          fi
-          echo "version=$version" >> $GITHUB_OUTPUT
-        shell: bash
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v1
         with:
           name: Release ${{ steps.get_version.outputs.version }}
-          tag_name: v${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
           files: |
-            artifacts/dslate-windows-latest/dslate-windows.exe
-            artifacts/dslate-ubuntu-latest/dslate-linux
-            artifacts/dslate-macos-latest/dslate-macos
+            artifacts/installers-windows/*.exe
+            artifacts/installers-linux/*.deb
+            artifacts/installers-macos/*.pkg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
