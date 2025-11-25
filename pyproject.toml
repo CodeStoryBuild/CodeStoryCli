@@ -29,7 +29,7 @@ dependencies = [
   "tree-sitter-language-pack>=0.1.0",
   "pygments>=2.14.0",
   "platformdirs>=4.5.0",
-  "importlib==1.0.4"
+  "importlib==1.0.4",
 ]
 
 [project.scripts]
