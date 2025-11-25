@@ -14,7 +14,7 @@ class TestFix:
         commit_hash = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo.path, capture_output=True, text=True).stdout.strip()
         
         # Run fix command (it will likely fail due to no AI key, but should validate hash)
-        result = run_cli(cli_exe, ["fix", commit_hash], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "fix", commit_hash], cwd=repo.path)
         
         # It might fail due to missing API key, but that means it passed validation
         # We check that it didn't fail due to invalid hash or repo state
