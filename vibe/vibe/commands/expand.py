@@ -14,14 +14,10 @@ from vibe.context import GlobalContext, ExpandContext, CommitContext
 def get_info(git_interface: GitInterface, expand_context: ExpandContext):
     # Resolve current branch and head
     current_branch = (
-        git_interface.run_git_text_out(
-            ["rev-parse", "--abbrev-ref", "HEAD"]
-        ).strip()
+        git_interface.run_git_text_out(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
         or ""
     )
-    head_hash = (
-        git_interface.run_git_text_out(["rev-parse", "HEAD"]).strip() or ""
-    )
+    head_hash = git_interface.run_git_text_out(["rev-parse", "HEAD"]).strip() or ""
 
     if not current_branch:
         raise DetachedHeadError("Detached HEAD is not supported for expand")
@@ -35,9 +31,7 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
     )
     if not resolved:
         raise GitError(
-            "Commit not found: {commit}".format(
-                commit=expand_context.commit_hash
-            )
+            "Commit not found: {commit}".format(commit=expand_context.commit_hash)
         )
 
     if (
@@ -100,9 +94,7 @@ def main(
 
     # Execute expansion
     with time_block("Expand Pipeline E2E"):
-        service = ExpandPipeline(
-            global_context, expand_context, commit_pipeline
-        )
+        service = ExpandPipeline(global_context, expand_context, commit_pipeline)
         final_head = service.run()
 
     if final_head is not None:

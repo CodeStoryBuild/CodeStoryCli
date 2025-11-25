@@ -2,9 +2,7 @@ from ..git_interface.interface import GitInterface
 
 
 class GitFileReader:
-    def __init__(
-        self, git: GitInterface, base_commit: str, patched_commit: str
-    ):
+    def __init__(self, git: GitInterface, base_commit: str, patched_commit: str):
         self.git = git
         self.base_commit = base_commit
         self.patched_commit = patched_commit

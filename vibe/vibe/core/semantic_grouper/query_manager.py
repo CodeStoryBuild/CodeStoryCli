@@ -25,9 +25,7 @@ class LanguageConfig:
     @classmethod
     def from_json_dict(cls, name: str, json_dict: dict) -> "LanguageConfig":
         shared_token_queries: dict[str, SharedTokenQueries] = {}
-        for token_class, items in json_dict.get(
-            "shared_token_queries", {}
-        ).items():
+        for token_class, items in json_dict.get("shared_token_queries", {}).items():
             if isinstance(items, dict):
                 general_queries = items.get("general_queries", [])
                 definition_queries = items.get("definition_queries", [])
@@ -40,9 +38,7 @@ class LanguageConfig:
 
         scope_queries = json_dict.get("scope_queries", [])
         comment_queries = json_dict.get("comment_queries", [])
-        share_tokens_between_files = json_dict.get(
-            "share_tokens_between_files", False
-        )
+        share_tokens_between_files = json_dict.get("share_tokens_between_files", False)
         return cls(
             name,
             shared_token_queries,
@@ -61,9 +57,7 @@ class LanguageConfig:
             else:
                 # TODO consider if multiple @placeholders should be supported or warned against
                 # .replace will replace all instances of it
-                query_filled = query.replace(
-                    "@placeholder", f"@{capture_class}"
-                )
+                query_filled = query.replace("@placeholder", f"@{capture_class}")
                 lines.append(query_filled)
 
         return lines
@@ -87,9 +81,7 @@ class LanguageConfig:
 
     def get_source(
         self,
-        query_type: Literal[
-            "scope", "comment", "token_general", "token_definition"
-        ],
+        query_type: Literal["scope", "comment", "token_general", "token_definition"],
     ):
         if query_type == "scope":
             return "\n".join(
@@ -97,9 +89,7 @@ class LanguageConfig:
             )
         if query_type == "comment":
             return "\n".join(
-                self.__get_source(
-                    self.comment_queries, "STRUCTURALCOMMENTQUERY"
-                )
+                self.__get_source(self.comment_queries, "STRUCTURALCOMMENTQUERY")
             )
         if query_type == "token_definition":
             return self.__get_shared_token_source(is_general_query=False)
@@ -159,9 +149,7 @@ class QueryManager:
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal[
-            "scope", "comment", "token_general", "token_definition"
-        ],
+        query_type: Literal["scope", "comment", "token_general", "token_definition"],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """
@@ -185,9 +173,7 @@ class QueryManager:
 
             if not query_src.strip():
                 # Empty query -> no matches
-                logger.warning(
-                    f"Empty query for {language_name} {query_type=}!"
-                )
+                logger.warning(f"Empty query for {language_name} {query_type=}!")
                 return {}
 
             query = Query(language, query_src)

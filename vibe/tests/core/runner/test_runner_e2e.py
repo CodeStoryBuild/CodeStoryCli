@@ -86,9 +86,7 @@ def mock_inquirer_accept_all():
 # --- Test Cases ---
 
 
-def test_runner_basic_file_modification(
-    complex_git_repo, mock_inquirer_accept_all
-):
+def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_all):
     """Test basic file modification through the complete pipeline."""
     repo_path = complex_git_repo
 
@@ -121,9 +119,7 @@ def test_runner_basic_file_modification(
 
     assert log_output  # Should have new commits
     assert (
-        "src/main.py" in log_output
-        or "Modify" in log_output
-        or "Update" in log_output
+        "src/main.py" in log_output or "Modify" in log_output or "Update" in log_output
     )
 
     # Verify file content matches exactly line-by-line
@@ -344,9 +340,7 @@ def test_runner_with_file_rename(complex_git_repo):
     )
 
 
-def test_runner_content_based_grouping(
-    complex_git_repo, mock_inquirer_accept_all
-):
+def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_all):
     """Test pipeline with content-based grouping strategy."""
     repo_path = complex_git_repo
 
@@ -429,9 +423,7 @@ def test_runner_with_staged_changes_reset(complex_git_repo):
 
     # Make some changes and stage them
     main_file = repo_path / "src" / "main.py"
-    new_content = main_file.read_text().replace(
-        "Hello, World!", "Hello, Staged!"
-    )
+    new_content = main_file.read_text().replace("Hello, World!", "Hello, Staged!")
     main_file.write_text(new_content)
     subprocess.run(["git", "add", "src/main.py"], cwd=repo_path, check=True)
 
@@ -505,9 +497,7 @@ if __name__ == '__main__':
 
     # Verify results
     assert results is not None
-    assert (
-        len(results) > 1
-    )  # Should have multiple commits due to chunking and grouping
+    assert len(results) > 1  # Should have multiple commits due to chunking and grouping
 
     # Each commit should be small due to chunking and grouping limits
     for result in results:
@@ -1201,9 +1191,7 @@ bcrypt==3.2.0
     )
 
     # Verify middleware/auth.py content
-    actual_middleware = (
-        repo_path / "src" / "middleware" / "auth.py"
-    ).read_text()
+    actual_middleware = (repo_path / "src" / "middleware" / "auth.py").read_text()
     assert actual_middleware == middleware_new, (
         f"File src/middleware/auth.py content mismatch:\nExpected:\n{middleware_new}\n\nActual:\n{actual_middleware}"
     )
@@ -1444,9 +1432,7 @@ class ProductController:
     )
 
     # Add integration test for database connection handling
-    (
-        repo_path / "tests" / "integration" / "test_database_connections.py"
-    ).write_text(
+    (repo_path / "tests" / "integration" / "test_database_connections.py").write_text(
         """import unittest
 from src.utils.database import Database
 from src.utils.connection_pool import ConnectionPool
@@ -1855,9 +1841,7 @@ with Database('sqlite:///app.db') as db:
     actual_test_db_connections = (
         repo_path / "tests" / "integration" / "test_database_connections.py"
     ).read_text()
-    assert (
-        actual_test_db_connections == expected_test_database_connections_py
-    ), (
+    assert actual_test_db_connections == expected_test_database_connections_py, (
         f"File tests/integration/test_database_connections.py content mismatch:\nExpected:\n{expected_test_database_connections_py}\n\nActual:\n{actual_test_db_connections}"
     )
 
@@ -1867,9 +1851,7 @@ with Database('sqlite:///app.db') as db:
     )
 
 
-def test_runner_mixed_operations_chaos(
-    large_codebase_repo, mock_inquirer_accept_all
-):
+def test_runner_mixed_operations_chaos(large_codebase_repo, mock_inquirer_accept_all):
     """Test chaotic real-world scenario with adds, deletes, renames, and modifications."""
     repo_path = large_codebase_repo
 
@@ -2339,16 +2321,14 @@ python -m pytest tests/
         )
 
     # Verify renamed/modified file contents match exactly
-    actual_formatters = (
-        repo_path / "src" / "utils" / "formatters.py"
-    ).read_text(encoding="utf-8")
+    actual_formatters = (repo_path / "src" / "utils" / "formatters.py").read_text(
+        encoding="utf-8"
+    )
     assert actual_formatters == expected_formatters, (
         f"File src/utils/formatters.py content mismatch:\nExpected:\n{expected_formatters}\n\nActual:\n{actual_formatters}"
     )
 
-    actual_user = (repo_path / "src" / "models" / "user.py").read_text(
-        encoding="utf-8"
-    )
+    actual_user = (repo_path / "src" / "models" / "user.py").read_text(encoding="utf-8")
     assert actual_user == expected_user_py, (
         f"File src/models/user.py content mismatch:\nExpected:\n{expected_user_py}\n\nActual:\n{actual_user}"
     )

@@ -30,11 +30,7 @@ def log_chunks(
     process_step: str, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
 ):
     unique_files = {
-        (
-            path.decode("utf-8", errors="replace")
-            if isinstance(path, bytes)
-            else path
-        )
+        (path.decode("utf-8", errors="replace") if isinstance(path, bytes) else path)
         for c in chunks
         for path in c.canonical_paths()
     }

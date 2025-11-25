@@ -60,8 +60,7 @@ class DiffChunk:
     @property
     def is_standard_modification(self) -> bool:
         return (
-            self.old_file_path == self.new_file_path
-            and self.old_file_path is not None
+            self.old_file_path == self.new_file_path and self.old_file_path is not None
         )
 
     @property
@@ -208,9 +207,7 @@ class DiffChunk:
 
         # These initial checks are critical for establishing a valid starting point.
         if self.old_start is None:
-            logger.warning(
-                f"Cannot split chunk with invalid start lines: {self}"
-            )
+            logger.warning(f"Cannot split chunk with invalid start lines: {self}")
             return [self]
 
         # only try to be smart and split hunks if its a pure addition or deletion
@@ -289,8 +286,7 @@ class DiffChunk:
                 contains_newline_marker = True
                 if parsed_content:
                     parsed_content[-1].content = (
-                        parsed_content[-1].content
-                        + b"\n\\ No newline at end of file"
+                        parsed_content[-1].content + b"\n\\ No newline at end of file"
                     )
                 else:
                     contains_newline_fallback = True
@@ -324,9 +320,7 @@ class DiffChunk:
             raise ValueError("parsed_slice cannot be empty")
 
         removals = [item for item in parsed_slice if isinstance(item, Removal)]
-        additions = [
-            item for item in parsed_slice if isinstance(item, Addition)
-        ]
+        additions = [item for item in parsed_slice if isinstance(item, Addition)]
 
         # Calculate old_start based on the first change in old file coordinates
         if removals:

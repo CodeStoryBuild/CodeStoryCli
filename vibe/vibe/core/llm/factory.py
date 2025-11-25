@@ -36,9 +36,7 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     provider = config.provider.lower()
     api_key = config.api_key
 
-    logger.info(
-        f"Creating LLM model: provider={provider}, model={config.model_name}"
-    )
+    logger.info(f"Creating LLM model: provider={provider}, model={config.model_name}")
 
     # OpenAI
     if provider == "openai":
@@ -46,8 +44,7 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
             from langchain_openai import ChatOpenAI
         except ImportError:
             raise ImportError(
-                "langchain-openai is not installed. "
-                "Install it with: pip install langchain-openai"
+                "langchain-openai is not installed. Install it with: pip install langchain-openai"
             )
 
         # Use provided API key or fall back to environment variable
@@ -121,16 +118,13 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
             from langchain_openai import AzureChatOpenAI
         except ImportError:
             raise ImportError(
-                "langchain-openai is not installed. "
-                "Install it with: pip install langchain-openai"
+                "langchain-openai is not installed. Install it with: pip install langchain-openai"
             )
 
         # Azure requires additional environment variables
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         if not azure_endpoint:
-            raise ValueError(
-                "AZURE_OPENAI_ENDPOINT environment variable not set"
-            )
+            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable not set")
 
         if not api_key:
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
@@ -153,8 +147,7 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
             from langchain_ollama import ChatOllama
         except ImportError:
             raise ImportError(
-                "langchain-ollama is not installed. "
-                "Install it with: pip install langchain-ollama"
+                "langchain-ollama is not installed. Install it with: pip install langchain-ollama"
             )
 
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")

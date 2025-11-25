@@ -308,12 +308,8 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     )
 
     assert len(log_output) == 2
-    assert (
-        "feat: Add new content to files" in log_output[0]
-    )  # HEAD is now group1
-    assert (
-        "refactor: Modify existing content" in log_output[1]
-    )  # Parent is now group2
+    assert "feat: Add new content to files" in log_output[0]  # HEAD is now group1
+    assert "refactor: Modify existing content" in log_output[1]  # Parent is now group2
 
     # 3. Verify the diff of the FIRST new commit (HEAD~1) contains ONLY {A2, B1}
     commit1_diff = subprocess.run(

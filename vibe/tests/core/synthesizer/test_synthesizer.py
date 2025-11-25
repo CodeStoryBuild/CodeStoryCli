@@ -27,13 +27,9 @@ def git_repo() -> tuple[Path, str]:
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"], cwd=repo_path
         )
-        subprocess.run(
-            ["git", "config", "user.name", "Test User"], cwd=repo_path
-        )
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path)
 
-        (repo_path / "app.js").write_text(
-            "line 1\nline 2\nline 3\nline 4\nline 5\n"
-        )
+        (repo_path / "app.js").write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(
             ["git", "commit", "-m", "Initial commit"], cwd=repo_path, check=True
@@ -67,9 +63,7 @@ def test_basic_modification(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(
-        chunks=[chunk], group_id="g1", commit_message="Modify line 3"
-    )
+    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Modify line 3")
 
     synthesizer.execute_plan([group], base_hash, "main")
 
@@ -77,21 +71,15 @@ def test_basic_modification(git_repo):
     lines = content.split("\n")
 
     # Verify exact position and content of the modification
-    assert (
-        lines[2] == "line three"
-    )  # Line 3 should be modified (0-indexed position 2)
-    assert (
-        "line 3" not in lines
-    )  # Original line 3 should be completely replaced
+    assert lines[2] == "line three"  # Line 3 should be modified (0-indexed position 2)
+    assert "line 3" not in lines  # Original line 3 should be completely replaced
 
     # Verify other lines remain unchanged and in correct positions
     assert lines[0] == "line 1"
     assert lines[1] == "line 2"
     assert lines[3] == "line 4"
     assert lines[4] == "line 5"
-    assert (
-        len(lines) == 6
-    )  # Should have 5 lines + 1 empty line from trailing newline
+    assert len(lines) == 6  # Should have 5 lines + 1 empty line from trailing newline
 
     log = subprocess.run(
         ["git", "log", "-1", "--pretty=%s"],
@@ -119,9 +107,7 @@ def test_file_deletion(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(
-        chunks=[chunk], group_id="g1", commit_message="Delete app.js"
-    )
+    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Delete app.js")
 
     synthesizer.execute_plan([group], base_hash, "main")
 
@@ -178,9 +164,7 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk1 = DiffChunk.from_hunk(hunk1)
-    group1 = CommitGroup(
-        chunks=[chunk1], group_id="g1", commit_message="Add header"
-    )
+    group1 = CommitGroup(chunks=[chunk1], group_id="g1", commit_message="Add header")
 
     hunk2 = HunkWrapper(
         new_file_path="app.js",
@@ -193,9 +177,7 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(
-        chunks=[chunk2], group_id="g2", commit_message="Update footer"
-    )
+    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Update footer")
 
     # Execute: commit group2, then group1
     synthesizer.execute_plan([group2, group1], base_hash, "main")
@@ -401,9 +383,7 @@ def test_pure_addition_multiple_groups(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(
-        chunks=[chunk2], group_id="g2", commit_message="Add README"
-    )
+    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Add README")
 
     synthesizer.execute_plan([group1, group2], base_hash, "main")
 
@@ -461,9 +441,7 @@ def test_pure_deletion_partial_content(git_repo):
     lines = content.strip().split("\n")
 
     # Verify line count and positions after deletions
-    assert (
-        len(lines) == 3
-    )  # Should have 3 lines remaining (5 original - 2 deleted)
+    assert len(lines) == 3  # Should have 3 lines remaining (5 original - 2 deleted)
 
     # Verify content and positions of remaining lines
     assert lines[0] == "line 1"  # First remaining line
@@ -749,9 +727,7 @@ def test_large_mixed_changes_single_group(git_repo):
     app_content = (repo_path / "app.js").read_text()
     app_lines = app_content.split("\n")
     assert app_lines[0] == "modified line 1"  # First line should be modified
-    assert (
-        app_lines[1] == "new line after 1"
-    )  # Second line should be the addition
+    assert app_lines[1] == "new line after 1"  # Second line should be the addition
     # Original "line 1" should be completely replaced, not just modified
     assert "line 1" not in app_lines
 
@@ -961,9 +937,7 @@ def test_complex_interdependent_changes(git_repo):
     (repo_path / "main.py").write_text(
         "from utils import old_function\nold_function()\n"
     )
-    (repo_path / "utils.py").write_text(
-        "def old_function():\n    return 'old'\n"
-    )
+    (repo_path / "utils.py").write_text("def old_function():\n    return 'old'\n")
     (repo_path / "config.py").write_text("OLD_CONFIG = True\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(
@@ -1342,9 +1316,7 @@ def test_very_large_file_changes(git_repo):
     large_content = "\n".join([f"line {i}" for i in range(1, 101)])  # 100 lines
     (repo_path / "large.txt").write_text(large_content + "\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(
-        ["git", "commit", "-m", "Add large file"], cwd=repo_path, check=True
-    )
+    subprocess.run(["git", "commit", "-m", "Add large file"], cwd=repo_path, check=True)
 
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"],
