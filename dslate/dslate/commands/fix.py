@@ -36,7 +36,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         != 0
     ):
         raise GitError(
-            f"Commit {resolved[:7]} is not an ancestor of HEAD {resolved[:7]}; only linear expansions are supported"
+            f"The commit must be an ancestor of HEAD (linear history only)."
         )
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
@@ -52,7 +52,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
 def main(
     ctx: typer.Context,
-    commit_hash: str = typer.Argument(..., help="Commit hash to fix"),
+    commit_hash: str = typer.Argument(..., help="Hash of the commit to split or fix"),
 ) -> None:
     """Fix a past commit by splitting into smaller logical commits safely.
 

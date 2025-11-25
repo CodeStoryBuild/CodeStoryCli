@@ -73,7 +73,7 @@ def validate_target_path(value: str | None) -> Path:
 
     if not path.exists():
         raise ValidationError(
-            f"Path does not exist: {value}",
+            f"The specified path does not exist: {value}",
             "Please check that the path is correct and accessible",
         )
 
@@ -243,7 +243,7 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         ["rev-parse", "--is-inside-work-tree"],
     )
     if is_in_repo is None or "fatal: not a git repository" in is_in_repo:
-        raise GitError("Not in a git repository!")
+        raise GitError("Current directory is not a git repository.")
 
     # validate that we are on a branch
     try:
@@ -252,7 +252,7 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         )
         # check that not a detached branch
         if not original_branch.strip():
-            msg = "Cannot backup: currently on a detached HEAD."
+            msg = "Operation failed: You are in 'detached HEAD' state."
             raise DetachedHeadError(msg)
     except Exception as e:
         raise GitError(f"Failed to check git branch status: {e}") from e
