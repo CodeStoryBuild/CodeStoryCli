@@ -72,7 +72,7 @@ jobs:
       # 1. WINDOWS: Inno Setup
       - name: Create Windows Installer (Inno Setup)
         if: matrix.os == 'windows-latest'
-        uses: Minionguyjosh/setup-inno-setup@v1
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
           version: "6.2.2"
       
