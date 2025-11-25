@@ -20,6 +20,14 @@ class RepoState:
         
         # Initial commit
         (self.path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
+        (self.path / "README.md").write_text("# Test Repo\n")
+        
+        # Create some structure for complex tests
+        src_dir = self.path / "src"
+        src_dir.mkdir()
+        (src_dir / "old_module.py").write_text("def old(): pass\n")
+        (src_dir / "unused.py").write_text("def unused(): pass\n")
+        
         subprocess.run(["git", "add", "."], cwd=self.path, check=True)
         subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.path, check=True)
 
@@ -40,7 +48,11 @@ class RepoState:
             if content is None:
                 # Delete file
                 if file_path.exists():
-                    os.remove(file_path)
+                    try:
+                        subprocess.run(["git", "rm", filename], cwd=self.path, check=True, capture_output=True)
+                    except subprocess.CalledProcessError:
+                        # Fallback if not tracked
+                        os.remove(file_path)
             elif isinstance(content, (str, bytes)):
                 # Create or modify file
                 file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,18 +60,17 @@ class RepoState:
                 with open(file_path, mode) as f:
                     f.write(content)
             elif isinstance(content, tuple) and len(content) == 2:
-                # Rename: (old, new) - this is a bit tricky in a dict structure, 
-                # usually we'd want explicit rename actions.
-                # Let's handle explicit rename if the key is "RENAME" or similar, 
-                # OR just assume the key is the old name and value is the new name?
-                # Actually, let's stick to the docstring: key is filename (ignored for rename?), value is tuple?
-                # Better: Key is old path, Value is new path.
+                # Rename: (old, new)
                 old_path = self.path / filename
-                new_path = self.path / content[1] # content[0] should match filename
+                new_path = self.path / content[1]
                 
                 if old_path.exists():
                     new_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(old_path), str(new_path))
+                    try:
+                        subprocess.run(["git", "mv", filename, content[1]], cwd=self.path, check=True, capture_output=True)
+                    except subprocess.CalledProcessError:
+                        # Fallback if not tracked
+                        shutil.move(str(old_path), str(new_path))
 
     def stage_all(self):
         """Stage all changes."""
