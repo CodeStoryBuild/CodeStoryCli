@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
+from loguru import logger
 from pygments.lexers import get_lexer_for_filename
 from pygments.util import ClassNotFound
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
-
-from loguru import logger
 
 
 @dataclass(frozen=True)

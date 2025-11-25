@@ -1,5 +1,5 @@
 import json
-from typing import Callable
+from collections.abc import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import PydanticOutputParser
@@ -8,8 +8,8 @@ from loguru import logger
 from pydantic import BaseModel
 
 from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.commit_group import CommitGroup
+from ..data.immutable_chunk import ImmutableChunk
 from ..synthesizer.utils import get_patches_chunk
 from .interface import LogicalGrouper
 
@@ -231,7 +231,7 @@ class LangChainGrouper(LogicalGrouper):
                         progress = self._estimate_progress(accumulated_content)
                         on_progress(progress)
         except Exception as e:
-            raise ValueError(f"Error during LLM streaming: {str(e)}")
+            raise ValueError("Error during LLM streaming") from e
 
         if on_progress:
             on_progress(95)
@@ -240,7 +240,7 @@ class LangChainGrouper(LogicalGrouper):
         try:
             parsed_response = self.output_parser.parse(accumulated_content)
         except Exception as e:
-            raise ValueError(f"Failed to parse LLM response: {str(e)}")
+            raise ValueError("Failed to parse LLM response") from e
 
         if on_progress:
             on_progress(100)

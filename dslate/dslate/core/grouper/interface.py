@@ -18,11 +18,11 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from collections.abc import Callable
 
 from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.commit_group import CommitGroup
+from ..data.immutable_chunk import ImmutableChunk
 
 
 class LogicalGrouper(ABC):

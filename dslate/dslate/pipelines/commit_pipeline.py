@@ -1,27 +1,25 @@
 import contextlib
-from typing import Optional
 
 import inquirer
 from loguru import logger
-from rich.console import Console
 from rich.progress import Progress
 
+from ..context import CommitContext, GlobalContext
 from ..core.chunker.interface import MechanicalChunker
 from ..core.commands.git_commands import GitCommands
 from ..core.data.chunk import Chunk
-from ..core.data.immutable_chunk import ImmutableChunk
 from ..core.data.commit_group import CommitGroup
+from ..core.data.immutable_chunk import ImmutableChunk
 from ..core.file_reader.file_parser import FileParser
 from ..core.file_reader.protocol import FileReader
 from ..core.git_interface.interface import GitInterface
 from ..core.grouper.interface import LogicalGrouper
+from ..core.logging.utils import log_chunks, time_block
 from ..core.semantic_grouper.context_manager import ContextManager
 from ..core.semantic_grouper.query_manager import QueryManager
 from ..core.semantic_grouper.semantic_grouper import SemanticGrouper
 from ..core.synthesizer.git_synthesizer import GitSynthesizer
 from ..core.synthesizer.utils import get_patches
-from ..core.logging.utils import time_block, log_chunks
-from ..context import GlobalContext, CommitContext
 
 
 @contextlib.contextmanager
@@ -113,11 +111,10 @@ class CommitPipeline:
                 )
 
                 # create smallest mechanically valid chunks
-                with progress_bar(p, "Creating Mechanical Chunks"):
-                    with time_block("mechanical_chunking"):
-                        mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
-                            raw_chunks, context_manager
-                        )
+                with progress_bar(p, "Creating Mechanical Chunks"), time_block("mechanical_chunking"):
+                    mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
+                        raw_chunks, context_manager
+                    )
 
                 log_chunks(
                     "mechanical_chunks (without immutable groups)",
@@ -125,8 +122,7 @@ class CommitPipeline:
                     [],
                 )
 
-                with progress_bar(p, "Creating Semantic Groups"):
-                    with time_block("semantic_grouping"):
+                with progress_bar(p, "Creating Semantic Groups"), time_block("semantic_grouping"):
                         semantic_chunks = self.semantic_grouper.group_chunks(
                             mechanical_chunks, context_manager
                         )

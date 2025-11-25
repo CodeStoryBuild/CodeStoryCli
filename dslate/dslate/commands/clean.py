@@ -1,18 +1,18 @@
+from functools import partial
+
 import typer
 from loguru import logger
 
-from dslate.pipelines.clean_pipeline import CleanPipeline
+from dslate.context import CleanContext
+from dslate.core.logging.utils import time_block
 from dslate.core.validation import (
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
 )
-from dslate.core.logging.utils import time_block
-from dslate.context import CleanContext
+from dslate.pipelines.clean_pipeline import CleanPipeline
 
 from .fix import main as fix_main
-
-from functools import partial
 
 
 def main(

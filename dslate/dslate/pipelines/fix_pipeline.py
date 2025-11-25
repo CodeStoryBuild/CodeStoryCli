@@ -1,7 +1,8 @@
-from loguru import logger
-from dslate.context import GlobalContext, FixContext
-from dslate.pipelines.commit_pipeline import CommitPipeline
+from dslate.context import FixContext, GlobalContext
 from dslate.core.exceptions import FixCommitError
+from dslate.pipelines.commit_pipeline import CommitPipeline
+from loguru import logger
+
 
 def _short(hash_: str) -> str:
     return (hash_ or "")[:7]
@@ -59,8 +60,8 @@ class FixPipeline:
                 ]
             )
             original_chain = rev_list_out.splitlines() if rev_list_out else []
-        except RuntimeError:
-            raise FixCommitError("Failed to read commit history.")
+        except RuntimeError as e:
+            raise FixCommitError("Failed to read commit history.") from e
 
         if not original_chain:
             # Edge case: The base was HEAD (or detached), nothing to replay.

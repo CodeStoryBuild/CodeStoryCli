@@ -1,14 +1,13 @@
 import typer
 from loguru import logger
-from rich.console import Console
 
-from dslate.pipelines.fix_pipeline import FixPipeline
-from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.context import CommitContext, FixContext, GlobalContext
+from dslate.core.exceptions import DetachedHeadError, GitError
 from dslate.core.git_interface.interface import GitInterface
-from dslate.core.validation import validate_commit_hash
-from dslate.core.exceptions import GitError, DetachedHeadError
 from dslate.core.logging.utils import time_block
-from dslate.context import GlobalContext, FixContext, CommitContext
+from dslate.core.validation import validate_commit_hash
+from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.pipelines.fix_pipeline import FixPipeline
 
 
 def get_info(git_interface: GitInterface, fix_context: FixContext):
@@ -31,7 +30,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
     )
     if not resolved:
         raise GitError(
-            "Commit not found: {commit}".format(commit=fix_context.commit_hash)
+            f"Commit not found: {fix_context.commit_hash}"
         )
 
     if (
@@ -41,10 +40,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         != 0
     ):
         raise GitError(
-            "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported".format(
-                commit=resolved[:7],
-                head=resolved[:7],
-            )
+            f"Commit {resolved[:7]} is not an ancestor of HEAD {resolved[:7]}; only linear expansions are supported"
         )
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)

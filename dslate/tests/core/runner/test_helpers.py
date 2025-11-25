@@ -4,9 +4,9 @@ Deterministic test helpers for predictable end-to-end testing.
 
 from dslate.core.chunker.interface import MechanicalChunker
 from dslate.core.data.chunk import Chunk
+from dslate.core.data.commit_group import CommitGroup
 from dslate.core.data.diff_chunk import DiffChunk
 from dslate.core.data.line_changes import Addition, Removal
-from dslate.core.data.commit_group import CommitGroup
 from dslate.core.grouper.interface import LogicalGrouper
 
 

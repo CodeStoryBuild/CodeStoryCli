@@ -1,13 +1,13 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
-from ..data.immutable_chunk import ImmutableChunk
-from ..data.diff_chunk import DiffChunk
 from ..data.commit_group import CommitGroup
+from ..data.diff_chunk import DiffChunk
+from ..data.immutable_chunk import ImmutableChunk
+from ..exceptions import GitError, SynthesizerError
 from ..git_interface.interface import GitInterface
 from .diff_generator import DiffGenerator
 
@@ -40,7 +40,7 @@ class GitSynthesizer:
         )
 
         if result is None:
-            raise RuntimeError(f"Git command failed: {' '.join(args)}")
+            raise GitError(f"Git command failed: {' '.join(args)}")
 
         return result
 
@@ -97,10 +97,10 @@ class GitSynthesizer:
                         stdin_content=combined_patch,
                     )
                 except RuntimeError as e:
-                    raise RuntimeError(
+                    raise SynthesizerError(
                         "FATAL: Git apply failed for combined patch stream.\n"
                         f"--- ERROR DETAILS ---\n{e}\n"
-                    )
+                    ) from e
 
             # 6. Write the index state to a Tree Object in the Git database
             new_tree_hash = self._run_git_decoded("write-tree", env=env)
@@ -177,7 +177,7 @@ class GitSynthesizer:
                 last_synthetic_commit_hash = new_commit_hash
 
             except Exception as e:
-                raise RuntimeError(
+                raise SynthesizerError(
                     f"FATAL: Synthesis failed during group '{group.group_id}'. No changes applied."
                 ) from e
 

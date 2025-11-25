@@ -1,17 +1,15 @@
-from typing import Optional
-from dslate.core.branch_saver.branch_saver import BranchSaver
+
+from dslate.context import CommitContext, GlobalContext
 from dslate.core.chunker.atomic_chunker import AtomicChunker
+from dslate.core.exceptions import GitError
 from dslate.core.file_reader.file_parser import FileParser
 from dslate.core.file_reader.git_file_reader import GitFileReader
 from dslate.core.grouper.langchain_grouper import LangChainGrouper
 from dslate.core.grouper.single_grouper import SingleGrouper
-from dslate.pipelines.commit_pipeline import CommitPipeline
 from dslate.core.semantic_grouper.query_manager import QueryManager
 from dslate.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from dslate.core.synthesizer.git_synthesizer import GitSynthesizer
-from dslate.core.exceptions import GitError
-from dslate.context import GlobalContext, CommitContext
-
+from dslate.pipelines.commit_pipeline import CommitPipeline
 from loguru import logger
 
 

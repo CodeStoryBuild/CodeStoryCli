@@ -1,12 +1,11 @@
 import re
 from itertools import groupby
-from typing import Union
 
+from ..data.chunk import Chunk
 from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..data.diff_chunk import DiffChunk
-from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.hunk_wrapper import HunkWrapper
+from ..data.immutable_chunk import ImmutableChunk
 from ..data.immutable_hunk_wrapper import ImmutableHunkWrapper
 from ..git_interface.interface import GitInterface
 
@@ -120,7 +119,7 @@ class GitCommands:
         Parses a unified diff output, detects binary/unparsable files,
         and creates appropriate HunkWrapper or ImmutableHunkWrapper objects.
         """
-        hunks: list[Union[HunkWrapper, ImmutableHunkWrapper]] = []
+        hunks: list[HunkWrapper | ImmutableHunkWrapper] = []
         if not diff_output:
             return hunks
 
@@ -243,12 +242,11 @@ class GitCommands:
         if not old_path and not new_path:
             # Use regex to robustly extract a/ and b/ paths from the first line
             path_a, path_b = None, None
-            for line in lines:
-                m = self._A_B_PATHS_RE.match(lines[0])
-                if not m:
-                    return (None, None, file_mode)  # Unrecognized format
-                path_a = m.group(1)
-                path_b = m.group(2)
+            m = self._A_B_PATHS_RE.match(lines[0])
+            if not m:
+                return (None, None, file_mode)  # Unrecognized format
+            path_a = m.group(1)
+            path_b = m.group(2)
 
             # Use other metadata clues from the block to determine the operation
             block_text = b"\n".join(lines)

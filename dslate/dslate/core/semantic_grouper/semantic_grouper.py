@@ -1,10 +1,10 @@
 from collections import defaultdict
 from dataclasses import dataclass
 
-from loguru import logger
 from dslate.core.data.chunk import Chunk
 from dslate.core.data.composite_diff_chunk import CompositeDiffChunk
 from dslate.core.data.diff_chunk import DiffChunk
+from loguru import logger
 
 from .context_manager import AnalysisContext, ContextManager
 from .union_find import UnionFind

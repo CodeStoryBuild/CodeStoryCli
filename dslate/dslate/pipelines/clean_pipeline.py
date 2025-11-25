@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Callable
+from collections.abc import Callable, Sequence
 
+from dslate.context import CleanContext, GlobalContext
 from loguru import logger
-from dslate.context import GlobalContext, CleanContext
 
 
 class CleanPipeline:
@@ -109,7 +108,7 @@ class CleanPipeline:
             )
             or ""
         )
-        return [l.strip() for l in out.splitlines() if l.strip()]
+        return [line.strip() for line in out.splitlines() if line.strip()]
 
     def _is_merge(self, commit: str) -> bool:
         line = (

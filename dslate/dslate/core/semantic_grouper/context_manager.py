@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from loguru import logger
 from dslate.core.data.diff_chunk import DiffChunk
 from dslate.core.file_reader.file_parser import FileParser, ParsedFile
 from dslate.core.file_reader.protocol import FileReader
+from loguru import logger
 
 from .comment_mapper import CommentMap, CommentMapper
 from .query_manager import QueryManager

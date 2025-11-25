@@ -3,8 +3,8 @@ import time
 from dslate.core.grouper.interface import LogicalGrouper
 
 from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.commit_group import CommitGroup
+from ..data.immutable_chunk import ImmutableChunk
 
 
 class SingleGrouper(LogicalGrouper):

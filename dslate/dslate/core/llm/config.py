@@ -1,14 +1,14 @@
-from typing import Optional
-from langchain_core.language_models.chat_models import BaseChatModel
 
-from .factory import ModelConfig, create_llm_model
-from ..config.dslate_config import load_config
+from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
+
+from ..exceptions import ConfigurationError
+from .factory import ModelConfig, create_llm_model
 
 
 def try_create_model(
-    model_arg: Optional[str], api_key_arg: Optional[str]
-) -> Optional[BaseChatModel]:
+    model_arg: str | None, api_key_arg: str | None
+) -> BaseChatModel | None:
     """
     Configure the LLM model based on command-line arguments, .dslateconfig, or defaults.
 
@@ -46,24 +46,10 @@ def try_create_model(
                 provider = "anthropic"
                 model_name = model_arg
             else:
-                raise ValueError(
+                raise ConfigurationError(
                     f"Cannot infer provider from model '{model_arg}'. "
                     f"Please use format: provider:model-name (e.g., openai:gpt-4)"
                 )
-
-    # If not provided via CLI, check .dslateconfig
-    if not provider or not model_name:
-        config = load_config()
-        if config:
-            provider = provider or config.model_provider
-            model_name = model_name or config.model_name
-            api_key = api_key or config.api_key
-
-    # If still not configured, use default
-    if not provider or not model_name:
-        logger.info("No model specified, using default: gemini:gemini-2.0-flash-exp")
-        provider = "gemini"
-        model_name = "gemini-2.0-flash-exp"
 
     # Create model configuration
     model_config = ModelConfig(
@@ -78,18 +64,4 @@ def try_create_model(
         return create_llm_model(model_config)
     except Exception as e:
         logger.error(f"Failed to create model: {e}")
-        # Try fallback to default Gemini model
-        try:
-            logger.info("Attempting fallback to gemini-2.0-flash-exp")
-            fallback_config = ModelConfig(
-                provider="gemini",
-                model_name="gemini-2.0-flash-exp",
-                api_key=None,  # Will use environment variable
-                temperature=0.7,
-            )
-            return create_llm_model(fallback_config)
-        except Exception as fallback_error:
-            logger.error(f"Fallback also failed: {fallback_error}")
-            raise ValueError(
-                f"Failed to configure model: {e}. Fallback also failed: {fallback_error}"
-            )
+        return None
