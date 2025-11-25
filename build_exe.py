@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Build script to create executable for vibe CLI tool.
+Build script to create executable for dslate CLI tool.
 """
 
 import os
@@ -32,10 +32,10 @@ def main():
 
     # Define output executable name based on platform
     if system == "windows":
-        exe_name = "vibe.exe"
+        exe_name = "dslate.exe"
         separator = ";"
     else:
-        exe_name = "vibe"
+        exe_name = "dslate"
         separator = ":"
 
     # Set up PyInstaller command
@@ -43,14 +43,14 @@ def main():
         "pyinstaller",
         "--onefile",  # Create a single executable file
         "--name",
-        "vibe",
+        "dslate",
         "--clean",  # Clean PyInstaller cache and remove temporary files
         "--collect-all",
         "readchar",  # Include package metadata for readchar
         "--collect-all",
-        "vibe",  # Include package data
+        "dslate",  # Include package data
         "--additional-hooks-dir=custom_hooks",
-        "vibe/vibe/cli.py",  # Main script to execute
+        "dslate/dslate/cli.py",  # Main script to execute
     ]
 
     print(f"Building executable for {system}...")

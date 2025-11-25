@@ -1,8 +1,8 @@
-# Multi-LLM Support for Vibe
+# Multi-LLM Support for dslate
 
 ## Overview
 
-Vibe now supports multiple LLM providers through LangChain, allowing you to choose the best model for your needs.
+dslate now supports multiple LLM providers through LangChain, allowing you to choose the best model for your needs.
 
 ## Supported Providers
 
@@ -20,21 +20,21 @@ Use the `--model` and `--api-key` flags at the root level (before the subcommand
 
 ```bash
 # OpenAI GPT-4
-vibe --model openai:gpt-4 --api-key sk-... commit
+dslate --model openai:gpt-4 --api-key sk-... commit
 
 # Google Gemini 2.0 Flash
-vibe --model gemini:gemini-2.0-flash-exp commit
+dslate --model gemini:gemini-2.0-flash-exp commit
 
 # Anthropic Claude 3.5 Sonnet
-vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
+dslate --model anthropic:claude-3-5-sonnet-20241022 expand abc123
 
 # Ollama (local)
-vibe --model ollama:llama3.2 commit
+dslate --model ollama:llama3.2 commit
 ```
 
-### Configuration File (.vibeconfig)
+### Configuration File (.dslateconfig)
 
-Create a `.vibeconfig` file in your project root or any parent directory:
+Create a `.dslateconfig` file in your project root or any parent directory:
 
 ```json
 {
@@ -45,7 +45,7 @@ Create a `.vibeconfig` file in your project root or any parent directory:
 }
 ```
 
-**Note:** For security, it's recommended to use environment variables for API keys instead of storing them in .vibeconfig.
+**Note:** For security, it's recommended to use environment variables for API keys instead of storing them in .dslateconfig.
 
 ### Environment Variables
 
@@ -71,10 +71,10 @@ export OLLAMA_BASE_URL=http://localhost:11434
 
 ## Priority Order
 
-Vibe uses the following priority for configuration:
+dslate uses the following priority for configuration:
 
 1. **Command-line arguments** (`--model`, `--api-key`)
-2. **.vibeconfig file** (searched from current directory up to root)
+2. **.dslateconfig file** (searched from current directory up to root)
 3. **Environment variables** (provider-specific)
 4. **Default fallback** (Gemini 2.0 Flash Exp)
 
@@ -85,7 +85,7 @@ The `--model` argument accepts two formats:
 1. **Full format:** `provider:model-name`
    - Example: `openai:gpt-4`, `gemini:gemini-2.0-flash-exp`
 
-2. **Model name only:** Vibe will attempt to infer the provider
+2. **Model name only:** dslate will attempt to infer the provider
    - Example: `gpt-4` → OpenAI, `gemini-2.0-flash-exp` → Gemini
 
 ## Examples
@@ -94,28 +94,28 @@ The `--model` argument accepts two formats:
 
 ```bash
 # Via command line
-vibe --model openai:gpt-4 commit src/
+dslate --model openai:gpt-4 commit src/
 
-# Via .vibeconfig
-cat > .vibeconfig << EOF
+# Via .dslateconfig
+cat > .dslateconfig << EOF
 {
   "model_provider": "openai",
   "model_name": "gpt-4"
 }
 EOF
 export OPENAI_API_KEY=sk-...
-vibe commit src/
+dslate commit src/
 ```
 
 ### Using Anthropic Claude
 
 ```bash
 # Via command line
-vibe --model claude:claude-3-5-sonnet-20241022 --api-key sk-ant-... expand abc123
+dslate --model claude:claude-3-5-sonnet-20241022 --api-key sk-ant-... expand abc123
 
 # Via environment
 export ANTHROPIC_API_KEY=sk-ant-...
-vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
+dslate --model anthropic:claude-3-5-sonnet-20241022 expand abc123
 ```
 
 ### Using Local Ollama
@@ -124,8 +124,8 @@ vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
 # Start ollama server first
 ollama serve
 
-# Use with vibe
-vibe --model ollama:llama3.2 commit
+# Use with dslate
+dslate --model ollama:llama3.2 commit
 ```
 
 ### Using Default (Gemini)
@@ -134,8 +134,8 @@ vibe --model ollama:llama3.2 commit
 # Just set API key
 export GOOGLE_API_KEY=...
 
-# Vibe will use Gemini 2.0 Flash Exp by default
-vibe commit
+# dslate will use Gemini 2.0 Flash Exp by default
+dslate commit
 ```
 
 ## Installing Dependencies
@@ -175,7 +175,7 @@ pip install langchain-openai
 
 Ensure your API key is set via one of these methods:
 1. `--api-key` command-line argument
-2. `.vibeconfig` file
+2. `.dslateconfig` file
 3. Provider-specific environment variable
 
 ### Model Not Working
@@ -188,6 +188,6 @@ Check that:
 ## Additional Notes
 
 - The `--model` and `--api-key` arguments must come **before** the subcommand (`commit`, `expand`, etc.)
-- If no model is configured, Vibe falls back to Gemini 2.0 Flash Exp
-- API keys in .vibeconfig should be kept secure (add to .gitignore)
-- Temperature and max_tokens can be configured in .vibeconfig or via the factory
+- If no model is configured, dslate falls back to Gemini 2.0 Flash Exp
+- API keys in .dslateconfig should be kept secure (add to .gitignore)
+- Temperature and max_tokens can be configured in .dslateconfig or via the factory

@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vibe"
+name = "dslate"
 version = "0.1.0"
-description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let vibe handle the rest."
+description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let dslate handle the rest."
 authors = [
   { name = "Adem Can", email = "ademfcan@gmail.com" }
 ]
@@ -33,10 +33,10 @@ dependencies = [
 ]
 
 [project.scripts]
-vibe = "vibe.cli:app"
+dslate = "dslate.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["vibe"]
+where = ["dslate"]
 
 [project.optional-dependencies]
 dev = [
@@ -47,7 +47,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-vibe = ["resources/*"]
+dslate = ["resources/*"]
 
 [tool.mypy]
 python_version = "3.10"
