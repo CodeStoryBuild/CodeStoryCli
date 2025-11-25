@@ -111,7 +111,10 @@ class CommitPipeline:
                 )
 
                 # create smallest mechanically valid chunks
-                with progress_bar(p, "Creating Mechanical Chunks"), time_block("mechanical_chunking"):
+                with (
+                    progress_bar(p, "Creating Mechanical Chunks"),
+                    time_block("mechanical_chunking"),
+                ):
                     mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
                         raw_chunks, context_manager
                     )
@@ -122,10 +125,13 @@ class CommitPipeline:
                     [],
                 )
 
-                with progress_bar(p, "Creating Semantic Groups"), time_block("semantic_grouping"):
-                        semantic_chunks = self.semantic_grouper.group_chunks(
-                            mechanical_chunks, context_manager
-                        )
+                with (
+                    progress_bar(p, "Creating Semantic Groups"),
+                    time_block("semantic_grouping"),
+                ):
+                    semantic_chunks = self.semantic_grouper.group_chunks(
+                        mechanical_chunks, context_manager
+                    )
 
                 log_chunks(
                     "Semantic Chunks (without immutable groups)",

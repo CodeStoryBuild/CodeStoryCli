@@ -23,15 +23,11 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
     # Verify commit exists and is on current branch history
     resolved = (
-        git_interface.run_git_text_out(
-            ["rev-parse", fix_context.commit_hash]
-        ).strip()
+        git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]).strip()
         or ""
     )
     if not resolved:
-        raise GitError(
-            f"Commit not found: {fix_context.commit_hash}"
-        )
+        raise GitError(f"Commit not found: {fix_context.commit_hash}")
 
     if (
         git_interface.run_git_text(

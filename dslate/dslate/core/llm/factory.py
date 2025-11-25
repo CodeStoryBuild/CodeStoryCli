@@ -125,7 +125,9 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
         # Azure requires additional environment variables
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         if not azure_endpoint:
-            raise ConfigurationError("AZURE_OPENAI_ENDPOINT environment variable not set")
+            raise ConfigurationError(
+                "AZURE_OPENAI_ENDPOINT environment variable not set"
+            )
 
         if not api_key:
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
