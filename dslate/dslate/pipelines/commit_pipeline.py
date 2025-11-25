@@ -215,7 +215,7 @@ class CommitPipeline:
 
             # Log the diff for this group at debug level
             diff_text = patch_map.get(idx, "") or "(no diff)"
-            logger.info("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
+            logger.debug("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
 
             logger.info(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
