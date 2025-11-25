@@ -111,9 +111,9 @@ class SynthesizerError(dslateError):
     pass
 
 
-class ExpansionError(dslateError):
+class FixCommitError(dslateError):
     """
-    Errors during expand command run
+    Errors during fix command run
     """
 
     pass

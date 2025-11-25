@@ -1,29 +1,29 @@
 from loguru import logger
-from dslate.context import GlobalContext, ExpandContext
+from dslate.context import GlobalContext, FixContext
 from dslate.pipelines.commit_pipeline import CommitPipeline
-from dslate.core.exceptions import ExpansionError
+from dslate.core.exceptions import FixCommitError
 
 def _short(hash_: str) -> str:
     return (hash_ or "")[:7]
 
 
-class ExpandPipeline:
+class FixPipeline:
     """
-    Core orchestration for expanding a commit.
+    Core orchestration for fixing a commit.
 
     This implementation manipulates the Git Object Database directly to re-parent
-    downstream commits onto the expanded history without using worktrees or
+    downstream commits onto the fixed history without using worktrees or
     intermediate filesystem operations.
     """
 
     def __init__(
         self,
         global_context: GlobalContext,
-        expand_context: ExpandContext,
+        fix_context: FixContext,
         commit_pipeline: CommitPipeline,
     ):
         self.global_context = global_context
-        self.expand_context = expand_context
+        self.fix_context = fix_context
         self.commit_pipeline = commit_pipeline
         # Use the abstract interface as requested
         self.git = self.global_context.git_interface
@@ -42,11 +42,11 @@ class ExpandPipeline:
         new_commit_hash = self.commit_pipeline.run()
 
         if not new_commit_hash:
-            raise ExpansionError("Commit pipeline returned no hash. Aborting.")
+            raise FixCommitError("Commit pipeline returned no hash. Aborting.")
 
         # 2. Identify the downstream commits to reparent
         # We need the list of commits strictly after the base_hash.
-        # The first commit in this list is the one we just expanded/replaced (resolved).
+        # The first commit in this list is the one we just fixed/replaced (resolved).
         # We want to keep everything *after* that first one.
         try:
             # --ancestry-path ensures we follow the direct chain
@@ -60,7 +60,7 @@ class ExpandPipeline:
             )
             original_chain = rev_list_out.splitlines() if rev_list_out else []
         except RuntimeError:
-            raise ExpansionError("Failed to read commit history.")
+            raise FixCommitError("Failed to read commit history.")
 
         if not original_chain:
             # Edge case: The base was HEAD (or detached), nothing to replay.
@@ -68,7 +68,7 @@ class ExpandPipeline:
             logger.info("No downstream history found. Updating HEAD directly.")
             final_head = new_commit_hash
         else:
-            # original_chain[0] is the commit we just expanded (resolved).
+            # original_chain[0] is the commit we just fixed (resolved).
             # original_chain[1:] are the commits we need to move (reparent).
             commits_to_reparent = original_chain[1:]
 
@@ -102,7 +102,7 @@ class ExpandPipeline:
                     lines = meta.splitlines()
                     # Safety check on output format
                     if len(lines) < 7:
-                        raise ExpansionError(
+                        raise FixCommitError(
                             f"Failed to parse metadata for commit {commit}"
                         )
 

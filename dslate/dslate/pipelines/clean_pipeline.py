@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Callable
 
 from loguru import logger
-from rich.console import Console
-from dslate.core.git_interface.SubprocessGitInterface import (
-    SubprocessGitInterface,
-)
 from dslate.context import GlobalContext, CleanContext
 
 
 class CleanPipeline:
-    """Iteratively expand commits from HEAD down to the second commit.
+    """Iteratively fix commits from HEAD down to the second commit.
 
     Filtering rules:
     - ignore: any commit whose hash starts with any ignore token will be skipped
@@ -25,11 +20,11 @@ class CleanPipeline:
         self,
         global_context: GlobalContext,
         clean_context: CleanContext,
-        expand_command: Callable[[str], str],
+        fix_command: Callable[[str], str],
     ):
         self.global_context = global_context
         self.clean_context = clean_context
-        self.expand_command = expand_command
+        self.fix_command = fix_command
 
     def run(self) -> bool:
         commits = self._get_first_parent_commits(self.clean_context.start_from)[
@@ -46,7 +41,7 @@ class CleanPipeline:
 
         logger.info("Starting dslate clean operation on {total} commits", total=total)
 
-        expanded = 0
+        fixed = 0
         skipped = 0
 
         for idx, commit in enumerate(commits):
@@ -82,17 +77,17 @@ class CleanPipeline:
                     continue
 
             logger.info(
-                "Expanding commit {commit} ({idx}/{total})",
+                "Fix commit {commit} ({idx}/{total})",
                 commit=short,
                 idx=idx,
                 total=total,
             )
-            self.expand_command(commit)
-            expanded += 1
+            self.fix_command(commit)
+            fixed += 1
 
         logger.info(
-            "Clean operation complete: expanded={expanded}, skipped={skipped}",
-            expanded=expanded,
+            "Clean operation complete: fixed={fixed}, skipped={skipped}",
+            fixed=fixed,
             skipped=skipped,
         )
         return True
