@@ -70,34 +70,38 @@ jobs:
       # --- PACKAGING STEPS ---
 
       # 1. WINDOWS: Inno Setup
-      - name: Create Windows Installer (Inno Setup)
-        if: matrix.os == 'windows-latest'
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          version: "6.2.2"
-      
-      - name: Compile Windows Installer
+      - name: Install Inno Setup
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Create a dynamic Inno Setup script
+          choco install innosetup --no-progress
+          # Add Inno Setup to the PATH so we can use ISCC.exe in the next step
+          echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Create & Compile Windows Installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # 1. Define the Inno Setup Script (setup.iss) dynamically
           $issContent = @"
           [Setup]
           AppName=dslate
           AppVersion=1.0
           DefaultDirName={autopf}\dslate
           DefaultGroupName=dslate
-          OutputBaseFilename=dslate-installer-windows
+          OutputBaseFilename=dslate-windows-installer
           OutputDir=dist\installers
           Compression=lzma
           SolidCompression=yes
           ChangesEnvironment=yes
+          #PrivilegesRequired=lowest 
 
           [Files]
+          ; Ensure we grab the entire folder created by PyInstaller (onedir mode)
           Source: "dist\dslate\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
           [Registry]
-          ; Add to PATH
+          ; Add to PATH variable so users can type 'dslate' in terminal
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
             ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
             Check: NeedsAddPath('{app}')
@@ -117,12 +121,16 @@ jobs:
             Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
           end;
           "@
-          
-          $issContent | Out-File -FilePath "setup.iss" -Encoding ASCII
-          
-          # Run the compiler
-          ISCC.exe setup.iss
 
+          # 2. Write the script to a file
+          $issContent | Out-File -FilePath "setup.iss" -Encoding ASCII
+
+          # 3. Create output directory
+          New-Item -ItemType Directory -Force -Path "dist\installers"
+
+          # 4. Run the Inno Setup Compiler (ISCC)
+          ISCC.exe setup.iss
+          
       # 2. LINUX: Build .deb
       - name: Create Linux Installer (.deb)
         if: matrix.os == 'ubuntu-latest'
