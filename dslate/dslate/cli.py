@@ -11,7 +11,6 @@ from dslate.context import GlobalConfig, GlobalContext
 from dslate.core.config.config_loader import ConfigLoader
 from dslate.core.exceptions import GitError, ValidationError, dslateError
 from dslate.core.logging.logging import setup_logger
-from dslate.core.validation import validate_git_repository
 from dslate.runtimeutil import (
     ensure_utf8_output,
     setup_signal_handlers,
@@ -87,7 +86,10 @@ def main(
     """
     Global setup callback. Initialize shared objects here.
     """
-    # default behavior
+    # skip --help in subcommands
+    if ctx.help_option_names:
+        return
+
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
         raise typer.Exit()
@@ -115,11 +117,9 @@ def main(
             global_config_path,
             custom_config_path,
         )
-        logger.info(f"Used {used_configs} to build global context.")
+        logger.debug(f"Used {used_configs} to build global context.")
         global_context = GlobalContext.from_global_config(config, Path(repo_path))
         ctx.obj = global_context
-
-        validate_git_repository(global_context.git_interface)
 
 
 def run_app():

@@ -37,7 +37,7 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     provider = config.provider.lower()
     api_key = config.api_key
 
-    logger.info(f"Creating LLM model: provider={provider}, model={config.model_name}")
+    logger.debug(f"Creating LLM model: provider={provider}, model={config.model_name}")
 
     # OpenAI
     if provider == "openai":

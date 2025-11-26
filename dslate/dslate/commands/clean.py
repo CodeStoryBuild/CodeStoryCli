@@ -9,14 +9,29 @@ from dslate.core.validation import (
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
+    validate_git_repository
 )
 from dslate.pipelines.clean_pipeline import CleanPipeline
 
 from .fix import main as fix_main
 
 
+def _help_callback(ctx: typer.Context, param, value: bool):
+    if not value or ctx.resilient_parsing:
+        return
+    typer.echo(ctx.get_help())
+    raise typer.Exit()
+
+
 def main(
     ctx: typer.Context,
+    help: bool = typer.Option(
+        False,
+        "--help",
+        callback=_help_callback,
+        is_eager=True,
+        help="Show this message and exit.",
+    ),
     ignore: list[str] | None = typer.Option(
         None,
         "--ignore",
@@ -48,6 +63,8 @@ def main(
         # Clean while ignoring certain commits
         dslate clean --ignore def456 --ignore ghi789
     """
+    global_context = ctx.obj
+    validate_git_repository(global_context.git_interface)
     fix_command = partial(fix_main, ctx)
 
     validated_ignore = validate_ignore_patterns(ignore)
@@ -57,7 +74,6 @@ def main(
     if start_from:
         validated_start_from = validate_commit_hash(start_from)
 
-    global_context = ctx.obj
     clean_context = CleanContext(
         ignore=validated_ignore,
         min_size=validated_min_size,
