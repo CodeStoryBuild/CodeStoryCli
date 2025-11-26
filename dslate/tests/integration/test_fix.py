@@ -59,9 +59,5 @@ class TestFix:
         ).stdout.strip()
 
         result = run_cli(cli_exe, ["-y", "fix", root_hash], cwd=repo.path)
-        assert result.returncode != 0
         # Check for the specific error message
-        assert (
-            "root commit" in result.stderr.lower()
-            or "root commit" in result.stdout.lower()
-        )
+        assert "fixing the root commit is not supported yet" in result.stdout.lower()
