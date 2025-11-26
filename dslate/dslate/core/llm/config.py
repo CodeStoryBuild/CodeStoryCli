@@ -28,7 +28,7 @@ from .factory import ModelConfig, create_llm_model
 
 
 def try_create_model(
-    model_arg: str | None, api_key_arg: str | None
+    model_arg: str | None, api_key_arg: str | None, temperature: float
 ) -> BaseChatModel | None:
     """
     Configure the LLM model based on command-line arguments, .dslateconfig, or defaults.
@@ -82,7 +82,7 @@ def try_create_model(
         provider=provider,
         model_name=model_name,
         api_key=api_key,
-        temperature=0.7,
+        temperature=temperature,
     )
 
     # Create and return the model

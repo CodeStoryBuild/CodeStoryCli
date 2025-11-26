@@ -188,18 +188,3 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
             f"Unsupported LLM provider: {provider}. "
             f"Supported providers: openai, gemini, anthropic, azure, ollama"
         )
-
-
-def get_default_model() -> ModelConfig:
-    """
-    Get the default model configuration (Gemini 2.5 Flash).
-
-    Returns:
-        ModelConfig for the default model
-    """
-    return ModelConfig(
-        provider="gemini",
-        model_name="gemini-2.0-flash-exp",
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        temperature=0.7,
-    )
