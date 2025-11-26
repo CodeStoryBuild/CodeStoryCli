@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dslate.tests.integration.repo_utils import RepoState
+from tests.integration.repo_utils import RepoState
 
 # Get executable path from environment variable
 _RAW_CLI_PATH = os.environ.get("CLI_ARTIFACT_PATH")
