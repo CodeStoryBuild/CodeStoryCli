@@ -50,8 +50,9 @@ def try_create_model(
     model_name = None
     api_key = api_key_arg
 
-    if model_arg == "no-model":
+    if model_arg == "no-model" or model_arg is None:
         # explicit no model usage (will default to single grouper)
+        logger.warning("No model specified. Using no logical grouping.")
         return None
 
     # Parse --model argument (format: provider:model-name)
@@ -85,9 +86,4 @@ def try_create_model(
     )
 
     # Create and return the model
-    try:
-        return create_llm_model(model_config)
-    except Exception as e:
-        raise ConfigurationError(
-            "Invalid model provided! Please provide a model!"
-        ) from e
+    return create_llm_model(model_config)

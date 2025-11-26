@@ -78,25 +78,6 @@ class TestCommitScenarios:
         """Test commit command with various file state scenarios."""
         repo = repo_factory(f"repo_{scenario_name}")
 
-        # Apply changes
-        # For renamed_modified, we need to handle it carefully if apply_changes isn't smart enough
-        # Our simple apply_changes might need help. Let's adjust the test data or the helper if needed.
-        # For now, let's assume apply_changes handles the dict iteration.
-        # If we have a rename AND a modification to the new name, we need to ensure rename happens first
-        # or just write to the new path.
-
-        # Actually, for "renamed_modified", we can just rename, then modify the new file.
-        # But apply_changes iterates. Let's split it if needed, or just define it as:
-        # Rename README.md -> README_renamed.md
-        # Then write to README_renamed.md
-        # If the dict order is preserved (Python 3.7+), we can rely on that if we structure it right.
-        # But for robustness, let's just use separate keys if possible or trust the helper.
-
-        # Special handling for renamed_modified in the test setup if needed,
-        # but let's see if we can express it in the dict.
-        # If we pass {"README.md": ("README.md", "new.md"), "new.md": "content"},
-        # and iterate, if rename happens first, then write to new.md works.
-
         repo.apply_changes(changes)
 
         # Get expected tree hash (what the repo looks like now)

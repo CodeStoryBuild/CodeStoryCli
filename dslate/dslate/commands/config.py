@@ -253,8 +253,6 @@ def _get_config(key: str | None, scope: str | None) -> None:
         table.add_column("Key", style="cyan")
         table.add_column("Description", style="yellow")
         # add header depending on if any values have been set
-        print(set_keys)
-        print(schema.keys())
         if not set_keys:
             table.add_column("Default", style="green")
         elif len(schema.keys()) == len(set_keys):
