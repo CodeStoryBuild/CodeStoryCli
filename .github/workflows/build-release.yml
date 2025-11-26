@@ -52,6 +52,10 @@ jobs:
 
       # --- TEST STEPS ---
 
+      - name: Create Integration Test Config
+        shell: bash
+        run: echo "model = "no-model" > dslateconfig.toml
+
       - name: Test Folder Build
         shell: bash
         run: |

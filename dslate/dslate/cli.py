@@ -67,6 +67,32 @@ def setup_config_args(**kwargs):
     return config_args
 
 
+def run_onboarding(ctx: typer.Context):
+    rprint("[bold]Welcome to dslate![/bold]")
+    rprint("[bold]This is the first time you're running dslate. Let's get started![/bold]")
+    rprint("[bold]You'll be asked a few questions to configure dslate.[/bold]")
+    rprint("[bold]You can always change these settings later using the 'config' command.[/bold]")
+    rprint("[bold]Press Enter to continue.[/bold]")
+    input()
+    model = typer.prompt("What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)")
+    api_key = typer.prompt("What is your API key?")
+    global_ = typer.confirm("Do you want to set this as the global configuration?")
+    config.main(ctx, key="model", value=model, global_scope=global_)
+    config.main(ctx, key="api_key", value=api_key, global_scope=global_)
+    rprint("[bold]Configuration completed![/bold]")
+    rprint("[bold]You can always change these settings and more later using the 'config' command.[/bold]")
+    return
+
+def check_run_onboarding(ctx: typer.Context):
+    # check a file in user config dir
+    onboarding_file = Path(user_config_dir("dslate")) / "onboardingflag"
+    if not onboarding_file.exists():
+        run_onboarding(ctx)
+        onboarding_file.touch()
+    else:
+        return
+
+
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
@@ -95,19 +121,19 @@ def main(
     api_key: str | None = typer.Option(
         None, "--api-key", help="API key for the model provider"
     ),
-    model_temperature: float = typer.Option(
-        0.7,
+    model_temperature: float | None = typer.Option(
+        None,
         "--temperature",
         help="Sampling temperature for the AI model (0.0 to 1.0).",
     ),
     verbose: bool | None = typer.Option(
-        False,
+        None,
         "--verbose",
         "-v",
         help="Enable verbose logging.",
     ),
     auto_accept: bool | None = typer.Option(
-        False, "--yes", "-y", help="Automatically accept and commit all changes"
+        None, "--yes", "-y", help="Automatically accept and commit all changes"
     ),
 ) -> None:
     """
@@ -139,7 +165,7 @@ def main(
     global_config_path = Path(user_config_dir("dslate")) / "dslateconfig.toml"
     custom_config_path = Path(custom_config) if custom_config else None
 
-    config, used_configs = ConfigLoader.get_full_config(
+    config, used_configs, used_defaults = ConfigLoader.get_full_config(
         GlobalConfig,
         config_args,
         local_config_path,
@@ -147,6 +173,11 @@ def main(
         global_config_path,
         custom_config_path,
     )
+    if not used_configs and used_defaults:
+        # check if this is first run of command
+        # if so, run onboarding for user
+        check_run_onboarding(ctx)
+
     logger.debug(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context
