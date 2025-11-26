@@ -8,13 +8,16 @@ from dslate.core.git_interface.SubprocessGitInterface import SubprocessGitInterf
 # Fixtures
 # -----------------------------------------------------------------------------
 
+
 @pytest.fixture
 def git_interface():
     return SubprocessGitInterface(repo_path="/tmp/repo")
 
+
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
+
 
 def test_init_path_conversion():
     """Test that string path is converted to Path object."""
@@ -24,6 +27,7 @@ def test_init_path_conversion():
 
     gi2 = SubprocessGitInterface(Path("/tmp/path_obj"))
     assert isinstance(gi2.repo_path, Path)
+
 
 @patch("subprocess.run")
 def test_run_git_text_success(mock_run, git_interface):
@@ -42,22 +46,26 @@ def test_run_git_text_success(mock_run, git_interface):
     assert result == mock_result
     mock_run.assert_called_once()
     args, kwargs = mock_run.call_args
-    
+
     # Check arguments passed to subprocess.run
     assert args[0] == ["git", "status"]
     assert kwargs["text"] is True
     assert kwargs["encoding"] == "utf-8"
     assert kwargs["cwd"] == str(git_interface.repo_path)
 
+
 @patch("subprocess.run")
 def test_run_git_text_cwd_override(mock_run, git_interface):
     """Test that cwd argument overrides default repo path."""
-    mock_run.return_value = Mock(spec=subprocess.CompletedProcess, returncode=0, stdout="", stderr="")
-    
+    mock_run.return_value = Mock(
+        spec=subprocess.CompletedProcess, returncode=0, stdout="", stderr=""
+    )
+
     git_interface.run_git_text(["status"], cwd="/custom/cwd")
-    
+
     _, kwargs = mock_run.call_args
     assert kwargs["cwd"] == "/custom/cwd"
+
 
 @patch("subprocess.run")
 def test_run_git_text_failure(mock_run, git_interface):
@@ -71,6 +79,7 @@ def test_run_git_text_failure(mock_run, git_interface):
 
     # Verify
     assert result is None
+
 
 @patch("subprocess.run")
 def test_run_git_binary_success(mock_run, git_interface):
@@ -91,6 +100,7 @@ def test_run_git_binary_success(mock_run, git_interface):
     assert kwargs["text"] is False
     assert kwargs["encoding"] is None
 
+
 @patch("subprocess.run")
 def test_run_git_binary_failure(mock_run, git_interface):
     """Test handling of CalledProcessError in binary mode."""
@@ -99,6 +109,7 @@ def test_run_git_binary_failure(mock_run, git_interface):
 
     result = git_interface.run_git_binary(["fail"])
     assert result is None
+
 
 def test_run_git_text_out_wrapper(git_interface):
     """Test the convenience wrapper for text output."""
@@ -115,6 +126,7 @@ def test_run_git_text_out_wrapper(git_interface):
         mock_run.return_value = None
         output = git_interface.run_git_text_out(["fail"])
         assert output is None
+
 
 def test_run_git_binary_out_wrapper(git_interface):
     """Test the convenience wrapper for binary output."""

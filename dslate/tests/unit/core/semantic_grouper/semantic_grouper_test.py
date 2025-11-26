@@ -9,13 +9,14 @@ from dslate.core.data.line_changes import Addition, Removal
 # Helpers
 # -----------------------------------------------------------------------------
 
+
 def create_chunk(
     old_path=b"file.txt",
     new_path=b"file.txt",
     old_start=1,
     old_len=0,
     new_start=1,
-    new_len=0
+    new_len=0,
 ):
     """Helper to create a DiffChunk with minimal necessary data."""
     parsed_content = []
@@ -24,47 +25,51 @@ def create_chunk(
         parsed_content.append(Removal(old_start + i, new_start, b"old"))
     for i in range(new_len):
         parsed_content.append(Addition(old_start, new_start + i, b"new"))
-        
+
     return DiffChunk(
         old_file_path=old_path,
         new_file_path=new_path,
         parsed_content=parsed_content,
-        old_start=old_start
+        old_start=old_start,
     )
+
 
 @pytest.fixture
 def context_manager():
     cm = Mock()
     contexts = {}
-    
+
     # Helper to configure context for a specific file/version
     def configure_context(path, is_old, symbols=None, scopes=None):
         ctx = Mock()
         ctx.symbol_map.line_symbols = symbols or {}
         ctx.scope_map.scope_lines = scopes or {}
-        
+
         contexts[(path, is_old)] = ctx
         return ctx
 
     def get_ctx(p, old):
         return contexts.get((p, old))
-        
+
     def has_ctx(p, old):
         return (p, old) in contexts
-        
+
     cm.configure_context = configure_context
     cm.get_context.side_effect = get_ctx
     cm.has_context.side_effect = has_ctx
-            
+
     return cm
+
 
 @pytest.fixture
 def grouper():
     return SemanticGrouper()
 
+
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
+
 
 def test_group_symbol_overlap(grouper, context_manager):
     """Test grouping chunks that share a symbol."""
@@ -72,109 +77,106 @@ def test_group_symbol_overlap(grouper, context_manager):
     c1 = create_chunk(new_len=2, new_start=1)
     # Chunk 2: lines 10-11, symbol "Foo"
     c2 = create_chunk(new_len=2, new_start=10)
-    
+
     # Configure context
     # Both in new version of file.txt
     context_manager.configure_context(
-        b"file.txt", False,
-        symbols={0: {"Foo"}, 1: {"Foo"}, 9: {"Foo"}, 10: {"Foo"}}
+        b"file.txt", False, symbols={0: {"Foo"}, 1: {"Foo"}, 9: {"Foo"}, 10: {"Foo"}}
     )
     # Also need old context for standard modification check
     context_manager.configure_context(b"file.txt", True)
-    
+
     groups = grouper.group_chunks([c1, c2], context_manager)
-    
+
     assert len(groups) == 1
     assert len(groups[0].chunks) == 2
     assert c1 in groups[0].chunks
     assert c2 in groups[0].chunks
 
+
 def test_group_scope_overlap(grouper, context_manager):
     """Test grouping chunks that share a scope."""
     c1 = create_chunk(new_len=1, new_start=5)
     c2 = create_chunk(new_len=1, new_start=20)
-    
+
     context_manager.configure_context(
-        b"file.txt", False,
-        scopes={4: {"ClassA"}, 19: {"ClassA"}}
+        b"file.txt", False, scopes={4: {"ClassA"}, 19: {"ClassA"}}
     )
     context_manager.configure_context(b"file.txt", True)
-    
+
     groups = grouper.group_chunks([c1, c2], context_manager)
-    
+
     assert len(groups) == 1
     assert len(groups[0].chunks) == 2
 
+
 def test_group_transitive(grouper, context_manager):
     """Test transitive grouping: A-B (sym1), B-C (sym2) -> A-B-C."""
-    c1 = create_chunk(new_len=1, new_start=1) # sym1
-    c2 = create_chunk(new_len=1, new_start=10) # sym1, sym2
-    c3 = create_chunk(new_len=1, new_start=20) # sym2
-    
+    c1 = create_chunk(new_len=1, new_start=1)  # sym1
+    c2 = create_chunk(new_len=1, new_start=10)  # sym1, sym2
+    c3 = create_chunk(new_len=1, new_start=20)  # sym2
+
     context_manager.configure_context(
-        b"file.txt", False,
-        symbols={
-            0: {"sym1"},
-            9: {"sym1", "sym2"},
-            19: {"sym2"}
-        }
+        b"file.txt", False, symbols={0: {"sym1"}, 9: {"sym1", "sym2"}, 19: {"sym2"}}
     )
     context_manager.configure_context(b"file.txt", True)
-    
+
     groups = grouper.group_chunks([c1, c2, c3], context_manager)
-    
+
     assert len(groups) == 1
     assert len(groups[0].chunks) == 3
 
+
 def test_group_disjoint(grouper, context_manager):
     """Test that disjoint chunks remain separate."""
-    c1 = create_chunk(new_len=1, new_start=1) # sym1
-    c2 = create_chunk(new_len=1, new_start=10) # sym2
-    
+    c1 = create_chunk(new_len=1, new_start=1)  # sym1
+    c2 = create_chunk(new_len=1, new_start=10)  # sym2
+
     context_manager.configure_context(
-        b"file.txt", False,
-        symbols={0: {"sym1"}, 9: {"sym2"}}
+        b"file.txt", False, symbols={0: {"sym1"}, 9: {"sym2"}}
     )
     context_manager.configure_context(b"file.txt", True)
-    
+
     groups = grouper.group_chunks([c1, c2], context_manager)
-    
+
     assert len(groups) == 2
+
 
 def test_fallback_missing_context(grouper, context_manager):
     """Test that chunks with missing context go to fallback group."""
-    c1 = create_chunk(new_len=1, new_start=1) # Has context
-    c2 = create_chunk(new_len=1, new_start=10) # No context
-    
+    c1 = create_chunk(new_len=1, new_start=1)  # Has context
+    c2 = create_chunk(new_len=1, new_start=10)  # No context
+
     # Configure context only for c1's range (and file existence)
     # But c2 will fail _has_analysis_context if we don't configure it?
     # Actually _has_analysis_context checks if context EXISTS for the file/version.
     # If it exists, it proceeds to get signature.
     # If get_signature returns empty, it's still "analyzable" but has no symbols.
-    
+
     # To trigger fallback, we need _has_analysis_context to return False.
     # This happens if context_manager.has_context returns False.
-    
+
     # Let's say c1 is in file1.txt (has context) and c2 is in file2.txt (no context)
     c1 = create_chunk(old_path=b"f1.txt", new_path=b"f1.txt", new_len=1)
     c2 = create_chunk(old_path=b"f2.txt", new_path=b"f2.txt", new_len=1)
-    
+
     context_manager.configure_context(b"f1.txt", True)
     context_manager.configure_context(b"f1.txt", False, symbols={0: {"s1"}})
-    
+
     # Do NOT configure f2.txt
-    
+
     groups = grouper.group_chunks([c1, c2], context_manager)
-    
+
     # Expect:
     # Group 1: c1 (analyzable)
     # Group 2: c2 (fallback)
     assert len(groups) == 2
     # Fallback group is always last? Implementation says:
     # "List of semantic groups, with fallback group last if it exists"
-    
+
     assert c1 in groups[0].chunks
     assert c2 in groups[1].chunks
+
 
 def test_chunk_types(grouper, context_manager):
     """Test different chunk types (add, del, rename)."""
@@ -182,13 +184,13 @@ def test_chunk_types(grouper, context_manager):
     c_add = create_chunk(old_path=None, new_path=b"new.txt", new_len=1)
     # Deletion
     c_del = create_chunk(old_path=b"old.txt", new_path=None, old_len=1)
-    
+
     # Configure contexts
     context_manager.configure_context(b"new.txt", False, symbols={0: {"shared"}})
     context_manager.configure_context(b"old.txt", True, symbols={0: {"shared"}})
-    
+
     groups = grouper.group_chunks([c_add, c_del], context_manager)
-    
+
     # Should group because they share "shared" symbol
     assert len(groups) == 1
     assert len(groups[0].chunks) == 2

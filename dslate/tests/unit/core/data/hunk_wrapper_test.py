@@ -5,6 +5,7 @@ from dslate.core.data.hunk_wrapper import HunkWrapper
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_init_and_properties():
     hunk = HunkWrapper(
         new_file_path=b"new.txt",
@@ -13,21 +14,20 @@ def test_init_and_properties():
         old_start=1,
         new_start=1,
         old_len=1,
-        new_len=1
+        new_len=1,
     )
-    
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path == b"old.txt"
     assert hunk.file_path == b"new.txt"
-    assert hunk.file_mode == b"100644" # Default
+    assert hunk.file_mode == b"100644"  # Default
+
 
 def test_create_empty_content():
     hunk = HunkWrapper.create_empty_content(
-        new_file_path=b"new.txt",
-        old_file_path=b"old.txt",
-        file_mode=b"100755"
+        new_file_path=b"new.txt", old_file_path=b"old.txt", file_mode=b"100755"
     )
-    
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path == b"old.txt"
     assert hunk.hunk_lines == []
@@ -37,20 +37,18 @@ def test_create_empty_content():
     assert hunk.new_len == 0
     assert hunk.file_mode == b"100755"
 
+
 def test_create_empty_addition():
-    hunk = HunkWrapper.create_empty_addition(
-        new_file_path=b"new.txt"
-    )
-    
+    hunk = HunkWrapper.create_empty_addition(new_file_path=b"new.txt")
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path is None
     assert hunk.hunk_lines == []
 
+
 def test_create_empty_deletion():
-    hunk = HunkWrapper.create_empty_deletion(
-        old_file_path=b"old.txt"
-    )
-    
+    hunk = HunkWrapper.create_empty_deletion(old_file_path=b"old.txt")
+
     assert hunk.new_file_path is None
     assert hunk.old_file_path == b"old.txt"
     assert hunk.hunk_lines == []
