@@ -65,9 +65,7 @@ class TestConfigCommand:
 
     def test_config_set_local_no_gitignore(self, cli_exe, temp_dir):
         """Test setting local config when .gitignore doesn't exist."""
-        result = run_cli(
-            cli_exe, ["config", "temperature", "0.8"], cwd=temp_dir
-        )
+        result = run_cli(cli_exe, ["config", "temperature", "0.8"], cwd=temp_dir)
         assert result.returncode == 0
 
         # Verify config file was created
@@ -92,7 +90,9 @@ class TestConfigCommand:
         )
         assert result.returncode == 0
         # Should print instructions, not create a file
-        assert "environment" in result.stdout.lower() or "export" in result.stdout.lower()
+        assert (
+            "environment" in result.stdout.lower() or "export" in result.stdout.lower()
+        )
         assert "dslate_api_key" in result.stdout.lower()
 
     def test_config_get_local(self, cli_exe, temp_dir):
@@ -172,7 +172,10 @@ class TestConfigCommand:
         result = run_cli(cli_exe, ["config", "nonexistent_key"], cwd=temp_dir)
         # Should not error, just indicate not found
         assert result.returncode == 0
-        assert "not found" in result.stdout.lower() or "no configuration" in result.stdout.lower()
+        assert (
+            "not found" in result.stdout.lower()
+            or "no configuration" in result.stdout.lower()
+        )
 
     def test_config_preserves_other_values(self, cli_exe, temp_dir):
         """Test that setting a value preserves other existing values."""

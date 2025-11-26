@@ -64,9 +64,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         ).returncode
         != 0
     ):
-        raise GitError(
-            f"The commit must be an ancestor of HEAD (linear history only)."
-        )
+        raise GitError(f"The commit must be an ancestor of HEAD (linear history only).")
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
     parent = git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
@@ -98,7 +96,7 @@ def main(
     """
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
-    
+
     validated_hash = validate_commit_hash(commit_hash)
 
     fix_context = FixContext(validated_hash)

@@ -13,10 +13,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     parser = argparse.ArgumentParser(description="Build dslate executable")
-    parser.add_argument("--mode", choices=["file", "folder"], required=True, 
-                        help="Build single file or directory")
+    parser.add_argument(
+        "--mode",
+        choices=["file", "folder"],
+        required=True,
+        help="Build single file or directory",
+    )
     args = parser.parse_args()
 
     # Install PyInstaller if not already installed
@@ -26,21 +31,25 @@ def main():
 
     # Get the system platform
     system = platform.system().lower()
-    
+
     # Define output directories
     # dist/file  -> contains the single executable
     # dist/folder -> contains the folder structure
     dist_path = Path("dist") / args.mode
-    
+
     # Set up PyInstaller command
     cmd = [
         "pyinstaller",
-        "--name", "dslate",
+        "--name",
+        "dslate",
         "--clean",
         "--noconfirm",
-        "--distpath", str(dist_path), # Explicitly set output path
-        "--collect-all", "readchar",
-        "--collect-all", "dslate",
+        "--distpath",
+        str(dist_path),  # Explicitly set output path
+        "--collect-all",
+        "readchar",
+        "--collect-all",
+        "dslate",
         "--additional-hooks-dir=custom_hooks",
         "dslate/dslate/cli.py",
     ]
@@ -57,7 +66,9 @@ def main():
     # Validation check
     if args.mode == "folder":
         # Folder mode: dist/folder/dslate/[exe]
-        check_path = dist_path / "dslate" / ("dslate.exe" if system == "windows" else "dslate")
+        check_path = (
+            dist_path / "dslate" / ("dslate.exe" if system == "windows" else "dslate")
+        )
     else:
         # File mode: dist/file/[exe]
         check_path = dist_path / ("dslate.exe" if system == "windows" else "dslate")
@@ -67,6 +78,7 @@ def main():
     else:
         print(f"Build failed: Executable not found at {check_path}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

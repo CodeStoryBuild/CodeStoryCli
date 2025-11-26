@@ -33,7 +33,7 @@ from dslate.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
-    validate_git_repository
+    validate_git_repository,
 )
 from dslate.pipelines.commit_init import create_commit_pipeline
 
@@ -96,7 +96,9 @@ def main(
     target: str | None = typer.Argument(
         None, help="Path to file or directory to commit."
     ),
-    message: str | None = typer.Argument(None, help="Context or instructions for the AI to generate the commit message"),
+    message: str | None = typer.Argument(
+        None, help="Context or instructions for the AI to generate the commit message"
+    ),
 ) -> None:
     """
     Commits changes with AI-powered messages.
