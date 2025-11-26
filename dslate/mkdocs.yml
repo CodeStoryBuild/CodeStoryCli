@@ -1,0 +1,13 @@
+site_name: DSlate CLI Documentation
+plugins:
+  - search
+  - mkdocs-typer2:
+      pretty: true
+theme:
+    name: material
+    features:
+      - navigation.sections
+
+nav:
+  - Introduction: index.md
+  - CLI Reference: reference/root.md
