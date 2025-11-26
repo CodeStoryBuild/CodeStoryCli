@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 """
-Build script to create executable folder for dslate CLI tool.
+Build script to create executable for dslate CLI tool.
+Usage:
+    python build_exe.py --mode folder
+    python build_exe.py --mode file
 """
 
+import argparse
 import importlib.util
 import platform
 import subprocess
 import sys
-import shutil
 from pathlib import Path
 
 def main():
-    # Create build directory if it doesn't exist
-    build_dir = Path("build")
-    dist_dir = Path("dist")
-
-    for directory in [build_dir, dist_dir]:
-        if not directory.exists():
-            directory.mkdir()
+    parser = argparse.ArgumentParser(description="Build dslate executable")
+    parser.add_argument("--mode", choices=["file", "folder"], required=True, 
+                        help="Build single file or directory")
+    args = parser.parse_args()
 
     # Install PyInstaller if not already installed
     if not importlib.util.find_spec("PyInstaller"):
@@ -26,37 +26,46 @@ def main():
 
     # Get the system platform
     system = platform.system().lower()
-
+    
+    # Define output directories
+    # dist/file  -> contains the single executable
+    # dist/folder -> contains the folder structure
+    dist_path = Path("dist") / args.mode
+    
     # Set up PyInstaller command
     cmd = [
         "pyinstaller",
-        "--onedir",  # one dir instead of one file
-        "--name",
-        "dslate",
+        "--name", "dslate",
         "--clean",
         "--noconfirm",
+        "--distpath", str(dist_path), # Explicitly set output path
         "--collect-all", "readchar",
         "--collect-all", "dslate",
         "--additional-hooks-dir=custom_hooks",
         "dslate/dslate/cli.py",
     ]
 
-    print(f"Building executable folder for {system}...")
+    if args.mode == "folder":
+        cmd.insert(1, "--onedir")
+        print(f"Building Directory mode for {system}...")
+    else:
+        cmd.insert(1, "--onefile")
+        print(f"Building OneFile mode for {system}...")
+
     subprocess.check_call(cmd)
 
-    # Output location
-    output_dir = dist_dir / "dslate"
-    
     # Validation check
-    if system == "windows":
-        exe_path = output_dir / "dslate.exe"
+    if args.mode == "folder":
+        # Folder mode: dist/folder/dslate/[exe]
+        check_path = dist_path / "dslate" / ("dslate.exe" if system == "windows" else "dslate")
     else:
-        exe_path = output_dir / "dslate"
+        # File mode: dist/file/[exe]
+        check_path = dist_path / ("dslate.exe" if system == "windows" else "dslate")
 
-    if exe_path.exists():
-        print(f"Build successful! Artifacts located in: {output_dir}")
+    if check_path.exists():
+        print(f"Build successful! Artifact located at: {check_path}")
     else:
-        print("Build failed: Executable not found.")
+        print(f"Build failed: Executable not found at {check_path}")
         sys.exit(1)
 
 if __name__ == "__main__":
