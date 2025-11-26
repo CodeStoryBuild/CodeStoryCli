@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 import typer
@@ -6,7 +7,7 @@ from loguru import logger
 from platformdirs import user_config_dir
 from rich.traceback import install
 
-from dslate.commands import clean, commit, fix
+from dslate.commands import clean, commit, config, fix
 from dslate.context import GlobalConfig, GlobalContext
 from dslate.core.config.config_loader import ConfigLoader
 from dslate.core.exceptions import GitError, ValidationError, dslateError
@@ -28,6 +29,7 @@ app = typer.Typer(
 app.command(name="commit")(commit.main)
 app.command(name="fix")(fix.main)
 app.command(name="clean")(clean.main)
+app.command(name="config")(config.main)
 
 
 def setup_config_args(**kwargs):
