@@ -156,13 +156,15 @@ class GitSynthesizer:
         last_synthetic_commit_hash = original_base_commit_hash
         cumulative_chunks: list[DiffChunk] = []
 
-        logger.info(
+        logger.debug(
             "Execute plan (Index-Only): groups={groups} base={base}",
             groups=len(groups),
             base=original_base_commit_hash,
         )
 
-        for group in groups:
+        total = len(groups)
+
+        for i, group in enumerate(groups):
             try:
                 # 1. Accumulate chunks (Cumulative Strategy)
                 # We rebuild from the ORIGINAL base every time using ALL previous chunks + new chunks.
@@ -192,7 +194,7 @@ class GitSynthesizer:
                 )
 
                 logger.info(
-                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message}"
+                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i+1}/{total}"
                 )
 
                 # 4. Update parent for next loop

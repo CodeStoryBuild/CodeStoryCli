@@ -57,7 +57,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
     if commands.need_reset():
         if auto_yes:
             unstage = True
-            logger.info(
+            logger.debug(
                 "[yellow]Auto-confirm:[/yellow] Unstaging all changes to proceed."
             )
         else:
@@ -75,7 +75,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
             return False
 
     if commands.need_track_untracked(target):
-        logger.info(
+        logger.debug(
             f'Untracked files detected within "{target}", temporarily staging changes',
         )
 
@@ -153,7 +153,7 @@ def main(
             ["update-ref", f"refs/heads/{current_branch}", new_commit_hash]
         )
 
-        logger.info(
+        logger.debug(
             "Branch updated: branch={branch} new_head={head}",
             branch=current_branch,
             head=new_commit_hash,

@@ -51,28 +51,21 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         raise DetachedHeadError("Detached HEAD is not supported for dslate fix")
 
     # Verify commit exists and is on current branch history
-    resolved = (
-        git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]).strip()
-        or ""
-    )
+    resolved = (git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]) or "").strip()
     if not resolved:
         raise GitError(f"Commit not found: {fix_context.commit_hash}")
 
-    if (
-        git_interface.run_git_text(
+    is_ancestor = git_interface.run_git_text(
             ["merge-base", "--is-ancestor", resolved, head_hash]
-        ).returncode
-        != 0
-    ):
+    )
+    if is_ancestor is None or is_ancestor.returncode != 0:
         raise GitError(f"The commit must be an ancestor of HEAD (linear history only).")
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
-    parent = git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
+    parent = (git_interface.run_git_text_out(["rev-parse", f"{resolved}^"]) or "").strip()
 
     if not parent:
         raise GitError("Fixing the root commit is not supported yet!")
-
-    parent = parent.strip()
 
     return parent, resolved, current_branch
 
@@ -101,7 +94,7 @@ def main(
 
     fix_context = FixContext(validated_hash)
 
-    logger.info("Fix command started", fix_context=fix_context)
+    logger.debug("Fix command started", fix_context=fix_context)
 
     base_hash, new_hash, base_branch = get_info(
         global_context.git_interface, fix_context
@@ -123,7 +116,7 @@ def main(
         final_head = final_head.strip()
 
         # Update the branch reference and sync the working directory
-        logger.info(
+        logger.debug(
             "Finalizing update: {branch} -> {head}",
             branch=base_branch,
             head=final_head,

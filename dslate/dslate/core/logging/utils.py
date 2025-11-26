@@ -44,7 +44,7 @@ def time_block(block_name: str):
         end_time = perf_counter()
         duration_ms = int((end_time - start_time) * 1000)
 
-        logger.info(
+        logger.debug(
             f"Finished {block_name}. Timing(ms)={duration_ms}",
         )
 
@@ -61,7 +61,7 @@ def log_chunks(
     for immut_chunk in immut_chunks:
         unique_files.add(immut_chunk.canonical_path)
 
-    logger.info(
+    logger.debug(
         "{process_step}: chunks={count} files={files}",
         process_step=process_step,
         count=len(chunks) + len(immut_chunks),

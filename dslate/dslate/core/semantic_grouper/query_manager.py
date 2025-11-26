@@ -146,7 +146,7 @@ class QueryManager:
                 "comment_queries": comment_count,
                 "share_tokens_between_files": cfg.share_tokens_between_files,
             }
-        logger.info(
+        logger.debug(
             "Language config loaded: languages={n} details={details}",
             n=len(self._language_configs),
             details=lang_summaries,

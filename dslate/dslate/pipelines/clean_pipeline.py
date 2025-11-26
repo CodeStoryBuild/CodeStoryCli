@@ -60,7 +60,7 @@ class CleanPipeline:
 
         total = len(commits)
 
-        logger.info("Starting dslate clean operation on {total} commits", total=total)
+        logger.debug("Starting dslate clean operation on {total} commits", total=total)
 
         fixed = 0
         skipped = 0

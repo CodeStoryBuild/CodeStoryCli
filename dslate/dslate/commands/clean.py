@@ -103,7 +103,7 @@ def main(
         skip_merge=skip_merge,
     )
 
-    logger.info(
+    logger.debug(
         "Clean command started",
         ignore_patterns=validated_ignore,
         min_size=validated_min_size,

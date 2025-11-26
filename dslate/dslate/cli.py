@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from platformdirs import user_config_dir
 from rich.traceback import install
+from rich import print as rprint
 
 from dslate.commands import clean, commit, config, fix
 from dslate.context import GlobalConfig, GlobalContext
@@ -165,29 +166,25 @@ def run_app():
         # launch cli
         app(prog_name="dslate")
 
-    except ValidationError as e:
-        logger.error(f"[red]Validation Error:[/red] {e.message}")
-        if e.details:
-            logger.error(f"[dim]Details: {e.details}[/dim]")
-        raise typer.Exit(1) from e
+    # except ValidationError as e:
+    #     logger.error(f"[red]Validation Error:[/red] {e.message}")
+    #     if e.details:
+    #         logger.error(f"[dim]Details: {e.details}[/dim]")
+    #     raise typer.Exit(1)
 
-    except GitError as e:
-        logger.error(f"[red]Git Error:[/red] {e.message}")
-        if e.details:
-            logger.error(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Git operation failed: {e.message}")
-        raise typer.Exit(1) from e
+    # except GitError as e:
+    #     logger.error(f"[red]Git Error:[/red] {e.message}")
+    #     if e.details:
+    #         logger.error(f"[dim]Details: {e.details}[/dim]")
+    #     logger.error(f"Git operation failed: {e.message}")
+    #     raise typer.Exit(1)
 
     except dslateError as e:
-        logger.error(f"[red]Error:[/red] {e.message}")
-        if e.details:
-            logger.error(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"dslate operation failed: {e.message}")
-        raise typer.Exit(1) from e
+        logger.error(e)
 
     except KeyboardInterrupt:
         logger.info("\n[yellow]Operation cancelled by user[/yellow]")
-        raise typer.Exit(130) from None
+        raise typer.Exit(130)
 
 
 if __name__ == "__main__":
