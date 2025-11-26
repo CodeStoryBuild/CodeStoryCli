@@ -1,0 +1,77 @@
+DSLATE — Dual License Agreement
+Copyright (c) 2025 Adem Can
+All Rights Reserved.
+
+This software, "dslate", is offered under a dual licensing model. You may use this software under the terms of EITHER:
+
+    (1) The Affero General Public License (AGPL) Version 3, OR
+    (2) A Commercial License granted by the copyright holder, Adem Can.
+
+You must choose ONE license to operate under.
+
+-------------------------------------------------------------------
+1. Open Source License Option (AGPLv3)
+-------------------------------------------------------------------
+
+If you choose to use dslate under the terms of the AGPLv3, the following applies:
+
+1.1 License Terms  
+The complete license terms of the GNU Affero General Public License Version 3 (AGPLv3) are included in the file:
+    LICENSE-AGPL.txt  
+or may be found at:
+    https://www.gnu.org/licenses/agpl-3.0.html
+
+1.2 Summary of Obligations (Non-Binding Summary)
+
+This summary is provided for convenience and does not replace the full AGPLv3 license text.
+
+Under AGPLv3, if you:
+    - Distribute this software,
+    - Modify this software,
+    - Make this software available for use over a network (including SaaS),
+then you MUST provide the complete corresponding source code of your version to the users who interact with it.
+
+If you do NOT wish to release your source code or network modifications, do NOT use the AGPL license.  
+Use the Commercial License instead.
+
+-------------------------------------------------------------------
+2. Commercial License Option
+-------------------------------------------------------------------
+
+If your use of dslate is ANY of the following, you MUST obtain a commercial license:
+
+    - Use in a company, organization, enterprise, or government.
+    - Use in any product, service, or workflow that generates revenue.
+    - Use to develop, test, deploy, or operate any proprietary or closed-source software.
+    - Use where you do NOT wish to release your own source code, including server-side or SaaS use.
+
+2.1 Obtaining a Commercial License  
+To purchase a commercial license, contact:
+
+    Adem Can  
+    Email: ademfcan@gmail.com
+
+The commercial license overrides the AGPLv3 terms and grants rights for proprietary use, closed-source development, internal enterprise use, SaaS deployment, and other non-AGPL-compliant use cases.
+
+2.2 Unlicensed Commercial Use  
+Any commercial usage of dslate without a valid Commercial License is strictly prohibited and constitutes copyright infringement.  
+The Licensor reserves the right to pursue legal remedies for unauthorized use.
+
+-------------------------------------------------------------------
+3. General Terms (Applicable to All Licensees)
+-------------------------------------------------------------------
+
+3.1 Ownership  
+dslate is the exclusive property of Adem Can.  
+All rights not expressly granted under the AGPLv3 or Commercial License are reserved.
+
+3.2 No Warranty  
+dslate is provided “AS IS”, without any warranty of any kind, express or implied.  
+The Licensor is not liable for any damages arising out of the use or inability to use the software.
+
+3.3 Governing Law  
+This license agreement is governed by the laws of the United States, without regard to conflict-of-law provisions.
+
+-------------------------------------------------------------------
+
+By installing, running, modifying, or using dslate, you acknowledge that you have read this document and agree to abide by the terms of EITHER the AGPLv3 or the Commercial License.
