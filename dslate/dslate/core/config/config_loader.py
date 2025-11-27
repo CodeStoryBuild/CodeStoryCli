@@ -22,7 +22,7 @@
 
 import os
 from pathlib import Path
-import tomli
+import tomllib
 from loguru import logger
 from pydantic import BaseModel, TypeAdapter
 
@@ -84,8 +84,8 @@ class ConfigLoader:
         data = {}
         try:
             with open(path, "rb") as f:
-                data = tomli.load(f)
-        except tomli.TOMLDecodeError as e:
+                data = tomllib.load(f)
+        except tomllib.TOMLDecodeError as e:
             logger.warning(f"Failed to load {path}: {e}")
 
         return data

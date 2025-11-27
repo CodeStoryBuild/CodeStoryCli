@@ -29,7 +29,6 @@ dependencies = [
   "tree-sitter-language-pack>=0.1.0",
   "pygments>=2.14.0",
   "platformdirs>=4.5.0",
-  "tomli>=2.0.1"
 ]
 
 [project.scripts]
