@@ -81,7 +81,7 @@ def main(
     ),
     commit_hash: str = typer.Argument(..., help="Hash of the commit to split or fix"),
 ) -> None:
-    """Fix a past commit by splitting into smaller logical commits safely.
+    """Fix a past commit by splitting into smaller logical commits safely, then updating the history with the new commits
 
     Examples:
         # Fix a specific commit
@@ -104,7 +104,7 @@ def main(
         target=None, message=None
     )  # TODO add custom fix message
     commit_pipeline = create_commit_pipeline(
-        global_context, commit_context, base_hash, new_hash
+        global_context, commit_context, base_hash, new_hash, "fix"
     )
 
     # Execute expansion

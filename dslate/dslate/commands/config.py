@@ -21,6 +21,7 @@
 
 
 from pathlib import Path
+from typing import Literal
 from rich import print
 import tomllib
 import typer
@@ -208,7 +209,12 @@ def _get_config(key: str | None, scope: str | None) -> None:
                 pass
 
     if not sources:
-        print("[yellow]No configuration found[/yellow]")
+        scope_m = f"in scope:{scope if scope else "all"}"
+        if key:
+            print(f"[yellow]No configuration found for key:{key} {scope_m}[/yellow]")
+        else:
+            print(f"[yellow]No configuration file found {scope_m}[/yellow]")
+
         return
 
     # If a specific key is requested
@@ -279,7 +285,7 @@ def _get_config(key: str | None, scope: str | None) -> None:
                 # Show default value if not set
                 default_value = schema[k]["default"]
                 default_str = (
-                    str(default_value) if default_value is not None else "No-Default"
+                    str(default_value) if default_value is not None else "[dim]No-Default[/dim]"
                 )
                 default_str = _truncate_text(default_str, 40)
                 table.add_row(k, description_short, default_str, "[dim](not set)[/dim]")
@@ -300,19 +306,16 @@ def main(
     value: str | None = typer.Argument(
         None, help="Value to set (omit to get current value)."
     ),
-    global_scope: bool = typer.Option(
-        False,
-        "--global",
-        help="Use global configuration (user-wide).",
-    ),
-    env_scope: bool = typer.Option(
-        False,
-        "--env",
-        help="Use environment variable configuration.",
+    scope: Literal["local", "global", "env"] = typer.Option(
+        None,
+        "--scope",
+        help="Select which scope to modify, defaults to  local",
     ),
 ) -> None:
     """
-    Manage dslate configuration. Priority order: program arguments > custom config > local config > environment variables > global config
+    Manage global and local dslate configurations. 
+    
+    Priority order: program arguments > custom config > local config > environment variables > global config
 
     Examples:
 
@@ -326,26 +329,18 @@ def main(
 
         # Set a global configuration value
 
-        dslate config model "openai:gpt-4" --global
+        dslate config model "openai:gpt-4" --scope global
 
         # Get environment variable api_key
 
-        dslate config api_key --env
+        dslate config api_key --scope env
 
         # Show all configuration
 
         dslate config
     """
-    # Determine scope
-    if global_scope and env_scope:
-        print("[red]Error:[/red] Cannot specify both --global and --env")
-        raise typer.Exit(1)
-
-    if global_scope:
-        scope = "global"
-    elif env_scope:
-        scope = "env"
-    else:
+    explicit_set = scope is not None
+    if scope is None:
         scope = "local"
 
     # Determine operation
@@ -358,5 +353,4 @@ def main(
     else:
         # Get operation
         # If no scope flags are provided, show from all scopes
-        get_scope = scope if (global_scope or env_scope) else None
-        _get_config(key, get_scope)
+        _get_config(key, None if not explicit_set else scope)

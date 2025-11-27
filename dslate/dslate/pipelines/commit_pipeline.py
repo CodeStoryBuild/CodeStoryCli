@@ -41,6 +41,7 @@
 
 
 import contextlib
+from typing import Literal
 
 
 import inquirer
@@ -200,6 +201,7 @@ class CommitPipeline:
         base_commit_hash: str,
 
         new_commit_hash: str,
+        source: Literal["commit", "fix"]
 
     ):
 
@@ -232,6 +234,8 @@ class CommitPipeline:
         self.base_commit_hash = base_commit_hash
 
         self.new_commit_hash = new_commit_hash
+
+        self.source = source
 
 
     def run(self) -> str:
@@ -280,10 +284,12 @@ class CommitPipeline:
 
         if not (raw_chunks or immutable_chunks):
 
-            logger.info("No changes to process")
+            logger.info("No changes to process.")
+
+            if self.source == "commit":
+                logger.info("[yellow]If you meant to modify existing git history, please use dslate fix or dslate clean commands[/yellow]")
 
             return self.new_commit_hash
-
 
         # start tracking progress
 
@@ -616,6 +622,8 @@ class CommitPipeline:
 
         )
 
-
+        if new_commit_hash is None:
+            logger.error("Failed to get a new_commit_hash from commit_pipeline, fallback to existing commit_hash")
+        
         return new_commit_hash or self.new_commit_hash  # fallback to the current commit
 

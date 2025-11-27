@@ -32,12 +32,13 @@ from rich import print as rprint
 from dslate.commands import clean, commit, config, fix
 from dslate.context import GlobalConfig, GlobalContext
 from dslate.core.config.config_loader import ConfigLoader
-from dslate.core.exceptions import GitError, ValidationError, dslateError
+from dslate.core.exceptions import dslateError
 from dslate.core.logging.logging import setup_logger
 from dslate.runtimeutil import (
     ensure_utf8_output,
     setup_signal_handlers,
     version_callback,
+    get_log_dir_callback
 )
 
 # create app
@@ -104,6 +105,13 @@ def main(
         callback=version_callback,
         help="Show version and exit",
     ),
+    log_path: bool = typer.Option(
+        False,
+        "--log-dir",
+        "-LD",
+        callback=get_log_dir_callback,
+        help="Show log path (where logs for dslate live) and exit",
+    ),
     repo_path: str = typer.Option(
         ".",
         "--repo",
@@ -122,7 +130,7 @@ def main(
     api_key: str | None = typer.Option(
         None, "--api-key", help="API key for the model provider"
     ),
-    model_temperature: float | None = typer.Option(
+    temperature: float | None = typer.Option(
         None,
         "--temperature",
         help="Sampling temperature for the AI model (0.0 to 1.0).",
@@ -156,7 +164,7 @@ def main(
     config_args = setup_config_args(
         model=model,
         api_key=api_key,
-        model_temperature=model_temperature,
+        temperature=temperature,
         verbose=verbose,
         auto_accept=auto_accept,
     )

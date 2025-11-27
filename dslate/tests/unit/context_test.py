@@ -41,7 +41,7 @@ def test_global_config_defaults():
     config = GlobalConfig()
     assert config.model is None
     assert config.api_key is None
-    assert config.model_temperature == 0.7
+    assert config.temperature == 0.7
     assert config.aggresiveness == "Regular"
     assert config.verbose is False
     assert config.auto_accept is False
@@ -52,14 +52,14 @@ def test_global_config_custom_values():
     config = GlobalConfig(
         model="openai:gpt-4",
         api_key="sk-test",
-        model_temperature=0.5,
+        temperature=0.5,
         aggresiveness="Extra",
         verbose=True,
         auto_accept=True,
     )
     assert config.model == "openai:gpt-4"
     assert config.api_key == "sk-test"
-    assert config.model_temperature == 0.5
+    assert config.temperature == 0.5
     assert config.aggresiveness == "Extra"
     assert config.verbose is True
     assert config.auto_accept is True
@@ -98,7 +98,7 @@ def test_global_context_from_config_defaults(
     assert context.git_interface == mock_interface_instance
     assert context.git_commands == mock_commands_instance
     assert context.verbose is False
-    assert context.model_temperature == 0.7
+    assert context.temperature == 0.7
     assert context.aggresiveness == "Regular"
     assert context.auto_accept is False
 
@@ -123,7 +123,7 @@ def test_global_context_from_config_custom(
     config = GlobalConfig(
         model="claude-3",
         api_key="sk-ant",
-        model_temperature=0.2,
+        temperature=0.2,
         aggresiveness="Conservative",
         verbose=True,
         auto_accept=True,
@@ -134,7 +134,7 @@ def test_global_context_from_config_custom(
     # Verify
     assert context.model == mock_model
     assert context.verbose is True
-    assert context.model_temperature == 0.2
+    assert context.temperature == 0.2
     assert context.aggresiveness == "Conservative"
     assert context.auto_accept is True
 

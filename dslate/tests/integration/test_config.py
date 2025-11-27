@@ -65,7 +65,7 @@ class TestConfigCommand:
 
     def test_config_set_local_no_gitignore(self, cli_exe, temp_dir):
         """Test setting local config when .gitignore doesn't exist."""
-        result = run_cli(cli_exe, ["config", "model_temperature", "0.8"], cwd=temp_dir)
+        result = run_cli(cli_exe, ["config", "temperature", "0.8"], cwd=temp_dir)
         assert result.returncode == 0
 
         # Verify config file was created
@@ -78,10 +78,10 @@ class TestConfigCommand:
     def test_config_set_global(self, cli_exe, temp_dir):
         """Test setting a global configuration value."""
         result = run_cli(
-            cli_exe, ["config", "model_temperature", "0.8", "--global"], cwd=temp_dir
+            cli_exe, ["config", "temperature", "0.8", "--global"], cwd=temp_dir
         )
         assert result.returncode == 0
-        assert "set model_temperature = 0.8 (global)" in result.stdout.lower()
+        assert "set temperature = 0.8 (global)" in result.stdout.lower()
         assert "config file: " in result.stdout.lower()
 
     def test_config_set_env(self, cli_exe, temp_dir):
@@ -110,13 +110,13 @@ class TestConfigCommand:
         """Test getting all configuration values."""
         # Set multiple values
         run_cli(cli_exe, ["config", "model", "test-model"], cwd=temp_dir)
-        run_cli(cli_exe, ["config", "model_temperature", "0.5"], cwd=temp_dir)
+        run_cli(cli_exe, ["config", "temperature", "0.5"], cwd=temp_dir)
 
         # Get all
         result = run_cli(cli_exe, ["config"], cwd=temp_dir)
         assert result.returncode == 0
         assert "model" in result.stdout
-        assert "model_temperature" in result.stdout
+        assert "temperature" in result.stdout
 
     def test_config_update_existing(self, cli_exe, temp_dir):
         """Test updating an existing configuration value."""
@@ -136,14 +136,14 @@ class TestConfigCommand:
     def test_config_multiple_values(self, cli_exe, temp_dir):
         """Test setting multiple configuration values."""
         run_cli(cli_exe, ["config", "model", "test-model"], cwd=temp_dir)
-        run_cli(cli_exe, ["config", "model_temperature", "0.7"], cwd=temp_dir)
+        run_cli(cli_exe, ["config", "temperature", "0.7"], cwd=temp_dir)
         run_cli(cli_exe, ["config", "verbose", "true"], cwd=temp_dir)
 
         config_file = temp_dir / "dslateconfig.toml"
         content = config_file.read_text()
 
         assert "model" in content
-        assert "model_temperature" in content
+        assert "temperature" in content
         assert "verbose" in content
 
     def test_config_gitignore_already_has_entry(self, cli_exe, temp_dir):
@@ -179,7 +179,7 @@ class TestConfigCommand:
         """Test that setting a value preserves other existing values."""
         # Set multiple values
         run_cli(cli_exe, ["config", "model", "model1"], cwd=temp_dir)
-        run_cli(cli_exe, ["config", "model_temperature", "0.5"], cwd=temp_dir)
+        run_cli(cli_exe, ["config", "temperature", "0.5"], cwd=temp_dir)
 
         # Update one value
         run_cli(cli_exe, ["config", "model", "model2"], cwd=temp_dir)
@@ -188,4 +188,4 @@ class TestConfigCommand:
         config_file = temp_dir / "dslateconfig.toml"
         content = config_file.read_text()
         assert "model2" in content
-        assert "0.5" in content and "model_temperature" in content
+        assert "0.5" in content and "temperature" in content
