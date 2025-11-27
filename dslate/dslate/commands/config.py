@@ -23,7 +23,7 @@
 from pathlib import Path
 from typing import Literal
 from rich import print
-import tomllib
+import tomli
 import typer
 from loguru import logger
 from platformdirs import user_config_dir
@@ -144,8 +144,8 @@ def _set_config(key: str, value: str, scope: str) -> None:
     if config_path.exists():
         try:
             with open(config_path, "rb") as f:
-                config_data = tomllib.load(f)
-        except tomllib.TOMLDecodeError as e:
+                config_data = tomli.load(f)
+        except tomli.TOMLDecodeError as e:
             print(f"Failed to parse existing config: {e}. Creating new config.")
 
     # Update the value
@@ -181,9 +181,9 @@ def _get_config(key: str | None, scope: str | None) -> None:
         if local_path.exists():
             try:
                 with open(local_path, "rb") as f:
-                    local_config = tomllib.load(f)
+                    local_config = tomli.load(f)
                     sources.append(("Local", local_path, local_config))
-            except tomllib.TOMLDecodeError:
+            except tomli.TOMLDecodeError:
                 pass
 
     if scope is None or scope == "env":
@@ -203,13 +203,13 @@ def _get_config(key: str | None, scope: str | None) -> None:
         if global_path.exists():
             try:
                 with open(global_path, "rb") as f:
-                    global_config = tomllib.load(f)
+                    global_config = tomli.load(f)
                     sources.append(("Global", global_path, global_config))
-            except tomllib.TOMLDecodeError:
+            except tomli.TOMLDecodeError:
                 pass
 
     if not sources:
-        scope_m = f"in scope:{scope if scope else "all"}"
+        scope_m = f"in scope:{scope if scope else 'all'}"
         if key:
             print(f"[yellow]No configuration found for key:{key} {scope_m}[/yellow]")
         else:

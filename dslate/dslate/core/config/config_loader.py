@@ -22,8 +22,7 @@
 
 import os
 from pathlib import Path
-
-import tomllib
+import tomli
 from loguru import logger
 from pydantic import BaseModel, TypeAdapter
 
@@ -82,10 +81,11 @@ class ConfigLoader:
             logger.debug(f"{path} does not exist")
             return {}
 
+        data = {}
         try:
             with open(path, "rb") as f:
-                data = tomllib.load(f)
-        except tomllib.TOMLDecodeError as e:
+                data = tomli.load(f)
+        except tomli.TOMLDecodeError as e:
             logger.warning(f"Failed to load {path}: {e}")
 
         return data
