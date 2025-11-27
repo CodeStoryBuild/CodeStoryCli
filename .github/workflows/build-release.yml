@@ -39,16 +39,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller pytest
+          # We install build and pyoxidizer here so the script finds them immediately
+          pip install pyoxidizer build pytest
           pip install -e .
 
-      # --- BUILD STEPS ---
+      # --- BUILD STEP (Single Source of Truth) ---
       
-      - name: Build Folder Mode (For Installer)
-        run: python build_exe.py --mode folder
-
-      - name: Build OneFile Mode (For Standalone)
-        run: python build_exe.py --mode file
+      - name: Build Executable (PyOxidizer)
+        run: python build_exe_opt.py
 
       # --- TEST STEPS ---
 
@@ -56,35 +54,22 @@ jobs:
         shell: bash
         run: echo "model = 'no-model'"> dslateconfig.toml
 
-      - name: Test Folder Build
+      - name: Test Built Executable
         shell: bash
         run: |
-          echo ">>> Testing Folder Build"
-          if [ "${{ matrix.platform }}" == "windows" ]; then
-            EXE_PATH="dist/folder/dslate/${{ matrix.exe_name }}"
-          else
-            EXE_PATH="dist/folder/dslate/${{ matrix.exe_name }}"
-            chmod +x "$EXE_PATH"
-          fi
-          
-          export CLI_ARTIFACT_PATH="$EXE_PATH"
-          pytest -vv dslate/tests/integration
-
-      - name: Test OneFile Build
-        shell: bash
-        run: |
-          echo ">>> Testing OneFile Build"
+          echo ">>> Testing Single File Build"
           if [ "${{ matrix.platform }}" == "windows" ]; then
             EXE_PATH="dist/file/${{ matrix.exe_name }}"
           else
             EXE_PATH="dist/file/${{ matrix.exe_name }}"
-            chmod +x "$EXE_PATH"
           fi
           
+          echo "Target Exe: $EXE_PATH"
+          # Set the env var for tests to use this specific binary
           export CLI_ARTIFACT_PATH="$EXE_PATH"
           pytest -vv dslate/tests/integration
 
-      # --- PACKAGING STEPS (Installers use Folder build) ---
+      # --- PACKAGING STEPS (Installers use the Single File build) ---
 
       # 1. WINDOWS: Inno Setup
       - name: Install Inno Setup
@@ -98,6 +83,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
+          # Source points to the single exe file; DestDir puts it directly in {app}
           $issContent = @"
           [Setup]
           AppName=dslate
@@ -112,8 +98,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          ; Note: Using dist\folder path here
-          Source: "dist\folder\dslate\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          Source: "dist\file\dslate.exe"; DestDir: "{app}"; Flags: ignoreversion
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -148,13 +133,12 @@ jobs:
           VERSION=$(echo "$VERSION" | sed -E 's/^(v|release[-/]?)//')
           if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then VERSION="0.0.1"; fi
           
-          mkdir -p dist/package/usr/lib/dslate
           mkdir -p dist/package/usr/bin
           mkdir -p dist/installers
           
-          # Note: Using dist/folder path here
-          cp -r dist/folder/dslate/* dist/package/usr/lib/dslate/
-          ln -s /usr/lib/dslate/dslate dist/package/usr/bin/dslate
+          # Copy binary directly to /usr/bin
+          cp dist/file/dslate dist/package/usr/bin/dslate
+          chmod +x dist/package/usr/bin/dslate
           
           mkdir -p dist/package/DEBIAN
           cat > dist/package/DEBIAN/control <<EOF
@@ -179,28 +163,32 @@ jobs:
           
           mkdir -p dist/installers
           
-          # Note: Using dist/folder path here
-          pkgbuild --root dist/folder/dslate \
+          # Prepare a root folder for pkgbuild
+          mkdir -p dist/pkg_root/usr/local/bin
+          cp dist/file/dslate dist/pkg_root/usr/local/bin/
+          
+          # Generate PKG from the root folder
+          pkgbuild --root dist/pkg_root \
                    --identifier com.dslate.cli \
                    --version "$VERSION" \
-                   --install-location /usr/local/bin \
+                   --install-location / \
                    dist/installers/dslate-macos-installer.pkg
 
       # --- PREPARE ARTIFACTS ---
 
-      - name: Rename Standalone Executable
+      - name: Prepare Standalone & Installers
         shell: bash
         run: |
-          # Rename the onefile exe to be descriptive (e.g., dslate-windows-standalone.exe)
           mkdir -p dist/ready_for_upload
           
+          # Copy the standalone executable with a clear name
           if [ "${{ matrix.platform }}" == "windows" ]; then
             cp dist/file/dslate.exe dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone.exe
           else
             cp dist/file/dslate dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone
           fi
           
-          # Copy installers to same upload folder
+          # Copy installers
           cp dist/installers/* dist/ready_for_upload/
 
       - name: Upload Artifacts
