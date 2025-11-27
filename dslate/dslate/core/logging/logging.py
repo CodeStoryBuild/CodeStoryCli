@@ -99,7 +99,7 @@ class StructuredLogger:
         return self.logfile
 
 
-def setup_logger(command_name: str, debug: bool = False) -> Path:
+def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -> Path:
     """
     Set up enhanced logging for a command.
 
@@ -115,6 +115,9 @@ def setup_logger(command_name: str, debug: bool = False) -> Path:
     if debug:
         os.environ["DSLATE_LOG_LEVEL"] = "DEBUG"
         os.environ["DSLATE_CONSOLE_LOG_LEVEL"] = "DEBUG"
+    elif silent:
+        os.environ["DSLATE_LOG_LEVEL"] = "ERROR"
+        os.environ["DSLATE_CONSOLE_LOG_LEVEL"] = "ERROR"
 
     structured_logger = StructuredLogger(command_name)
     return structured_logger.get_logfile()

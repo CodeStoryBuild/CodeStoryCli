@@ -87,21 +87,18 @@ from ..core.synthesizer.utils import get_patches
 
 
 @contextlib.contextmanager
-
-def progress_bar(p: Progress, step_name: str):
-
-    ck = p.add_task(step_name, total=1)
-
+def progress_bar(p: Progress | None, step_name: str):
+    if p:
+        ck = p.add_task(step_name, total=1)
 
     try:
-
         yield
 
     finally:
+        if p:
+            p.advance(ck, 1)
 
-        p.advance(ck, 1)
-
-def print_patch_cleanly(patch_content: str):
+def print_patch_cleanly(patch_content: str, max_length: int = 120):
 
     """
 
@@ -136,7 +133,7 @@ def print_patch_cleanly(patch_content: str):
 
     # Iterate through the patch content line by line
 
-    for line in patch_content.splitlines():
+    for line in patch_content.splitlines()[:max_length]:
 
         style_key = None
 
@@ -166,7 +163,10 @@ def print_patch_cleanly(patch_content: str):
 
         # Create a Rich Text object and print it
 
-        logger.info(Text(line, style=styles[style_key]))
+        rprint(Text(line, style=styles[style_key]))
+
+    if len(patch_content.splitlines()) > max_length:
+        rprint("[yellow](Diff truncated)[/yellow]\n")
 
 
 
@@ -292,94 +292,95 @@ class CommitPipeline:
             return None
 
         # start tracking progress
+        p = Progress() if not self.global_context.silent else None
 
-        with Progress() as p:
+    
+        # init context_manager
 
-            # init context_manager
+        if raw_chunks:
 
-            if raw_chunks:
+            flat_chunks = [
 
-                flat_chunks = [
+                diff_chunk
 
-                    diff_chunk
+                for chunk in raw_chunks
 
-                    for chunk in raw_chunks
+                for diff_chunk in chunk.get_chunks()
 
-                    for diff_chunk in chunk.get_chunks()
+            ]
 
-                ]
+            context_manager = ContextManager(
 
-                context_manager = ContextManager(
+                self.file_parser,
 
-                    self.file_parser,
+                self.file_reader,
 
-                    self.file_reader,
+                self.query_manager,
 
-                    self.query_manager,
+                flat_chunks,
 
-                    flat_chunks,
-
-                )
-
-
-                # create smallest mechanically valid chunks
-
-                with (
-
-                    progress_bar(p, "Creating Mechanical Chunks"),
-
-                    time_block("mechanical_chunking"),
-
-                ):
-
-                    mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
-
-                        raw_chunks, context_manager
-
-                    )
+            )
 
 
-                log_chunks(
+            # create smallest mechanically valid chunks
 
-                    "mechanical_chunks (without immutable groups)",
+            with (
 
-                    mechanical_chunks,
+                progress_bar(p, "Creating Mechanical Chunks"),
 
-                    [],
+                time_block("mechanical_chunking"),
+
+            ):
+
+                mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
+
+                    raw_chunks, context_manager
 
                 )
 
 
-                with (
+            log_chunks(
 
-                    progress_bar(p, "Creating Semantic Groups"),
+                "mechanical_chunks (without immutable groups)",
 
-                    time_block("semantic_grouping"),
+                mechanical_chunks,
 
-                ):
+                [],
 
-                    semantic_chunks = self.semantic_grouper.group_chunks(
-
-                        mechanical_chunks, context_manager
-
-                    )
+            )
 
 
-                log_chunks(
+            with (
 
-                    "Semantic Chunks (without immutable groups)",
+                progress_bar(p, "Creating Semantic Groups"),
 
-                    semantic_chunks,
+                time_block("semantic_grouping"),
 
-                    [],
+            ):
+
+                semantic_chunks = self.semantic_grouper.group_chunks(
+
+                    mechanical_chunks, context_manager
 
                 )
 
-            else:
 
-                semantic_chunks = []
+            log_chunks(
+
+                "Semantic Chunks (without immutable groups)",
+
+                semantic_chunks,
+
+                [],
+
+            )
+
+        else:
+
+            semantic_chunks = []
 
 
+        if p:
             ai_grp = p.add_task("Using AI to create meaningfull commits....", total=1)
 
 
@@ -388,23 +389,28 @@ class CommitPipeline:
                 # percent is 0-100, progress bar expects 0-1
 
                 p.update(ai_grp, completed=percent / 100)
+        else:
+            on_progress = None
 
 
-            # take these semantically valid chunks, and now group them into logical commits
+        # take these semantically valid chunks, and now group them into logical commits
 
-            with time_block("logical_grouping"):
+        with time_block("logical_grouping"):
 
-                ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
+            ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
 
-                    semantic_chunks,
+                semantic_chunks,
 
-                    immutable_chunks,
+                immutable_chunks,
 
-                    self.commit_context.message,
+                self.commit_context.message,
 
-                    on_progress=on_progress,
+                on_progress=on_progress,
 
-                )
+            )
+
+        if p:
+            p.stop()
 
 
         if not ai_groups:
@@ -529,11 +535,12 @@ class CommitPipeline:
 
             diff_text = patch_map.get(idx, "") or "(no diff)"
 
-            logger.debug("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
-            if diff_text != "(no diff)":
-                print_patch_cleanly(diff_text)
-            else:
-                rprint("[yellow](no diff)[/yellow]")
+            if not (self.global_context.silent and self.global_context.auto_accept):
+                rprint(f"Diff for #{num}:")
+                if diff_text != "(no diff)":
+                    print_patch_cleanly(diff_text, max_length=120)
+                else:
+                    rprint("[yellow](no diff)[/yellow]")
 
             logger.debug(
 
@@ -622,8 +629,5 @@ class CommitPipeline:
 
         )
 
-        if new_commit_hash is None:
-            logger.error("Failed to get a new_commit_hash from commit_pipeline, fallback to existing commit_hash")
-        
         return new_commit_hash  
 

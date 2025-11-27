@@ -55,6 +55,10 @@ class GlobalConfig(BaseModel):
         default=False,
         description="Automatically accept all prompts without user confirmation",
     )
+    silent: bool = Field(
+        default=False,
+        description="Do not output any text to the console, except for prompting acceptance of changes if auto_accept is False",
+    )
 
 
 @dataclass(frozen=True)
@@ -67,6 +71,7 @@ class GlobalContext:
     temperature: float
     aggresiveness: Literal["Conservative", "Regular", "Extra"]
     auto_accept: bool
+    silent: bool
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
@@ -84,6 +89,7 @@ class GlobalContext:
             config.temperature,
             config.aggresiveness,
             config.auto_accept,
+            config.silent,
         )
 
 
