@@ -46,7 +46,7 @@ class TestConfigCommand:
         gitignore.write_text("*.pyc\n")
 
         result = run_cli(
-            cli_exe, ["config", "model", "gemini:gemini-2.0-flash"], cwd=temp_dir
+            cli_exe, ["config", "model", "gemini:gemini-2.0-flash", "--scope", "local"], cwd=temp_dir
         )
         assert result.returncode == 0
 
@@ -65,7 +65,7 @@ class TestConfigCommand:
 
     def test_config_set_local_no_gitignore(self, cli_exe, temp_dir):
         """Test setting local config when .gitignore doesn't exist."""
-        result = run_cli(cli_exe, ["config", "temperature", "0.8"], cwd=temp_dir)
+        result = run_cli(cli_exe, ["config", "temperature", "0.8", "--scope", "local"], cwd=temp_dir)
         assert result.returncode == 0
 
         # Verify config file was created
@@ -78,7 +78,7 @@ class TestConfigCommand:
     def test_config_set_global(self, cli_exe, temp_dir):
         """Test setting a global configuration value."""
         result = run_cli(
-            cli_exe, ["config", "temperature", "0.8", "--global"], cwd=temp_dir
+            cli_exe, ["config", "temperature", "0.8", "--scope", "global"], cwd=temp_dir
         )
         assert result.returncode == 0
         assert "set temperature = 0.8 (global)" in result.stdout.lower()
@@ -87,7 +87,7 @@ class TestConfigCommand:
     def test_config_set_env(self, cli_exe, temp_dir):
         """Test getting environment variable instructions."""
         result = run_cli(
-            cli_exe, ["config", "api_key", "test-key", "--env"], cwd=temp_dir
+            cli_exe, ["config", "api_key", "test-key", "--scope", "env"], cwd=temp_dir
         )
         assert result.returncode == 0
         # Should print instructions, not create a file
@@ -99,10 +99,10 @@ class TestConfigCommand:
     def test_config_get_local(self, cli_exe, temp_dir):
         """Test getting a local configuration value."""
         # First set a value
-        run_cli(cli_exe, ["config", "model", "test-model"], cwd=temp_dir)
+        run_cli(cli_exe, ["config", "model", "test-model", "--scope", "local"], cwd=temp_dir)
 
         # Then get it
-        result = run_cli(cli_exe, ["config", "model"], cwd=temp_dir)
+        result = run_cli(cli_exe, ["config", "model", "--scope", "local"], cwd=temp_dir)
         assert result.returncode == 0
         assert "test-model" in result.stdout
 
@@ -157,16 +157,6 @@ class TestConfigCommand:
         # Verify no duplication
         gitignore_content = gitignore.read_text()
         assert gitignore_content.count("dslateconfig.toml") == 1
-
-    def test_config_invalid_both_scopes(self, cli_exe, temp_dir):
-        """Test that specifying both --global and --env fails."""
-        result = run_cli(
-            cli_exe,
-            ["config", "model", "test", "--global", "--env"],
-            cwd=temp_dir,
-        )
-        assert result.returncode != 0
-        assert "error" in result.stdout.lower() or "error" in result.stderr.lower()
 
     def test_config_get_nonexistent(self, cli_exe, temp_dir):
         """Test getting a non-existent configuration key."""
