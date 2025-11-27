@@ -40,12 +40,12 @@ class SingleGrouper(LogicalGrouper):
         """Return a list of ChunkGroup"""
         groups: list[CommitGroup] = []
         id_ = 0
-        g_time = time.time()
+        g_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         for chunk in chunks:
             group = CommitGroup(
                 [chunk],
                 str(id_),
-                f"AUTOGEN{int(g_time)}-Group-{id_}",
+                f"Automaticaly Generated Commit #{id_} (Time: {g_time})",
                 "Auto gen commit message",
             )
             groups.append(group)
@@ -55,7 +55,7 @@ class SingleGrouper(LogicalGrouper):
             group = CommitGroup(
                 [chunk],
                 str(id_),
-                f"AUTOGEN{int(g_time)}-Group-{id_}",
+                f"Automaticaly Generated Commit #{id_} (Time: {g_time}) ",
                 "Auto gen commit message",
             )
             groups.append(group)
