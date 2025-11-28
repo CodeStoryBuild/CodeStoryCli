@@ -23,6 +23,7 @@
 from pathlib import Path
 
 import typer
+import sys
 from dotenv import load_dotenv
 from loguru import logger
 from platformdirs import user_config_dir
@@ -40,6 +41,22 @@ from dslate.runtimeutil import (
     version_callback,
     get_log_dir_callback
 )
+
+
+import tree_sitter_language_pack
+
+# Nuitka Onefile Check/Fix
+if getattr(sys, 'frozen', False) and not hasattr(sys, '_MEIPASS'):
+    temp_root = os.path.dirname(os.path.abspath(__file__))
+    package_root = os.path.join(temp_root, 'tree_sitter_language_pack')
+    
+    bindings_check = os.path.join(package_root, 'bindings')
+    
+    if os.path.exists(bindings_check):
+        tree_sitter_language_pack.__file__ = os.path.join(package_root, '__init__.py')
+    else:
+        logger.error("Tree-sitter bindings not found!")
+        raise typer.Exit(1)
 
 # create app
 app = typer.Typer(

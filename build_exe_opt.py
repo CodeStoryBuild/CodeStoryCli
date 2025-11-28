@@ -71,6 +71,7 @@ def main():
         
         # --- LANGCHAIN ---
         "--include-package=langchain",
+        "--nofollow-import-to=langsmith",
         "--include-package=langchain_core",
         "--include-package=langchain_openai",
         "--include-package=langchain_anthropic",
@@ -105,10 +106,10 @@ def main():
                 # This forces Nuitka to treat the binaries as raw data files 
                 # instead of ignoring them as "code extensions".
                 # Syntax: source_pattern=dest_folder_relative
-                source_pattern = bindings_path / ext_pattern
-                dest_path = "tree_sitter_language_pack/bindings/"
+                source_dir = ts_path
+                dest_path = "tree_sitter_language_pack" 
                 
-                cmd.append(f"--include-data-files={source_pattern}={dest_path}")
+                cmd.append(f"--include-data-dir={source_dir}={dest_path}")
                 
             else:
                 print("Warning: tree_sitter_language_pack found but 'bindings' folder is missing.")
