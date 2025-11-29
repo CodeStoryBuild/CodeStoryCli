@@ -53,8 +53,8 @@ class StructuredLogger:
         logger.remove()
 
         # Determine log level from environment
-        log_level = os.getenv("codestory_LOG_LEVEL", "INFO").upper()
-        console_level = os.getenv("codestory_CONSOLE_LOG_LEVEL", log_level).upper()
+        log_level = os.getenv("CODESTORY_LOG_LEVEL", "INFO").upper()
+        console_level = os.getenv("CODESTORY_CONSOLE_LOG_LEVEL", log_level).upper()
 
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -112,11 +112,11 @@ def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -
     """
     # Override log level if debug is requested
     if debug:
-        os.environ["codestory_LOG_LEVEL"] = "DEBUG"
-        os.environ["codestory_CONSOLE_LOG_LEVEL"] = "DEBUG"
+        os.environ["CODESTORY_LOG_LEVEL"] = "DEBUG"
+        os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "DEBUG"
     elif silent:
-        os.environ["codestory_LOG_LEVEL"] = "ERROR"
-        os.environ["codestory_CONSOLE_LOG_LEVEL"] = "ERROR"
+        os.environ["CODESTORY_LOG_LEVEL"] = "ERROR"
+        os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "ERROR"
 
     structured_logger = StructuredLogger(command_name)
     return structured_logger.get_logfile()
@@ -168,8 +168,8 @@ def log_user_action(action: str, **context) -> None:
 
 def setup_debug_logging() -> None:
     """Enable debug logging for troubleshooting."""
-    os.environ["codestory_LOG_LEVEL"] = "DEBUG"
-    os.environ["codestory_CONSOLE_LOG_LEVEL"] = "DEBUG"
+    os.environ["CODESTORY_LOG_LEVEL"] = "DEBUG"
+    os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "DEBUG"
 
 
 def get_log_directory() -> Path:

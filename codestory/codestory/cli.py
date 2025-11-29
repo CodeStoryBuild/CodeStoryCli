@@ -235,7 +235,7 @@ def run_app():
 
     except KeyboardInterrupt:
         logger.info("\n[yellow]Operation cancelled by user[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None
 
 
 if __name__ == "__main__":

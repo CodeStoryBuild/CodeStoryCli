@@ -197,10 +197,10 @@ def create_chunk(path, old_start, old_len, new_start, new_len):
     """Helper to create a DiffChunk."""
     lines = []
     # Generate removals for old_len
-    for i in range(old_len):
+    for _i in range(old_len):
         lines.append(b"-old line")
     # Generate additions for new_len
-    for i in range(new_len):
+    for _i in range(new_len):
         lines.append(b"+new line")
 
     hunk = HunkWrapper(
