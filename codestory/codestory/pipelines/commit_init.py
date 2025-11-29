@@ -27,7 +27,7 @@ from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.exceptions import GitError
 from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.file_reader.git_file_reader import GitFileReader
-from codestory.core.grouper.langchain_grouper import LangChainGrouper
+from codestory.core.grouper.llm_grouper import LLMGrouper
 from codestory.core.grouper.single_grouper import SingleGrouper
 from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
@@ -46,7 +46,7 @@ def create_commit_pipeline(
     chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
 
     if global_ctx.model is not None:
-        logical_grouper = LangChainGrouper(global_ctx.model)
+        logical_grouper = LLMGrouper(global_ctx.model)
     else:
         logger.warning("Using no ai grouping as commit_pipeline recieved no model!")
         logical_grouper = SingleGrouper()

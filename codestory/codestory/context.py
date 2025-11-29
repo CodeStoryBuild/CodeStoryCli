@@ -25,46 +25,29 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from langchain_core.language_models.chat_models import BaseChatModel
-from pydantic import BaseModel, Field
-
 from codestory.core.commands.git_commands import GitCommands
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
-from codestory.core.llm.config import try_create_model
+from codestory.core.llm import CodeStoryAdapter, ModelConfig
 
 
-class GlobalConfig(BaseModel):
-    model: str | None = Field(
-        default=None,
-        description="LLM model (format: provider:model, e.g., openai:gpt-4)",
-    )
-    api_key: str | None = Field(
-        default=None, description="API key for the LLM provider"
-    )
-    temperature: float = Field(
-        default=0.7, description="Temperature for LLM responses (0.0-1.0)"
-    )
-    aggresiveness: Literal["Conservative", "Regular", "Extra"] = Field(
-        default="Regular", description="How aggressively to split commits smaller"
-    )
-    verbose: bool = Field(default=False, description="Enable verbose logging output")
-    auto_accept: bool = Field(
-        default=False,
-        description="Automatically accept all prompts without user confirmation",
-    )
-    silent: bool = Field(
-        default=False,
-        description="Do not output any text to the console, except for prompting acceptance of changes if auto_accept is False",
-    )
+@dataclass
+class GlobalConfig:
+    model: str | None = None
+    api_key: str | None = None
+    temperature: float = 0.7
+    aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
+    verbose: bool = False
+    auto_accept: bool = False
+    silent: bool = False
 
 
 @dataclass(frozen=True)
 class GlobalContext:
     repo_path: Path
-    model: BaseChatModel
+    model: CodeStoryAdapter | None
     git_interface: GitInterface
     git_commands: GitCommands
     verbose: bool
@@ -75,7 +58,11 @@ class GlobalContext:
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
-        model = try_create_model(config.model, config.api_key, config.temperature)
+        # TODO add extra args/max tokens
+        if config.model == "no-model" or config.model is None:
+            model = None
+        else:
+            model = CodeStoryAdapter(ModelConfig(config.model, config.api_key, config.temperature, None))
 
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)

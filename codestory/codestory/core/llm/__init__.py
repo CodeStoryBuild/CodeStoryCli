@@ -22,6 +22,6 @@
 
 """LLM integration module for codestory."""
 
-from .factory import ModelConfig, create_llm_model
+from .factory import ModelConfig, CodeStoryAdapter
 
-__all__ = ["create_llm_model", "ModelConfig"]
+__all__ = ["CodeStoryAdapter", "ModelConfig"]

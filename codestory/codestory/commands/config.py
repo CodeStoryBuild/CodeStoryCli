@@ -19,71 +19,130 @@
 # By using this file, you agree to the terms of one of the two licenses above.
 # -----------------------------------------------------------------------------
 
-
-from pathlib import Path
-from typing import Literal
-
+import os
 import tomllib
+from dataclasses import fields
+from pathlib import Path
+from textwrap import shorten
+from typing import Any, Literal
+
 import typer
+from colorama import Fore, Style, init
 from platformdirs import user_config_dir
-from rich import print as rprint
-from rich.console import Console
-from rich.table import Table
 
-from codestory.context import GlobalConfig
+from ..context import GlobalConfig
 
-console = Console()
+# Initialize colorama
+init(autoreset=True)
 
 
-def _get_config_schema() -> dict:
+def display_config(
+    data: list[dict],
+    description_field: str = "Description",
+    key_field: str = "Key",
+    value_field: str = "Value",
+    source_field: str = "Source",
+    max_value_length: int = 50,
+) -> None:
+    """
+    Display config data in a two-line format:
+    Key: Description
+      Value (Source)
+    """
+    for item in data:
+        key = str(item.get(key_field, ""))
+        description = str(item.get(description_field, ""))
+        value = str(item.get(value_field, ""))
+        source = str(item.get(source_field, ""))
+
+        # Truncate value if too long
+        value_display = shorten(value, width=max_value_length, placeholder="...")
+
+        # Line 1: Key + Description
+        print(
+            f"{Fore.CYAN}{Style.BRIGHT}{key}{Style.RESET_ALL}: "
+            f"{Fore.WHITE}{description}{Style.RESET_ALL}"
+        )
+        # Line 2: Value + Source (Indented)
+        print(
+            f"  {Fore.GREEN}{value_display}{Style.RESET_ALL} "
+            f"{Fore.YELLOW}({source}){Style.RESET_ALL}"
+        )
+        print()  # Spacer
+
+
+def _get_config_schema() -> dict[str, dict[str, Any]]:
     """Get the schema of available config options from GlobalConfig."""
+    # Descriptions for each config field
+    descriptions = {
+        "model": "LLM model (format: provider:model, e.g., openai:gpt-4)",
+        "api_key": "API key for the LLM provider",
+        "temperature": "Temperature for LLM responses (0.0-1.0)",
+        "aggresiveness": "How aggressively to split commits smaller",
+        "verbose": "Enable verbose logging output",
+        "auto_accept": "Automatically accept all prompts without user confirmation",
+        "silent": "Do not output any text to the console, except for prompting acceptance",
+    }
+
     schema = {}
-
-    for field_name, field_info in GlobalConfig.model_fields.items():
-        # Get default value
-        default_value = field_info.default
-
-        # Get description from Field metadata
-        description = field_info.description or "No description available"
-
-        schema[field_name] = {"description": description, "default": default_value}
+    for field in fields(GlobalConfig):
+        field_name = field.name
+        # Get the type annotation if possible, defaulting to str
+        field_type = field.type
+        default_value = field.default
+        description = descriptions.get(field_name, "No description available")
+        
+        schema[field_name] = {
+            "description": description, 
+            "default": default_value,
+            "type": field_type
+        }
 
     return schema
 
 
 def _truncate_text(text: str, max_length: int = 50) -> str:
     """Truncate text with ellipsis if it exceeds max_length."""
-    if len(text) <= max_length:
-        return text
-    return text[: max_length - 3] + "..."
+    text_str = str(text)
+    if len(text_str) <= max_length:
+        return text_str
+    return text_str[: max_length - 3] + "..."
 
 
-def _check_key_exists(key: str) -> None:
+def _check_key_exists(key: str) -> dict:
     """Check if a config key exists. If not, show available options and exit."""
     schema = _get_config_schema()
 
     if key not in schema:
-        rprint(f"[red]Error:[/red] Unknown configuration key '{key}'\n")
-        rprint("[bold]Available configuration options:[/bold]\n")
+        print(f"{Fore.RED}Error:{Style.RESET_ALL} Unknown configuration key '{key}'\n")
+        print(f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n")
 
-        table = Table(show_header=True, header_style="bold cyan", show_lines=True)
-        table.add_column("Key", style="cyan")
-        table.add_column("Description", style="yellow")
-        table.add_column("Default", style="green")
-
+        table_data = []
         for config_key, info in sorted(schema.items()):
-            default_str = (
-                str(info["default"]) if info["default"] is not None else "None"
-            )
+            default_str = str(info["default"]) if info["default"] is not None else "None"
             description = _truncate_text(info["description"], 60)
-            table.add_row(config_key, description, default_str)
+            table_data.append({
+                "Key": config_key,
+                "Description": description,
+                "Value": default_str,
+                "Source": "Default"
+            })
 
-        rprint(table)
+        display_config(
+            table_data, 
+            description_field="Description", 
+            key_field="Key", 
+            value_field="Value", 
+            source_field="Source", 
+            max_value_length=80
+        )
         raise typer.Exit(1)
+    
+    return schema[key]
 
 
 def _help_callback(ctx: typer.Context, param, value: bool):
-    # Typer/Click help callback: show help and exit when --help is provided
+    """Typer/Click help callback: show help and exit when --help is provided"""
     if not value or ctx.resilient_parsing:
         return
     typer.echo(ctx.get_help())
@@ -95,39 +154,32 @@ def _add_to_gitignore(config_filename: str) -> None:
     gitignore_path = Path(".gitignore")
 
     if gitignore_path.exists():
-        # Read existing .gitignore
         gitignore_content = gitignore_path.read_text()
-
-        # Check if config file is already in .gitignore
         if config_filename not in gitignore_content:
-            # Add config file to .gitignore
             with gitignore_path.open("a") as f:
-                # Add newline if file doesn't end with one
                 if gitignore_content and not gitignore_content.endswith("\n"):
                     f.write("\n")
                 f.write(f"{config_filename}\n")
-            rprint(f"Added {config_filename} to .gitignore")
+            print(f"Added {config_filename} to .gitignore")
     else:
-        rprint(
-            f"[yellow]Warning:[/yellow] .gitignore not found. "
-            f"Please consider adding {config_filename} to your .gitignore file, you may commit your api keys by accident."
+        print(
+            f"{Fore.YELLOW}Warning:{Style.RESET_ALL} .gitignore not found. "
+            f"Please consider adding {config_filename} to your .gitignore file to avoid committing API keys."
         )
 
 
 def _set_config(key: str, value: str, scope: str) -> None:
     """Set a configuration value in the specified scope."""
-    # Validate that the key exists
-    _check_key_exists(key)
+    field_info = _check_key_exists(key)
 
     config_filename = "codestoryconfig.toml"
 
     if scope == "env":
-        # For environment variables, just rprint instructions
         env_var = f"codestory_{key}"
-        rprint("[green]To set this as an environment variable:[/green]")
-        rprint(f"  Windows (PowerShell): $env:{env_var}='{value}'")
-        rprint(f"  Windows (CMD): set {env_var}={value}")
-        rprint(f"  Linux/macOS: export {env_var}='{value}'")
+        print(f"{Fore.GREEN}To set this as an environment variable:{Style.RESET_ALL}")
+        print(f"  Windows (PowerShell): $env:{env_var}='{value}'")
+        print(f"  Windows (CMD): set {env_var}={value}")
+        print(f"  Linux/macOS: export {env_var}='{value}'")
         return
 
     # Determine config file path based on scope
@@ -136,163 +188,159 @@ def _set_config(key: str, value: str, scope: str) -> None:
         config_path.parent.mkdir(parents=True, exist_ok=True)
     else:  # local
         config_path = Path(config_filename)
-        # Add to .gitignore for local configs
         _add_to_gitignore(config_filename)
 
-    # Load existing config or create new one
+    # Load existing config
     config_data = {}
     if config_path.exists():
         try:
             with open(config_path, "rb") as f:
                 config_data = tomllib.load(f)
         except tomllib.TOMLDecodeError as e:
-            rprint(f"Failed to parse existing config: {e}. Creating new config.")
+            print(f"Failed to parse existing config: {e}. Creating new config.")
+
+    # Type Conversion
+    # Inputs from CLI are always strings, but TOML supports types.
+    # We check the GlobalConfig type annotation to convert properly.
+    target_type = field_info.get("type", str)
+    final_value = value
+
+    if target_type == bool or target_type == bool | None:
+        if value.lower() in ("true", "1", "yes", "on"):
+            final_value = True
+        elif value.lower() in ("false", "0", "no", "off"):
+            final_value = False
+    elif target_type == int or target_type == int | None:
+        try:
+            final_value = int(value)
+        except ValueError:
+            pass # Keep as string if it fails, or raise error
 
     # Update the value
-    config_data[key] = value
+    config_data[key] = final_value
 
-    # Write back to file
+    # Write back to file (Simple TOML serialization)
     with open(config_path, "w") as f:
-        # Simple TOML writer for flat key-value pairs
         for k, v in config_data.items():
-            # Handle different types
             if isinstance(v, bool):
                 f.write(f"{k} = {str(v).lower()}\n")
             elif isinstance(v, (int, float)):
                 f.write(f"{k} = {v}\n")
             else:
-                # String values need quotes
                 f.write(f'{k} = "{v}"\n')
 
     scope_label = "global" if scope == "global" else "local"
-    rprint(f"[green]Set {key} = {value} ({scope_label})[/green]")
-    rprint(f"Config file: {config_path.absolute()}")
+    print(f"{Fore.GREEN}Set {key} = {final_value} ({scope_label}){Style.RESET_ALL}")
+    print(f"Config file: {config_path.absolute()}")
 
 
 def _get_config(key: str | None, scope: str | None) -> None:
     """Get configuration value(s) from the specified scope or all scopes."""
     config_filename = "codestoryconfig.toml"
+    schema = _get_config_schema()
 
-    # Define all config sources
+    if key is not None:
+        _check_key_exists(key)
+
+    # 1. Gather all sources
+    # Priority order for display: Local > Env > Global
     sources = []
 
+    # Local
     if scope is None or scope == "local":
         local_path = Path(config_filename)
         if local_path.exists():
             try:
                 with open(local_path, "rb") as f:
                     local_config = tomllib.load(f)
-                    sources.append(("Local", local_path, local_config))
+                    sources.append(("Local Config", local_path, local_config))
             except tomllib.TOMLDecodeError:
                 pass
 
+    # Env
     if scope is None or scope == "env":
-        # Check environment variables with codestory_ prefix
-        import os
-
-        env_config = {}
-        for k, v in os.environ.items():
-            if k.lower().startswith("codestory_"):
-                key_clean = k[7:]  # Remove "codestory_" prefix
-                env_config[key_clean] = v
+        env_config = {k[10:]: v for k, v in os.environ.items() if k.lower().startswith("codestory_")}
         if env_config:
             sources.append(("Environment", None, env_config))
 
+    # Global
     if scope is None or scope == "global":
         global_path = Path(user_config_dir("codestory")) / config_filename
         if global_path.exists():
             try:
                 with open(global_path, "rb") as f:
                     global_config = tomllib.load(f)
-                    sources.append(("Global", global_path, global_config))
+                    sources.append(("Global Config", global_path, global_config))
             except tomllib.TOMLDecodeError:
                 pass
 
-    if not sources:
-        scope_m = f"in scope:{scope if scope else 'all'}"
-        if key:
-            rprint(f"[yellow]No configuration found for key:{key} {scope_m}[/yellow]")
-        else:
-            rprint(f"[yellow]No configuration file found {scope_m}[/yellow]")
+    # 2. Display Logic
+    table_data = []
 
-        return
-
-    # If a specific key is requested
     if key:
-        # Validate that the key exists
-        _check_key_exists(key)
-
-        # Show value from each source
-        table = Table(title=f"Configuration: {key}", show_lines=True)
-        table.add_column("Source", style="cyan")
-        table.add_column("Value", style="green")
-        table.add_column("Location", style="dim")
-
+        # User requested a specific key
         found = False
-        for source_name, source_path, config_data in sources:
+        description = schema[key]["description"]
+        
+        # Check explicit sources
+        for source_name, _, config_data in sources:
             if key in config_data:
                 found = True
-                location = str(source_path) if source_path else "Environment Variables"
-                value_str = _truncate_text(str(config_data[key]), 50)
-                table.add_row(source_name, value_str, location)
+                val = _truncate_text(str(config_data[key]), 60)
+                table_data.append({
+                    "Key": key, 
+                    "Description": description, 
+                    "Value": val, 
+                    "Source": source_name
+                })
+        
+        # If not found in any active source, show the system default
+        if not found:
+            default_val = schema[key]["default"]
+            val_str = str(default_val) if default_val is not None else "None"
+            table_data.append({
+                "Key": key,
+                "Description": description,
+                "Value": val_str,
+                "Source": "System Default (Not Set)"
+            })
+        
+        display_config(table_data)
 
-        if found:
-            rprint(table)
-            # Show which value takes precedence
-            active_value = sources[0][2].get(key) if key in sources[0][2] else None
-            if active_value and len(sources) > 1:
-                rprint(
-                    f"\n[bold]Active value:[/bold] {active_value} (from {sources[0][0]})"
-                )
-        else:
-            rprint(f"[yellow]Key '{key}' not found in any configuration[/yellow]")
     else:
-        # Show all config values including available options
-        schema = _get_config_schema()
-
-        # Collect all set keys from sources
-        set_keys = set()
-        for _, _, config_data in sources:
-            set_keys.update(config_data.keys())
-
-        table = Table(title="Configuration Options", show_lines=True)
-        table.add_column("Key", style="cyan")
-        table.add_column("Description", style="yellow")
-        # add header depending on if any values have been set
-        if not set_keys:
-            table.add_column("Default", style="green")
-        elif len(schema.keys()) == len(set_keys):
-            table.add_column("Value", style="green")
-        else:
-            table.add_column("Value/Default", style="green")
-        table.add_column("Source", style="magenta")
-
-        # Show all available config options
+        # List all keys
         for k in sorted(schema.keys()):
             description = schema[k]["description"]
-            # Truncate description for better table formatting
-            description_short = _truncate_text(description, 60)
-
-            # Check if this key is set in any source
-            if k in set_keys:
-                # Find the active value from the highest priority source
-                for source_name, _, config_data in sources:
-                    if k in config_data:
-                        value_str = _truncate_text(str(config_data[k]), 40)
-                        table.add_row(k, description_short, value_str, source_name)
-                        break
+            
+            # Find the active value (first match in priority: Local -> Env -> Global)
+            active_val = None
+            active_source = None
+            
+            for source_name, _, config_data in sources:
+                if k in config_data:
+                    active_val = config_data[k]
+                    active_source = source_name
+                    break
+            
+            if active_val is not None:
+                table_data.append({
+                    "Key": k, 
+                    "Description": description, 
+                    "Value": str(active_val), 
+                    "Source": active_source
+                })
             else:
-                # Show default value if not set
-                default_value = schema[k]["default"]
-                default_str = (
-                    str(default_value) + " (D)"
-                    if default_value is not None
-                    else "[dim]No-Default[/dim]"
-                )
-                default_str = _truncate_text(default_str, 40)
-                table.add_row(k, description_short, default_str, "[dim](not set)[/dim]")
+                # Fallback to default
+                default_val = schema[k]["default"]
+                val_str = str(default_val) if default_val is not None else "None"
+                table_data.append({
+                    "Key": k, 
+                    "Description": description, 
+                    "Value": val_str, 
+                    "Source": f"Default"
+                })
 
-        rprint(table)
+        display_config(table_data)
 
 
 def main(
@@ -311,7 +359,7 @@ def main(
     scope: Literal["local", "global", "env"] = typer.Option(
         None,
         "--scope",
-        help="Select which scope to modify, defaults to  local",
+        help="Select which scope to modify. Defaults to local for setting, all for getting.",
     ),
 ) -> None:
     """
@@ -320,39 +368,30 @@ def main(
     Priority order: program arguments > custom config > local config > environment variables > global config
 
     Examples:
-
         # Get a configuration value
-
         codestory config model
 
         # Set a local configuration value
-
         codestory config model "gemini:gemini-2.0-flash"
 
         # Set a global configuration value
-
         codestory config model "openai:gpt-4" --scope global
 
-        # Get environment variable api_key
-
-        codestory config api_key --scope env
-
         # Show all configuration
-
         codestory config
     """
-    explicit_set = scope is not None
-    if scope is None:
-        scope = "local"
-
+    
     # Determine operation
     if value is not None:
-        # Set operation
+        # SET operation
         if key is None:
-            rprint("[red]Error:[/red] Key is required when setting a value")
+            print(f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value")
             raise typer.Exit(1)
-        _set_config(key, value, scope)
+        
+        # Default to local if setting and no scope provided
+        target_scope = scope if scope is not None else "local"
+        _set_config(key, value, target_scope)
     else:
-        # Get operation
-        # If no scope flags are provided, show from all scopes
-        _get_config(key, None if not explicit_set else scope)
+        # GET operation
+        # If scope is None here, _get_config handles searching all scopes
+        _get_config(key, scope)

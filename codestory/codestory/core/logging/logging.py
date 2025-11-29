@@ -33,7 +33,6 @@ from pathlib import Path
 
 from loguru import logger
 from platformdirs import user_log_path
-from rich.console import Console
 
 LOG_DIR = user_log_path(appname="codestory")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,7 +43,6 @@ class StructuredLogger:
 
     def __init__(self, command_name: str):
         self.command_name = command_name
-        self.console = Console()
         self._setup_logger()
 
     def _setup_logger(self) -> None:
@@ -60,10 +58,10 @@ class StructuredLogger:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logfile = LOG_DIR / f"codestory_{timestamp}.log"
 
-        # Console sink with Rich formatting
+        # Console sink with simple formatting
         def console_sink(message):
             text = message.record["message"].rstrip("\n")
-            self.console.print(text)
+            print(text)
 
         # Add console sink with appropriate level
         logger.add(console_sink, level=console_level, format="{message}", catch=True)

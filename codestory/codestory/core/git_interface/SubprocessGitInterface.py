@@ -94,7 +94,7 @@ class SubprocessGitInterface(GitInterface):
             logger.debug(f"git returncode: {result.returncode}")
             return result
         except subprocess.CalledProcessError as e:
-            logger.warning(
+            logger.debug(
                 f"Git text command failed: {' '.join(e.cmd)} code={e.returncode} stderr={e.stderr}"
             )
             return None
@@ -134,7 +134,7 @@ class SubprocessGitInterface(GitInterface):
             logger.debug(f"git returncode: {result.returncode}")
             return result
         except subprocess.CalledProcessError as e:
-            logger.warning(
+            logger.debug(
                 f"Git binary command failed: {' '.join(e.cmd)} code={e.returncode} stderr={e.stderr.decode('utf-8', errors='ignore')}"
             )
             return None

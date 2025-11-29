@@ -13,21 +13,13 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
-  "typer>=0.12.0",
-  "rich>=13.0.0",
-  "inquirer>=3.4.1",
-  "langchain>=1.0.0",
-  "langchain-core>=1.0.0",
-  "langchain-google-genai>=2.1.12",
-  "langchain-openai>=0.2.0",
-  "langchain-anthropic>=0.3.0",
-  "langchain-ollama>=0.2.0",
-  "python-dotenv>=1.1.1",
+  "typer-slim>=0.12.0",
+  "colorama>=0.4.6",
   "loguru>=0.7.3",
   "tree-sitter>=0.21.0",
   "tree-sitter-language-pack>=0.1.0",
-  "pygments>=2.14.0",
   "platformdirs>=4.5.0",
+  "httpx>=0.28.1"
 ]
 
 [project.scripts]
@@ -67,11 +59,7 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
     "tree_sitter.*",
-    "inquirer.*",
-    "langchain.*",
-    "langchain_google_genai.*",
     "git.*",
-    "pygments.*",
     "importlib.*"
 ]
 ignore_missing_imports = true

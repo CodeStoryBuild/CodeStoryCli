@@ -21,11 +21,12 @@
 
 
 import os
+from dataclasses import fields
 from pathlib import Path
+from typing import Any, Literal, Union, get_args, get_origin
 
 import tomllib
 from loguru import logger
-from pydantic import BaseModel, TypeAdapter
 
 
 class ConfigLoader:
@@ -33,7 +34,7 @@ class ConfigLoader:
 
     @staticmethod
     def get_full_config(
-        config_model: type[BaseModel],
+        config_model: type[Any],
         input_args: dict,
         local_config_path: Path,
         env_app_prefix: str,
@@ -65,9 +66,8 @@ class ConfigLoader:
         for name, source in zip(source_names, sources, strict=True):
             logger.debug(f"{name=} {source=}")
 
-        type_adapter = TypeAdapter(config_model)
         built_model, used_indexes, used_defaults = ConfigLoader.build(
-            config_model, type_adapter, sources
+            config_model, sources
         )
 
         source_names = [source_names[i] for i in used_indexes]
@@ -105,13 +105,12 @@ class ConfigLoader:
 
     @staticmethod
     def build(
-        config_model: type[BaseModel],
-        type_adapter: TypeAdapter,
+        config_model: type[Any],
         sources: list[dict],
     ):
         """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
 
-        remaining_keys = set(config_model.model_fields.keys())
+        remaining_keys = {field.name for field in fields(config_model)}
 
         final_data = {}
         used_indices = set()
@@ -136,7 +135,53 @@ class ConfigLoader:
                 # Remove found keys so we don't look for them in earlier dicts
                 remaining_keys -= contributions
 
-        model = type_adapter.validate_python(final_data, extra="ignore")
+        coerced_data = {}
+        for field in fields(config_model):
+            name = field.name
+            if name in final_data:
+                value = final_data[name]
+                coerced_value = ConfigLoader.coerce_value(value, field.type)
+                coerced_data[name] = coerced_value
+
+        model = config_model(**coerced_data)
 
         # built model, what sources we used, and if we used any defaults
         return model, used_indices, bool(remaining_keys)
+
+    @staticmethod
+    def coerce_value(value: Any, typ: Any) -> Any:
+        """Coerce a value to the given type with manual validation."""
+        origin = get_origin(typ)
+        args = get_args(typ)
+
+        if origin is Union:
+            # Handle Optional types like str | None
+            non_none_types = [arg for arg in args if arg is not type(None)]
+            if value is None:
+                if type(None) in args:
+                    return None
+                else:
+                    raise ValueError(f"None not allowed for type {typ}")
+            for subtyp in non_none_types:
+                try:
+                    return ConfigLoader.coerce_value(value, subtyp)
+                except ValueError:
+                    continue
+            raise ValueError(f"Cannot coerce {value} to {typ}")
+        elif origin is Literal:
+            if value in args:
+                return value
+            raise ValueError(f"{value} not in allowed values {args} for {typ}")
+        elif typ is str:
+            return str(value)
+        elif typ is int:
+            return int(value)
+        elif typ is float:
+            return float(value)
+        elif typ is bool:
+            if isinstance(value, str):
+                return value.lower() in ('true', '1', 'yes', 'on')
+            return bool(value)
+        else:
+            # For other types, assume it's already correct or str
+            return value
