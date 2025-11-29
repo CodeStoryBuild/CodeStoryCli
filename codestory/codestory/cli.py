@@ -24,7 +24,7 @@ import os
 from pathlib import Path
 
 import typer
-from colorama import init, Fore, Style
+from colorama import Fore, Style, init
 from loguru import logger
 from platformdirs import user_config_dir
 

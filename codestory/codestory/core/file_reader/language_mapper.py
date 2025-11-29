@@ -5,10 +5,8 @@ A lightweight, drop-in language detector for tree-sitter-language-pack.
 Detects language based on filename, extension, shebang, and content heuristics.
 """
 
-import os
 import re
 from pathlib import Path
-from typing import Optional
 
 # -----------------------------------------------------------------------------
 # 1. Exhaustive Mappings (Derived from tree-sitter-language-pack)
@@ -246,9 +244,7 @@ def _resolve_v_file(content: str) -> str:
 # -----------------------------------------------------------------------------
 
 
-def detect_tree_sitter_language(
-    file_path: str, file_content: str = ""
-) -> Optional[str]:
+def detect_tree_sitter_language(file_path: str, file_content: str = "") -> str | None:
     """
     Detects the language compatible with tree-sitter-language-pack.
     """

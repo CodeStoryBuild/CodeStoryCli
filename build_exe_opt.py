@@ -7,10 +7,9 @@ Usage:
 
 import argparse
 import platform
+import shutil
 import subprocess
 import sys
-import shutil
-import importlib.util
 from pathlib import Path
 
 

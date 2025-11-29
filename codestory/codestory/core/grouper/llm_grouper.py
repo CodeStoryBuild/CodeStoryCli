@@ -5,19 +5,18 @@
 
 import json
 import re
-from typing import Callable, List, Dict, Any, Optional
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
 from ..data.chunk import Chunk
 from ..data.commit_group import CommitGroup
 from ..data.immutable_chunk import ImmutableChunk
+from ..exceptions import LLMResponseError, LogicalGroupingError
+from ..llm import CodeStoryAdapter
 from ..synthesizer.utils import get_patches_chunk
 from .interface import LogicalGrouper
-
-from ..llm import CodeStoryAdapter
-from ..exceptions import LogicalGroupingError, LLMResponseError
-
 
 # -----------------------------------------------------------------------------
 # Prompts
@@ -83,7 +82,7 @@ class LLMGrouper(LogicalGrouper):
 
         return json.dumps({"changes": changes}, indent=2)
 
-    def _validate_response(self, data: Any) -> List[Dict[str, Any]]:
+    def _validate_response(self, data: Any) -> list[dict[str, Any]]:
         """
         Manually validates the JSON structure.
         Expected: { "groups": [ { "group_id":..., "changes":... } ] }
@@ -129,7 +128,7 @@ class LLMGrouper(LogicalGrouper):
 
         return valid_groups
 
-    def _clean_and_parse_json(self, raw_content: str) -> List[Dict[str, Any]]:
+    def _clean_and_parse_json(self, raw_content: str) -> list[dict[str, Any]]:
         """
         Extracts JSON from text and returns the validated list of groups.
         """
@@ -160,7 +159,7 @@ class LLMGrouper(LogicalGrouper):
 
     def _create_commit_groups(
         self,
-        groups_data: List[Dict[str, Any]],
+        groups_data: list[dict[str, Any]],
         all_chunks: list[Chunk | ImmutableChunk],
     ) -> list[CommitGroup]:
         """
