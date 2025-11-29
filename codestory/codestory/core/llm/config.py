@@ -51,7 +51,7 @@ def try_create_model(
     api_key = api_key_arg
 
     if not (isinstance(temperature, float) or isinstance(temperature, int)):
-        raise ConfigurationError("Temperature must be a number.")    
+        raise ConfigurationError("Temperature must be a number.")
 
     if temperature < 0 or temperature > 1:
         raise ConfigurationError("Temperature must be between 0 and 1.")

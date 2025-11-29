@@ -20,12 +20,12 @@
 # -----------------------------------------------------------------------------
 
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
-from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from codestory.core.data.diff_chunk import DiffChunk
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 
 # -----------------------------------------------------------------------------
 # Helpers

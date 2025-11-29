@@ -56,10 +56,12 @@ def version_callback(value: bool):
         except importlib.metadata.PackageNotFoundError:
             typer.echo("codestory version: development")
         raise typer.Exit()
-    
+
+
 def get_log_dir_callback(value: bool):
     """Show version and exit."""
     if value:
         from codestory.core.logging.logging import LOG_DIR
+
         typer.echo(f"{str(LOG_DIR)}")
         raise typer.Exit()

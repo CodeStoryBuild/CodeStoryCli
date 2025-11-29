@@ -60,7 +60,9 @@ class CleanPipeline:
 
         total = len(commits)
 
-        logger.debug("Starting codestory clean operation on {total} commits", total=total)
+        logger.debug(
+            "Starting codestory clean operation on {total} commits", total=total
+        )
 
         fixed = 0
         skipped = 0

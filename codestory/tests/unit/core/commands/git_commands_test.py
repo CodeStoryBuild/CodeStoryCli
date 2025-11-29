@@ -20,13 +20,14 @@
 # -----------------------------------------------------------------------------
 
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
 from codestory.core.commands.git_commands import GitCommands
+from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
+from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper
 from codestory.core.data.immutable_hunk_wrapper import ImmutableHunkWrapper
-from codestory.core.data.diff_chunk import DiffChunk
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 
 # -----------------------------------------------------------------------------
 # Fixtures

@@ -21,14 +21,12 @@
 
 
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
-
 from tests.integration.repo_utils import RepoState
 
 # Get executable path from environment variable

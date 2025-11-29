@@ -20,15 +20,15 @@
 # -----------------------------------------------------------------------------
 
 
-import pytest
-from unittest.mock import Mock, patch
 from pathlib import Path
+from unittest.mock import Mock, patch
+
 from codestory.context import (
-    GlobalConfig,
-    GlobalContext,
+    CleanContext,
     CommitContext,
     FixContext,
-    CleanContext,
+    GlobalConfig,
+    GlobalContext,
 )
 
 # -----------------------------------------------------------------------------

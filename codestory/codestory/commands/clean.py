@@ -29,9 +29,9 @@ from codestory.context import CleanContext
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     validate_commit_hash,
+    validate_git_repository,
     validate_ignore_patterns,
     validate_min_size,
-    validate_git_repository,
 )
 from codestory.pipelines.clean_pipeline import CleanPipeline
 

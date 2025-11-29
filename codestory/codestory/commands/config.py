@@ -22,10 +22,11 @@
 
 from pathlib import Path
 from typing import Literal
-from rich import rprint as rprint
+
 import tomllib
 import typer
 from platformdirs import user_config_dir
+from rich import rprint as rprint
 from rich.console import Console
 from rich.table import Table
 
@@ -123,7 +124,7 @@ def _set_config(key: str, value: str, scope: str) -> None:
     if scope == "env":
         # For environment variables, just rprint instructions
         env_var = f"codestory_{key}"
-        rprint(f"[green]To set this as an environment variable:[/green]")
+        rprint("[green]To set this as an environment variable:[/green]")
         rprint(f"  Windows (PowerShell): $env:{env_var}='{value}'")
         rprint(f"  Windows (CMD): set {env_var}={value}")
         rprint(f"  Linux/macOS: export {env_var}='{value}'")
@@ -284,7 +285,9 @@ def _get_config(key: str | None, scope: str | None) -> None:
                 # Show default value if not set
                 default_value = schema[k]["default"]
                 default_str = (
-                    str(default_value) if default_value is not None else "[dim]No-Default[/dim]"
+                    str(default_value)
+                    if default_value is not None
+                    else "[dim]No-Default[/dim]"
                 )
                 default_str = _truncate_text(default_str, 40)
                 table.add_row(k, description_short, default_str, "[dim](not set)[/dim]")
@@ -312,8 +315,8 @@ def main(
     ),
 ) -> None:
     """
-    Manage global and local codestory configurations. 
-    
+    Manage global and local codestory configurations.
+
     Priority order: program arguments > custom config > local config > environment variables > global config
 
     Examples:

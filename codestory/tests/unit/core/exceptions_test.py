@@ -20,24 +20,23 @@
 # -----------------------------------------------------------------------------
 
 
-import pytest
 from codestory.core.exceptions import (
-    codestoryError,
-    GitError,
-    DetachedHeadError,
-    ValidationError,
-    ConfigurationError,
     AIServiceError,
-    FileSystemError,
     ChunkingError,
-    SynthesizerError,
+    ConfigurationError,
+    DetachedHeadError,
+    FileSystemError,
     FixCommitError,
-    git_not_found,
-    not_git_repository,
-    invalid_commit_hash,
-    path_not_found,
-    api_key_missing,
+    GitError,
+    SynthesizerError,
+    ValidationError,
     ai_service_timeout,
+    api_key_missing,
+    codestoryError,
+    git_not_found,
+    invalid_commit_hash,
+    not_git_repository,
+    path_not_found,
 )
 
 
