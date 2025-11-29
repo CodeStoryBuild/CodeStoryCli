@@ -85,12 +85,15 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
     Displays a patch/diff content cleanly using Rich styling.
 
     """
-
     styles = {
-        # File headers (e.g., --- a/file.py, +++ b/file.py)
-        "header": "bold bright_blue",
+        # diff header
+        "diff_header": "#0496FF",
+        "between_diff": "bold white",
+        "header_removed": "bold bright_red",
+        # Added lines (starts with +)
+        "header_added": "bold bright_green",
         # Hunks (e.g., @@ -1,5 +1,5 @@)
-        "hunk": "bold white",
+        "hunk": "#0496FF",
         # Deleted lines (starts with -)
         "removed": "bold bright_red on #4d1515",  # Added a subtle background for contrast
         # Added lines (starts with +)
@@ -101,13 +104,23 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
 
     # Iterate through the patch content line by line
 
+    between_diff_and_hunk = False
+
     for line in patch_content.splitlines()[:max_length]:
         style_key = None
 
-        prefix = line[:3]  # Check up to the first three characters
+        prefix = line[
+            :10
+        ]  # Check up to the first ten characters (could have large line diffs)
 
-        if prefix.startswith("---") or prefix.startswith("+++"):
-            style_key = "header"
+        if prefix.startswith("diff --git"):
+            style_key = "diff_header"
+            between_diff_and_hunk = True
+
+        elif prefix.startswith("---") or prefix.startswith("+++"):
+            style_key = "header_removed" if prefix.startswith("---") else "header_added"
+
+            between_diff_and_hunk = False
 
         elif prefix.startswith("@@"):
             style_key = "hunk"
@@ -117,6 +130,10 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
 
         elif prefix.startswith("+"):
             style_key = "added"
+
+        elif between_diff_and_hunk:
+            # lines after diff header, before first hunk, eg new file mode... or renamed file mode\nrename to...
+            style_key = "between_diff"
 
         else:
             style_key = "context"

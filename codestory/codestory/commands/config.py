@@ -26,7 +26,7 @@ from typing import Literal
 import tomllib
 import typer
 from platformdirs import user_config_dir
-from rich import rprint as rprint
+from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 
@@ -285,7 +285,7 @@ def _get_config(key: str | None, scope: str | None) -> None:
                 # Show default value if not set
                 default_value = schema[k]["default"]
                 default_str = (
-                    str(default_value)
+                    str(default_value) + " (D)"
                     if default_value is not None
                     else "[dim]No-Default[/dim]"
                 )
