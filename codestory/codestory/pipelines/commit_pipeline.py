@@ -35,12 +35,7 @@ def transient_step(description: str, silent: bool):
     else:
         # total=None -> Indeterminate mode (scanner animation)
         # leave=False -> Clears the line when context exits
-        with tqdm(
-            desc=description, 
-            total=None, 
-            leave=False, 
-            unit="it"
-        ) as pbar:
+        with tqdm(desc=description, total=None, leave=False, unit="it") as pbar:
             yield pbar
 
 
@@ -64,8 +59,8 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
     between_diff_and_hunk = False
 
     for line in patch_content.splitlines()[:max_length]:
-        style_key = "context" # default
-        
+        style_key = "context"  # default
+
         # Check up to the first ten characters (optimizes for large lines)
         prefix = line[:10]
 
@@ -191,9 +186,7 @@ class CommitPipeline:
             )
 
             with (
-                transient_step(
-                    "Creating Semantic Groups", self.global_context.silent
-                ),
+                transient_step("Creating Semantic Groups", self.global_context.silent),
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
@@ -215,7 +208,6 @@ class CommitPipeline:
             ) as pbar,
             time_block("logical_grouping"),
         ):
-            
             # Simple progress callback to keep the animation alive
             def on_progress(percent):
                 if pbar is not None:

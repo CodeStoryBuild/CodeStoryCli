@@ -72,9 +72,7 @@ def test_global_config_custom_values():
 
 @patch("codestory.context.SubprocessGitInterface")
 @patch("codestory.context.GitCommands")
-def test_global_context_from_config_defaults(
-    mock_git_commands, mock_git_interface
-):
+def test_global_context_from_config_defaults(mock_git_commands, mock_git_interface):
     """Test creating GlobalContext from an empty GlobalConfig (defaults)."""
 
     mock_interface_instance = Mock()
@@ -105,9 +103,7 @@ def test_global_context_from_config_defaults(
 
 @patch("codestory.context.SubprocessGitInterface")
 @patch("codestory.context.GitCommands")
-def test_global_context_from_config_custom(
-    mock_git_commands, mock_git_interface
-):
+def test_global_context_from_config_custom(mock_git_commands, mock_git_interface):
     """Test creating GlobalContext from a populated GlobalConfig."""
     # Execute
     config = GlobalConfig(

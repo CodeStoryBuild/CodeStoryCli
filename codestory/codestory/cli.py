@@ -72,22 +72,32 @@ def setup_config_args(**kwargs):
 
 def run_onboarding(ctx: typer.Context):
     print(f"{Fore.WHITE}{Style.BRIGHT}Welcome to codestory!{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}{Style.BRIGHT}This is the first time you're running codestory. Let's get started!{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}{Style.BRIGHT}You'll be asked a few questions to configure codestory.{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings later using the 'config' command.{Style.RESET_ALL}")
+    print(
+        f"{Fore.WHITE}{Style.BRIGHT}This is the first time you're running codestory. Let's get started!{Style.RESET_ALL}"
+    )
+    print(
+        f"{Fore.WHITE}{Style.BRIGHT}You'll be asked a few questions to configure codestory.{Style.RESET_ALL}"
+    )
+    print(
+        f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings later using the 'config' command.{Style.RESET_ALL}"
+    )
     print(f"{Fore.WHITE}{Style.BRIGHT}Press Enter to continue.{Style.RESET_ALL}")
     input()
     model = typer.prompt(
         "What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)"
     )
     api_key = typer.prompt("What is your API key?")
-    global_ = typer.confirm("Do you want to set this as the global configuration?", default=False)
+    global_ = typer.confirm(
+        "Do you want to set this as the global configuration?", default=False
+    )
     config.main(ctx, key="model", value=model, scope="global" if global_ else "local")
     config.main(
         ctx, key="api_key", value=api_key, scope="global" if global_ else "local"
     )
     print(f"{Fore.WHITE}{Style.BRIGHT}Configuration completed!{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings and more later using the 'config' command.{Style.RESET_ALL}")
+    print(
+        f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings and more later using the 'config' command.{Style.RESET_ALL}"
+    )
     return
 
 
@@ -211,6 +221,7 @@ def main(
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context
 
+
 def load_env(path=".env"):
     try:
         for line in open(path):
@@ -221,6 +232,7 @@ def load_env(path=".env"):
             os.environ[key] = value
     except FileNotFoundError:
         pass
+
 
 def run_app():
     """Run the application with global exception handling."""

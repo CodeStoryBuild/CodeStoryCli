@@ -62,7 +62,9 @@ class GlobalContext:
         if config.model == "no-model" or config.model is None:
             model = None
         else:
-            model = CodeStoryAdapter(ModelConfig(config.model, config.api_key, config.temperature, None))
+            model = CodeStoryAdapter(
+                ModelConfig(config.model, config.api_key, config.temperature, None)
+            )
 
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)

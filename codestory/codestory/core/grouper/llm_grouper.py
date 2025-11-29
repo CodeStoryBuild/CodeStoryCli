@@ -68,10 +68,7 @@ class LLMGrouper(LogicalGrouper):
 
         # Process mutable chunks
         for i in range(len(chunks)):
-            changes.append({
-                "chunk_id": i,
-                "change": diff_map.get(i, "(no diff)")
-            })
+            changes.append({"chunk_id": i, "change": diff_map.get(i, "(no diff)")})
 
         # Process immutable chunks
         idx = len(chunks)
@@ -80,11 +77,8 @@ class LLMGrouper(LogicalGrouper):
             # Truncate large patches
             if len(patch_content) > 300:
                 patch_content = patch_content[:300] + "... (truncated)"
-            
-            changes.append({
-                "chunk_id": idx,
-                "change": patch_content
-            })
+
+            changes.append({"chunk_id": idx, "change": patch_content})
             idx += 1
 
         return json.dumps({"changes": changes}, indent=2)
@@ -97,36 +91,42 @@ class LLMGrouper(LogicalGrouper):
         """
         if not isinstance(data, dict):
             raise LLMResponseError("Root JSON must be an object.")
-        
+
         groups = data.get("groups")
         if not isinstance(groups, list):
             raise LLMResponseError("JSON must contain a 'groups' list.")
-            
+
         valid_groups = []
         for i, item in enumerate(groups):
             if not isinstance(item, dict):
-                continue # Skip malformed items or raise error
-            
+                continue  # Skip malformed items or raise error
+
             # Check required fields
             if "changes" not in item:
                 logger.warning(f"Group {i} missing 'changes' list. Skipping.")
                 continue
-                
+
             # Ensure changes is a list of ints
             changes = item["changes"]
             if not isinstance(changes, list):
                 logger.warning(f"Group {i} 'changes' is not a list. Skipping.")
                 continue
-            
+
             # Normalize fields
-            valid_groups.append({
-                "group_id": str(item.get("group_id", f"group_{i}")),
-                "commit_message": str(item.get("commit_message", "update code")),
-                "extended_message": item.get("extended_message"), # can be None
-                "changes": [int(c) for c in changes if isinstance(c, (int, str)) and str(c).isdigit()],
-                "description": str(item.get("description", ""))
-            })
-            
+            valid_groups.append(
+                {
+                    "group_id": str(item.get("group_id", f"group_{i}")),
+                    "commit_message": str(item.get("commit_message", "update code")),
+                    "extended_message": item.get("extended_message"),  # can be None
+                    "changes": [
+                        int(c)
+                        for c in changes
+                        if isinstance(c, (int, str)) and str(c).isdigit()
+                    ],
+                    "description": str(item.get("description", "")),
+                }
+            )
+
         return valid_groups
 
     def _clean_and_parse_json(self, raw_content: str) -> List[Dict[str, Any]]:
@@ -134,26 +134,26 @@ class LLMGrouper(LogicalGrouper):
         Extracts JSON from text and returns the validated list of groups.
         """
         json_data = None
-        
+
         # 1. Try finding JSON within markdown code blocks or plain brackets
         # Matches { ... } spanning multiple lines
         match = re.search(r"(\{[\s\S]*\})", raw_content)
-        
+
         if match:
             try:
                 json_str = match.group(1)
                 json_data = json.loads(json_str)
             except json.JSONDecodeError:
                 pass
-        
+
         # 2. If regex failed, try parsing the whole string
         if json_data is None:
             try:
                 json_data = json.loads(raw_content)
             except json.JSONDecodeError:
-                 logger.error("Could not parse JSON from response.")
-                 logger.debug(f"Raw response: {raw_content}")
-                 raise LLMResponseError("Model did not return valid JSON.")
+                logger.error("Could not parse JSON from response.")
+                logger.debug(f"Raw response: {raw_content}")
+                raise LLMResponseError("Model did not return valid JSON.")
 
         # 3. Validate structure
         return self._validate_response(json_data)
@@ -172,13 +172,13 @@ class LLMGrouper(LogicalGrouper):
 
         for group_data in groups_data:
             group_chunks = []
-            
+
             for chunk_id in group_data["changes"]:
                 if chunk_id not in chunk_map:
                     continue
-                
+
                 if chunk_id in assigned_chunk_ids:
-                    continue # Skip duplicates
+                    continue  # Skip duplicates
 
                 group_chunks.append(chunk_map[chunk_id])
                 assigned_chunk_ids.add(chunk_id)
@@ -231,13 +231,12 @@ class LLMGrouper(LogicalGrouper):
         guidance = f"User Instructions: {message}" if message else ""
 
         formatted_user_prompt = ANALYSIS_PROMPT_TEMPLATE.format(
-            guidance=guidance,
-            changes_json=changes_json
+            guidance=guidance, changes_json=changes_json
         )
 
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": formatted_user_prompt}
+            {"role": "user", "content": formatted_user_prompt},
         ]
 
         if on_progress:
@@ -246,22 +245,24 @@ class LLMGrouper(LogicalGrouper):
         try:
             # Call Model
             raw_response = self.model.invoke(messages)
-            
+
             if on_progress:
                 on_progress(80)
-                
+
             # Parse & Validate
             valid_groups_data = self._clean_and_parse_json(raw_response)
-            
+
             if on_progress:
                 on_progress(90)
 
             # Create Domain Objects
-            result = self._create_commit_groups(valid_groups_data, chunks + immut_chunks)
-            
+            result = self._create_commit_groups(
+                valid_groups_data, chunks + immut_chunks
+            )
+
             if on_progress:
                 on_progress(100)
-                
+
             return result
 
         except Exception as e:
