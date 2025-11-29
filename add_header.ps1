@@ -1,20 +1,20 @@
 # -----------------------------------------------------------------------------
 # add_license_header.ps1
-# Prepends dual-license header to all .py files in dslate directory recursively
+# Prepends dual-license header to all .py files in codestory directory recursively
 # -----------------------------------------------------------------------------
 
-# Path to the dslate directory (change if needed)
-$rootDir = ".\dslate"
+# Path to the codestory directory (change if needed)
+$rootDir = ".\codestory"
 
 # Define the license header as an array of strings
 $licenseHeader = @(
     "# -----------------------------------------------------------------------------",
-    "# dslate - Dual Licensed Software",
+    "# codestory - Dual Licensed Software",
     "# Copyright (c) 2025 Adem Can",
     "#",
-    "# This file is part of DSLATE.",
+    "# This file is part of codestory.",
     "#",
-    "# DSLATE is available under a dual-license:",
+    "# codestory is available under a dual-license:",
     "#   1. AGPLv3 (Affero General Public License v3)",
     "#      - See LICENSE.txt and LICENSE-AGPL.txt",
     "#      - Online: https://www.gnu.org/licenses/agpl-3.0.html",
@@ -32,7 +32,7 @@ $licenseHeader = @(
     ""   # padding line 2
 )
 
-# Get all .py files recursively in the dslate directory
+# Get all .py files recursively in the codestory directory
 $pyFiles = Get-ChildItem -Path $rootDir -Recurse -Filter "*.py"
 
 foreach ($file in $pyFiles) {

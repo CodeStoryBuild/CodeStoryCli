@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dslate"
+name = "codestory"
 version = "0.1.0"
-description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let dslate handle the rest."
+description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let codestory handle the rest."
 authors = [
   { name = "Adem Can", email = "ademfcan@gmail.com" }
 ]
@@ -31,10 +31,10 @@ dependencies = [
 ]
 
 [project.scripts]
-dslate = "dslate.cli:app"
+cst = "codestory.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["dslate"]
+where = ["codestory"]
 
 [project.optional-dependencies]
 dev = [
@@ -45,7 +45,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-dslate = ["resources/*"]
+codestory = ["resources/*"]
 
 [tool.mypy]
 python_version = "3.10"
