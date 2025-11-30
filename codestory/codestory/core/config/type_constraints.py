@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from codestory.core.exceptions import ConfigurationError
 
@@ -13,6 +14,7 @@ class TypeConstraint(ABC):
     Subclasses should implement `coerce` which attempts to coerce/validate
     a provided value. If coercion/validation fails, raise ConfigurationError.
     """
+
     @abstractmethod
     def coerce(self, value: Any) -> Any:
         """Try to coerce and validate `value`. Return coerced value or raise."""
@@ -64,7 +66,9 @@ class LiteralTypeConstraint(TypeConstraint):
             for a in self.allowed:
                 if isinstance(a, str) and a.lower() == value.lower():
                     return a
-        raise ConfigurationError(f"{value!r} not one of allowed values: {list(self.allowed)}")
+        raise ConfigurationError(
+            f"{value!r} not one of allowed values: {list(self.allowed)}"
+        )
 
 
 class BoolConstraint(TypeConstraint):

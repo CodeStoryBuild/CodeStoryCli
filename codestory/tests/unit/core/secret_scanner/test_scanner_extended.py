@@ -3,6 +3,7 @@ from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition, Removal
 from codestory.core.secret_scanner.secret_scanner import ScannerConfig, filter_hunks
 
+
 class TestFileLifecycle:
     """
     Tests specific git operations: Additions, Deletions, Renames.
@@ -14,14 +15,14 @@ class TestFileLifecycle:
         regardless of content.
         """
         config = ScannerConfig()
-        
+
         # New file addition: old_path is None
         chunk = DiffChunk(
             old_file_path=None,
             new_file_path=b".env",
-            parsed_content=[Addition(0, 1, b"some_config=1")]
+            parsed_content=[Addition(0, 1, b"some_config=1")],
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
         assert rejected[0] == chunk
@@ -31,13 +32,13 @@ class TestFileLifecycle:
         Verify that adding a 'safe' named file still scans its content.
         """
         config = ScannerConfig(aggression="balanced")
-        
+
         chunk = DiffChunk(
             old_file_path=None,
             new_file_path=b"script.py",
-            parsed_content=[Addition(0, 1, b"api_key = '12345'")]
+            parsed_content=[Addition(0, 1, b"api_key = '12345'")],
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
 
@@ -47,21 +48,21 @@ class TestFileLifecycle:
         The scanner must NOT flag secrets inside removed lines.
         """
         config = ScannerConfig(aggression="paranoid")
-        
+
         # A chunk that removes a hardcoded password
         chunk = DiffChunk(
             old_file_path=b"auth.py",
             new_file_path=b"auth.py",
             parsed_content=[
-                Removal(1, 1, b"password = 'super_secret'"), # Removing the bad line
-                Addition(1, 1, b"password = os.getenv('PASS')") # Adding the good line
-            ]
+                Removal(1, 1, b"password = 'super_secret'"),  # Removing the bad line
+                Addition(1, 1, b"password = os.getenv('PASS')"),  # Adding the good line
+            ],
         )
-        
+
         # Since the Addition is safe, the chunk should be accepted.
         # The Removal contains the secret, but we shouldn't scan Removals.
         accepted, _, rejected = filter_hunks([chunk], [], config)
-        
+
         assert len(accepted) == 1
         assert len(rejected) == 0
 
@@ -70,13 +71,13 @@ class TestFileLifecycle:
         Verify renaming a safe file (text.txt) to a blocked file (key.pem) is rejected.
         """
         config = ScannerConfig()
-        
+
         chunk = DiffChunk(
             old_file_path=b"dummy.txt",
-            new_file_path=b"private.pem", # .pem is blocked by default
-            parsed_content=[] # Even with no content changes (just a rename)
+            new_file_path=b"private.pem",  # .pem is blocked by default
+            parsed_content=[],  # Even with no content changes (just a rename)
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
 
@@ -85,13 +86,13 @@ class TestFileLifecycle:
         Verify that if a file is renamed AND content is added, we check both.
         """
         config = ScannerConfig(aggression="balanced")
-        
+
         chunk = DiffChunk(
             old_file_path=b"old_name.py",
             new_file_path=b"new_name.py",
-            parsed_content=[Addition(1, 1, b"aws_secret = 'AKIA...'")]
+            parsed_content=[Addition(1, 1, b"aws_secret = 'AKIA...'")],
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
 
@@ -106,13 +107,13 @@ class TestPathIntegration:
         Ensure we catch blocked files deep in directories.
         """
         config = ScannerConfig()
-        
+
         chunk = DiffChunk(
             old_file_path=None,
             new_file_path=b"src/backend/config/.env.production",
-            parsed_content=[]
+            parsed_content=[],
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
 
@@ -120,18 +121,18 @@ class TestPathIntegration:
         """
         Edge Case: When deleting a file, new_file_path is None.
         We must check old_file_path.
-        
+
         Note: The current implementation blocks operations on blocked filenames.
         This confirms that *deleting* a .env file triggers the filter (safety first).
         """
         config = ScannerConfig()
-        
+
         chunk = DiffChunk(
             old_file_path=b"secrets.json",
-            new_file_path=None, # Deletion
-            parsed_content=[Removal(1, 0, b"{...}")]
+            new_file_path=None,  # Deletion
+            parsed_content=[Removal(1, 0, b"{...}")],
         )
-        
+
         _, _, rejected = filter_hunks([chunk], [], config)
         assert len(rejected) == 1
 
@@ -141,20 +142,20 @@ class TestPathIntegration:
         The regex must be anchored or specific enough.
         """
         config = ScannerConfig()
-        
+
         chunk = DiffChunk(
             old_file_path=None,
-            new_file_path=b"my_env_variables.py", # Should be safe
-            parsed_content=[Addition(0, 1, b"x = 1")]
+            new_file_path=b"my_env_variables.py",  # Should be safe
+            parsed_content=[Addition(0, 1, b"x = 1")],
         )
-        
+
         accepted, _, _ = filter_hunks([chunk], [], config)
         assert len(accepted) == 1
 
 
 class TestImmutableChunkLifecycle:
     """
-    Tests specifically for ImmutableChunks (raw patches), which handle 
+    Tests specifically for ImmutableChunks (raw patches), which handle
     paths and diff parsing differently.
     """
 
@@ -163,35 +164,32 @@ class TestImmutableChunkLifecycle:
         Immutable chunks store path in canonical_path.
         """
         config = ScannerConfig()
-        
+
         chunk = ImmutableChunk(
-            canonical_path=b"id_rsa", # Blocked name
-            file_patch=b"..."
+            canonical_path=b"id_rsa",  # Blocked name
+            file_patch=b"...",
         )
-        
+
         _, _, rejected = filter_hunks([], [chunk], config)
         assert len(rejected) == 1
 
     def test_immutable_patch_parsing_additions_only(self):
         """
-        Verify we strictly parse lines starting with + 
+        Verify we strictly parse lines starting with +
         and ignore lines starting with - in the raw bytes.
         """
         config = ScannerConfig(aggression="paranoid")
-        
+
         # A patch that removes a secret and adds a safe line
         # The raw bytes of the patch:
         patch = (
             b"@@ -10,1 +10,1 @@\n"
             b"- password = 'secret'\n"  # Should be ignored
-            b"+ password = env_var"     # Should be scanned (and passed)
+            b"+ password = env_var"  # Should be scanned (and passed)
         )
-        
-        chunk = ImmutableChunk(
-            canonical_path=b"settings.py",
-            file_patch=patch
-        )
-        
+
+        chunk = ImmutableChunk(canonical_path=b"settings.py", file_patch=patch)
+
         _, accepted, _ = filter_hunks([], [chunk], config)
         assert len(accepted) == 1
 
@@ -200,23 +198,20 @@ class TestImmutableChunkLifecycle:
         Ensure the '+++' header in diffs isn't confused for an added line.
         """
         config = ScannerConfig(aggression="paranoid")
-        
+
         # If we just checked `startswith('+')`, the header line:
         # +++ b/secret.txt
         # might trigger "secret" detection if we aren't careful.
-        
+
         patch = (
             b"--- a/file.py\n"
-            b"+++ b/file.py\n" # This line starts with +, but is header
+            b"+++ b/file.py\n"  # This line starts with +, but is header
             b"@@ ... @@\n"
             b"+ safe_code = 1"
         )
-        
+
         # We assume 'b/file.py' is safe, but ensure the logic skips +++
-        chunk = ImmutableChunk(
-            canonical_path=b"file.py",
-            file_patch=patch
-        )
-        
+        chunk = ImmutableChunk(canonical_path=b"file.py", file_patch=patch)
+
         _, accepted, _ = filter_hunks([], [chunk], config)
         assert len(accepted) == 1

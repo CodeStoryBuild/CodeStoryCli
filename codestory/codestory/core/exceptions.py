@@ -19,7 +19,8 @@
 # By using this file, you agree to the terms of one of the two licenses above.
 # -----------------------------------------------------------------------------
 
-from functools import wraps, partial
+from functools import partial, wraps
+
 from loguru import logger
 
 """
@@ -40,6 +41,7 @@ class CodestoryError(Exception):
     """
 
     pass
+
 
 class GitError(CodestoryError):
     """
@@ -147,6 +149,7 @@ class LogicalGroupingError(CodestoryError):
 
     pass
 
+
 class CleanCommandError(CodestoryError):
     """
     Errors specific to running the cst clean command
@@ -166,8 +169,6 @@ def handle_codestory_exception(func=None):
             logger.exception(e)
 
     return wrapper
-
-
 
 
 # Convenience functions for creating common errors

@@ -1,7 +1,8 @@
 import math
 import re
 from dataclasses import dataclass, field
-from typing import List, Tuple, Pattern, Literal, Union
+from re import Pattern
+from typing import Literal
 
 # Assumed imports from your codebase
 from ..data.chunk import Chunk
@@ -15,60 +16,71 @@ from ..data.line_changes import Addition
 
 AggressionLevel = Literal["safe", "balanced", "paranoid"]
 
+
 @dataclass
 class ScannerConfig:
     aggression: AggressionLevel = "balanced"
-    
+
     # Entropy threshold (0-8). Standard random base64 keys usually sit > 4.5
     entropy_threshold: float = 4.5
-    
+
     # Minimum string length to trigger entropy check (avoid checking short words)
-    entropy_min_len: int = 16 # Lowered slightly to catch shorter test secrets
+    entropy_min_len: int = 16  # Lowered slightly to catch shorter test secrets
 
     # Custom regex strings to block
-    custom_blocklist: List[str] = field(default_factory=list)
-    
+    custom_blocklist: list[str] = field(default_factory=list)
+
     # File glob patterns to reject (e.g. "*.key", ".env*")
-    blocked_file_patterns: List[str] = field(default_factory=lambda: [
-        r".*\.env.*",       # .env, .env.local, prod.env
-        r".*\.pem$",        # Private keys
-        r".*\.key$",        # Generic key files
-        r"^id_rsa$",        # SSH keys
-        r".*secrets.*\.json$",
-        r".*credentials.*\.xml$"
-    ])
-    
+    blocked_file_patterns: list[str] = field(
+        default_factory=lambda: [
+            r".*\.env.*",  # .env, .env.local, prod.env
+            r".*\.pem$",  # Private keys
+            r".*\.key$",  # Generic key files
+            r"^id_rsa$",  # SSH keys
+            r".*secrets.*\.json$",
+            r".*credentials.*\.xml$",
+        ]
+    )
+
     # File extensions to ignore content scanning for (images, locks)
-    ignored_extensions: List[str] = field(default_factory=lambda: [
-        ".png", ".jpg", ".jpeg", ".gif", ".svg", ".lock", ".pdf"
-    ])
+    ignored_extensions: list[str] = field(
+        default_factory=lambda: [
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".svg",
+            ".lock",
+            ".pdf",
+        ]
+    )
+
 
 # -----------------------------------------------------------------------------
 # Regex Patterns
 # -----------------------------------------------------------------------------
 
 PATTERNS_SAFE = [
-    r"-----BEGIN [A-Z]+ PRIVATE KEY-----",                
-    r"(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA)[A-Z0-9]{16}", 
-    r"ghp_[0-9a-zA-Z]{36}",                               
-    r"xox[baprs]-([0-9a-zA-Z]{10,48})?",                  
-    r"sk_live_[0-9a-zA-Z]{24}",                           
-    r"AIza[0-9A-Za-z\\-_]{35}",                           
+    r"-----BEGIN [A-Z]+ PRIVATE KEY-----",
+    r"(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA)[A-Z0-9]{16}",
+    r"ghp_[0-9a-zA-Z]{36}",
+    r"xox[baprs]-([0-9a-zA-Z]{10,48})?",
+    r"sk_live_[0-9a-zA-Z]{24}",
+    r"AIza[0-9A-Za-z\\-_]{35}",
 ]
 
 PATTERNS_BALANCED = [
     # Looks for specific sensitive variable names assigned to string literals
     r"(?i)(api_?key|auth_?token|client_?secret|db_?pass|private_?key|aws_?secret)\s*[:=]\s*['\"][^'\"]+['\"]",
-    r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@"
+    r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@",
 ]
 
-PATTERNS_PARANOID = [
-    r"(?i)secret"
-]
+PATTERNS_PARANOID = [r"(?i)secret"]
 
 # -----------------------------------------------------------------------------
 # Entropy Calculation
 # -----------------------------------------------------------------------------
+
 
 def shannon_entropy(data: str) -> float:
     if not data:
@@ -83,22 +95,24 @@ def shannon_entropy(data: str) -> float:
         entropy -= p_x * math.log2(p_x)
     return entropy
 
+
 # -----------------------------------------------------------------------------
 # Scanner Logic
 # -----------------------------------------------------------------------------
+
 
 class SecretScanner:
     def __init__(self, config: ScannerConfig):
         self.config = config
         self.patterns = self._compile_content_patterns()
         self.file_blocklist_regex = self._compile_file_patterns()
-        
-    def _compile_content_patterns(self) -> List[Pattern]:
+
+    def _compile_content_patterns(self) -> list[Pattern]:
         regex_list = list(PATTERNS_SAFE)
-        
+
         if self.config.aggression in ["balanced", "paranoid"]:
             regex_list.extend(PATTERNS_BALANCED)
-            
+
         if self.config.aggression == "paranoid":
             regex_list.extend(PATTERNS_PARANOID)
 
@@ -115,7 +129,7 @@ class SecretScanner:
 
     def _decode_bytes(self, data: bytes) -> str:
         try:
-            return data.decode('utf-8', errors='ignore')
+            return data.decode("utf-8", errors="ignore")
         except Exception:
             return ""
 
@@ -136,14 +150,14 @@ class SecretScanner:
     def contains_high_entropy(self, text: str) -> bool:
         # Split by typical code delimiters: space, quote, equals, colon, comma, parens
         tokens = re.split(r"[\s\"'=:;,\(\)\[\]\{\}]+", text)
-        
+
         for token in tokens:
             if len(token) < self.config.entropy_min_len:
                 continue
-            
+
             # FIXED: Removed the check that skipped tokens with "/"
             # Base64 strings often contain "/" (e.g. "aB+7/z==")
-            
+
             score = shannon_entropy(token)
             if score > self.config.entropy_threshold:
                 return True
@@ -154,7 +168,7 @@ class SecretScanner:
         for pattern in self.patterns:
             if pattern.search(text):
                 return True
-        
+
         # 2. Entropy check (only if NOT safe mode)
         if self.config.aggression != "safe":
             if self.contains_high_entropy(text):
@@ -165,7 +179,7 @@ class SecretScanner:
         canonical = chunk.canonical_path()
         if self.is_filename_blocked(canonical):
             return True
-        
+
         if self.is_extension_ignored(canonical):
             return False
 
@@ -181,38 +195,40 @@ class SecretScanner:
 
     def check_immutable_chunk(self, chunk) -> bool:
         # Duck typing for ImmutableChunk to avoid circular imports if necessary
-        canonical = getattr(chunk, 'canonical_path', None)
+        canonical = getattr(chunk, "canonical_path", None)
         if self.is_filename_blocked(canonical):
             return True
 
         if self.is_extension_ignored(canonical):
             return False
 
-        file_patch = getattr(chunk, 'file_patch', b"")
+        file_patch = getattr(chunk, "file_patch", b"")
         content = self._decode_bytes(file_patch)
-        
+
         for line in content.splitlines():
             # Standard Diff: Added lines start with '+'
             # Ignore header '+++'
-            if line.startswith('+') and not line.startswith('+++'):
+            if line.startswith("+") and not line.startswith("+++"):
                 clean_content = line[1:]
                 if self.scan_text_content(clean_content):
                     return True
         return False
 
+
 # -----------------------------------------------------------------------------
 # Main Entry Point
 # -----------------------------------------------------------------------------
 
+
 def filter_hunks(
-    chunks: List[Chunk], 
-    immut_chunks: List[ImmutableChunk], 
-    config: ScannerConfig | None = None
-) -> Tuple[List[Chunk], List[ImmutableChunk], List[Union[Chunk, ImmutableChunk]]]:
+    chunks: list[Chunk],
+    immut_chunks: list[ImmutableChunk],
+    config: ScannerConfig | None = None,
+) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
     """
     Filters chunks and immutable chunks for hardcoded secrets.
 
-    The primary filtering rule is: 
+    The primary filtering rule is:
     If a Chunk (wrapper) contains ANY sensitive DiffChunk, the entire Chunk is rejected.
 
     Args:
@@ -227,23 +243,23 @@ def filter_hunks(
         config = ScannerConfig()
 
     scanner = SecretScanner(config)
-    
-    accepted_chunks: List[Chunk] = []
-    accepted_immut_chunks: List[ImmutableChunk] = []
-    rejected: List[Union[Chunk, ImmutableChunk]] = []
+
+    accepted_chunks: list[Chunk] = []
+    accepted_immut_chunks: list[ImmutableChunk] = []
+    rejected: list[Chunk | ImmutableChunk] = []
 
     # 1. Process Mutable Chunks (Chunk wrappers)
     for chunk in chunks:
         # Check all internal DiffChunk objects
         internal_diffs = chunk.get_chunks()
-        
+
         is_sensitive = False
         for diff_chunk in internal_diffs:
             # We must use the DiffChunk check here
             if scanner.check_diff_chunk(diff_chunk):
                 is_sensitive = True
-                break # Reject the entire Chunk wrapper immediately
-        
+                break  # Reject the entire Chunk wrapper immediately
+
         if is_sensitive:
             rejected.append(chunk)
         else:

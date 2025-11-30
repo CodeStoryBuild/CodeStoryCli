@@ -1,16 +1,19 @@
 import json
-import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
-from codestory.core.relevance_filter.relevance_filter import RelevanceFilter, RelevanceFilterConfig
+import pytest
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition
 from codestory.core.llm import CodeStoryAdapter
+from codestory.core.relevance_filter.relevance_filter import (
+    RelevanceFilter,
+    RelevanceFilterConfig,
+)
+
 
 class TestRelevanceFilter:
-
     @pytest.fixture
     def mock_adapter(self):
         return Mock(spec=CodeStoryAdapter)
@@ -24,7 +27,7 @@ class TestRelevanceFilter:
             file_mode=b"100644",
             contains_newline_fallback=False,
             contains_newline_marker=False,
-            parsed_slice=[Addition(1, 1, content.encode())]
+            parsed_slice=[Addition(1, 1, content.encode())],
         )
         # Wrap in Chunk (which is what the filter expects mostly)
         chunk = CompositeDiffChunk(chunks=[diff_chunk])
@@ -33,8 +36,7 @@ class TestRelevanceFilter:
     def _create_mock_immut_chunk(self, patch_content: str, filename: str = "main.py"):
         """Helper to create an ImmutableChunk with specific patch content."""
         immut_chunk = ImmutableChunk(
-            canonical_path=filename.encode(),
-            file_patch=patch_content.encode()
+            canonical_path=filename.encode(), file_patch=patch_content.encode()
         )
         return immut_chunk
 
@@ -47,20 +49,22 @@ class TestRelevanceFilter:
         filter_ = RelevanceFilter(mock_adapter, config)
 
         # Mock LLM Response
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [0],
-            "reasoning": "Print statement found but intent was just 'fix bug'"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {
+                "rejected_chunk_ids": [0],
+                "reasoning": "Print statement found but intent was just 'fix bug'",
+            }
+        )
 
         chunk = self._create_mock_chunk("print('wtf')", "api.py")
-        
+
         accepted, _, rejected = filter_.filter([chunk], [], intent="fix the login bug")
 
         assert len(rejected) == 1
         assert len(accepted) == 0
-        
+
         # Verify prompt contained the intent
-        call_args = mock_adapter.invoke.call_args[0][0] # messages list
+        call_args = mock_adapter.invoke.call_args[0][0]  # messages list
         user_prompt = call_args[1]["content"]
         assert 'User Intent: "fix the login bug"' in user_prompt
 
@@ -73,14 +77,15 @@ class TestRelevanceFilter:
         filter_ = RelevanceFilter(mock_adapter, config)
 
         # Mock LLM Response (Simulating a smart model that sees the intent)
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [],
-            "reasoning": "Print matches intent"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {"rejected_chunk_ids": [], "reasoning": "Print matches intent"}
+        )
 
         chunk = self._create_mock_chunk("print('logging user action')", "api.py")
-        
-        accepted, _, rejected = filter_.filter([chunk], [], intent="add logging for user actions")
+
+        accepted, _, rejected = filter_.filter(
+            [chunk], [], intent="add logging for user actions"
+        )
 
         assert len(accepted) == 1
         assert len(rejected) == 0
@@ -92,13 +97,13 @@ class TestRelevanceFilter:
         """
         config = RelevanceFilterConfig(aggression="safe")
         filter_ = RelevanceFilter(mock_adapter, config)
-        
+
         # We need to ensure the system prompt sent to the LLM reflects SAFE mode
         mock_adapter.invoke.return_value = json.dumps({"rejected_chunk_ids": []})
-        
+
         chunk = self._create_mock_chunk("print('debug')", "test.py")
         filter_.filter([chunk], [], intent="update")
-        
+
         # Check system prompt in call args
         messages = mock_adapter.invoke.call_args[0][0]
         system_content = messages[0]["content"]
@@ -152,15 +157,16 @@ class TestRelevanceFilter:
         config = RelevanceFilterConfig()
         filter_ = RelevanceFilter(mock_adapter, config)
 
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [],
-            "reasoning": "All relevant"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {"rejected_chunk_ids": [], "reasoning": "All relevant"}
+        )
 
         immut_chunk1 = self._create_mock_immut_chunk("patch1", "file1.py")
         immut_chunk2 = self._create_mock_immut_chunk("patch2", "file2.py")
 
-        accepted_chunks, accepted_immut, rejected = filter_.filter([], [immut_chunk1, immut_chunk2], intent="update")
+        accepted_chunks, accepted_immut, rejected = filter_.filter(
+            [], [immut_chunk1, immut_chunk2], intent="update"
+        )
 
         assert len(accepted_chunks) == 0
         assert len(accepted_immut) == 2
@@ -174,15 +180,16 @@ class TestRelevanceFilter:
         config = RelevanceFilterConfig()
         filter_ = RelevanceFilter(mock_adapter, config)
 
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [0],
-            "reasoning": "First chunk irrelevant"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {"rejected_chunk_ids": [0], "reasoning": "First chunk irrelevant"}
+        )
 
         immut_chunk1 = self._create_mock_immut_chunk("irrelevant patch", "file1.py")
         immut_chunk2 = self._create_mock_immut_chunk("relevant patch", "file2.py")
 
-        accepted_chunks, accepted_immut, rejected = filter_.filter([], [immut_chunk1, immut_chunk2], intent="fix bug")
+        accepted_chunks, accepted_immut, rejected = filter_.filter(
+            [], [immut_chunk1, immut_chunk2], intent="fix bug"
+        )
 
         assert len(accepted_chunks) == 0
         assert len(accepted_immut) == 1
@@ -197,17 +204,24 @@ class TestRelevanceFilter:
         config = RelevanceFilterConfig()
         filter_ = RelevanceFilter(mock_adapter, config)
 
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [1, 2],  # Reject second mutable and first immutable
-            "reasoning": "Mixed rejection"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {
+                "rejected_chunk_ids": [
+                    1,
+                    2,
+                ],  # Reject second mutable and first immutable
+                "reasoning": "Mixed rejection",
+            }
+        )
 
         chunk1 = self._create_mock_chunk("good code", "main.py")
         chunk2 = self._create_mock_chunk("bad code", "main.py")
         immut_chunk1 = self._create_mock_immut_chunk("bad patch", "lib.py")
         immut_chunk2 = self._create_mock_immut_chunk("good patch", "lib.py")
 
-        accepted_chunks, accepted_immut, rejected = filter_.filter([chunk1, chunk2], [immut_chunk1, immut_chunk2], intent="refactor")
+        accepted_chunks, accepted_immut, rejected = filter_.filter(
+            [chunk1, chunk2], [immut_chunk1, immut_chunk2], intent="refactor"
+        )
 
         assert len(accepted_chunks) == 1
         assert accepted_chunks == [chunk1]
@@ -223,16 +237,17 @@ class TestRelevanceFilter:
         config = RelevanceFilterConfig()
         filter_ = RelevanceFilter(mock_adapter, config)
 
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [],
-            "reasoning": "All good"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {"rejected_chunk_ids": [], "reasoning": "All good"}
+        )
 
         immut_chunk = self._create_mock_immut_chunk("some patch", "test.py")
         original_path = immut_chunk.canonical_path
         original_patch = immut_chunk.file_patch
 
-        accepted_chunks, accepted_immut, rejected = filter_.filter([], [immut_chunk], intent="update")
+        accepted_chunks, accepted_immut, rejected = filter_.filter(
+            [], [immut_chunk], intent="update"
+        )
 
         # Check that the returned instance is the same and unchanged
         assert accepted_immut[0] is immut_chunk
@@ -246,13 +261,14 @@ class TestRelevanceFilter:
         config = RelevanceFilterConfig()
         filter_ = RelevanceFilter(mock_adapter, config)
 
-        mock_adapter.invoke.return_value = json.dumps({
-            "rejected_chunk_ids": [],
-            "reasoning": "Accepted"
-        })
+        mock_adapter.invoke.return_value = json.dumps(
+            {"rejected_chunk_ids": [], "reasoning": "Accepted"}
+        )
 
         chunk = self._create_mock_chunk("code", "main.py")
-        accepted_chunks, accepted_immut, rejected = filter_.filter([chunk], [], intent="feat")
+        accepted_chunks, accepted_immut, rejected = filter_.filter(
+            [chunk], [], intent="feat"
+        )
 
         assert len(accepted_chunks) == 1
         assert len(accepted_immut) == 0

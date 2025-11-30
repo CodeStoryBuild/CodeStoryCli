@@ -22,11 +22,11 @@
 
 from functools import partial
 
-from codestory.core.exceptions import handle_codestory_exception
 import typer
 from loguru import logger
 
 from codestory.context import CleanContext
+from codestory.core.exceptions import handle_codestory_exception
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     validate_commit_hash,
@@ -44,6 +44,7 @@ def _help_callback(ctx: typer.Context, param, value: bool):
         return
     typer.echo(ctx.get_help())
     raise typer.Exit()
+
 
 @handle_codestory_exception
 def main(
@@ -115,7 +116,7 @@ def main(
     with time_block("Clean Runner E2E"):
         runner = CleanPipeline(global_context, clean_context, fix_command)
         success = runner.run()
-    
+
     if success:
         logger.info("Clean command completed successfully")
     else:

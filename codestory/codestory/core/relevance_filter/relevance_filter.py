@@ -1,7 +1,7 @@
 import json
 import re
 from dataclasses import dataclass
-from typing import List, Literal, Tuple, Union
+from typing import Literal
 
 from loguru import logger
 
@@ -17,6 +17,7 @@ class RelevanceFilterConfig:
     aggression: Literal["safe", "standard", "strict"] = "standard"
     max_tokens_per_chunk: int = 500
     extra_instructions: str = ""
+
 
 # -----------------------------------------------------------------------------
 # Language-Agnostic System Prompts
@@ -50,7 +51,6 @@ AGGRESSION_RULES = {
         2. Corrupted text or merge conflict markers.
     - KEEP: All human-authored text, even if it seems slightly unrelated to the intent.
     """,
-
     "standard": """
     MODE: STANDARD (The Editor)
     - GOAL: High Cohesion. Remove noise that distracts from the intent.
@@ -59,7 +59,6 @@ AGGRESSION_RULES = {
         2. System/IDE configuration files that are usually ignored.
     - KEEP: Any content change that plausibly relates to the intent, even indirectly.
     """,
-
     "strict": """
     MODE: STRICT (The Lawyer)
     - GOAL: Laser Precision.
@@ -69,8 +68,10 @@ AGGRESSION_RULES = {
         2. Scope creep (changes that add features not requested).
         3. ALL temporary artifacts, diagnostics, or unrelated metadata.
     - If the user says "Update Title", reject changes to the "Footer".
-    """
+    """,
 }
+
+
 class RelevanceFilter:
     def __init__(self, model: CodeStoryAdapter, config: RelevanceFilterConfig):
         self.model = model
@@ -122,25 +123,29 @@ class RelevanceFilter:
             raise LLMResponseError("Model returned invalid JSON") from e
 
     def filter(
-        self, 
-        chunks: list[Chunk], immut_chunks: list[ImmutableChunk],
-        intent: str = "Update content"
+        self,
+        chunks: list[Chunk],
+        immut_chunks: list[ImmutableChunk],
+        intent: str = "Update content",
     ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
-        
         if not (chunks or immut_chunks):
             return [], [], []
 
         # 1. Select the correct philosophy
-        mode_instruction = AGGRESSION_RULES.get(self.config.aggression, AGGRESSION_RULES["standard"])
-        
+        mode_instruction = AGGRESSION_RULES.get(
+            self.config.aggression, AGGRESSION_RULES["standard"]
+        )
+
         system_instruction = f"{BASE_SYSTEM_PROMPT}\n{mode_instruction}"
-        
+
         if self.config.extra_instructions:
-            system_instruction += f"\nAdditional Rules:\n{self.config.extra_instructions}"
+            system_instruction += (
+                f"\nAdditional Rules:\n{self.config.extra_instructions}"
+            )
 
         # 2. Construct the User Prompt
         changes_json = self._prepare_payload(chunks, immut_chunks)
-        
+
         user_prompt = f"""User Intent: "{intent}"
 
 Review the following changes. Identify which chunks are irrelevant to this intent based on the current Mode.
@@ -152,16 +157,16 @@ CHANGES:
         # 2. Call LLM
         messages = [
             {"role": "system", "content": system_instruction},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
-        
+
         try:
             response_text = self.model.invoke(messages)
             response_data = self._clean_response(response_text)
-            
+
             rejected_ids = set(response_data.get("rejected_chunk_ids", []))
             reasoning = response_data.get("reasoning", "No reason provided")
-            
+
             if rejected_ids:
                 logger.info(f"Holistic Filter Reasoning: {reasoning}")
 
@@ -180,7 +185,7 @@ CHANGES:
                 rejected.append(chunks[idx])
             else:
                 accepted_chunks.append(chunks[idx])
-        
+
         # Process immutable chunks
         idx = len(chunks)
         for immut_chunk in immut_chunks:
@@ -189,5 +194,5 @@ CHANGES:
             else:
                 accepted_immut_chunks.append(immut_chunk)
             idx += 1
-        
+
         return accepted_chunks, accepted_immut_chunks, rejected
