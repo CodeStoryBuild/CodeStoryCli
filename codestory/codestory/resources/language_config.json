@@ -37,7 +37,7 @@
                 "((dictionary_comprehension) @placeholder)"
             ]
         ,
-        "comment_queries": ["((comment) @placeholder)", "((expression_statement (string)) @placeholder)"],
+        "comment_queries": ["((comment) @placeholder)", "(expression_statement (string) @placeholder)"],
         "share_tokens_between_files": "True"
     },
     "javascript": {

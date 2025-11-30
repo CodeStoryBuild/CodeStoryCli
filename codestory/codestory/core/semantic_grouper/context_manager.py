@@ -38,7 +38,7 @@ from .symbol_mapper import SymbolMap, SymbolMapper
 class AnalysisContext:
     """Contains the analysis context for a specific file version."""
 
-    file_path: str
+    file_path: bytes
     parsed_file: ParsedFile
     scope_map: ScopeMap
     symbol_map: SymbolMap
@@ -83,13 +83,13 @@ class ContextManager:
         # Context storage: (file_type (language name)) -> SharedContext
         self._shared_context_cache: dict[str, SharedContext] = {}
         # Context storage: (file_path, is_old_version) -> AnalysisContext
-        self._context_cache: dict[tuple[str, bool], AnalysisContext] = {}
+        self._context_cache: dict[tuple[bytes, bool], AnalysisContext] = {}
 
         # Determine which file versions need to be analyzed
-        self._required_contexts: dict[tuple[str, bool], list[tuple[int, int]]] = {}
+        self._required_contexts: dict[tuple[bytes , bool], list[tuple[int, int]]] = {}
         self._analyze_required_contexts()
 
-        self._parsed_files: dict[tuple[str, bool], ParsedFile] = {}
+        self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
         self._generate_parsed_files()
 
         if not self._parsed_files:
@@ -304,7 +304,7 @@ class ContextManager:
                 )
 
     def _build_context(
-        self, file_path: str, is_old_version: bool, parsed_file: ParsedFile
+        self, file_path: bytes, is_old_version: bool, parsed_file: ParsedFile
     ) -> AnalysisContext | None:
         """
         Build analysis context for a specific file version.
@@ -376,7 +376,7 @@ class ContextManager:
         return context
 
     def get_context(
-        self, file_path: str, is_old_version: bool
+        self, file_path: bytes, is_old_version: bool
     ) -> AnalysisContext | None:
         """
         Get analysis context for a specific file version.
@@ -399,7 +399,7 @@ class ContextManager:
         """
         return list(self._context_cache.values())
 
-    def has_context(self, file_path: str, is_old_version: bool) -> bool:
+    def has_context(self, file_path: bytes, is_old_version: bool) -> bool:
         """
         Check if context is available for a specific file version.
 
@@ -412,7 +412,7 @@ class ContextManager:
         """
         return (file_path, is_old_version) in self._context_cache
 
-    def get_required_contexts(self) -> set[tuple[str, bool]]:
+    def get_required_contexts(self) -> set[tuple[bytes, bool]]:
         """
         Get the set of required contexts based on diff chunks.
 
@@ -421,7 +421,7 @@ class ContextManager:
         """
         return self._required_contexts.copy()
 
-    def get_file_paths(self) -> set[str]:
+    def get_file_paths(self) -> set[bytes]:
         """
         Get all unique file paths that have contexts.
 

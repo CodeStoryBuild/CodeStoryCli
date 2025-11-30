@@ -45,15 +45,14 @@ def test_pure_comment_lines_python():
             '"""',  # 11: pure comment
         ]
     )
+    print(f"Content:\n{content}\n")
 
     parser = FileParser()
     parsed = parser.parse_file("test.py", content, [(0, len(content.splitlines()) - 1)])
     assert parsed is not None
 
-    # QueryManager expects a path-like with .open(); point at packaged language_config
-    lang_cfg_path = files("codestory") / "resources" / "language_config.json"
 
-    q = QueryManager(lang_cfg_path)
+    q = QueryManager()
     mapper = CommentMapper(q)
 
     cmap = mapper.build_comment_map(

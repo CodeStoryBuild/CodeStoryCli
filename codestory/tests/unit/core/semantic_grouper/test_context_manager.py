@@ -79,33 +79,31 @@ def test_context_manager():
     # Initialize components
     file_parser = FileParser()
     file_reader = MockFileReader()
-    query_manager = QueryManager("language_config.json")
+    query_manager = QueryManager()
 
     # Create test diff chunks
     diff_chunks = [
         # Standard modification
         DiffChunk(
-            old_file_path="test.py",
-            new_file_path="test.py",
-            file_mode="100644",
+            old_file_path=b"test.py",
+            new_file_path=b"test.py",
+            file_mode=b"100644",
             parsed_content=[
-                Removal(content="    def subtract(self, a, b):", line_number=8),
-                Removal(content="        return a - b", line_number=9),
+                Removal(content=b"    def subtract(self, a, b):", old_line=8, abs_new_line=8),
+                Removal(content=b"        return a - b", old_line=9, abs_new_line=9),
             ],
             old_start=8,
-            new_start=8,
         ),
         # File addition
         DiffChunk(
             old_file_path=None,
-            new_file_path="new_file.py",
-            file_mode="100644",
+            new_file_path=b"new_file.py",
+            file_mode=b"100644",
             parsed_content=[
-                Addition(content="def new_function():", line_number=1),
-                Addition(content='    return "This is new"', line_number=2),
+                Addition(content=b"def new_function():", old_line=0, abs_new_line=1),
+                Addition(content=b'    return "This is new"', old_line=0, abs_new_line=2),
             ],
             old_start=0,
-            new_start=1,
         ),
     ]
 
@@ -118,48 +116,19 @@ def test_context_manager():
     )
 
     # Test getting contexts
-    print("=== Context Manager Test ===")
-
     # Test standard modification (should have both old and new versions)
-    old_context = context_manager.get_context("test.py", True)
-    new_context = context_manager.get_context("test.py", False)
+    old_context = context_manager.get_context(b"test.py", True)
+    assert old_context is not None, "Failed to get old version context for test.py"
 
-    if old_context:
-        print(f"✓ Old version of test.py: {old_context.parsed_file.detected_language}")
-        print(f"  Scope map lines: {len(old_context.scope_map.scope_lines)}")
-        print(f"  Symbol map lines: {len(old_context.symbol_map.line_symbols)}")
-    else:
-        print("✗ Failed to get old version context for test.py")
-
-    if new_context:
-        print(f"✓ New version of test.py: {new_context.parsed_file.detected_language}")
-        print(f"  Scope map lines: {len(new_context.scope_map.scope_lines)}")
-        print(f"  Symbol map lines: {len(new_context.symbol_map.line_symbols)}")
-    else:
-        print("✗ Failed to get new version context for test.py")
+    new_context = context_manager.get_context(b"test.py", False)
+    assert new_context is not None, "Failed to get new version context for test.py"
 
     # Test file addition (should only have new version)
-    new_file_context = context_manager.get_context("new_file.py", False)
-    old_file_context = context_manager.get_context("new_file.py", True)
+    new_file_context = context_manager.get_context(b"new_file.py", False)
+    assert new_file_context is not None, "Failed to get context for new_file.py"
 
-    if new_file_context:
-        print(
-            f"✓ New file new_file.py: {new_file_context.parsed_file.detected_language}"
-        )
-    else:
-        print("✗ Failed to get context for new_file.py")
-
-    if old_file_context is None:
-        print("✓ Correctly no old version for new_file.py")
-    else:
-        print("✗ Unexpectedly found old version for new_file.py")
-
-    # Test summary methods
-    print(f"\nRequired contexts: {len(context_manager.get_required_contexts())}")
-    print(f"Available contexts: {len(context_manager.get_available_contexts())}")
-    print(f"File paths: {context_manager.get_file_paths()}")
-
-    print("\n=== Test Complete ===")
+    old_file_context = context_manager.get_context(b"new_file.py", True)
+    assert old_file_context is None, "Unexpectedly found old version for new_file.py"
 
 
 if __name__ == "__main__":

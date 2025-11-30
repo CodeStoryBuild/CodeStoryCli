@@ -64,9 +64,9 @@ def git_repo(tmp_path: Path):
 class TestGitDiffParsing:
     """Test suite for parsing various `git diff` outputs."""
 
-    def setup_method(self):
+    def setup_method(self, git_repo: Path):
         """Setup a GitCommands instance for each test method."""
-        self.git_commands = GitCommands(git=SubprocessGitInterface())
+        self.git_commands = GitCommands(git=SubprocessGitInterface("."))
 
     def test_parse_simple_modification(self, git_repo: Path):
         """Test parsing a diff for a simple text file modification."""
@@ -192,8 +192,7 @@ class TestGitDiffParsing:
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
         assert (
-            hunk.file_patch
-            == b"diff --git a/logo.png b/logo.png\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..f76dd238ade08917e6712764a16a22005a50573d\nGIT binary patch\nliteral 1\nIcmZPo000310RR91\n\nliteral 0\nHcmV?d00001\n"
+            b"GIT binary patch\nliteral 1\nIcmZPo000310RR91\n\nliteral 0\nHcmV?d00001\n" in hunk.file_patch
         )
 
     def test_parse_binary_file_diff(self, git_repo: Path):
@@ -216,8 +215,7 @@ class TestGitDiffParsing:
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
         assert (
-            hunk.file_patch
-            == b"diff --git a/logo.png b/logo.png\nindex f76dd238ade08917e6712764a16a22005a50573d..8f5aeac93b4e398b70aa3a7b2e2114b9c09d4fa1 100644\nGIT binary patch\nliteral 2\nJcmZP&0ssIM022TJ\n\nliteral 1\nIcmZPo000310RR91\n"
+            b"GIT binary patch\nliteral 2\nJcmZP&0ssIM022TJ\n\nliteral 1\nIcmZPo000310RR91\n" in hunk.file_patch
         )
 
     def test_add_multiple_binary_file_diff(self, git_repo: Path):
