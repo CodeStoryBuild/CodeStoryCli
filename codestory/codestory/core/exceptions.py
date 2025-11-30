@@ -39,18 +39,7 @@ class CodestoryError(Exception):
     to enable consistent error handling throughout the application.
     """
 
-    def __init__(self, message: str, details: str = None):
-        """
-        Initialize a codestoryError.
-
-        Args:
-            message: Main error message for the user
-            details: Additional technical details for logging
-        """
-        self.message = message
-        self.details = details
-        super().__init__(message)
-
+    pass
 
 class GitError(CodestoryError):
     """
