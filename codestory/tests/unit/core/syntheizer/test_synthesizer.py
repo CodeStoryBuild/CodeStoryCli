@@ -75,9 +75,9 @@ def test_basic_modification(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     hunk = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 3", "+line three"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 3", b"+line three"],
         old_start=3,
         new_start=3,
         old_len=1,
@@ -87,7 +87,8 @@ def test_basic_modification(git_repo):
     chunk = DiffChunk.from_hunk(hunk)
     group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Modify line 3")
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     content = (repo_path / "app.js").read_text()
     lines = content.split("\n")
@@ -120,8 +121,8 @@ def test_file_deletion(git_repo):
     lines = (repo_path / "app.js").read_text().splitlines()
     hunk = HunkWrapper(
         new_file_path=None,
-        old_file_path="app.js",
-        hunk_lines=[f"-{line}" for line in lines],
+        old_file_path=b"app.js",
+        hunk_lines=[f"-{line}".encode() for line in lines],
         old_start=1,
         new_start=1,
         old_len=len(lines),
@@ -131,7 +132,8 @@ def test_file_deletion(git_repo):
     chunk = DiffChunk.from_hunk(hunk)
     group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Delete app.js")
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     assert not (repo_path / "app.js").exists()
 
@@ -141,8 +143,8 @@ def test_rename_file(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     hunk = HunkWrapper(
-        new_file_path="server.js",
-        old_file_path="app.js",
+        new_file_path=b"server.js",
+        old_file_path=b"app.js",
         hunk_lines=[],
         old_start=0,
         new_start=0,
@@ -157,7 +159,8 @@ def test_rename_file(git_repo):
         commit_message="Rename app.js to server.js",
     )
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     assert not (repo_path / "app.js").exists()
     assert (repo_path / "server.js").exists()
@@ -176,9 +179,9 @@ def test_critical_line_shift_scenario(git_repo):
     # Add a header (second commit)
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+line 0"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+line 0"],
         old_start=0,
         new_start=1,
         old_len=0,
@@ -189,9 +192,9 @@ def test_critical_line_shift_scenario(git_repo):
     group1 = CommitGroup(chunks=[chunk1], group_id="g1", commit_message="Add header")
 
     hunk2 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 5", "+line five"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 5", b"+line five"],
         old_start=5,
         new_start=5,
         old_len=1,
@@ -202,7 +205,8 @@ def test_critical_line_shift_scenario(git_repo):
     group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Update footer")
 
     # Execute: commit group2, then group1
-    synthesizer.execute_plan([group2, group1], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group2, group1], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify final file content
     final_content = (repo_path / "app.js").read_text()
@@ -258,9 +262,9 @@ def test_pure_addition_single_file(git_repo):
     # Add header line at the beginning
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+header line"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+header line"],
         old_start=0,
         new_start=1,
         old_len=0,
@@ -270,9 +274,9 @@ def test_pure_addition_single_file(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+middle insertion"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+middle insertion"],
         old_start=2,
         new_start=3,
         old_len=0,
@@ -282,9 +286,9 @@ def test_pure_addition_single_file(git_repo):
     chunk2 = DiffChunk.from_hunk(hunk2)
 
     hunk3 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+footer line"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+footer line"],
         old_start=5,
         new_start=6,
         old_len=0,
@@ -299,7 +303,8 @@ def test_pure_addition_single_file(git_repo):
         commit_message="Add multiple lines",
     )
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     content = (repo_path / "app.js").read_text()
     lines = content.strip().split("\n")
@@ -328,13 +333,13 @@ def test_pure_addition_new_files(git_repo):
     # Add multiple new files
 
     hunk1 = HunkWrapper(
-        new_file_path="config.json",
+        new_file_path=b"config.json",
         old_file_path=None,
         hunk_lines=[
-            "+{",
-            '+  "name": "test",',
-            '+  "version": "1.0.0"',
-            "+}",
+            b"+{",
+            b'+  "name": "test",',
+            b'+  "version": "1.0.0"',
+            b"+}",
         ],
         old_start=1,
         new_start=1,
@@ -345,9 +350,9 @@ def test_pure_addition_new_files(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="nested/deep/file.txt",
+        new_file_path=b"nested/deep/file.txt",
         old_file_path=None,
-        hunk_lines=["+content line 1", "+content line 2"],
+        hunk_lines=[b"+content line 1", b"+content line 2"],
         old_start=1,
         new_start=1,
         old_len=0,
@@ -360,7 +365,8 @@ def test_pure_addition_new_files(git_repo):
         chunks=[chunk1, chunk2], group_id="g1", commit_message="Add new files"
     )
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify new files exist with correct content
     assert (repo_path / "config.json").exists()
@@ -380,9 +386,9 @@ def test_pure_addition_multiple_groups(git_repo):
     # Add to existing file
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+// Header comment"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+// Header comment"],
         old_start=0,
         new_start=1,
         old_len=0,
@@ -395,9 +401,9 @@ def test_pure_addition_multiple_groups(git_repo):
     )
 
     hunk2 = HunkWrapper(
-        new_file_path="README.md",
+        new_file_path=b"README.md",
         old_file_path=None,
-        hunk_lines=["+# Project Title", "+", "+Description here"],
+        hunk_lines=[b"+# Project Title", b"+", b"+Description here"],
         old_start=1,
         new_start=1,
         old_len=0,
@@ -407,7 +413,8 @@ def test_pure_addition_multiple_groups(git_repo):
     chunk2 = DiffChunk.from_hunk(hunk2)
     group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Add README")
 
-    synthesizer.execute_plan([group1, group2], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group1, group2], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify both changes
     app_content = (repo_path / "app.js").read_text()
@@ -428,9 +435,9 @@ def test_pure_deletion_partial_content(git_repo):
     # Remove lines 2 and 4
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 2"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 2"],
         old_start=2,
         new_start=2,
         old_len=1,
@@ -440,9 +447,9 @@ def test_pure_deletion_partial_content(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 4"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 4"],
         old_start=4,
         new_start=4,
         old_len=1,
@@ -457,7 +464,8 @@ def test_pure_deletion_partial_content(git_repo):
         commit_message="Remove lines 2 and 4",
     )
 
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     content = (repo_path / "app.js").read_text()
     lines = content.strip().split("\n")
@@ -504,8 +512,8 @@ def test_pure_deletion_entire_files(git_repo):
     temp_lines = (repo_path / "temp.txt").read_text().splitlines()
     hunk1 = HunkWrapper(
         new_file_path=None,
-        old_file_path="temp.txt",
-        hunk_lines=[f"-{line}" for line in temp_lines],
+        old_file_path=b"temp.txt",
+        hunk_lines=[f"-{line}".encode() for line in temp_lines],
         old_start=1,
         new_start=1,
         old_len=len(temp_lines),
@@ -517,8 +525,8 @@ def test_pure_deletion_entire_files(git_repo):
     config_lines = (repo_path / "config.json").read_text().splitlines()
     hunk2 = HunkWrapper(
         new_file_path=None,
-        old_file_path="config.json",
-        hunk_lines=[f"-{line}" for line in config_lines],
+        old_file_path=b"config.json",
+        hunk_lines=[f"-{line}".encode() for line in config_lines],
         old_start=1,
         new_start=1,
         old_len=len(config_lines),
@@ -532,7 +540,8 @@ def test_pure_deletion_entire_files(git_repo):
         commit_message="Delete temp files",
     )
 
-    synthesizer.execute_plan([group], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Files should be deleted
     assert not (repo_path / "temp.txt").exists()
@@ -566,9 +575,9 @@ def test_pure_deletion_multiple_groups(git_repo):
     # Remove from app.js
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 1"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 1"],
         old_start=1,
         new_start=1,
         old_len=1,
@@ -577,9 +586,9 @@ def test_pure_deletion_multiple_groups(git_repo):
     )
     chunk1 = DiffChunk.from_hunk(hunk1)
     hunk1b = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 3"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 3"],
         old_start=3,
         new_start=3,
         old_len=1,
@@ -597,8 +606,8 @@ def test_pure_deletion_multiple_groups(git_repo):
     other_lines = (repo_path / "other.txt").read_text().splitlines()
     hunk2 = HunkWrapper(
         new_file_path=None,
-        old_file_path="other.txt",
-        hunk_lines=[f"-{line}" for line in other_lines],
+        old_file_path=b"other.txt",
+        hunk_lines=[f"-{line}".encode() for line in other_lines],
         old_start=1,
         new_start=1,
         old_len=len(other_lines),
@@ -610,7 +619,8 @@ def test_pure_deletion_multiple_groups(git_repo):
         chunks=[chunk2], group_id="g2", commit_message="Delete other.txt"
     )
 
-    synthesizer.execute_plan([group1, group2], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group1, group2], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify deletions
     app_content = (repo_path / "app.js").read_text()
@@ -660,9 +670,9 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks = []
     # Modify file
     hunk_app = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 1", "+modified line 1", "+new line after 1"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 1", b"+modified line 1", b"+new line after 1"],
         old_start=1,
         new_start=1,
         old_len=1,
@@ -672,12 +682,12 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks.append(DiffChunk.from_hunk(hunk_app))
     # Add nested file
     hunk_user = HunkWrapper(
-        new_file_path="src/models/user.py",
+        new_file_path=b"src/models/user.py",
         old_file_path=None,
         hunk_lines=[
-            "+class User:",
-            "+    def __init__(self, name):",
-            "+        self.name = name",
+            b"+class User:",
+            b"+    def __init__(self, name):",
+            b"+        self.name = name",
         ],
         old_start=1,
         new_start=1,
@@ -688,13 +698,13 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks.append(DiffChunk.from_hunk(hunk_user))
     # Modify nested file
     hunk_utils = HunkWrapper(
-        new_file_path="src/utils.py",
-        old_file_path="src/utils.py",
+        new_file_path=b"src/utils.py",
+        old_file_path=b"src/utils.py",
         hunk_lines=[
-            "-def helper():",
-            "-    pass",
-            "+def helper(param):",
-            "+    return param * 2",
+            b"-def helper():",
+            b"-    pass",
+            b"+def helper(param):",
+            b"+    return param * 2",
         ],
         old_start=1,
         new_start=1,
@@ -709,8 +719,8 @@ def test_large_mixed_changes_single_group(git_repo):
     readme_lines = (repo_path / "docs" / "readme.txt").read_text().splitlines()
     hunk_readme = HunkWrapper(
         new_file_path=None,
-        old_file_path="docs/readme.txt",
-        hunk_lines=[f"-{line}" for line in readme_lines],
+        old_file_path=b"docs/readme.txt",
+        hunk_lines=[f"-{line}".encode() for line in readme_lines],
         old_start=1,
         new_start=1,
         old_len=len(readme_lines),
@@ -720,14 +730,14 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks.append(DiffChunk.from_hunk(hunk_readme))
     # Rename and modify
     hunk_rename = HunkWrapper(
-        new_file_path="config/settings.ini",
-        old_file_path="config.ini",
+        new_file_path=b"config/settings.ini",
+        old_file_path=b"config.ini",
         hunk_lines=[
-            "+[database]",
-            "+host=localhost",
-            "+port=5432",
-            "-[section]",
-            "-old_value=1",
+            b"+[database]",
+            b"+host=localhost",
+            b"+port=5432",
+            b"-[section]",
+            b"-old_value=1",
         ],
         old_start=1,
         new_start=1,
@@ -742,7 +752,8 @@ def test_large_mixed_changes_single_group(git_repo):
         group_id="large_mixed",
         commit_message="Large mixed changes",
     )
-    synthesizer.execute_plan([group], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify all changes
     # Verify modified file
@@ -815,11 +826,11 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     group1_chunks = [
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="frontend/index.html",
-                old_file_path="frontend/index.html",
+                new_file_path=b"frontend/index.html",
+                old_file_path=b"frontend/index.html",
                 hunk_lines=[
-                    "-<html><body>Old</body></html>",
-                    "+<html><head><title>New</title></head><body>New</body></html>",
+                    b"-<html><body>Old</body></html>",
+                    b"+<html><head><title>New</title></head><body>New</body></html>",
                 ],
                 old_start=1,
                 new_start=1,
@@ -830,11 +841,11 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="frontend/styles.css",
+                new_file_path=b"frontend/styles.css",
                 old_file_path=None,
                 hunk_lines=[
-                    "+body { margin: 0; }",
-                    "+.container { width: 100%; }",
+                    b"+body { margin: 0; }",
+                    b"+.container { width: 100%; }",
                 ],
                 old_start=1,
                 new_start=1,
@@ -854,16 +865,16 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     group2_chunks = [
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="backend/server.py",
-                old_file_path="backend/server.py",
+                new_file_path=b"backend/server.py",
+                old_file_path=b"backend/server.py",
                 hunk_lines=[
-                    "-print('old server')",
-                    "+from flask import Flask",
-                    "+app = Flask(__name__)",
-                    "+",
-                    "+@app.route('/')",
-                    "+def hello():",
-                    "+    return 'Hello World'",
+                    b"-print('old server')",
+                    b"+from flask import Flask",
+                    b"+app = Flask(__name__)",
+                    b"+",
+                    b"+@app.route('/')",
+                    b"+def hello():",
+                    b"+    return 'Hello World'",
                 ],
                 old_start=1,
                 new_start=1,
@@ -874,14 +885,14 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="backend/models.py",
+                new_file_path=b"backend/models.py",
                 old_file_path=None,
                 hunk_lines=[
-                    "+class User:",
-                    "+    pass",
-                    "+",
-                    "+class Post:",
-                    "+    pass",
+                    b"+class User:",
+                    b"+    pass",
+                    b"+",
+                    b"+class Post:",
+                    b"+    pass",
                 ],
                 old_start=1,
                 new_start=1,
@@ -902,8 +913,8 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     shared_lines = (repo_path / "shared.txt").read_text().splitlines()
     hunk_shared = HunkWrapper(
         new_file_path=None,
-        old_file_path="shared.txt",
-        hunk_lines=[f"-{line}" for line in shared_lines],
+        old_file_path=b"shared.txt",
+        hunk_lines=[f"-{line}".encode() for line in shared_lines],
         old_start=1,
         new_start=1,
         old_len=len(shared_lines),
@@ -914,8 +925,8 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         DiffChunk.from_hunk(hunk_shared),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="legacy/app.js",
-                old_file_path="app.js",
+                new_file_path=b"legacy/app.js",
+                old_file_path=b"app.js",
                 hunk_lines=[],
                 old_start=0,
                 new_start=0,
@@ -931,7 +942,8 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         commit_message="Cleanup and reorganize",
     )
 
-    synthesizer.execute_plan([group1, group2, group3], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group1, group2, group3], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify all changes
     # Group 1 changes
@@ -979,16 +991,16 @@ def test_complex_interdependent_changes(git_repo):
     chunks = [
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="utils.py",
-                old_file_path="utils.py",
+                new_file_path=b"utils.py",
+                old_file_path=b"utils.py",
                 hunk_lines=[
-                    "-def old_function():",
-                    "-    return 'old'",
-                    "+def new_function():",
-                    "+    return 'new'",
-                    "+",
-                    "+def helper():",
-                    "+    return 'helper'",
+                    b"-def old_function():",
+                    b"-    return 'old'",
+                    b"+def new_function():",
+                    b"+    return 'new'",
+                    b"+",
+                    b"+def helper():",
+                    b"+    return 'helper'",
                 ],
                 old_start=1,
                 new_start=1,
@@ -999,17 +1011,17 @@ def test_complex_interdependent_changes(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="main.py",
-                old_file_path="main.py",
+                new_file_path=b"main.py",
+                old_file_path=b"main.py",
                 hunk_lines=[
-                    "-from utils import old_function",
-                    "-old_function()",
-                    "+from utils import new_function, helper",
-                    "+from config import NEW_CONFIG",
-                    "+",
-                    "+if NEW_CONFIG:",
-                    "+    result = new_function()",
-                    "+    helper()",
+                    b"-from utils import old_function",
+                    b"-old_function()",
+                    b"+from utils import new_function, helper",
+                    b"+from config import NEW_CONFIG",
+                    b"+",
+                    b"+if NEW_CONFIG:",
+                    b"+    result = new_function()",
+                    b"+    helper()",
                 ],
                 old_start=1,
                 new_start=1,
@@ -1020,12 +1032,12 @@ def test_complex_interdependent_changes(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="config.py",
-                old_file_path="config.py",
+                new_file_path=b"config.py",
+                old_file_path=b"config.py",
                 hunk_lines=[
-                    "-OLD_CONFIG = True",
-                    "+NEW_CONFIG = True",
-                    "+DEBUG = False",
+                    b"-OLD_CONFIG = True",
+                    b"+NEW_CONFIG = True",
+                    b"+DEBUG = False",
                 ],
                 old_start=1,
                 new_start=1,
@@ -1041,7 +1053,8 @@ def test_complex_interdependent_changes(git_repo):
         group_id="refactor",
         commit_message="Refactor interdependent code",
     )
-    synthesizer.execute_plan([group], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify coordinated changes
     main_content = (repo_path / "main.py").read_text()
@@ -1076,9 +1089,9 @@ def test_empty_group_handling(git_repo):
 
     # No-op group (removes and adds the same line)
     hunk = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 1", "+line 1"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 1", b"+line 1"],
         old_start=1,
         new_start=1,
         old_len=1,
@@ -1091,7 +1104,8 @@ def test_empty_group_handling(git_repo):
     )
 
     # Handles edge cases
-    synthesizer.execute_plan([empty_group, no_op_group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([empty_group, no_op_group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # File should be unchanged
     content = (repo_path / "app.js").read_text()
@@ -1106,9 +1120,9 @@ def test_single_line_changes(git_repo):
     # Single character change
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 1", "+Line 1"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 1", b"+Line 1"],
         old_start=1,
         new_start=1,
         old_len=1,
@@ -1118,9 +1132,9 @@ def test_single_line_changes(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="single.txt",
+        new_file_path=b"single.txt",
         old_file_path=None,
-        hunk_lines=["+x"],
+        hunk_lines=[b"+x"],
         old_start=1,
         new_start=1,
         old_len=0,
@@ -1129,7 +1143,7 @@ def test_single_line_changes(git_repo):
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
 
-    hunk3 = HunkWrapper.create_empty_addition("empty.txt", file_mode="100644")
+    hunk3 = HunkWrapper.create_empty_addition(b"empty.txt", file_mode=b"100644")
     chunk3 = DiffChunk.from_hunk(hunk3)
 
     group = CommitGroup(
@@ -1137,7 +1151,8 @@ def test_single_line_changes(git_repo):
         group_id="minimal",
         commit_message="Minimal changes",
     )
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify single character change
     app_content = (repo_path / "app.js").read_text()
@@ -1161,9 +1176,9 @@ def test_boundary_line_numbers(git_repo):
     # Change at line 0
 
     hunk1 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+line 0"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+line 0"],
         old_start=0,
         new_start=1,
         old_len=0,
@@ -1173,9 +1188,9 @@ def test_boundary_line_numbers(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["-line 5", "+line 5 modified"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"-line 5", b"+line 5 modified"],
         old_start=5,
         new_start=5,
         old_len=1,
@@ -1185,9 +1200,9 @@ def test_boundary_line_numbers(git_repo):
     chunk2 = DiffChunk.from_hunk(hunk2)
 
     hunk3 = HunkWrapper(
-        new_file_path="app.js",
-        old_file_path="app.js",
-        hunk_lines=["+line 6"],
+        new_file_path=b"app.js",
+        old_file_path=b"app.js",
+        hunk_lines=[b"+line 6"],
         old_start=6,
         new_start=6,
         old_len=0,
@@ -1201,7 +1216,8 @@ def test_boundary_line_numbers(git_repo):
         group_id="boundaries",
         commit_message="Boundary line changes",
     )
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     content = (repo_path / "app.js").read_text()
     lines = content.split("\n")
@@ -1218,12 +1234,12 @@ def test_unicode_and_special_characters(git_repo):
     # Unicode content
 
     hunk1 = HunkWrapper(
-        new_file_path="unicode.txt",
+        new_file_path=b"unicode.txt",
         old_file_path=None,
         hunk_lines=[
-            "+Hello 世界 🌍",
-            "+Café naïve résumé",
-            "+Ελληνικά Русский العربية",
+            b"+Hello \xe4\xb8\x96\xe7\x95\x8c \xf0\x9f\x8c\x8d",
+            b"+Caf\xc3\xa9 na\xc3\xafve r\xc3\xa9sum\xc3\xa9",
+            b"+\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac \xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xce\xba\xd0\xb8\xd0\xb9 \xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9",
         ],
         old_start=1,
         new_start=1,
@@ -1234,13 +1250,13 @@ def test_unicode_and_special_characters(git_repo):
     chunk1 = DiffChunk.from_hunk(hunk1)
 
     hunk2 = HunkWrapper(
-        new_file_path="special.txt",
+        new_file_path=b"special.txt",
         old_file_path=None,
         hunk_lines=[
-            "+#!/bin/bash",
-            '+echo "$HOME"',
-            "+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}",
-            "+math: ∑(x²) = π/2",
+            b"+#!/bin/bash",
+            b"+echo \"$HOME\"",
+            b"+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}",
+            b"+math: \xe2\x88\x91(x\xc2\xb2) = \xcf\x80/2",
         ],
         old_start=1,
         new_start=1,
@@ -1255,13 +1271,14 @@ def test_unicode_and_special_characters(git_repo):
         group_id="unicode",
         commit_message="Unicode and special chars",
     )
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify unicode content
     unicode_content = (repo_path / "unicode.txt").read_text(encoding="utf-8")
     assert "Hello 世界 🌍" in unicode_content
     assert "Café naïve résumé" in unicode_content
-    assert "Ελληνικά Русский العربية" in unicode_content
+    assert "Ελληνικά Руссκий العربية" in unicode_content
 
     # Verify special characters
     special_content = (repo_path / "special.txt").read_text(encoding="utf-8")
@@ -1279,9 +1296,9 @@ def test_conflicting_simultaneous_changes(git_repo):
     chunks = [
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="app.js",
-                old_file_path="app.js",
-                hunk_lines=["-line 2"],
+                new_file_path=b"app.js",
+                old_file_path=b"app.js",
+                hunk_lines=[b"-line 2"],
                 old_start=2,
                 new_start=2,
                 old_len=1,
@@ -1291,9 +1308,9 @@ def test_conflicting_simultaneous_changes(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="app.js",
-                old_file_path="app.js",
-                hunk_lines=["+inserted line"],
+                new_file_path=b"app.js",
+                old_file_path=b"app.js",
+                hunk_lines=[b"+inserted line"],
                 old_start=2,
                 new_start=2,
                 old_len=0,
@@ -1303,9 +1320,9 @@ def test_conflicting_simultaneous_changes(git_repo):
         ),
         DiffChunk.from_hunk(
             HunkWrapper(
-                new_file_path="app.js",
-                old_file_path="app.js",
-                hunk_lines=["-line 3", "+modified line 3"],
+                new_file_path=b"app.js",
+                old_file_path=b"app.js",
+                hunk_lines=[b"-line 3", b"+modified line 3"],
                 old_start=3,
                 new_start=3,
                 old_len=1,
@@ -1320,7 +1337,8 @@ def test_conflicting_simultaneous_changes(git_repo):
         group_id="overlapping",
         commit_message="Overlapping changes",
     )
-    synthesizer.execute_plan([group], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Should handle overlapping changes gracefully
     content = (repo_path / "app.js").read_text()
@@ -1354,9 +1372,9 @@ def test_very_large_file_changes(git_repo):
 
     for i in range(10, 101, 10):
         hunk = HunkWrapper(
-            new_file_path="large.txt",
-            old_file_path="large.txt",
-            hunk_lines=[f"-line {i}", f"+MODIFIED line {i}"],
+            new_file_path=b"large.txt",
+            old_file_path=b"large.txt",
+            hunk_lines=[f"-line {i}".encode(), f"+MODIFIED line {i}".encode()],
             old_start=i,
             new_start=i,
             old_len=1,
@@ -1369,9 +1387,9 @@ def test_very_large_file_changes(git_repo):
     # Chunks for insertions at various positions
     for i in [25, 50, 75]:
         hunk = HunkWrapper(
-            new_file_path="large.txt",
-            old_file_path="large.txt",
-            hunk_lines=[f"+INSERTED at {i}"],
+            new_file_path=b"large.txt",
+            old_file_path=b"large.txt",
+            hunk_lines=[f"+INSERTED at {i}".encode()],
             old_start=i - 1,
             new_start=i,
             old_len=0,
@@ -1386,7 +1404,8 @@ def test_very_large_file_changes(git_repo):
         group_id="large_changes",
         commit_message="Many changes to large file",
     )
-    synthesizer.execute_plan([group], new_base_hash, "main")
+    final_hash = synthesizer.execute_plan([group], new_base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # Verify changes
     content = (repo_path / "large.txt").read_text()

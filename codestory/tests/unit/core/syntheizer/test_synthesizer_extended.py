@@ -109,41 +109,37 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # A1: Add a line to file_a.txt after line 5.
     chunk_A1 = DiffChunk(
-        old_file_path="file_a.txt",
-        new_file_path="file_a.txt",
-        parsed_content=[Addition(6, "Line 6: Added by A1.")],
+        old_file_path=b"file_a.txt",
+        new_file_path=b"file_a.txt",
+        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")],
         old_start=6,
-        new_start=6,
     )
 
     # A2: Delete line 3 from file_a.txt.
     chunk_A2 = DiffChunk(
-        old_file_path="file_a.txt",
-        new_file_path="file_a.txt",
-        parsed_content=[Removal(3, "Line 3: An original line in A.")],
+        old_file_path=b"file_a.txt",
+        new_file_path=b"file_a.txt",
+        parsed_content=[Removal(old_line=3, abs_new_line=3, content=b"Line 3: An original line in A.")],
         old_start=3,
-        new_start=3,
     )
 
     # B1: Modify line 2 in file_b.txt.
     chunk_B1 = DiffChunk(
-        old_file_path="file_b.txt",
-        new_file_path="file_b.txt",
+        old_file_path=b"file_b.txt",
+        new_file_path=b"file_b.txt",
         parsed_content=[
-            Removal(2, "Line 2: value = 100"),
-            Addition(2, "Line 2: value = 250 # Updated by B1"),
+            Removal(old_line=2, abs_new_line=2, content=b"Line 2: value = 100"),
+            Addition(old_line=2, abs_new_line=2, content=b"Line 2: value = 250 # Updated by B1"),
         ],
         old_start=2,
-        new_start=2,
     )
 
     # B2: Add a new setting to file_b.txt after line 5.
     chunk_B2 = DiffChunk(
-        old_file_path="file_b.txt",
-        new_file_path="file_b.txt",
-        parsed_content=[Addition(6, 'Line 6: mode = "test" # Added by B2')],
+        old_file_path=b"file_b.txt",
+        new_file_path=b"file_b.txt",
+        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b'Line 6: mode = "test" # Added by B2')],
         old_start=6,
-        new_start=6,
     )
 
     # --- Define the Groups ---
@@ -160,7 +156,8 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
 
     # --- Execute the Plan ---
     # The synthesizer should create a commit for group1, then a commit for group2.
-    synthesizer.execute_plan([group1, group2], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group1, group2], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # --- Verification ---
 
@@ -249,41 +246,37 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
 
     # A1: Add a line to file_a.txt after line 5.
     chunk_A1 = DiffChunk(
-        old_file_path="file_a.txt",
-        new_file_path="file_a.txt",
-        parsed_content=[Addition(6, "Line 6: Added by A1.")],
+        old_file_path=b"file_a.txt",
+        new_file_path=b"file_a.txt",
+        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")],
         old_start=6,
-        new_start=6,
     )
 
     # A2: Delete line 3 from file_a.txt.
     chunk_A2 = DiffChunk(
-        old_file_path="file_a.txt",
-        new_file_path="file_a.txt",
-        parsed_content=[Removal(3, "Line 3: An original line in A.")],
+        old_file_path=b"file_a.txt",
+        new_file_path=b"file_a.txt",
+        parsed_content=[Removal(old_line=3, abs_new_line=3, content=b"Line 3: An original line in A.")],
         old_start=3,
-        new_start=3,
     )
 
     # B1: Modify line 2 in file_b.txt.
     chunk_B1 = DiffChunk(
-        old_file_path="file_b.txt",
-        new_file_path="file_b.txt",
+        old_file_path=b"file_b.txt",
+        new_file_path=b"file_b.txt",
         parsed_content=[
-            Removal(2, "Line 2: value = 100"),
-            Addition(2, "Line 2: value = 250 # Updated by B1"),
+            Removal(old_line=2, abs_new_line=2, content=b"Line 2: value = 100"),
+            Addition(old_line=2, abs_new_line=2, content=b"Line 2: value = 250 # Updated by B1"),
         ],
         old_start=2,
-        new_start=2,
     )
 
     # B2: Add a new setting to file_b.txt after line 5.
     chunk_B2 = DiffChunk(
-        old_file_path="file_b.txt",
-        new_file_path="file_b.txt",
-        parsed_content=[Addition(6, 'Line 6: mode = "test" # Added by B2')],
+        old_file_path=b"file_b.txt",
+        new_file_path=b"file_b.txt",
+        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b'Line 6: mode = "test" # Added by B2')],
         old_start=6,
-        new_start=6,
     )
 
     # --- Definitions of chunks and groups are identical to the previous test ---
@@ -301,7 +294,8 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     )
 
     # --- EXECUTE THE PLAN in REVERSED ORDER ---
-    synthesizer.execute_plan([group2, group1], base_hash, "main")
+    final_hash = synthesizer.execute_plan([group2, group1], base_hash)
+    subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
 
     # --- Verification ---
 
