@@ -254,18 +254,18 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         git_interface.run_git_text_out(
             ["--version"],
         )
-
+    except NotADirectoryError:
+        raise GitError("Current directory is not a git repository")
     except Exception as e:
         raise GitError(
-            "Git is not working properly",
             f"Git version check failed: {e}",
-        ) from e
+        )
     # Check if we're in a git repository
     is_in_repo = git_interface.run_git_text_out(
         ["rev-parse", "--is-inside-work-tree"],
     )
     if is_in_repo is None or "fatal: not a git repository" in is_in_repo:
-        raise GitError("Current directory is not a git repository.")
+        raise GitError("Current directory is not a git repository")
 
     # validate that we are on a branch
     try:
