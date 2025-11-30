@@ -126,9 +126,8 @@ class CommitPipeline:
     def run(self) -> str | None:
         # Initial invocation summary
         logger.debug(
-            "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
-            target=self.commit_context.target,
-            msg_present=self.commit_context.message is not None,
+            "Pipeline run started: commit_context={commit_context} base_commit={base} new_commit={new}",
+            commit_context=self.commit_context,
             base=self.base_commit_hash,
             new=self.new_commit_hash,
         )
@@ -184,6 +183,8 @@ class CommitPipeline:
                 mechanical_chunks,
                 [],
             )
+
+            # filtering will go here
 
             with (
                 transient_step("Creating Semantic Groups", self.global_context.silent),

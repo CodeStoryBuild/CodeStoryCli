@@ -99,7 +99,7 @@ class GlobalContext:
 
 @dataclass(frozen=True)
 class CommitContext:
-    target: Path = "."
+    target: Path
     message: str | None = None
 
 

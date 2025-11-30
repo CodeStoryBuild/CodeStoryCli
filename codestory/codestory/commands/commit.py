@@ -123,7 +123,7 @@ def main(
     if validated_message:
         validated_message = sanitize_user_input(validated_message)
 
-    commit_context = CommitContext(validated_target, validated_message)
+    commit_context = CommitContext(target=validated_target, message=validated_message)
 
     logger.debug("[green] Checking repository status... [/green]")
     # verify repo state specifically for commit command

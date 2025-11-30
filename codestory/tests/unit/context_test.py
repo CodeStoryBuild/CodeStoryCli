@@ -125,17 +125,6 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
     assert context.auto_accept is True
 
 
-# -----------------------------------------------------------------------------
-# Other Context Tests
-# -----------------------------------------------------------------------------
-
-
-def test_commit_context_defaults():
-    ctx = CommitContext()
-    assert ctx.target == "."
-    assert ctx.message is None
-
-
 def test_fix_context():
     ctx = FixContext(commit_hash="abc1234")
     assert ctx.commit_hash == "abc1234"
