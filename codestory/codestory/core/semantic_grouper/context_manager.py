@@ -86,7 +86,7 @@ class ContextManager:
         self._context_cache: dict[tuple[bytes, bool], AnalysisContext] = {}
 
         # Determine which file versions need to be analyzed
-        self._required_contexts: dict[tuple[bytes , bool], list[tuple[int, int]]] = {}
+        self._required_contexts: dict[tuple[bytes, bool], list[tuple[int, int]]] = {}
         self._analyze_required_contexts()
 
         self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}

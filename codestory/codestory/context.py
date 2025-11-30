@@ -106,7 +106,7 @@ class CommitContext:
     message: str | None = None
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     relevance_filter_intent: str | None = None
-    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"] = "none" 
+    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"] = "none"
 
 
 @dataclass(frozen=True)

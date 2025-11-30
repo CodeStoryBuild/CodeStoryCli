@@ -111,7 +111,9 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     chunk_A1 = DiffChunk(
         old_file_path=b"file_a.txt",
         new_file_path=b"file_a.txt",
-        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")],
+        parsed_content=[
+            Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")
+        ],
         old_start=6,
     )
 
@@ -119,7 +121,11 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     chunk_A2 = DiffChunk(
         old_file_path=b"file_a.txt",
         new_file_path=b"file_a.txt",
-        parsed_content=[Removal(old_line=3, abs_new_line=3, content=b"Line 3: An original line in A.")],
+        parsed_content=[
+            Removal(
+                old_line=3, abs_new_line=3, content=b"Line 3: An original line in A."
+            )
+        ],
         old_start=3,
     )
 
@@ -129,7 +135,11 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
         new_file_path=b"file_b.txt",
         parsed_content=[
             Removal(old_line=2, abs_new_line=2, content=b"Line 2: value = 100"),
-            Addition(old_line=2, abs_new_line=2, content=b"Line 2: value = 250 # Updated by B1"),
+            Addition(
+                old_line=2,
+                abs_new_line=2,
+                content=b"Line 2: value = 250 # Updated by B1",
+            ),
         ],
         old_start=2,
     )
@@ -138,7 +148,13 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     chunk_B2 = DiffChunk(
         old_file_path=b"file_b.txt",
         new_file_path=b"file_b.txt",
-        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b'Line 6: mode = "test" # Added by B2')],
+        parsed_content=[
+            Addition(
+                old_line=6,
+                abs_new_line=6,
+                content=b'Line 6: mode = "test" # Added by B2',
+            )
+        ],
         old_start=6,
     )
 
@@ -248,7 +264,9 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     chunk_A1 = DiffChunk(
         old_file_path=b"file_a.txt",
         new_file_path=b"file_a.txt",
-        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")],
+        parsed_content=[
+            Addition(old_line=6, abs_new_line=6, content=b"Line 6: Added by A1.")
+        ],
         old_start=6,
     )
 
@@ -256,7 +274,11 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     chunk_A2 = DiffChunk(
         old_file_path=b"file_a.txt",
         new_file_path=b"file_a.txt",
-        parsed_content=[Removal(old_line=3, abs_new_line=3, content=b"Line 3: An original line in A.")],
+        parsed_content=[
+            Removal(
+                old_line=3, abs_new_line=3, content=b"Line 3: An original line in A."
+            )
+        ],
         old_start=3,
     )
 
@@ -266,7 +288,11 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
         new_file_path=b"file_b.txt",
         parsed_content=[
             Removal(old_line=2, abs_new_line=2, content=b"Line 2: value = 100"),
-            Addition(old_line=2, abs_new_line=2, content=b"Line 2: value = 250 # Updated by B1"),
+            Addition(
+                old_line=2,
+                abs_new_line=2,
+                content=b"Line 2: value = 250 # Updated by B1",
+            ),
         ],
         old_start=2,
     )
@@ -275,7 +301,13 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     chunk_B2 = DiffChunk(
         old_file_path=b"file_b.txt",
         new_file_path=b"file_b.txt",
-        parsed_content=[Addition(old_line=6, abs_new_line=6, content=b'Line 6: mode = "test" # Added by B2')],
+        parsed_content=[
+            Addition(
+                old_line=6,
+                abs_new_line=6,
+                content=b'Line 6: mode = "test" # Added by B2',
+            )
+        ],
         old_start=6,
     )
 

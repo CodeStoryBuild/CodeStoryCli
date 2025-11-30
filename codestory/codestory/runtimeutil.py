@@ -25,8 +25,8 @@ import signal
 import sys
 
 import typer
-from loguru import logger
 from colorama import Fore, Style
+from loguru import logger
 
 
 def ensure_utf8_output():

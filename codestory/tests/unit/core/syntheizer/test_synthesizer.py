@@ -1254,7 +1254,7 @@ def test_unicode_and_special_characters(git_repo):
         old_file_path=None,
         hunk_lines=[
             b"+#!/bin/bash",
-            b"+echo \"$HOME\"",
+            b'+echo "$HOME"',
             b"+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}",
             b"+math: \xe2\x88\x91(x\xc2\xb2) = \xcf\x80/2",
         ],

@@ -192,7 +192,8 @@ class TestGitDiffParsing:
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
         assert (
-            b"GIT binary patch\nliteral 1\nIcmZPo000310RR91\n\nliteral 0\nHcmV?d00001\n" in hunk.file_patch
+            b"GIT binary patch\nliteral 1\nIcmZPo000310RR91\n\nliteral 0\nHcmV?d00001\n"
+            in hunk.file_patch
         )
 
     def test_parse_binary_file_diff(self, git_repo: Path):
@@ -215,7 +216,8 @@ class TestGitDiffParsing:
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
         assert (
-            b"GIT binary patch\nliteral 2\nJcmZP&0ssIM022TJ\n\nliteral 1\nIcmZPo000310RR91\n" in hunk.file_patch
+            b"GIT binary patch\nliteral 2\nJcmZP&0ssIM022TJ\n\nliteral 1\nIcmZPo000310RR91\n"
+            in hunk.file_patch
         )
 
     def test_add_multiple_binary_file_diff(self, git_repo: Path):

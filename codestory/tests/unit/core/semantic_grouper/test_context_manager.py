@@ -89,7 +89,9 @@ def test_context_manager():
             new_file_path=b"test.py",
             file_mode=b"100644",
             parsed_content=[
-                Removal(content=b"    def subtract(self, a, b):", old_line=8, abs_new_line=8),
+                Removal(
+                    content=b"    def subtract(self, a, b):", old_line=8, abs_new_line=8
+                ),
                 Removal(content=b"        return a - b", old_line=9, abs_new_line=9),
             ],
             old_start=8,
@@ -101,7 +103,9 @@ def test_context_manager():
             file_mode=b"100644",
             parsed_content=[
                 Addition(content=b"def new_function():", old_line=0, abs_new_line=1),
-                Addition(content=b'    return "This is new"', old_line=0, abs_new_line=2),
+                Addition(
+                    content=b'    return "This is new"', old_line=0, abs_new_line=2
+                ),
             ],
             old_start=0,
         ),

@@ -21,10 +21,10 @@
 
 
 from typing import Literal
-import typer
-from loguru import logger
-from colorama import Style, Fore
 
+import typer
+from colorama import Fore, Style
+from loguru import logger
 
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.branch_saver.branch_saver import BranchSaver
@@ -104,8 +104,18 @@ def main(
         "-m",
         help="Context or instructions for the AI to generate the commit message",
     ),
-    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"] = typer.Option("safe", "--secrets-aggression", help="Aggression level for secret scanning."),
-    relevance_filter_level: Literal["safe", "standard", "strict", "none"] = typer.Option("none", "--relevance-level", help="Relevance filter level for commit generation."),
+    secret_scanner_aggression: Literal[
+        "safe", "balanced", "paranoid", "none"
+    ] = typer.Option(
+        "safe", "--secrets-aggression", help="Aggression level for secret scanning."
+    ),
+    relevance_filter_level: Literal[
+        "safe", "standard", "strict", "none"
+    ] = typer.Option(
+        "none",
+        "--relevance-level",
+        help="Relevance filter level for commit generation.",
+    ),
     intent: str | None = typer.Option(
         None,
         "--intent",
@@ -128,7 +138,6 @@ def main(
             "Relevance filter intent must be provided when relevance filter is active. (relevance-level != none)",
         )
 
-
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
 
@@ -140,7 +149,13 @@ def main(
     if validated_message:
         validated_message = sanitize_user_input(validated_message)
 
-    commit_context = CommitContext(target=validated_target, message=validated_message, relevance_filter_level=relevance_filter_level, relevance_filter_intent=intent, secret_scanner_aggression=secret_scanner_aggression)
+    commit_context = CommitContext(
+        target=validated_target,
+        message=validated_message,
+        relevance_filter_level=relevance_filter_level,
+        relevance_filter_intent=intent,
+        secret_scanner_aggression=secret_scanner_aggression,
+    )
 
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
     # verify repo state specifically for commit command
