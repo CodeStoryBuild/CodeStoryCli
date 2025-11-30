@@ -22,6 +22,8 @@ from ..core.semantic_grouper.query_manager import QueryManager
 from ..core.semantic_grouper.semantic_grouper import SemanticGrouper
 from ..core.synthesizer.git_synthesizer import GitSynthesizer
 from ..core.synthesizer.utils import get_patches
+from ..core.secret_scanner.secret_scanner import ScannerConfig, filter_hunks
+from ..core.relevance_filter.relevance_filter import RelevanceFilter, RelevanceFilterConfig
 
 
 @contextlib.contextmanager
@@ -150,7 +152,7 @@ class CommitPipeline:
             logger.info("No changes to process.")
             if self.source == "commit":
                 logger.info(
-                    "[yellow]If you meant to modify existing git history, please use codestory fix or codestory clean commands[/yellow]"
+                    f"{Fore.YELLOW}If you meant to modify existing git history, please use codestory fix or codestory clean commands{Style.RESET_ALL}"
                 )
             return None
 
@@ -184,8 +186,7 @@ class CommitPipeline:
                 [],
             )
 
-            # filtering will go here
-
+            
             with (
                 transient_step("Creating Semantic Groups", self.global_context.silent),
                 time_block("semantic_grouping"),
@@ -202,7 +203,76 @@ class CommitPipeline:
         else:
             semantic_chunks = []
 
-        # take these semantically valid chunks, and now group them into logical commits
+        # first optionally filter secrets
+        if self.commit_context.secret_scanner_aggression != "none":
+            with (
+                transient_step(
+                    "Scanning for leaked secrets...",
+                    self.global_context.silent,
+                ),
+                time_block("secret_scanning"),
+            ):
+
+                (
+                    semantic_chunks,
+                    immutable_chunks,
+                    rejected_chunks,
+                ) = filter_hunks(
+                    semantic_chunks,
+                    immutable_chunks,
+                    config=None,
+                )
+
+            if rejected_chunks:
+                logger.warning(
+                    "Rejected {count} chunks due to potential hardcoded secrets",
+                    count=len(rejected_chunks),
+                )
+
+
+        # then filter for relevance if configured
+        if self.commit_context.relevance_filter_level != "none" and self.global_context.model is not None:
+            with (
+                transient_step(
+                    "Applying Relevance Filter...",
+                    self.global_context.silent,
+                ),
+                time_block("relevance_filtering"),
+            ):
+                relevance_filter = RelevanceFilter(
+                    self.global_context.model,
+                    RelevanceFilterConfig(
+                        level=self.commit_context.relevance_filter_level,
+                        intent=self.commit_context.relevance_filter_intent
+                        or "Update content",
+                    )
+                )
+
+                (
+                    semantic_chunks,
+                    immutable_chunks,
+                    rejected_relevance,
+                ) = relevance_filter.filter(
+                    semantic_chunks,
+                    immutable_chunks,
+                    intent=self.commit_context.relevance_filter_intent
+                    or "Update content",
+                )
+
+            if rejected_relevance:
+                logger.warning(
+                    "Rejected {count} chunks due to relevance filtering",
+                    count=len(rejected_relevance),
+                )
+
+        if self.commit_context.relevance_filter_level != "none" and self.global_context.model is None:
+            logger.warning(
+                "Relevance filter level is set to '{level}' but no model is configured. Skipping relevance filtering.",
+                level=self.commit_context.relevance_filter_level,
+            )
+
+
+        # take these semantically valid, filtered chunks, and now group them into logical commits
         with (
             transient_step(
                 "Using AI to create meaningful commits...", self.global_context.silent

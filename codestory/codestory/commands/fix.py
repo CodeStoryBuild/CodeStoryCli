@@ -22,6 +22,7 @@
 
 import typer
 from loguru import logger
+from colorama import Fore, Style
 
 from codestory.context import CommitContext, FixContext, GlobalContext
 from codestory.core.exceptions import (
@@ -110,7 +111,7 @@ def main(
     )
 
     commit_context = CommitContext(
-        target=None, message=None
+        target=None, message=None, relevance_filter_level="none", relevance_filter_intent=None, secret_scanner_aggression="none"
     )  # TODO add custom fix message
     commit_pipeline = create_commit_pipeline(
         global_context, commit_context, base_hash, new_hash, "fix"
@@ -142,4 +143,4 @@ def main(
 
     else:
         logger.error("Fix operation failed")
-        logger.warning("[red]Failed to fix commit[/red]")
+        logger.warning(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
