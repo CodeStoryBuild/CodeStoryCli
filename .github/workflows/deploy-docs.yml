@@ -1,0 +1,50 @@
+name: Deploy Docs to Cloudflare
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'codestory/**'
+      - 'pyproject.toml'
+  workflow_dispatch: # Allows manual trigger button
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' 
+
+      - name: Install Dependencies
+        # Installs your project dependencies from the root pyproject.toml
+        run: pip install ".[dev]"
+
+      - name: Build MkDocs
+        # 1. Build the site using the config in the subfolder
+        # 2. Output to a temporary 'site' folder
+        run: mkdocs build -f codestory/mkdocs.yml -d site
+
+      - name: Prepare Subdirectory Structure
+        # We move 'site' into 'dist/codestorycli' so Cloudflare preserves the path
+        run: |
+          mkdir -p dist/codestorycli
+          mv codestory/site/* dist/codestorycli/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: codestory-docs 
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
