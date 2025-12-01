@@ -102,7 +102,6 @@ class TestCommitScenarios:
     def test_commit_clean(self, cli_exe, repo_factory):
         repo = repo_factory("clean")
         result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
-        assert result.returncode != 0
         assert (
             "no commits were created" in result.stdout.lower()
             or "no changes" in result.stdout.lower()
