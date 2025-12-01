@@ -37,7 +37,6 @@ from codestory.core.validation import (
     validate_message_length,
     validate_target_path,
 )
-from codestory.pipelines.commit_init import create_commit_pipeline
 
 
 def _help_callback(ctx: typer.Context, param, value: bool):
@@ -173,6 +172,8 @@ def main(
     base_commit_hash, new_commit_hash, current_branch = (
         branch_saver.save_working_state()
     )
+
+    from codestory.pipelines.commit_init import create_commit_pipeline
 
     with time_block("Commit Command E2E"):
         runner = create_commit_pipeline(

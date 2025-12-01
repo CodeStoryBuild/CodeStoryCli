@@ -33,8 +33,6 @@ from codestory.core.exceptions import (
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import validate_commit_hash, validate_git_repository
-from codestory.pipelines.commit_init import create_commit_pipeline
-from codestory.pipelines.fix_pipeline import FixPipeline
 
 
 def _help_callback(ctx: typer.Context, param, value: bool):
@@ -117,6 +115,10 @@ def main(
         relevance_filter_intent=None,
         secret_scanner_aggression="none",
     )  # TODO add custom fix message
+
+    from codestory.pipelines.commit_init import create_commit_pipeline
+    from codestory.pipelines.fix_pipeline import FixPipeline
+
     commit_pipeline = create_commit_pipeline(
         global_context, commit_context, base_hash, new_hash, "fix"
     )

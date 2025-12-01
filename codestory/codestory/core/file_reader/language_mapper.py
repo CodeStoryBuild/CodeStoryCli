@@ -190,11 +190,6 @@ def _resolve_m_file(content: str) -> str:
 
     # Matlab indicators
     # Comments start with % in Matlab, // in ObjC (usually)
-    matlab_indicators = [
-        r"^\s*%",  # Comment at start of line
-        r"function\s+\w+",  # Function definition
-        r"end\s*$",  # Block end
-    ]
 
     for ind in objc_indicators:
         if re.search(ind, content):

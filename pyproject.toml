@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cst = "codestory.cli:app"
+cst = "codestory.cli:run_app"
 
 [tool.setuptools.packages.find]
 where = ["codestory"]
