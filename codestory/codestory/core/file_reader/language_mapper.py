@@ -129,6 +129,7 @@ EXTENSION_MAP = {
     ".vim": "vim",
     ".vue": "vue",
     ".zig": "zig",
+    ".ml": "ocaml",
 }
 
 # Map Interpreter (Shebang) names to Language

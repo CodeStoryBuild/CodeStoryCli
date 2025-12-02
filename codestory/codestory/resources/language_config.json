@@ -58,7 +58,6 @@
         },
         "scope_queries": [
             "((function_declaration) @placeholder)",
-            "((function) @placeholder)",
             "((arrow_function) @placeholder)",
             "((class_declaration) @placeholder)",
             "((if_statement) @placeholder)",
@@ -96,7 +95,6 @@
         },
         "scope_queries": [
             "((function_declaration) @placeholder)",
-            "((function) @placeholder)",
             "((arrow_function) @placeholder)",
             "((class_declaration) @placeholder)",
             "((if_statement) @placeholder)",
@@ -118,7 +116,8 @@
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
-                    "((identifier) @placeholder)"
+                    "((identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
                 ],
                 "definition_queries": [
                     "(variable_declarator name: (identifier) @placeholder)",
@@ -154,7 +153,9 @@
             "identifier_class": {
                 "general_queries": [
                     "((identifier) @placeholder)",
-                    "((field_identifier) @placeholder)"
+                    "((field_identifier) @placeholder)",
+                    "((namespace_identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
                 ],
                 "definition_queries": [
                     "(declaration declarator: (identifier) @placeholder)",
@@ -163,7 +164,7 @@
                     "(struct_specifier name: (type_identifier) @placeholder)",
                     "(union_specifier name: (type_identifier) @placeholder)",
                     "(enum_specifier name: (type_identifier) @placeholder)",
-                    "(namespace_definition name: (identifier) @placeholder)"
+                    "(namespace_definition (namespace_identifier) @placeholder)"
                 ]
             }
         },
@@ -196,8 +197,8 @@
                     "(struct_declaration (identifier) @placeholder)",
                     "(interface_declaration (identifier) @placeholder)",
                     "(enum_declaration (identifier) @placeholder)",
-                    "(namespace_declaration (qualified_name) @placeholder)",
-                    "(using_directive (name_equals (identifier)) @placeholder)"
+                    "(namespace_declaration (identifier) @placeholder)",
+                    "(using_directive (identifier) @placeholder)"
                 ]
             }
         },
@@ -212,7 +213,8 @@
             "((try_statement) @placeholder)",
             "((switch_statement) @placeholder)",
             "((namespace_declaration) @placeholder)",
-            "((constructor_declaration) @placeholder)"
+            "((constructor_declaration) @placeholder)",
+            "((global_statement) @placeholder)"
         ],
         "comment_queries": [
             "((comment) @placeholder)"
@@ -223,16 +225,26 @@
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
-                    "((identifier) @placeholder)"
+                    "((identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
                 ],
                 "definition_queries": [
-                    "(var_spec (identifier) @placeholder)",
+                    "(var_spec name: (identifier) @placeholder)",
                     "(function_declaration name: (identifier) @placeholder)",
                     "(method_declaration name: (field_identifier) @placeholder)",
-                    "(type_alias (identifier) @placeholder)",
-                    "(type_spec name: (type_identifier) @placeholder)",
-                    "(package_clause (package_identifier) @placeholder)",
-                    "(import_spec_list (import_spec (package_identifier)) @placeholder)"
+                    "(type_declaration (type_spec name: (type_identifier) @placeholder))",
+                    "(const_spec name: (identifier) @placeholder)",
+                    "(method_declaration receiver: (parameter_list (parameter_declaration type: (pointer_type (type_identifier) @placeholder))))",
+                    "(method_declaration receiver: (parameter_list (parameter_declaration type: (type_identifier) @placeholder)))"
+                ]
+            },
+            "reciever_class": {
+                "general_queries": [
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(method_declaration receiver: (parameter_list (parameter_declaration type: (pointer_type (type_identifier) @placeholder))))",
+                    "(method_declaration receiver: (parameter_list (parameter_declaration type: (type_identifier) @placeholder)))"
                 ]
             }
         },
@@ -254,7 +266,8 @@
             "identifier_class": {
                 "general_queries": [
                     "((identifier) @placeholder)",
-                    "((field_identifier) @placeholder)"
+                    "((field_identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
                 ],
                 "definition_queries": [
                     "(let_declaration pattern: (identifier) @placeholder)",
@@ -279,6 +292,485 @@
             "((loop_expression) @placeholder)",
             "((match_expression) @placeholder)",
             "((mod_item) @placeholder)"
+        ],
+        "comment_queries": [
+            "((line_comment) @placeholder)",
+            "((block_comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "ruby": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)",
+                    "((constant) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(assignment left: (identifier) @placeholder)",
+                    "(assignment left: (constant) @placeholder)",
+                    "(method (identifier) @placeholder)",
+                    "(singleton_method name: (identifier) @placeholder)",
+                    "(class (constant) @placeholder)",
+                    "(module (constant) @placeholder)",
+                    "(for pattern: (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((method) @placeholder)",
+            "((singleton_method) @placeholder)",
+            "((class) @placeholder)",
+            "((module) @placeholder)",
+            "((if) @placeholder)",
+            "((unless) @placeholder)",
+            "((while) @placeholder)",
+            "((until) @placeholder)",
+            "((for) @placeholder)",
+            "((case) @placeholder)",
+            "((begin) @placeholder)",
+            "((do_block) @placeholder)",
+            "((lambda) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "php": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((name) @placeholder)",
+                    "((variable_name) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(assignment_expression left: (variable_name) @placeholder)",
+                    "(function_definition name: (name) @placeholder)",
+                    "(method_declaration name: (name) @placeholder)",
+                    "(class_declaration name: (name) @placeholder)",
+                    "(interface_declaration name: (name) @placeholder)",
+                    "(trait_declaration name: (name) @placeholder)",
+                    "(namespace_definition name: (namespace_name) @placeholder)",
+                    "(namespace_use_declaration (namespace_use_clause (qualified_name)) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_definition) @placeholder)",
+            "((method_declaration) @placeholder)",
+            "((class_declaration) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((foreach_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((do_statement) @placeholder)",
+            "((try_statement) @placeholder)",
+            "((switch_statement) @placeholder)",
+            "((namespace_definition) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "swift": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((simple_identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(property_declaration (pattern (simple_identifier)) @placeholder)",
+                    "(function_declaration name: (simple_identifier) @placeholder)",
+                    "(class_declaration name: (type_identifier) @placeholder)",
+                    "(protocol_declaration name: (type_identifier) @placeholder)",
+                    "(typealias_declaration name: (type_identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_declaration) @placeholder)",
+            "((class_declaration) @placeholder)",
+            "((protocol_declaration) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((guard_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((do_statement) @placeholder)",
+            "((switch_statement) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "((multiline_comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "kotlin": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((simple_identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(property_declaration (variable_declaration (simple_identifier) @placeholder))",
+                    "(function_declaration (simple_identifier) @placeholder)",
+                    "(class_declaration (type_identifier) @placeholder)",
+                    "(object_declaration (type_identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_declaration) @placeholder)",
+            "((class_declaration) @placeholder)",
+            "((object_declaration) @placeholder)",
+            "((anonymous_initializer) @placeholder)",
+            "((if_expression) @placeholder)",
+            "((when_expression) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((do_while_statement) @placeholder)",
+            "((try_expression) @placeholder)",
+            "((lambda_literal) @placeholder)"
+        ],
+        "comment_queries": [
+            "((line_comment) @placeholder)",
+            "((multiline_comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "scala": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(val_definition (identifier) @placeholder)",
+                    "(var_definition (identifier) @placeholder)",
+                    "(function_definition (identifier) @placeholder)",
+                    "(class_definition (identifier) @placeholder)",
+                    "(object_definition (identifier) @placeholder)",
+                    "(trait_definition (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_definition) @placeholder)",
+            "((class_definition) @placeholder)",
+            "((object_definition) @placeholder)",
+            "((trait_definition) @placeholder)",
+            "((if_expression) @placeholder)",
+            "((for_expression) @placeholder)",
+            "((while_expression) @placeholder)",
+            "((try_expression) @placeholder)",
+            "((match_expression) @placeholder)",
+            "((block) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "((block_comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "r": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(binary_operator (identifier) @placeholder)",
+                    "(for_statement (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_definition) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((repeat_statement) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "lua": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(assignment_statement (variable_list (identifier)) @placeholder)",
+                    "(function_declaration (identifier) @placeholder)",
+                    "(function_declaration (dot_index_expression (identifier) @placeholder))",
+                    "(field (identifier) @placeholder)",
+                    "(for_generic_clause (variable_list (identifier)) @placeholder)",
+                    "(for_numeric_clause (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_declaration) @placeholder)",
+            "((function_definition) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((repeat_statement) @placeholder)",
+            "((do_statement) @placeholder)",
+            "((table_constructor) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "dart": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(initialized_variable_definition (identifier) @placeholder)",
+                    "(function_signature (identifier) @placeholder)",
+                    "(class_definition (identifier) @placeholder)",
+                    "(enum_declaration (identifier) @placeholder)",
+                    "(mixin_declaration (identifier) @placeholder)",
+                    "(extension_declaration (identifier) @placeholder)",
+                    "(type_alias (type_identifier) @placeholder)",
+                    "(import_specification (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_body) @placeholder)",
+            "((class_definition) @placeholder)",
+            "((enum_declaration) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((do_statement) @placeholder)",
+            "((try_statement) @placeholder)",
+            "((switch_statement) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "((documentation_comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "elixir": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)",
+                    "((atom) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(call target: (identifier) @placeholder (#match? @placeholder \"^def$|^defp$|^defmacro$|^defmodule$\"))",
+                    "(binary_operator left: (identifier) @placeholder operator: \"=\")",
+                    "(unary_operator operator: \"@\" operand: (call target: (identifier) @placeholder))"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((call) @placeholder)",
+            "((anonymous_function) @placeholder)",
+            "((do_block) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "haskell": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((variable) @placeholder)",
+                    "((type) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(function (variable) @placeholder)",
+                    "(type_alias (type) @placeholder)",
+                    "(newtype (type) @placeholder)",
+                    "(algebraic_datatype (type) @placeholder)",
+                    "(class_declaration (type) @placeholder)",
+                    "(instance_declaration (type) @placeholder)",
+                    "(import_declaration (module) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function) @placeholder)",
+            "((local_binds) @placeholder)",
+            "((let) @placeholder)",
+            "((case) @placeholder)",
+            "((do) @placeholder)",
+            "((lambda) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "((pragma) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "ocaml": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((value_name) @placeholder)",
+                    "((type_constructor) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(value_definition (let_binding pattern: (value_name) @placeholder))",
+                    "(type_definition (type_binding (type_constructor) @placeholder))",
+                    "(module_definition name: (module_name) @placeholder)",
+                    "(class_definition (class_binding (class_name) @placeholder))",
+                    "(open_statement (module_path) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((value_definition) @placeholder)",
+            "((function_expression) @placeholder)",
+            "((if_expression) @placeholder)",
+            "((match_expression) @placeholder)",
+            "((try_expression) @placeholder)",
+            "((let_expression) @placeholder)",
+            "((module_definition) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "erlang": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((atom) @placeholder)",
+                    "((variable) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(function_clause name: (atom) @placeholder)",
+                    "(record_decl name: (atom) @placeholder)",
+                    "(type_alias name: (atom) @placeholder)",
+                    "(module_attribute (atom) @placeholder)",
+                    "(export_attribute (fa (atom) @placeholder))"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_clause) @placeholder)",
+            "((case_expr) @placeholder)",
+            "((if_expr) @placeholder)",
+            "((receive_expr) @placeholder)",
+            "((try_expr) @placeholder)",
+            "((function_clause) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "clojure": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((sym_lit) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(list_lit . (sym_lit) @defn (#match? @defn \"^def$|^defn$|^defn-$|^defmacro$|^defprotocol$|^defrecord$|^deftype$\") . (sym_lit) @placeholder)",
+                    "(list_lit . (sym_lit) @ns (#eq? @ns \"ns\") . (sym_lit) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((list_lit) @placeholder)",
+            "((vec_lit) @placeholder)",
+            "((map_lit) @placeholder)",
+            "((set_lit) @placeholder)",
+            "((anon_fn_lit) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "((dis_expr) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "solidity": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(state_variable_declaration (identifier) @placeholder)",
+                    "(function_definition name: (identifier) @placeholder)",
+                    "(modifier_definition name: (identifier) @placeholder)",
+                    "(contract_declaration name: (identifier) @placeholder)",
+                    "(interface_declaration name: (identifier) @placeholder)",
+                    "(library_declaration name: (identifier) @placeholder)",
+                    "(struct_declaration name: (identifier) @placeholder)",
+                    "(enum_declaration name: (identifier) @placeholder)",
+                    "(import_directive (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_definition) @placeholder)",
+            "((modifier_definition) @placeholder)",
+            "((contract_declaration) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((do_while_statement) @placeholder)",
+            "((try_statement) @placeholder)"
+        ],
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "julia": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(assignment_expression (identifier) @placeholder)",
+                    "(function_definition name: (identifier) @placeholder)",
+                    "(short_function_definition name: (identifier) @placeholder)",
+                    "(macro_definition name: (identifier) @placeholder)",
+                    "(struct_definition name: (identifier) @placeholder)",
+                    "(module_definition name: (identifier) @placeholder)",
+                    "(for_clause (identifier) @placeholder)",
+                    "(import_statement (identifier) @placeholder)",
+                    "(using_statement (identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": [
+            "((function_definition) @placeholder)",
+            "((macro_definition) @placeholder)",
+            "((struct_definition) @placeholder)",
+            "((module_definition) @placeholder)",
+            "((if_statement) @placeholder)",
+            "((for_statement) @placeholder)",
+            "((while_statement) @placeholder)",
+            "((try_statement) @placeholder)",
+            "((let_statement) @placeholder)",
+            "((quote_statement) @placeholder)"
         ],
         "comment_queries": [
             "((line_comment) @placeholder)",
