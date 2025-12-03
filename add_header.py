@@ -37,7 +37,7 @@ def add_license_header(root_dir):
 
     # 1. Traverse the directory and find all .py files
     py_files = []
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
             if filename.endswith(".py"):
                 py_files.append(os.path.join(dirpath, filename))

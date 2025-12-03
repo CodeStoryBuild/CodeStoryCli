@@ -21,6 +21,7 @@
 from dataclasses import dataclass
 
 from codestory.core.data.diff_chunk import DiffChunk
+from codestory.core.exceptions import SyntaxErrorDetected
 from codestory.core.file_reader.file_parser import FileParser, ParsedFile
 from codestory.core.file_reader.protocol import FileReader
 from loguru import logger
@@ -66,11 +67,13 @@ class ContextManager:
         file_reader: FileReader,
         query_manager: QueryManager,
         diff_chunks: list[DiffChunk],
+        fail_on_syntax_errors: bool,
     ):
         self.file_parser = file_parser
         self.file_reader = file_reader
         self.query_manager = query_manager
         self.diff_chunks = diff_chunks
+        self.fail_on_syntax_errors = fail_on_syntax_errors
 
         # Initialize mappers
         self.scope_mapper = ScopeMapper(query_manager)
@@ -288,18 +291,12 @@ class ContextManager:
             file_path,
             is_old_version,
         ), parsed_file in self._parsed_files.items():
-            try:
-                context = self._build_context(file_path, is_old_version, parsed_file)
-                if context is not None:
-                    self._context_cache[(file_path, is_old_version)] = context
-                else:
-                    logger.debug(
-                        f"Failed to build context for {file_path} (old={is_old_version}): context is None"
-                    )
-            except Exception as e:
-                # Log error but continue with other files
+            context = self._build_context(file_path, is_old_version, parsed_file)
+            if context is not None:
+                self._context_cache[(file_path, is_old_version)] = context
+            else:
                 logger.debug(
-                    f"Failed to build context for {file_path} (old={is_old_version}): {e}"
+                    f"Failed to build context for {file_path} (old={is_old_version})"
                 )
 
     def _build_context(
@@ -316,49 +313,69 @@ class ContextManager:
         Returns:
             AnalysisContext if successful, None if file cannot be processed
         """
-        # for now, reject errored files
-        if parsed_file.root_node.has_error:
-            version = "old version" if is_old_version else "new version"
-            logger.warning(f"Syntax errors detected in {version} of {file_path}")
-            return None
+        # check if any of the new ast has syntax errors
 
-        # Build scope map
-        scope_map = self.scope_mapper.build_scope_map(
-            parsed_file.detected_language,
-            parsed_file.root_node,
-            file_path,
-            parsed_file.line_ranges,
-        )
+        def traverse_errors(node) -> bool:
+            if node.has_error:
+                return True
+            for child in node.children:
+                if traverse_errors(child):
+                    return True
+            return False
 
-        # If we need to share symbols between files, use the shared context
+        if (not is_old_version) and traverse_errors(parsed_file.root_node):
+            file_path_str = file_path.decode("utf-8", errors="replace")
+            if not is_old_version and self.fail_on_syntax_errors:
+                raise SyntaxErrorDetected(
+                    f"Exiting commit early! Syntax errors detected in current version of {file_path_str}! (fail_on_syntax_errors is enabled)"
+                )
 
-        if self.query_manager.get_config(
-            parsed_file.detected_language
-        ).share_tokens_between_files:
-            symbols = self._shared_context_cache.get(
-                (parsed_file.detected_language, is_old_version)
-            ).defined_symbols
-        else:
-            symbols = self.symbol_extractor.extract_defined_symbols(
+            logger.warning(
+                f"Syntax errors detected in current version of {file_path_str}!"
+            )
+
+        try:
+            # Build scope map
+            scope_map = self.scope_mapper.build_scope_map(
                 parsed_file.detected_language,
                 parsed_file.root_node,
+                file_path,
                 parsed_file.line_ranges,
             )
 
-        # Build symbol map
-        symbol_map = self.symbol_mapper.build_symbol_map(
-            parsed_file.detected_language,
-            parsed_file.root_node,
-            symbols,
-            parsed_file.line_ranges,
-        )
+            # If we need to share symbols between files, use the shared context
 
-        comment_map = self.comment_mapper.build_comment_map(
-            parsed_file.detected_language,
-            parsed_file.root_node,
-            parsed_file.content_bytes,
-            parsed_file.line_ranges,
-        )
+            if self.query_manager.get_config(
+                parsed_file.detected_language
+            ).share_tokens_between_files:
+                symbols = self._shared_context_cache.get(
+                    (parsed_file.detected_language, is_old_version)
+                ).defined_symbols
+            else:
+                symbols = self.symbol_extractor.extract_defined_symbols(
+                    parsed_file.detected_language,
+                    parsed_file.root_node,
+                    parsed_file.line_ranges,
+                )
+
+            # Build symbol map
+            symbol_map = self.symbol_mapper.build_symbol_map(
+                parsed_file.detected_language,
+                parsed_file.root_node,
+                symbols,
+                parsed_file.line_ranges,
+            )
+
+            comment_map = self.comment_mapper.build_comment_map(
+                parsed_file.detected_language,
+                parsed_file.root_node,
+                parsed_file.content_bytes,
+                parsed_file.line_ranges,
+            )
+        except Exception as e:
+            # TODO I dont like this broad exception catch here
+            logger.debug(f"Error building maps for {file_path}: {e}")
+            return None
 
         context = AnalysisContext(
             file_path=file_path,

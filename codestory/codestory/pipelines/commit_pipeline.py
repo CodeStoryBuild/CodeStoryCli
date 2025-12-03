@@ -190,6 +190,7 @@ class CommitPipeline:
                 self.file_reader,
                 self.query_manager,
                 flat_chunks,
+                self.commit_context.fail_on_syntax_errors,
             )
 
             # create smallest mechanically valid chunks

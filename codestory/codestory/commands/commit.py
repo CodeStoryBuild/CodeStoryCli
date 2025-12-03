@@ -118,6 +118,11 @@ def main(
         "--intent",
         help="Intent or purpose for the commit, used for relevance filtering.",
     ),
+    fail_on_syntax_errors: bool = typer.Option(
+        False,
+        "--fail-on-syntax-errors",
+        help="Fail the commit if syntax errors are detected in the changes.",
+    ),
 ) -> None:
     """
     Commits current working directory changes into smaller logical commits.
@@ -152,6 +157,7 @@ def main(
         relevance_filter_level=relevance_filter_level,
         relevance_filter_intent=intent,
         secret_scanner_aggression=secret_scanner_aggression,
+        fail_on_syntax_errors=fail_on_syntax_errors,
     )
 
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")

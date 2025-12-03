@@ -154,6 +154,7 @@ def main(
         relevance_filter_level="none",
         relevance_filter_intent=None,
         secret_scanner_aggression="none",
+        fail_on_syntax_errors=False,
     )
 
     from codestory.pipelines.commit_init import create_commit_pipeline
