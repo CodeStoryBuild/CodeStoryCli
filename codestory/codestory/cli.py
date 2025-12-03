@@ -39,7 +39,6 @@
 # By using this file, you agree to the terms of one of the two licenses above.
 # -----------------------------------------------------------------------------
 
-
 import os
 from pathlib import Path
 
