@@ -59,6 +59,7 @@ def create_chunk(
     chunk.is_file_rename = is_rename
     chunk.is_file_addition = is_add
     chunk.is_file_deletion = is_del
+    chunk.get_chunks = Mock(return_value=[chunk])
 
     return chunk
 
@@ -107,10 +108,11 @@ def context_manager_deps(mocks):
 def test_analyze_required_contexts_mod(context_manager_deps):
     chunk = create_chunk()
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     req = cm.get_required_contexts()
@@ -121,10 +123,11 @@ def test_analyze_required_contexts_mod(context_manager_deps):
 def test_analyze_required_contexts_add(context_manager_deps):
     chunk = create_chunk(is_add=True, old_path=None)
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     req = cm.get_required_contexts()
@@ -135,10 +138,11 @@ def test_analyze_required_contexts_add(context_manager_deps):
 def test_analyze_required_contexts_del(context_manager_deps):
     chunk = create_chunk(is_del=True, new_path=None)
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     req = cm.get_required_contexts()
@@ -149,10 +153,11 @@ def test_analyze_required_contexts_del(context_manager_deps):
 def test_simplify_overlapping_ranges(context_manager_deps):
     # We can test this static-like method by instantiating with empty chunks
     cm = ContextManager(
+        [],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [],
+        False
     )
 
     ranges = [(1, 5), (3, 7), (10, 12)]
@@ -177,6 +182,7 @@ def test_build_context_success(context_manager_deps):
 
     parsed_file = Mock()
     parsed_file.root_node.has_error = False
+    parsed_file.root_node.children = []
     parsed_file.detected_language = "python"
     parsed_file.content_bytes = b"content"
     parsed_file.line_ranges = []
@@ -196,10 +202,11 @@ def test_build_context_success(context_manager_deps):
     context_manager_deps["comment_mapper"].build_comment_map.return_value = Mock()
 
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     assert cm.has_context(b"file.txt", True)
@@ -223,10 +230,11 @@ def test_build_context_syntax_error(context_manager_deps):
     context_manager_deps["parser"].parse_file.return_value = parsed_file
 
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     # Should not have context due to syntax error

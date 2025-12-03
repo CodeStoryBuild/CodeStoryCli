@@ -111,10 +111,11 @@ def test_context_manager():
 
     # Create context manager
     context_manager = ContextManager(
+        chunks=diff_chunks,
         file_parser=file_parser,
         file_reader=file_reader,
         query_manager=query_manager,
-        diff_chunks=diff_chunks,
+        fail_on_syntax_errors=False
     )
 
     # Test getting contexts
