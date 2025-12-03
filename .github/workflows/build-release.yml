@@ -51,6 +51,10 @@ jobs:
 
       # --- TEST STEPS ---
 
+      - name: Install Test Dependencies
+        run: |
+          pip install pytest
+
       - name: Create Integration Test Config
         shell: bash
         run: echo "model = 'no-model'"> codestoryconfig.toml
