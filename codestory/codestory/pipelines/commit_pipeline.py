@@ -43,7 +43,6 @@ from ..core.relevance_filter.relevance_filter import (
 )
 from ..core.secret_scanner.secret_scanner import filter_hunks
 from ..core.semantic_grouper.context_manager import ContextManager
-from ..core.semantic_grouper.query_manager import QueryManager
 from ..core.semantic_grouper.semantic_grouper import SemanticGrouper
 from ..core.synthesizer.git_synthesizer import GitSynthesizer
 from ..core.synthesizer.utils import get_patches
@@ -127,8 +126,6 @@ class CommitPipeline:
         logical_grouper: LogicalGrouper,
         synthesizer: GitSynthesizer,
         file_reader: FileReader,
-        file_parser: FileParser,
-        query_manager: QueryManager,
         base_commit_hash: str,
         new_commit_hash: str,
         source: Literal["commit", "fix"],
@@ -142,8 +139,6 @@ class CommitPipeline:
         self.logical_grouper = logical_grouper
         self.synthesizer = synthesizer
         self.file_reader = file_reader
-        self.file_parser = file_parser
-        self.query_manager = query_manager
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
         self.source = source
@@ -183,9 +178,7 @@ class CommitPipeline:
         if raw_chunks:
             context_manager = ContextManager(
                 raw_chunks,
-                self.file_parser,
                 self.file_reader,
-                self.query_manager,
                 self.commit_context.fail_on_syntax_errors,
             )
 

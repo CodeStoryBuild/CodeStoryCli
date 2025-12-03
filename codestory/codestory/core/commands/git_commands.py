@@ -28,6 +28,7 @@ from ..data.hunk_wrapper import HunkWrapper
 from ..data.immutable_chunk import ImmutableChunk
 from ..data.immutable_hunk_wrapper import ImmutableHunkWrapper
 from ..git_interface.interface import GitInterface
+from .git_const import EMPTYTREEHASH
 
 
 # In GitCommands file, update or replace HunkWrapper
@@ -475,3 +476,16 @@ class GitCommands:
         Returns the commit hash of the current HEAD (base commit).
         """
         return self.git.run_git_text_out(["rev-parse", "HEAD"]).strip()
+    
+    def try_get_parent_hash(self, commit_hash: str, empty_on_fail: bool = False):
+        try:
+            parent_hash = self.git.run_git_text_out(
+                ["rev-parse", "--verify", f"{commit_hash}^"]
+            ).strip()
+        except Exception:
+            if empty_on_fail:
+                parent_hash = EMPTYTREEHASH
+            else:
+                parent_hash = None
+
+        return parent_hash

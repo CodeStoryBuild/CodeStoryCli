@@ -24,6 +24,9 @@ from collections.abc import Callable, Sequence
 
 from codestory.context import CleanContext, GlobalContext
 from codestory.core.exceptions import CleanCommandError
+from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.semantic_grouper.chunk_lableler import ChunkLabeler
+from codestory.core.file_reader.git_file_reader import GitFileReader
 from loguru import logger
 
 
@@ -59,15 +62,28 @@ class CleanPipeline:
 
         total = len(commits)
 
+        
+
         logger.debug(
             "Starting codestory clean operation on {total} commits", total=total
         )
 
         fixed = 0
         skipped = 0
+        
 
         for idx, commit in enumerate(commits):
             short = commit[:7]
+            parent = self.global_context.git_commands.try_get_parent_hash(commit, empty_on_fail=True)
+            immut_chunks, diff_chunks = self.global_context.git_commands.get_processed_working_diff(parent, commit)
+            
+            context_manager = ContextManager(
+                diff_chunks,
+                GitFileReader(self.global_context.git_interface, parent, commit),
+                fail_on_syntax_errors=False,
+            )
+            annotated_chunks = ChunkLabeler.annotate_chunks(diff_chunks, context_manager)
+            # TODO use 
 
             if self.clean_context.skip_merge and self._is_merge(commit):
                 logger.debug("Skipping merge commit {commit}", commit=short)

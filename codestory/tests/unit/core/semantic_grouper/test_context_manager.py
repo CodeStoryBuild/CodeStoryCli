@@ -24,9 +24,7 @@ Test script for ContextManager to validate it works correctly.
 
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
-from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.semantic_grouper.context_manager import ContextManager
-from codestory.core.semantic_grouper.query_manager import QueryManager
 
 
 class MockFileReader:
@@ -75,9 +73,7 @@ def test_context_manager():
     """Test the ContextManager with various diff chunk types."""
 
     # Initialize components
-    file_parser = FileParser()
     file_reader = MockFileReader()
-    query_manager = QueryManager()
 
     # Create test diff chunks
     diff_chunks = [
@@ -112,9 +108,7 @@ def test_context_manager():
     # Create context manager
     context_manager = ContextManager(
         chunks=diff_chunks,
-        file_parser=file_parser,
         file_reader=file_reader,
-        query_manager=query_manager,
         fail_on_syntax_errors=False
     )
 

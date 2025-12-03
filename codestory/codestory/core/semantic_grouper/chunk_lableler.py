@@ -31,10 +31,11 @@ from .context_manager import AnalysisContext, ContextManager
 class ChunkSignature:
     """Represents the semantic signature of a chunk."""
 
-    new_symbols: set[str]
-    old_symbols: set[str]
-    total_symbols: set[str]
-    scopes: set[str]
+    def_new_symbols: set[str] # Symbols defined in the new version
+    def_old_symbols: set[str] # Symbols defined in the old version
+    extern_new_symbols: set[str] # Symbols referenced but not defined in the new version
+    extern_old_symbols: set[str] # Symbols referenced but not defined in the old version
+    scopes: set[str] # Scopes that the chunk contains, values not meaningful beyond equality comparison # TODO extract meaningfull value
 
 
 @dataclass(frozen=True)
@@ -70,13 +71,14 @@ class ChunkLabeler:
                 chunk_signature = None
             else:
                 # Analysis succeeded, unpack symbols and scope
-                total_symbols, new_symbols, old_symbols, scope = signature_result
+                def_new_symbols, def_old_symbols, extern_new_symbols, extern_old_symbols, scopes = signature_result
 
                 chunk_signature = ChunkSignature(
-                    total_symbols=total_symbols,
-                    new_symbols=new_symbols,
-                    old_symbols=old_symbols,
-                    scopes=scope,
+                    def_new_symbols=def_new_symbols,
+                    def_old_symbols=def_old_symbols,
+                    extern_new_symbols=extern_new_symbols,
+                    extern_old_symbols=extern_old_symbols,
+                    scopes=scopes,
                 )
 
             annotated = AnnotatedChunk(
@@ -92,7 +94,7 @@ class ChunkLabeler:
     def _generate_signature_for_chunk(
         diff_chunks: list[DiffChunk], context_manager: ContextManager
     ) -> (
-        tuple[set[str], set[str]] | None
+        tuple[set[str], set[str], set[str], set[str], set[str]] | None
     ):  # Return type is now Optional[tuple[Set[str], Optional[str]]]
         """
         Generate a semantic signature for a single chunk.
@@ -102,47 +104,54 @@ class ChunkLabeler:
         if not diff_chunks:
             return (
                 set(),
-                None,
+                set(),
+                set(),
+                set(),
+                set(),
             )  # An empty chunk has a valid, empty signature with no scope
 
-        total_symbols = set()
-        new_symbols = set()
-        old_symbols = set()
+        def_new_symbols_acc = set()
+        def_old_symbols_acc = set()
+        extern_new_symbols_acc = set()
+        extern_old_symbols_acc = set()
         total_scope = set()
 
         for diff_chunk in diff_chunks:
-            try:
-                if not ChunkLabeler._has_analysis_context(diff_chunk, context_manager):
-                    # If any diff chunk lacks context, the entire chunk fails analysis
-                    logger.debug(
-                        f"No analysis for a diff chunk in {diff_chunk.canonical_path().decode('utf-8', errors='replace')}!"
-                    )
-                    continue
-
-                (
-                    total_chunk_symb,
-                    total_chunk_new_symb,
-                    total_chunk_old_symb,
-                    diff_chunk_scope,
-                ) = ChunkLabeler._get_signature_for_diff_chunk(
-                    diff_chunk, context_manager
-                )
-                total_symbols.update(total_chunk_symb)
-                new_symbols.update(total_chunk_new_symb)
-                old_symbols.update(total_chunk_old_symb)
-                total_scope.update(diff_chunk_scope)
-
-            except Exception as e:
+            # try:
+            if not ChunkLabeler._has_analysis_context(diff_chunk, context_manager):
+                # If any diff chunk lacks context, the entire chunk fails analysis
                 logger.debug(
-                    f"Signature generation failed for diff chunk {diff_chunk.canonical_path().decode('utf-8', errors='replace') if isinstance(diff_chunk.canonical_path(), bytes) else diff_chunk.canonical_path()}: {e}"
+                    f"No analysis for a diff chunk in {diff_chunk.canonical_path().decode('utf-8', errors='replace')}!"
                 )
-                return None
+                continue
+
+            (
+                def_new_symbols,
+                def_old_symbols,
+                extern_new_symbols,
+                extern_old_symbols,
+                diff_chunk_scope,
+            ) = ChunkLabeler._get_signature_for_diff_chunk(
+                diff_chunk, context_manager
+            )
+            def_new_symbols_acc.update(def_new_symbols)
+            def_old_symbols_acc.update(def_old_symbols)
+            extern_new_symbols_acc.update(extern_new_symbols)
+            extern_old_symbols_acc.update(extern_old_symbols)
+            
+            total_scope.update(diff_chunk_scope)
+
+            # except Exception as e:
+            #     logger.debug(
+            #         f"Signature generation failed for diff chunk {diff_chunk.canonical_path().decode('utf-8', errors='replace')}: {e}"
+            #     )
+            #     return None
 
         logger.debug(
-            f"{total_symbols=}\n{new_symbols=}\n{old_symbols=}\n{total_scope=}\n{diff_chunks=}"
+            f"Generated signature for chunk with def_new_symbols={def_new_symbols_acc}, def_old_symbols={def_old_symbols_acc}, extern_new_symbols={extern_new_symbols_acc}, extern_old_symbols={extern_old_symbols_acc}, scopes={total_scope}"
         )
 
-        return (total_symbols, new_symbols, old_symbols, total_scope)
+        return (def_new_symbols_acc, def_old_symbols_acc, extern_new_symbols_acc, extern_old_symbols_acc, total_scope)
 
     @staticmethod
     def _has_analysis_context(
@@ -184,7 +193,7 @@ class ChunkLabeler:
     @staticmethod
     def _get_signature_for_diff_chunk(
         diff_chunk: DiffChunk, context_manager: ContextManager
-    ) -> tuple[set[str], set[str], set[str], set[str]]:
+    ) -> tuple[set[str], set[str], set[str], set[str], set[str]]:
         """
         Generate signature and scope information for a single DiffChunk based on affected line ranges.
 
@@ -196,36 +205,36 @@ class ChunkLabeler:
             Tuple of (symbols, scope) in the affected line ranges.
             Scope is determined by the LCA scope of the chunk's line ranges.
         """
-        total_symbols = set()
-        old_symbols = set()
-        new_symbols = set()
+        def_old_symbols_acc = set()
+        def_new_symbols_acc = set()
+        extern_old_symbols_acc = set()
+        extern_new_symbols_acc = set()
         chunk_scope = set()
 
-        if diff_chunk.is_standard_modification:
-            # For modifications, analyze both old and new line ranges
-            file_path = diff_chunk.canonical_path()
-
+        if (diff_chunk.is_standard_modification or diff_chunk.is_file_rename):
+            # For modifications/renames, analyze both old and new line ranges
+            
             # Old version signature
-            old_context = context_manager.get_context(file_path, True)
+            old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
-                old_symbols, old_scope = ChunkLabeler._get_signature_for_line_range(
+                def_old_symbols, extern_old_symbols, old_scope = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_context
                 )
-                total_symbols.update(old_symbols)
-                old_symbols.update(old_symbols)
+                def_old_symbols_acc.update(def_old_symbols)
+                extern_old_symbols_acc.update(extern_old_symbols)
                 chunk_scope.update(old_scope)
 
             # New version signature
-            new_context = context_manager.get_context(file_path, False)
+            new_context = context_manager.get_context(diff_chunk.new_file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
                 abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
-                new_symbols, new_scope = ChunkLabeler._get_signature_for_line_range(
+                def_new_symbols, extern_new_symbols, new_scope = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_context
                 )
-                total_symbols.update(new_symbols)
-                new_symbols.update(new_symbols)
+                def_new_symbols_acc.update(def_new_symbols)
+                extern_new_symbols_acc.update(extern_new_symbols)
                 chunk_scope.update(new_scope)
 
         elif diff_chunk.is_file_addition:
@@ -234,51 +243,34 @@ class ChunkLabeler:
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
                 abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
-                total_symbols, chunk_scope = ChunkLabeler._get_signature_for_line_range(
+                def_new_symbols_acc, extern_new_symbols_acc, chunk_scope = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_context
                 )
-                new_symbols.update(total_symbols)
 
         elif diff_chunk.is_file_deletion:
             # For deletions, analyze old version only
             old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
-                total_symbols, chunk_scope = ChunkLabeler._get_signature_for_line_range(
+                def_old_symbols_acc, extern_old_symbols_acc, chunk_scope = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_context
                 )
-                old_symbols.update(total_symbols)
 
-        elif diff_chunk.is_file_rename:
-            # For renames, analyze both versions with their respective paths
-            old_context = context_manager.get_context(diff_chunk.old_file_path, True)
-            new_context = context_manager.get_context(diff_chunk.new_file_path, False)
 
-            if old_context and diff_chunk.old_start is not None:
-                old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
-                old_symbols, old_scope = ChunkLabeler._get_signature_for_line_range(
-                    diff_chunk.old_start, old_end, old_context
-                )
-                total_symbols.update(old_symbols)
-                old_symbols.update(old_symbols)
-                chunk_scope.update(old_scope)
-
-            abs_new_start = diff_chunk.get_abs_new_line_start()
-            if new_context and abs_new_start is not None:
-                abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
-                new_symbols, new_scope = ChunkLabeler._get_signature_for_line_range(
-                    abs_new_start, abs_new_end, new_context
-                )
-                total_symbols.update(new_symbols)
-                new_symbols.update(new_symbols)
-                chunk_scope.update(new_scope)
-
-        return (total_symbols, new_symbols, old_symbols, chunk_scope)
+        # Return order must match the one expected by callers:
+        # (def_new, def_old, extern_new, extern_old, chunk_scope)
+        return (
+            def_new_symbols_acc,
+            def_old_symbols_acc,
+            extern_new_symbols_acc,
+            extern_old_symbols_acc,
+            chunk_scope,
+        )
 
     @staticmethod
     def _get_signature_for_line_range(
         start_line: int, end_line: int, context: AnalysisContext
-    ) -> tuple[set[str], set[str]]:
+    ) -> tuple[set[str], set[str], set[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -291,12 +283,13 @@ class ChunkLabeler:
             Tuple of (symbols, scope) for the specified line range.
             Scope is the LCA scope, simplified to the scope of the first line.
         """
-        range_symbols = set()
+        defined_range_symbols = set()
+        extern_range_symbols = set()
         range_scope = set()
 
         if start_line < 1 or end_line < start_line:
             # Chunks that are pure deletions can fall into this
-            return (range_symbols, range_scope)
+            return (defined_range_symbols, extern_range_symbols, range_scope)
 
         # convert to zero indexed
         start_index = start_line - 1
@@ -304,14 +297,20 @@ class ChunkLabeler:
 
         # Collect symbols from fall lines in the range
         for line in range(start_index, end_index + 1):
-            line_symbols = context.symbol_map.line_symbols.get(line)
+            # Symbols explicitly defined on this line
+            defined_line_symbols = context.symbol_map.modified_line_symbols.get(line)
+            # Symbols referenced on this line but not defined in this file/version
+            extern_line_symbols = context.symbol_map.extern_line_symbols.get(line)
 
-            if line_symbols:
-                range_symbols.update(line_symbols)
+            if defined_line_symbols:
+                defined_range_symbols.update(defined_line_symbols)
+
+            if extern_line_symbols:
+                extern_range_symbols.update(extern_line_symbols)
 
             scopes = context.scope_map.scope_lines.get(line)
 
             if scopes:
                 range_scope.update(scopes)
 
-        return (range_symbols, range_scope)
+        return (defined_range_symbols, extern_range_symbols, range_scope)

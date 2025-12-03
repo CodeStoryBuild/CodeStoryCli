@@ -121,9 +121,18 @@ class QueryManager:
     """
     Manages language configs and runs queries using the newer QueryCursor(query)
     constructor and cursor.captures(node, predicates=...).
+    
+    This is a singleton class. Use QueryManager.get_instance() to access the instance.
     """
 
+    _instance: "QueryManager | None" = None
+
     def __init__(self):
+        if QueryManager._instance is not None:
+            raise RuntimeError(
+                "QueryManager is a singleton. Use QueryManager.get_instance() instead."
+            )
+        
         resource = files("codestory").joinpath("resources/language_config.json")
         content_text = resource.read_text(encoding="utf-8")
         self._language_configs: dict[str, LanguageConfig] = self._init_configs(
@@ -149,6 +158,18 @@ class QueryManager:
             n=len(self._language_configs),
             details=lang_summaries,
         )
+
+    @classmethod
+    def get_instance(cls) -> "QueryManager":
+        """
+        Get or create the singleton instance of QueryManager.
+        
+        Returns:
+            The singleton QueryManager instance.
+        """
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
     def _init_configs(self, config_content: str) -> dict[str, LanguageConfig]:
         try:

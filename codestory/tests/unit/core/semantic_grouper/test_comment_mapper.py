@@ -36,7 +36,7 @@ def tools():
     Initializes the heavy components once per module to speed up tests.
     Returns a tuple of (FileParser, CommentMapper).
     """
-    qm = QueryManager()
+    qm = QueryManager.get_instance()
     mapper = CommentMapper(qm)
     parser = FileParser()
     return parser, mapper
