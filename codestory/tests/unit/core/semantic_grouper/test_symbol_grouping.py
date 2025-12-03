@@ -33,7 +33,6 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.symbol_extractor import SymbolExtractor
 from codestory.core.semantic_grouper.symbol_mapper import SymbolMapper
 
-
 # -------------------------------------------------------------------------
 # Fixtures
 # -------------------------------------------------------------------------
@@ -192,7 +191,6 @@ def tools():
             True,
             "JavaScript: Constant definition and usage share symbol",
         ),
-
         # === TYPESCRIPT ===
         (
             "typescript",
@@ -234,7 +232,6 @@ def tools():
             True,
             "TypeScript: Type alias and usage share symbol",
         ),
-
         # === RUST ===
         (
             "rust",
@@ -273,7 +270,6 @@ def tools():
             False,
             "Rust: Different functions don't share symbols",
         ),
-
         # === PHP ===
         (
             "php",
@@ -294,7 +290,6 @@ def tools():
             True,
             "PHP: Class definition and instantiation share symbol",
         ),
-
         # === JAVA ===
         (
             "java",
@@ -318,7 +313,6 @@ def tools():
             True,
             "Java: Class type usage should link to class definition",
         ),
-
         # === GO ===
         (
             "go",
@@ -340,7 +334,6 @@ def tools():
             True,
             "Go: Type definition and usage share symbol",
         ),
-
         # === RUBY ===
         (
             "ruby",
@@ -362,7 +355,6 @@ def tools():
             True,
             "Ruby: Class definition and instantiation share symbol",
         ),
-
         # === SWIFT ===
         (
             "swift",
@@ -385,7 +377,6 @@ def tools():
             True,
             "Swift: Class definition and type usage share symbol",
         ),
-
         # === KOTLIN ===
         (
             "kotlin",
@@ -407,7 +398,6 @@ def tools():
             True,
             "Kotlin: Class definition and type usage share symbol",
         ),
-
         # === SCALA ===
         (
             "scala",
@@ -427,7 +417,6 @@ def tools():
             True,
             "Scala: Class definition and type usage share symbol",
         ),
-
         # === EXTENDED PYTHON TESTS ===
         (
             "python",
@@ -514,7 +503,6 @@ def tools():
             True,
             "Python: List comprehension using modified variable should link",
         ),
-
         # === EXTENDED JAVASCRIPT TESTS ===
         (
             "javascript",
@@ -609,7 +597,6 @@ def tools():
             True,
             "JavaScript: Factory function usage should link",
         ),
-
         # === EXTENDED TYPESCRIPT TESTS ===
         (
             "typescript",
@@ -701,7 +688,6 @@ def tools():
             True,
             "TypeScript: Type alias usage in annotation should link",
         ),
-
         # === EXTENDED GO TESTS ===
         (
             "go",
@@ -808,7 +794,6 @@ def tools():
             True,
             "Go: Struct literal should link to modified struct",
         ),
-
         # === EXTENDED RUST TESTS ===
         (
             "rust",
@@ -913,7 +898,6 @@ def tools():
             True,
             "Rust: Type alias usage should link",
         ),
-
         # === EXTENDED JAVA TESTS ===
         (
             "java",
@@ -1024,7 +1008,6 @@ def tools():
             True,
             "Java: Generic class instantiation should link",
         ),
-
         # === EXTENDED C++ TESTS ===
         (
             "cpp",
@@ -1126,7 +1109,6 @@ def tools():
             True,
             "C++: Struct pointer usage should link",
         ),
-
         # === EXTENDED C# TESTS ===
         (
             "csharp",
@@ -1240,7 +1222,6 @@ def tools():
             True,
             "C#: Namespace qualified usage should link",
         ),
-
         # === EXTENDED RUBY TESTS ===
         (
             "ruby",
@@ -1345,7 +1326,6 @@ def tools():
             True,
             "Ruby: Attribute accessor usage should link",
         ),
-
         # === EXTENDED PHP TESTS ===
         (
             "php",
@@ -1453,7 +1433,6 @@ def tools():
             True,
             "PHP: Abstract class extension should link",
         ),
-
         # === EXTENDED SWIFT TESTS ===
         (
             "swift",
@@ -1555,7 +1534,6 @@ def tools():
             True,
             "Swift: Typealias usage should link",
         ),
-
         # === EXTENDED KOTLIN TESTS ===
         (
             "kotlin",
@@ -1653,7 +1631,6 @@ def tools():
             True,
             "Kotlin: Object singleton usage should link",
         ),
-
         # === EXTENDED SCALA TESTS ===
         (
             "scala",
@@ -1744,7 +1721,6 @@ def tools():
             True,
             "Scala: Generic class usage should link",
         ),
-
         # === EXTENDED R TESTS ===
         (
             "r",
@@ -1829,7 +1805,6 @@ def tools():
             True,
             "R: Closure factory usage should link",
         ),
-
         # === EXTENDED LUA TESTS ===
         (
             "lua",
@@ -1926,7 +1901,6 @@ def tools():
             True,
             "Lua: Module function call should link",
         ),
-
         # === EXTENDED DART TESTS ===
         (
             "dart",
@@ -2035,7 +2009,6 @@ def tools():
             True,
             "Dart: Generic class usage should link",
         ),
-
         # === USAGE-ONLY TESTS ===
         (
             "python",
@@ -2083,7 +2056,7 @@ def test_symbol_based_grouping(
 ):
     """
     Test that two code chunks share (or don't share) symbols based on definitions in modified lines.
-    
+
     Args:
         tools: Fixture providing parser, symbol_extractor, and symbol_mapper
         language: Programming language
@@ -2239,7 +2212,9 @@ def use_classes():
                 class_b_found = True
 
     assert class_a_found, "Class A should be in symbol map"
-    assert not class_b_found, "Class B should NOT be in symbol map (not in modified lines)"
+    assert not class_b_found, (
+        "Class B should NOT be in symbol map (not in modified lines)"
+    )
 
 
 @pytest.mark.parametrize(
@@ -2285,9 +2260,9 @@ def test_symbol_extraction_count(
         parsed.detected_language, parsed.root_node, modified_lines
     )
 
-    assert (
-        len(defined_symbols) == expected_symbol_count
-    ), f"Expected {expected_symbol_count} symbols, got {len(defined_symbols)}: {defined_symbols}"
+    assert len(defined_symbols) == expected_symbol_count, (
+        f"Expected {expected_symbol_count} symbols, got {len(defined_symbols)}: {defined_symbols}"
+    )
 
 
 def test_symbol_namespace_separation(tools):
