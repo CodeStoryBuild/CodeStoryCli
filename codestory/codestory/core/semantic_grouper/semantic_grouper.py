@@ -262,6 +262,9 @@ class SemanticGrouper:
                 signature.update(old_signature)
                 chunk_scope.update(old_scope)
 
+                print(f"{old_signature=}")
+                print(f"{old_context=}")
+
             # New version signature
             new_context = context_manager.get_context(file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
@@ -272,6 +275,9 @@ class SemanticGrouper:
                 )
                 signature.update(new_signature)
                 chunk_scope.update(new_scope)
+
+                print(f"{new_signature=}")
+                print(f"{new_context=}")
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
