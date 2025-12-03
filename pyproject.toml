@@ -44,7 +44,7 @@ dev = [
 codestory = ["resources/*"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -63,8 +63,6 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
     "tree_sitter.*",
-    "git.*",
-    "importlib.*"
 ]
 ignore_missing_imports = true
 
