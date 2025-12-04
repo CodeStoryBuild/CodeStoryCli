@@ -108,8 +108,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "root_dir",
         nargs="?",
-        default="./codestory",
-        help="Path to the directory to start the search (defaults to ./codestory)",
+        default="./src",
+        help="Path to the directory to start the search (defaults to ./src)",
     )
 
     args = parser.parse_args()

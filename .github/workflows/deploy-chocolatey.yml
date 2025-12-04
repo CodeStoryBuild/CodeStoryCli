@@ -1,0 +1,146 @@
+name: Deploy to Chocolatey
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  deploy_chocolatey:
+    name: Deploy to Chocolatey
+    runs-on: windows-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows Installer Artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-release.yml
+          name: release-assets-windows
+          path: artifacts/
+          workflow_conclusion: success
+
+      - name: Extract version
+        id: get_version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = git describe --tags --abbrev=0
+          }
+          $version = $version -replace '^v', ''
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Deploying version: $version"
+
+      - name: Calculate Checksum
+        id: checksum
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path artifacts -Filter "*.exe" -Recurse | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "No installer found!"
+            exit 1
+          }
+          
+          $hash = (Get-FileHash -Path $installer.FullName -Algorithm SHA256).Hash
+          $url = "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/$($installer.Name)"
+          
+          echo "checksum=$hash" >> $env:GITHUB_OUTPUT
+          echo "installer_url=$url" >> $env:GITHUB_OUTPUT
+          echo "installer_name=$($installer.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Setup Chocolatey Package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.get_version.outputs.version }}"
+          $checksum = "${{ steps.checksum.outputs.checksum }}"
+          $url = "${{ steps.checksum.outputs.installer_url }}"
+          
+          # Create package directory structure
+          New-Item -ItemType Directory -Force -Path "choco-package/tools"
+          
+          # Create nuspec file
+          @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+            <metadata>
+              <id>codestory</id>
+              <version>$version</version>
+              <packageSourceUrl>https://github.com/${{ github.repository }}</packageSourceUrl>
+              <owners>${{ github.repository_owner }}</owners>
+              <title>CodeStory CLI</title>
+              <authors>Adem Can</authors>
+              <projectUrl>https://github.com/${{ github.repository }}</projectUrl>
+              <licenseUrl>https://github.com/${{ github.repository }}/blob/main/LICENCE.txt</licenseUrl>
+              <requireLicenseAcceptance>false</requireLicenseAcceptance>
+              <tags>codestory git ai cli developer-tools</tags>
+              <summary>AI-powered abstraction layer above Git</summary>
+              <description>
+          CodeStory is an AI-powered abstraction layer above Git that helps developers focus on coding 
+          while automatically handling Git operations. It simplifies version control with intelligent 
+          commit messages, branch management, and more.
+              </description>
+              <releaseNotes>https://github.com/${{ github.repository }}/releases/tag/v$version</releaseNotes>
+            </metadata>
+            <files>
+              <file src="tools\**" target="tools" />
+            </files>
+          </package>
+          "@ | Out-File -FilePath "choco-package/codestory.nuspec" -Encoding UTF8
+          
+          # Create installation script
+          @"
+          `$ErrorActionPreference = 'Stop'
+          `$packageName = 'codestory'
+          `$toolsDir = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
+          `$url = '$url'
+          `$checksum = '$checksum'
+          `$checksumType = 'sha256'
+
+          `$packageArgs = @{
+            packageName   = `$packageName
+            fileType      = 'EXE'
+            url           = `$url
+            softwareName  = 'codestory*'
+            checksum      = `$checksum
+            checksumType  = `$checksumType
+            silentArgs    = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-'
+            validExitCodes= @(0)
+          }
+
+          Install-ChocolateyPackage @packageArgs
+          "@ | Out-File -FilePath "choco-package/tools/chocolateyinstall.ps1" -Encoding UTF8
+
+      - name: Pack Chocolatey Package
+        shell: pwsh
+        run: |
+          cd choco-package
+          choco pack
+
+      - name: Push to Chocolatey
+        shell: pwsh
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          cd choco-package
+          $nupkg = Get-ChildItem -Filter "*.nupkg" | Select-Object -First 1
+          choco push $nupkg.Name --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY

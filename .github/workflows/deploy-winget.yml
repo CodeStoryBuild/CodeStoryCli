@@ -1,0 +1,80 @@
+name: Deploy to WinGet
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  deploy_winget:
+    name: Deploy to WinGet
+    runs-on: windows-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows Installer Artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-release.yml
+          name: release-assets-windows
+          path: artifacts/
+          # If manually triggered, use the input version
+          workflow_conclusion: success
+          
+      - name: Extract version
+        id: get_version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            # Get latest release tag
+            $version = git describe --tags --abbrev=0
+          }
+          $version = $version -replace '^v', ''
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Deploying version: $version"
+
+      - name: Get Installer Info
+        id: installer_info
+        shell: pwsh
+        run: |
+          $installerPath = Get-ChildItem -Path artifacts -Filter "*.exe" -Recurse | Select-Object -First 1
+          if (-not $installerPath) {
+            Write-Error "No installer found in artifacts"
+            exit 1
+          }
+          
+          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/v${{ steps.get_version.outputs.version }}/$($installerPath.Name)"
+          $hash = (Get-FileHash -Path $installerPath.FullName -Algorithm SHA256).Hash
+          
+          echo "installer_url=$installerUrl" >> $env:GITHUB_OUTPUT
+          echo "installer_hash=$hash" >> $env:GITHUB_OUTPUT
+          echo "installer_name=$($installerPath.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Submit to WinGet
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: CodeStoryBuild.CodeStory
+          version: ${{ steps.get_version.outputs.version }}
+          installers-regex: '\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+          fork-user: ${{ github.repository_owner }}
