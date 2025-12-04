@@ -63,8 +63,8 @@ def main():
         "--show-modules",
         "--include-package=tree_sitter_language_pack",
         "--include-module=tree_sitter_language_pack.bindings",
-        "--include-package=codestory-cli",
-        "--include-package-data=codestory-cli",
+        "--include-package=codestory",
+        "--include-package-data=codestory",
         "--include-package=tree_sitter",
     ]
 
