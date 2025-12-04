@@ -236,7 +236,7 @@ def get_config(key: str | None, scope: str | None) -> None:
         try:
             with open(LOCAL_CONFIG_FILE, "rb") as f:
                 local_config = tomllib.load(f)
-                sources.append(("Local Config", LOCAL_CONFIG_FILE, local_config))
+                sources.append(("Set from: Local Config", LOCAL_CONFIG_FILE, local_config))
         except tomllib.TOMLDecodeError:
             pass
 
@@ -255,7 +255,7 @@ def get_config(key: str | None, scope: str | None) -> None:
         try:
             with open(GLOBAL_CONFIG_FILE, "rb") as f:
                 global_config = tomllib.load(f)
-                sources.append(("Global Config", GLOBAL_CONFIG_FILE, global_config))
+                sources.append(("Set from: Global Config", GLOBAL_CONFIG_FILE, global_config))
         except tomllib.TOMLDecodeError:
             pass
 

@@ -154,7 +154,7 @@ class TestFileFiltering:
         Files with ignored extensions (e.g. .png) should be accepted
         even if they contain 'secret' in the binary data.
         """
-        config = ScannerConfig(aggression="paranoid")
+        config = ScannerConfig(aggression="strict")
 
         # Valid "bad" content
         bad_content = b"password = 'password'"

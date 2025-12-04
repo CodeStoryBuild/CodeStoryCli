@@ -86,10 +86,10 @@ def test_global_context_from_config_defaults(mock_git_commands, mock_git_interfa
     assert context.model is None
     assert context.git_interface == mock_interface_instance
     assert context.git_commands == mock_commands_instance
-    assert context.verbose is False
-    assert context.temperature == 0.7
-    assert context.aggresiveness == "Regular"
-    assert context.auto_accept is False
+    assert context.config.verbose is False
+    assert context.config.temperature == 0.7
+    assert context.config.aggresiveness == "Regular"
+    assert context.config.auto_accept is False
 
     # Verify calls
     mock_git_interface.assert_called_once_with(repo_path)
@@ -108,16 +108,23 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
         aggresiveness="Conservative",
         verbose=True,
         auto_accept=True,
+        relevance_filter_level="none",
+        secret_scanner_aggression="none",
+        silent=True,
     )
     repo_path = Path("/tmp/repo")
     context = GlobalContext.from_global_config(config, repo_path)
 
     # Verify
     assert context.model is not None
-    assert context.verbose is True
-    assert context.temperature == 0.2
-    assert context.aggresiveness == "Conservative"
-    assert context.auto_accept is True
+    assert context.config.verbose is True
+    assert context.config.temperature == 0.2
+    assert context.config.aggresiveness == "Conservative"
+    assert context.config.auto_accept is True
+    assert context.config.relevance_filter_level == "none"
+    assert context.config.secret_scanner_aggression == "none"
+    assert context.config.silent is True
+
 
 
 def test_fix_context():

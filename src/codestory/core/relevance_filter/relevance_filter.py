@@ -185,7 +185,7 @@ CHANGES:
             reasoning = response_data.get("reasoning", "No reason provided")
 
             if rejected_ids:
-                logger.info(f"Holistic Filter Reasoning: {reasoning}")
+                logger.debug(f"Holistic Filter Reasoning: {reasoning}")
 
         except Exception as e:
             logger.warning(f"Holistic AI Filter failed: {e}. Defaulting to ACCEPT ALL.")

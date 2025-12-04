@@ -39,7 +39,7 @@ def create_rewrite_pipeline(
     new_commit_hash: str,
     source: Literal["commit", "fix"],
 ):
-    chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
+    chunker = AtomicChunker(global_ctx.config.aggresiveness != "Conservative")
 
     if global_ctx.model is not None:
         logical_grouper = LLMGrouper(global_ctx.model)

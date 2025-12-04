@@ -65,7 +65,7 @@ class TestFileLifecycle:
         CRITICAL: Deleting code usually involves 'Removal' objects.
         The scanner must NOT flag secrets inside removed lines.
         """
-        config = ScannerConfig(aggression="paranoid")
+        config = ScannerConfig(aggression="strict")
 
         # A chunk that removes a hardcoded password
         chunk = DiffChunk(
@@ -196,7 +196,7 @@ class TestImmutableChunkLifecycle:
         Verify we strictly parse lines starting with +
         and ignore lines starting with - in the raw bytes.
         """
-        config = ScannerConfig(aggression="paranoid")
+        config = ScannerConfig(aggression="strict")
 
         # A patch that removes a secret and adds a safe line
         # The raw bytes of the patch:
@@ -215,7 +215,7 @@ class TestImmutableChunkLifecycle:
         """
         Ensure the '+++' header in diffs isn't confused for an added line.
         """
-        config = ScannerConfig(aggression="paranoid")
+        config = ScannerConfig(aggression="strict")
 
         # If we just checked `startswith('+')`, the header line:
         # +++ b/secret.txt

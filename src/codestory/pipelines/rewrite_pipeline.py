@@ -198,7 +198,7 @@ class RewritePipeline:
             # create smallest mechanically valid chunks
             with (
                 transient_step(
-                    "Creating Mechanical Chunks", self.global_context.silent
+                    "Creating Mechanical Chunks", self.global_context.config.silent
                 ),
                 time_block("mechanical_chunking"),
             ):
@@ -213,7 +213,7 @@ class RewritePipeline:
             )
 
             with (
-                transient_step("Creating Semantic Groups", self.global_context.silent),
+                transient_step("Creating Semantic Groups", self.global_context.config.silent),
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
@@ -233,7 +233,7 @@ class RewritePipeline:
             with (
                 transient_step(
                     "Scanning for leaked secrets...",
-                    self.global_context.silent,
+                    self.global_context.config.silent,
                 ),
                 time_block("secret_scanning"),
             ):
@@ -264,7 +264,7 @@ class RewritePipeline:
             with (
                 transient_step(
                     "Applying Relevance Filter...",
-                    self.global_context.silent,
+                    self.global_context.config.silent,
                 ),
                 time_block("relevance_filtering"),
             ):
@@ -306,7 +306,7 @@ class RewritePipeline:
         # take these semantically valid, filtered chunks, and now group them into logical commits
         with (
             transient_step(
-                "Using AI to create meaningful commits...", self.global_context.silent
+                "Using AI to create meaningful commits...", self.global_context.config.silent
             ) as pbar,
             time_block("logical_grouping"),
         ):
@@ -389,7 +389,7 @@ class RewritePipeline:
             # Log the diff for this group at debug level
             diff_text = patch_map.get(idx, "") or "(no diff)"
 
-            if not (self.global_context.silent and self.global_context.auto_accept):
+            if not (self.global_context.config.silent and self.global_context.config.auto_accept):
                 print(f"Diff for #{num}:")
                 if diff_text != "(no diff)":
                     print_patch_cleanly(diff_text, max_length=120)
@@ -405,7 +405,7 @@ class RewritePipeline:
             logger.info("")
 
         # Single confirmation for all groups
-        if self.global_context.auto_accept:
+        if self.global_context.config.auto_accept:
             apply_all = True
             logger.debug("Auto-confirm: Applying all proposed commits")
         else:

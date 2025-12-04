@@ -40,6 +40,8 @@ class GlobalConfig:
     model: str | None = None
     api_key: str | None = None
     temperature: float = 0.7
+    relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
+    secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
     verbose: bool = False
     auto_accept: bool = False
@@ -49,6 +51,8 @@ class GlobalConfig:
         "model": StringConstraint(),
         "api_key": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
+        "relevance_filter_level": LiteralTypeConstraint(allowed=["safe", "standard", "strict", "none"]),
+        "secret_scanner_aggression": LiteralTypeConstraint(allowed=["safe", "standard", "strict", "none"]),
         "aggresiveness": LiteralTypeConstraint(
             allowed=("Conservative", "Regular", "Extra")
         ),
@@ -61,6 +65,8 @@ class GlobalConfig:
         "model": "LLM model (format: provider:model, e.g., openai:gpt-4)",
         "api_key": "API key for the LLM provider",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
+        "relevance_filter_level": "How much to filter irrelevant changes",
+        "secret_scanner_aggression": "How aggresively to scan for secrets",
         "aggresiveness": "How aggressively to split commits smaller",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
@@ -74,11 +80,7 @@ class GlobalContext:
     model: CodeStoryAdapter | None
     git_interface: GitInterface
     git_commands: GitCommands
-    verbose: bool
-    temperature: float
-    aggresiveness: Literal["Conservative", "Regular", "Extra"]
-    auto_accept: bool
-    silent: bool
+    config: GlobalConfig
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
@@ -97,11 +99,7 @@ class GlobalContext:
             model,
             git_interface,
             git_commands,
-            config.verbose,
-            config.temperature,
-            config.aggresiveness,
-            config.auto_accept,
-            config.silent,
+            config
         )
 
 
@@ -110,8 +108,8 @@ class CommitContext:
     target: Path
     message: str | None = None
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
+    secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "none"
     relevance_filter_intent: str | None = None
-    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"] = "none"
     fail_on_syntax_errors: bool = False
 
 
