@@ -126,7 +126,6 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
     assert context.config.silent is True
 
 
-
 def test_fix_context():
     # Test with only end_commit_hash
     ctx = FixContext(end_commit_hash="abc1234")

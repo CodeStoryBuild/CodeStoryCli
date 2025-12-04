@@ -43,6 +43,9 @@ class GlobalConfig:
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
+    fallback_grouping_strategy: Literal[
+        "all_together", "by_file_path", "by_file_name", "by_file_extension"
+    ] = "all_together"
     verbose: bool = False
     auto_accept: bool = False
     silent: bool = False
@@ -51,10 +54,22 @@ class GlobalConfig:
         "model": StringConstraint(),
         "api_key": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
-        "relevance_filter_level": LiteralTypeConstraint(allowed=["safe", "standard", "strict", "none"]),
-        "secret_scanner_aggression": LiteralTypeConstraint(allowed=["safe", "standard", "strict", "none"]),
+        "relevance_filter_level": LiteralTypeConstraint(
+            allowed=["safe", "standard", "strict", "none"]
+        ),
+        "secret_scanner_aggression": LiteralTypeConstraint(
+            allowed=["safe", "standard", "strict", "none"]
+        ),
         "aggresiveness": LiteralTypeConstraint(
             allowed=("Conservative", "Regular", "Extra")
+        ),
+        "fallback_grouping_strategy": LiteralTypeConstraint(
+            allowed=(
+                "all_together",
+                "by_file_path",
+                "by_file_name",
+                "by_file_extension",
+            )
         ),
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
@@ -68,6 +83,7 @@ class GlobalConfig:
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
         "aggresiveness": "How aggressively to split commits smaller",
+        "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation: all_together (default), by_file_path, by_file_name, or by_file_extension",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
@@ -94,13 +110,7 @@ class GlobalContext:
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
 
-        return GlobalContext(
-            repo_path,
-            model,
-            git_interface,
-            git_commands,
-            config
-        )
+        return GlobalContext(repo_path, model, git_interface, git_commands, config)
 
 
 @dataclass(frozen=True)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codestory-cli"
-version = "0.1.0"
+version = "0.0.1"
 description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let codestory handle the rest."
 authors = [
   { name = "Adem Can", email = "ademfcan@gmail.com" }

@@ -54,7 +54,7 @@ def create_rewrite_pipeline(
         global_ctx.git_interface, base_commit_hash, new_commit_hash
     )
 
-    semantic_grouper = SemanticGrouper()
+    semantic_grouper = SemanticGrouper(global_ctx.config.fallback_grouping_strategy)
 
     synthesizer = GitSynthesizer(global_ctx.git_interface)
 
