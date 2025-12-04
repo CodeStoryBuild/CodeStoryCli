@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codestory"
+name = "codestory-cli"
 version = "0.1.0"
 description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let codestory handle the rest."
 authors = [
@@ -41,7 +41,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-codestory = ["resources/*"]
+codestory-cli = ["resources/*"]
 
 [tool.mypy]
 python_version = "3.13"
