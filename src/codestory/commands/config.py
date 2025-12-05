@@ -115,7 +115,7 @@ def print_describe_options():
         default_str = (
             str(info["default"]) if info["default"] is not None else "None"
         )
-        description = _truncate_text(info["description"], 60)
+        description = _truncate_text(info["description"], 100)
         table_data.append(
             {
                 "Key": config_key,
