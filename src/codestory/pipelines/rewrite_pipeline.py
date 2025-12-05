@@ -445,6 +445,8 @@ class RewritePipeline:
                             user_rejected_groups.append(group)
                     else:
                         accepted_groups.append(group)
+            else:
+                accepted_groups.append(group)
 
         if user_rejected_groups:
             logger.info(
