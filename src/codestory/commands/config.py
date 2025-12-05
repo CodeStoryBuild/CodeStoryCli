@@ -26,7 +26,6 @@ import tomllib
 import typer
 from colorama import Fore, Style, init
 
-from codestory.commands.utils import help_callback
 from codestory.constants import CONFIG_FILENAME, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE
 from codestory.context import GlobalConfig
 from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
@@ -356,13 +355,6 @@ def describe_callback(ctx: typer.Context, param, value: bool):
 
 def main(
     ctx: typer.Context,
-    help: bool = typer.Option(
-        False,
-        "--help",
-        callback=help_callback,
-        is_eager=True,
-        help="Show this message and exit.",
-    ),
     describe: bool = typer.Option(
         False,
         "--describe",

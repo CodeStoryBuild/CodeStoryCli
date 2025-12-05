@@ -18,6 +18,7 @@
 
 import os
 from pathlib import Path
+import sys
 
 import typer
 from colorama import init
@@ -140,9 +141,9 @@ def main(
             raise typer.Exit()
 
         # skip --help in subcommands
-        if any(arg in ctx.help_option_names for arg in ctx.args):
+        if any(arg in ctx.help_option_names for arg in sys.argv):
             return
-
+        
         if ctx.invoked_subcommand == config_override_command:
             # dont try to load config
             return
