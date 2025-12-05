@@ -95,13 +95,14 @@ def main(
         "--min-size",
         help="Minimum change size (lines) to process.",
     ),
+    skip_merge: bool | None = typer.Option(
+        False,
+        "--skip-merge",
+        help="Skip merge commits during cleaning.",
+    ),
     start_from: str | None = typer.Argument(
         None,
         help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
-    ),
-    skip_merge: bool | None = typer.Argument(
-        False,
-        help="Skip merge commits during cleaning.",
     ),
 ) -> None:
     """Fix your entire repository starting from the latest commit.
