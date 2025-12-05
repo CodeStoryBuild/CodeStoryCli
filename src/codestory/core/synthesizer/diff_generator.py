@@ -178,13 +178,8 @@ class DiffGenerator:
                 # you must merge chunks to get valid patches
                 sorted_file_chunks = self.__merge_chunks(sorted_file_chunks)
 
-                # CRITICAL: new_start is calculated HERE and ONLY HERE!
+                # new_start is calculated here and only here!
                 # We calculate it based on old_start + cumulative_offset.
-                #
-                # The cumulative_offset tracks how many net lines have been added
-                # (additions - deletions) by all prior chunks in this file.
-                #
-                # For each chunk:
                 # - old_start tells us where the change occurs in the old file
                 # - new_start = old_start + cumulative_offset (where it lands in new file)
 
@@ -356,7 +351,7 @@ class DiffGenerator:
         if not sorted_chunks:
             return []
 
-        # Step 1: Group all contiguous chunks together.
+        # Group all contiguous chunks together.
         groups = []
         current_group = [sorted_chunks[0]]
         for i in range(1, len(sorted_chunks)):
@@ -373,7 +368,7 @@ class DiffGenerator:
         logger.debug(f"Current merge group: {current_group}")
         groups.append(current_group)
 
-        # Step 2: Merge each group into a single new DiffChunk.
+        # Merge each group into a single new DiffChunk.
         final_chunks = []
         for group in groups:
             if len(group) == 1:
@@ -382,7 +377,6 @@ class DiffGenerator:
                 continue
 
             # Flatten the content from all chunks in the group.
-            # It's crucial that removals come before additions for from_parsed_content_slice.
             merged_parsed_content = []
             removals = []
             additions = []

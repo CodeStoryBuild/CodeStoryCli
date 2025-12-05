@@ -15,7 +15,6 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-
 """
 Input validation utilities for the codestory CLI application.
 
