@@ -103,40 +103,47 @@ def _truncate_text(text: str, max_length: int = 50) -> str:
     return text_str[: max_length - 3] + "..."
 
 
-def _check_key_exists(key: str) -> dict:
+def print_describe_options():
+    schema = _get_config_schema()
+
+    print(
+        f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n"
+    )
+
+    table_data = []
+    for config_key, info in sorted(schema.items()):
+        default_str = (
+            str(info["default"]) if info["default"] is not None else "None"
+        )
+        description = _truncate_text(info["description"], 60)
+        table_data.append(
+            {
+                "Key": config_key,
+                "Description": description,
+                "Value": default_str,
+                "Source": "Options: " + str(info["constraint"]),
+            }
+        )
+
+    display_config(
+        table_data,
+        description_field="Description",
+        key_field="Key",
+        value_field="Value",
+        source_field="Source",
+        max_value_length=80,
+    )
+
+
+def _check_key_exists(key: str, exit_on_fail: bool = True) -> dict:
     """Check if a config key exists. If not, show available options and exit."""
     schema = _get_config_schema()
 
     if key not in schema:
         print(f"{Fore.RED}Error:{Style.RESET_ALL} Unknown configuration key '{key}'\n")
-        print(
-            f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n"
-        )
-
-        table_data = []
-        for config_key, info in sorted(schema.items()):
-            default_str = (
-                str(info["default"]) if info["default"] is not None else "None"
-            )
-            description = _truncate_text(info["description"], 60)
-            table_data.append(
-                {
-                    "Key": config_key,
-                    "Description": description,
-                    "Value": default_str,
-                    "Source": "Default",
-                }
-            )
-
-        display_config(
-            table_data,
-            description_field="Description",
-            key_field="Key",
-            value_field="Value",
-            source_field="Source",
-            max_value_length=80,
-        )
-        raise typer.Exit(1)
+        print_describe_options()
+        if exit_on_fail:
+            raise typer.Exit(1)
 
     return schema[key]
 
@@ -340,6 +347,13 @@ def get_config(key: str | None, scope: str | None) -> None:
         display_config(table_data)
 
 
+def describe_callback(ctx: typer.Context, param, value: bool):
+    if not value or ctx.resilient_parsing:
+        return
+    
+    print_describe_options()
+    raise typer.Exit()
+
 def main(
     ctx: typer.Context,
     help: bool = typer.Option(
@@ -348,6 +362,13 @@ def main(
         callback=help_callback,
         is_eager=True,
         help="Show this message and exit.",
+    ),
+    describe: bool = typer.Option(
+        False,
+        "--describe",
+        callback=describe_callback,
+        is_eager=True,
+        help="Describe available configuration options and exit.",
     ),
     key: str | None = typer.Argument(None, help="Configuration key to get or set."),
     value: str | None = typer.Argument(

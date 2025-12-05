@@ -49,6 +49,7 @@ class GlobalConfig:
     verbose: bool = False
     auto_accept: bool = False
     silent: bool = False
+    ask_for_commit_message: bool = False
 
     constraints = {
         "model": StringConstraint(),
@@ -74,6 +75,7 @@ class GlobalConfig:
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
+        "ask_for_commit_message": BoolConstraint(),
     }
 
     descriptions = {
@@ -87,6 +89,7 @@ class GlobalConfig:
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
+        "ask_for_commit_message": "Allow asking you to provide commit messages to optionally override the auto generated ones",
     }
 
 

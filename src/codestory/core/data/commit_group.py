@@ -22,7 +22,7 @@ from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 
 
-@dataclass
+@dataclass(frozen=True)
 class CommitGroup:
     """
     A collection of DiffChunks that are committed together.
