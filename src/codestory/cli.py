@@ -71,7 +71,7 @@ def load_global_config(custom_config_path: str, **input_args):
             config_args[key] = item
 
     return ConfigLoader.get_full_config(
-        GlobalConfig, config_args, custom_config_path=custom_config_path
+        GlobalConfig, config_args, custom_config_path=Path(custom_config_path) if custom_config_path is not None else None
     )
 
 
