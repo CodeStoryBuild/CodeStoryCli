@@ -29,10 +29,11 @@ from codestory.core.exceptions import CleanCommandError
 class CleanPipeline:
     """Iteratively fix commits from HEAD down to the second commit.
 
+    The pipeline stops at the first merge commit encountered (merge commits are not processed).
+
     Filtering rules:
     - ignore: any commit whose hash starts with any ignore token will be skipped
     - min_size: if provided, skip commits whose (additions + deletions) < min_size
-    - merge commits are skipped (only single-parent commits are supported)
     """
 
     def __init__(
@@ -68,6 +69,15 @@ class CleanPipeline:
         for idx, commit in enumerate(commits):
             short = commit[:7]
 
+            # Stop at the first merge commit
+            if self._is_merge(commit):
+                logger.info(
+                    "Stopping at merge commit {commit}. Cleaned {fixed} commits.",
+                    commit=short,
+                    fixed=fixed,
+                )
+                break
+
             # TODO use for more cool stuff:
             # parent = self.global_context.git_commands.try_get_parent_hash(
             #     commit, empty_on_fail=True
@@ -86,11 +96,6 @@ class CleanPipeline:
             # annotated_chunks = ChunkLabeler.annotate_chunks(
             #     diff_chunks, context_manager
             # )
-
-            if self.clean_context.skip_merge and self._is_merge(commit):
-                logger.debug("Skipping merge commit {commit}", commit=short)
-                skipped += 1
-                continue
 
             if self._is_ignored(commit, self.clean_context.ignore):
                 logger.debug("Skipping ignored commit {commit}", commit=short)

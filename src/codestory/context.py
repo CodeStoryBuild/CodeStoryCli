@@ -138,4 +138,3 @@ class CleanContext:
     ignore: Sequence[str] | None = None
     min_size: int | None = None
     start_from: str | None = None
-    skip_merge: bool = False

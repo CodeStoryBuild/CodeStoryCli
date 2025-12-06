@@ -26,6 +26,7 @@ from codestory.core.validation import (
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
+    validate_no_merge_commits_in_range,
 )
 
 
@@ -34,7 +35,6 @@ def run_clean(
     ignore: list[str] | None,
     min_size: int | None,
     start_from: str | None,
-    skip_merge: bool | None,
 ):
     def fix_command(commit_hash: str):
         run_fix(
@@ -47,12 +47,15 @@ def run_clean(
 
     if start_from:
         validated_start_from = validate_commit_hash(start_from)
+        # Validate that there are no merge commits in the range to be cleaned
+        validate_no_merge_commits_in_range(
+            global_context.git_interface, validated_start_from, "HEAD"
+        )
 
     clean_context = CleanContext(
         ignore=validated_ignore,
         min_size=validated_min_size,
         start_from=validated_start_from,
-        skip_merge=skip_merge,
     )
 
     logger.debug(
@@ -87,11 +90,6 @@ def main(
         "--min-size",
         help="Minimum change size (lines) to process.",
     ),
-    skip_merge: bool | None = typer.Option(
-        False,
-        "--skip-merge",
-        help="Skip merge commits during cleaning.",
-    ),
     start_from: str | None = typer.Argument(
         None,
         help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
@@ -99,9 +97,12 @@ def main(
 ) -> None:
     """Fix your entire repository starting from the latest commit.
 
+    Note: This command will stop at the first merge commit encountered.
+    Merge commits cannot be rewritten and will mark the boundary of the clean operation.
+
     Examples:
-        # Clean starting from the latest commit, skipping merge commits
-        cst clean --skip-merge
+        # Clean starting from the latest commit
+        cst clean
 
         # Clean starting from a specific commit with a minimum line count of 5
         cst clean abc123 --min-size 5
@@ -110,4 +111,4 @@ def main(
         cst clean --ignore def456 --ignore ghi789
     """
     with handle_codestory_exception():
-        run_clean(ctx.obj, ignore, min_size, start_from, skip_merge)
+        run_clean(ctx.obj, ignore, min_size, start_from)
