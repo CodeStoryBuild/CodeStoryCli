@@ -45,7 +45,6 @@ class TestRelevanceFilter:
             new_file_path=filename.encode(),
             file_mode=b"100644",
             contains_newline_fallback=False,
-            contains_newline_marker=False,
             parsed_slice=[Addition(1, 1, content.encode())],
         )
         # Wrap in Chunk (which is what the filter expects mostly)

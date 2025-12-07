@@ -328,6 +328,7 @@ class RewritePipeline:
             logical_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
                 semantic_chunks,
                 immutable_chunks,
+                context_manager,
                 self.commit_context.message,
                 on_progress=on_progress,
             )
@@ -441,9 +442,7 @@ class RewritePipeline:
 
                     if custom_message:
                         # TODO how should we handle extended message
-                        group = CommitGroup(
-                            group.chunks, group.group_id, commit_message=custom_message
-                        )
+                        group = CommitGroup(group.chunks, commit_message=custom_message)
 
                     accepted_groups.append(group)
                 else:

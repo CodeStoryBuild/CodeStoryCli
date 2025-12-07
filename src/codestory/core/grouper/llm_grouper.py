@@ -49,7 +49,6 @@ JSON Schema:
 {
     "groups": [
         {
-            "group_id": "string (unique id)",
             "commit_message": "string (Conventional Commits format)",
             "extended_message": "string or null",
             "changes": [int, int, ...],
@@ -109,7 +108,7 @@ class LLMGrouper(LogicalGrouper):
     def _validate_response(self, data: Any) -> list[dict[str, Any]]:
         """
         Manually validates the JSON structure.
-        Expected: { "groups": [ { "group_id":..., "changes":... } ] }
+        Expected: { "groups": [ { "changes":... } ] }
         Returns the list of group dicts if valid, raises LLMResponseError/LogicalGroupingError if not.
         """
         if not isinstance(data, dict):
@@ -138,7 +137,6 @@ class LLMGrouper(LogicalGrouper):
             # Normalize fields
             valid_groups.append(
                 {
-                    "group_id": str(item.get("group_id", f"group_{i}")),
                     "commit_message": str(item.get("commit_message", "update code")),
                     "extended_message": item.get("extended_message"),  # can be None
                     "changes": [
@@ -210,7 +208,6 @@ class LLMGrouper(LogicalGrouper):
                 commit_groups.append(
                     CommitGroup(
                         chunks=group_chunks,
-                        group_id=group_data["group_id"],
                         commit_message=group_data["commit_message"],
                         extended_message=group_data.get("extended_message"),
                     )
@@ -226,7 +223,6 @@ class LLMGrouper(LogicalGrouper):
             commit_groups.append(
                 CommitGroup(
                     chunks=unassigned,
-                    group_id="fallback_unassigned",
                     commit_message="chore: update unassigned files",
                     extended_message="These changes were not grouped by the AI analysis.",
                 )

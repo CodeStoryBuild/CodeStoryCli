@@ -23,10 +23,10 @@ from colorama import Fore, Style
 from loguru import logger
 
 from codestory.context import CommitContext, GlobalContext
-from codestory.core.branch_saver.branch_saver import BranchSaver
 from codestory.core.exceptions import ValidationError, handle_codestory_exception
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
+from codestory.core.temp_commiter.temp_commiter import TempCommitCreator
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
@@ -102,16 +102,10 @@ def run_commit(
         str(commit_context.target),
         global_context.config.auto_accept,
     )
+    # Create a dangling commit for the current working tree state.
+    tempcommiter = TempCommitCreator(global_context.git_interface)
 
-    # Create a backup branch for the current working tree state.
-    # Reasons:
-    # - Keep a safe backup of the current working changes in case of rollback.
-    # - Obtain the commit hash that represents the working state for subsequent operations.
-    branch_saver = BranchSaver(global_context.git_interface)
-
-    base_commit_hash, new_commit_hash, current_branch = (
-        branch_saver.save_working_state()
-    )
+    base_commit_hash, new_commit_hash = tempcommiter.create_reference_commit()
 
     from codestory.pipelines.rewrite_init import create_rewrite_pipeline
 
@@ -128,6 +122,8 @@ def run_commit(
 
     # now that we rewrote our changes into a clean link of commits, update the current branch to reference this
     if new_commit_hash is not None and new_commit_hash != base_commit_hash:
+        current_branch = global_context.git_commands.get_current_branch()
+
         global_context.git_interface.run_git_binary_out(
             ["update-ref", f"refs/heads/{current_branch}", new_commit_hash]
         )

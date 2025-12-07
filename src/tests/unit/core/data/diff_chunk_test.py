@@ -160,7 +160,6 @@ def test_from_hunk():
     assert c.parsed_content[0].content == b"old"
     assert isinstance(c.parsed_content[1], Addition)
     assert c.parsed_content[1].content == b"new\n\\ No newline at end of file"
-    assert c.contains_newline_marker
 
 
 def test_split_into_atomic_chunks():

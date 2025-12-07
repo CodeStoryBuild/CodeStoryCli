@@ -233,9 +233,19 @@ class SemanticGrouper:
         for i, sig in enumerate(signatures):
             # TODO: Consider splitting into two merge classes - one for symbol-based
             # merging and another for scope-based merging to clarify behavior.
-            for symbol in sig.def_new_symbols | sig.def_old_symbols:
+            for symbol in (
+                sig.total_signature.def_new_symbols
+                | sig.total_signature.def_old_symbols
+            ):
                 symbol_to_chunks[symbol].append(i)
-            for scope in sig.scopes:
+            # TODO we are just plopping all scope info together here, consider if we could separate grouping
+            # Convert named scope lists to sets for union operation
+            for scope in (
+                sig.total_signature.new_named_structural_scopes
+                | sig.total_signature.old_named_structural_scopes
+                | sig.total_signature.new_structural_scopes
+                | sig.total_signature.old_structural_scopes
+            ):
                 scope_to_chunks[scope].append(i)
 
         # Union chunks that share common symbols

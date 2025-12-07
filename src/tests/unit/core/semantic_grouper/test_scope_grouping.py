@@ -1601,13 +1601,17 @@ def test_scope_based_grouping(
     # Get scopes for each chunk's lines
     chunk1_scopes = set()
     for line_num in range(chunk1_lines[0], chunk1_lines[1] + 1):
-        scopes = scope_map.scope_lines.get(line_num, set())
-        chunk1_scopes.update(scopes)
+        named_scopes = scope_map.named_scope_lines.get(line_num, set())
+        structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
+        chunk1_scopes.update(named_scopes)
+        chunk1_scopes.update(structural_scopes)
 
     chunk2_scopes = set()
     for line_num in range(chunk2_lines[0], chunk2_lines[1] + 1):
-        scopes = scope_map.scope_lines.get(line_num, set())
-        chunk2_scopes.update(scopes)
+        named_scopes = scope_map.named_scope_lines.get(line_num, set())
+        structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
+        chunk2_scopes.update(named_scopes)
+        chunk2_scopes.update(structural_scopes)
 
     # Check if they share any scopes
     shared_scopes = chunk1_scopes & chunk2_scopes
@@ -1652,7 +1656,9 @@ def test_scope_map_empty_file(tools):
         [(0, 0)],
     )
 
-    assert len(scope_map.scope_lines) == 0
+    assert len(scope_map.named_scope_lines) == 0
+    assert len(scope_map.structural_scope_lines) == 0
+    assert len(scope_map.named_scope_lines_sorted) == 0
 
 
 def test_scope_map_single_line(tools):
@@ -1672,7 +1678,9 @@ def test_scope_map_single_line(tools):
 
     # Single line may or may not have scope depending on language
     # This just ensures it doesn't crash
-    assert scope_map.scope_lines is not None
+    assert scope_map.named_scope_lines is not None
+    assert scope_map.structural_scope_lines is not None
+    assert scope_map.named_scope_lines_sorted is not None
 
 
 @pytest.mark.parametrize(
@@ -1704,7 +1712,14 @@ def test_scope_consistency(tools, language, filename, content):
 
     # Each scope identifier should appear on multiple lines (or at least one)
     scope_occurrences = {}
-    for line_num, scopes in scope_map.scope_lines.items():
+    # Merge both named and structural scopes
+    all_scope_lines = {}
+    for line_num, scopes in scope_map.named_scope_lines.items():
+        all_scope_lines.setdefault(line_num, set()).update(scopes)
+    for line_num, scopes in scope_map.structural_scope_lines.items():
+        all_scope_lines.setdefault(line_num, set()).update(scopes)
+
+    for line_num, scopes in all_scope_lines.items():
         for scope in scopes:
             scope_occurrences.setdefault(scope, []).append(line_num)
 

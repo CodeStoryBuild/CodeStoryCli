@@ -33,10 +33,16 @@ class SharedTokenQueries:
 
 
 @dataclass(frozen=True)
+class ScopeQueries:
+    named_scope: list[str]
+    structural_scope: list[str]
+
+
+@dataclass(frozen=True)
 class LanguageConfig:
     language_name: str
     shared_token_queries: dict[str, SharedTokenQueries]
-    scope_queries: list[str]
+    scope_queries: ScopeQueries
     comment_queries: list[str]
     share_tokens_between_files: bool
 
@@ -54,7 +60,10 @@ class LanguageConfig:
                 )
             shared_token_queries[token_class] = query
 
-        scope_queries = json_dict.get("scope_queries", [])
+        scope_queries_dict = json_dict.get("scope_queries", {})
+        named_scope = scope_queries_dict.get("named_scope", [])
+        structural_scope = scope_queries_dict.get("structural_scope", [])
+        scope_queries = ScopeQueries(named_scope, structural_scope)
         comment_queries = json_dict.get("comment_queries", [])
         share_tokens_between_files = json_dict.get("share_tokens_between_files", False)
         return cls(
@@ -102,9 +111,13 @@ class LanguageConfig:
         query_type: Literal["scope", "comment", "token_general", "token_definition"],
     ):
         if query_type == "scope":
-            return "\n".join(
-                self.__get_source(self.scope_queries, "STRUCTURALSCOPEQUERY")
+            named_lines = self.__get_source(
+                self.scope_queries.named_scope, "named_scope"
             )
+            structural_lines = self.__get_source(
+                self.scope_queries.structural_scope, "structural_scope"
+            )
+            return "\n".join(named_lines + structural_lines)
         if query_type == "comment":
             return "\n".join(
                 self.__get_source(self.comment_queries, "STRUCTURALCOMMENTQUERY")
@@ -143,11 +156,13 @@ class QueryManager:
         lang_summaries = {}
         for name, cfg in self._language_configs.items():
             shared_classes = len(cfg.shared_token_queries)
-            scope_count = len(cfg.scope_queries)
+            named_scope_count = len(cfg.scope_queries.named_scope)
+            structural_scope_count = len(cfg.scope_queries.structural_scope)
             comment_count = len(cfg.comment_queries)
             lang_summaries[name] = {
                 "shared_classes": shared_classes,
-                "scope_queries": scope_count,
+                "named_scopes": named_scope_count,
+                "structural_scopes": structural_scope_count,
                 "comment_queries": comment_count,
                 "share_tokens_between_files": cfg.share_tokens_between_files,
             }

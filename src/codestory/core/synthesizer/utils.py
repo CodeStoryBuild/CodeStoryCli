@@ -22,38 +22,47 @@ from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.synthesizer.diff_generator import DiffGenerator
 
 
-def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
-    diff_generator = DiffGenerator(chunks)
+def get_patches_chunk(
+    chunks: list[Chunk], diff_generator: DiffGenerator | None = None
+) -> dict[int, str]:
+    if diff_generator is None:
+        diff_generator = DiffGenerator(chunks)
 
     patch_map = {}
     for i, chunk in enumerate(chunks):
-        patches = diff_generator.generate_unified_diff(chunk.get_chunks())
+        diff_chunks = chunk.get_chunks()
+        patches = diff_generator.generate_unified_diff(diff_chunks)
 
         if patches:
             # sort by file name
             ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
             combined_patch = b"".join(patch for _, patch in ordered_items)
         else:
-            combined_patch = ""
+            combined_patch = b""
 
         patch_map[i] = combined_patch.decode("utf-8", errors="replace")
 
     return patch_map
 
 
-def get_patches(groups: list[CommitGroup]) -> dict[int, str]:
-    diff_generator = DiffGenerator(groups)
+def get_patches(
+    groups: list[CommitGroup], diff_generator: DiffGenerator | None = None
+) -> dict[int, str]:
+    if diff_generator is None:
+        diff_generator = DiffGenerator(groups)
 
     patch_map = {}
     for i, group in enumerate(groups):
-        group_chunks = []
+        diff_chunks = []
+        immutable_chunks = []
+
         for chunk in group.chunks:
             if isinstance(chunk, ImmutableChunk):
-                group_chunks.append(chunk)
+                immutable_chunks.append(chunk)
             else:
-                group_chunks.extend(chunk.get_chunks())
+                diff_chunks.extend(chunk.get_chunks())
 
-        patches = diff_generator.generate_unified_diff(group_chunks)
+        patches = diff_generator.generate_unified_diff(diff_chunks, immutable_chunks)
 
         if patches:
             # sort by file name

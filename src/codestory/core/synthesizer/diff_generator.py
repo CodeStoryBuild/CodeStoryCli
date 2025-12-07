@@ -18,19 +18,19 @@
 
 from itertools import groupby
 
-from loguru import logger
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition, Removal
 from codestory.core.git_commands.git_const import DEVNULLBYTES
+from codestory.core.synthesizer.chunk_merger import merge_diff_chunks_by_file
 
 
 class DiffGenerator:
     def __init__(self, all_chunks: list[Chunk | ImmutableChunk | CommitGroup]):
         diff_chunks = []
+        # flattening all diff chunks
         for chunk in all_chunks:
             if isinstance(chunk, Chunk):
                 diff_chunks.extend(chunk.get_chunks())
@@ -54,19 +54,22 @@ class DiffGenerator:
 
     def generate_unified_diff(
         self,
-        chunks: list[DiffChunk | ImmutableChunk],
+        diff_chunks: list[DiffChunk],
+        immutable_chunks: list[ImmutableChunk] | None = None,
     ) -> dict[bytes, bytes]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
         This method is stateful and correctly recalculates hunk headers for subsets of chunks.
+
+        Args:
+            diff_chunks: List of DiffChunks to generate patches for.
+            immutable_chunks: Optional list of ImmutableChunks with pre-computed patches.
         """
-        regular_chunks = [chunk for chunk in chunks if isinstance(chunk, DiffChunk)]
-        immutable_chunks = [
-            chunk for chunk in chunks if isinstance(chunk, ImmutableChunk)
-        ]
+        if immutable_chunks is None:
+            immutable_chunks = []
 
         # Ensure chunks are disjoint before generating patches
-        self.__validate_chunks_are_disjoint(regular_chunks)
+        self.__validate_chunks_are_disjoint(diff_chunks)
 
         patches: dict[bytes, bytes] = {}
 
@@ -75,8 +78,11 @@ class DiffGenerator:
             # add newline delimiter to sepatate from other patches in the stream
             patches[immutable_chunk.canonical_path] = immutable_chunk.file_patch + b"\n"
 
+        # Merge diff chunks by file to remove redundant splits
+        merged_chunks = merge_diff_chunks_by_file(diff_chunks)
+
         # process regular chunks
-        sorted_chunks = sorted(regular_chunks, key=lambda c: c.canonical_path())
+        sorted_chunks = sorted(merged_chunks, key=lambda c: c.canonical_path())
 
         for file_path, file_chunks_iter in groupby(
             sorted_chunks, key=lambda c: c.canonical_path()
@@ -175,8 +181,6 @@ class DiffGenerator:
                 # Sort chunks by their sort key (old_start, then abs_new_line)
                 # This maintains correct ordering even for chunks at the same old_start
                 sorted_file_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
-                # you must merge chunks to get valid patches
-                sorted_file_chunks = self.__merge_chunks(sorted_file_chunks)
 
                 # new_start is calculated here and only here!
                 # We calculate it based on old_start + cumulative_offset.
@@ -311,102 +315,3 @@ class DiffGenerator:
             hunk_new_start = old_start + cumulative_offset
 
         return (hunk_old_start, hunk_new_start)
-
-    def __is_contiguous(
-        self, last_chunk: "DiffChunk", current_chunk: "DiffChunk"
-    ) -> bool:
-        """
-        Determines if two DiffChunks are contiguous and can be merged.
-
-        We check contiguity based STRICTLY on old file coordinates.
-        """
-        # Always use old_len to determine the end in the old file.
-        # Pure additions have old_len=0, meaning they end where they start.
-        last_old_end = (last_chunk.old_start or 0) + last_chunk.old_len()
-        current_old_start = current_chunk.old_start or 0
-
-        # 1. Strict Overlap: Always merge (handles standard modifications)
-        if last_old_end > current_old_start:
-            return True
-
-        # 2. Touching: Merge only if types are compatible (Same Type)
-        if last_old_end == current_old_start:
-            # Pure Add + Pure Add (at same line) -> Merge
-            return (last_chunk.pure_addition() and current_chunk.pure_addition()) or (
-                last_chunk.pure_deletion() and current_chunk.pure_deletion()
-            )
-
-        # Disjoint
-        return False
-
-    def __merge_chunks(self, sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
-        """
-        Merges a list of sorted, atomic DiffChunks into the smallest possible
-        list of larger, valid DiffChunks.
-
-        This acts as the inverse of the `split_into_atomic_chunks` method. It
-        first groups adjacent chunks and then merges each group into a single
-        new chunk using the `from_parsed_content_slice` factory.
-        """
-        if not sorted_chunks:
-            return []
-
-        # Group all contiguous chunks together.
-        groups = []
-        current_group = [sorted_chunks[0]]
-        for i in range(1, len(sorted_chunks)):
-            last_chunk = current_group[-1]
-            current_chunk = sorted_chunks[i]
-
-            if self.__is_contiguous(last_chunk, current_chunk):
-                current_group.append(current_chunk)
-            else:
-                logger.debug(f"Current merge group: {current_group}")
-                groups.append(current_group)
-                current_group = [current_chunk]
-
-        logger.debug(f"Current merge group: {current_group}")
-        groups.append(current_group)
-
-        # Merge each group into a single new DiffChunk.
-        final_chunks = []
-        for group in groups:
-            if len(group) == 1:
-                # No merging needed for groups of one.
-                final_chunks.append(group[0])
-                continue
-
-            # Flatten the content from all chunks in the group.
-            merged_parsed_content = []
-            removals = []
-            additions = []
-
-            # Also combine the newline markers.
-            contains_newline_fallback = False
-            contains_newline_marker = False
-
-            for chunk in group:
-                removals.extend(
-                    [c for c in chunk.parsed_content if isinstance(c, Removal)]
-                )
-                additions.extend(
-                    [c for c in chunk.parsed_content if isinstance(c, Addition)]
-                )
-                contains_newline_fallback |= chunk.contains_newline_fallback
-                contains_newline_marker |= chunk.contains_newline_marker
-
-            merged_parsed_content.extend(removals)
-            merged_parsed_content.extend(additions)
-
-            # Let the factory method do the hard work of creating the new valid chunk.
-            merged_chunk = DiffChunk.from_parsed_content_slice(
-                old_file_path=group[0].old_file_path,
-                new_file_path=group[0].new_file_path,
-                file_mode=group[0].file_mode,
-                contains_newline_fallback=contains_newline_fallback,
-                contains_newline_marker=contains_newline_marker,
-                parsed_slice=merged_parsed_content,
-            )
-            final_chunks.append(merged_chunk)
-
-        return final_chunks

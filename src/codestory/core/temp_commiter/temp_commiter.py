@@ -26,10 +26,8 @@ from codestory.core.exceptions import DetachedHeadError, GitError
 from codestory.core.git_interface.interface import GitInterface
 
 
-class BranchSaver:
-    """Save working directory changes into a branch-specific backup branch and restore them."""
-
-    BACKUP_PREFIX = "backup-"
+class TempCommitCreator:
+    """Save working directory changes into a dangling commit and restore them."""
 
     def __init__(self, git: GitInterface):
         self.git = git
@@ -76,22 +74,22 @@ class BranchSaver:
         result = self._run(["rev-parse", "--verify", "--quiet", branch_name])
         return result is not None and result.strip() != ""
 
-    def save_working_state(self) -> tuple[str, str, str]:
+    def create_reference_commit(self) -> tuple[str, str]:
         """
-        Save the current working directory into a backup branch using index manipulation.
+        Save the current working directory into a dangling commit using index manipulation.
 
         - Creates a tree object from the current working directory state.
-        - Commits this tree to a backup branch WITHOUT checking it out.
-        - Returns the old commit hash (main's HEAD), the new commit hash (backup branch's HEAD),
-          and the backup branch name.
+        - Commits this tree as a dangling commit (not attached to any branch).
+        - Returns the old commit hash (HEAD) and the new dangling commit hash.
         """
-        logger.debug("Backing up current state...")
+        logger.debug("Creating dangling commit for current state...")
         original_branch = (self._run(["branch", "--show-current"]) or "").strip()
         # check that not a detached branch
         if not original_branch:
             msg = "Cannot backup: currently on a detached HEAD."
             raise DetachedHeadError(msg)
 
+        # TODO remove this logic from here into better place
         # check if branch is empty
         head_commit = (self._run(["rev-parse", "HEAD"]) or "").strip()
         if not head_commit:
@@ -100,10 +98,9 @@ class BranchSaver:
             )
             self._run(["commit", "--allow-empty", "-m", "Initial commit"])
 
-        backup_branch = f"{self.BACKUP_PREFIX}{original_branch}"
         old_commit_hash = (self._run(["rev-parse", "HEAD"]) or "").strip()
 
-        logger.debug(f"Creating/Updating backup branch name={backup_branch}")
+        logger.debug("Creating dangling commit from working directory state")
 
         # Create a temporary index file to build the backup commit
         temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="codestory_backup_")
@@ -124,7 +121,7 @@ class BranchSaver:
             new_tree_hash = self._run_git_decoded("write-tree", env=env)
 
             # Create a commit from this tree
-            commit_msg = f"Backup of working state from {original_branch}"
+            commit_msg = f"Temporary backup of working state from {original_branch}"
             new_commit_hash = self._run_git_decoded(
                 "commit-tree",
                 new_tree_hash,
@@ -134,12 +131,7 @@ class BranchSaver:
                 commit_msg,
             )
 
-            # Update the backup branch to point to this new commit
-            self._run(["branch", "-f", backup_branch, new_commit_hash])
-
-            logger.debug(
-                f"Backup created: {new_commit_hash[:8]} on branch {backup_branch}"
-            )
+            logger.debug(f"Dangling commit created: {new_commit_hash[:8]}")
 
         finally:
             # Cleanup the temporary index file
@@ -149,54 +141,4 @@ class BranchSaver:
         return (
             old_commit_hash,
             new_commit_hash,
-            original_branch,
         )
-
-    def restore_from_backup(self, exclude_path: str | None = None) -> bool:
-        """
-        Restore state from the backup branch for the current branch.
-
-        - Applies all changes as uncommitted, unstaged changes.
-        - If `exclude_paths` is provided, those paths will not be touched during the restore.
-        """
-        original_branch = (self._run(["branch", "--show-current"]) or "").strip()
-        if not original_branch:
-            raise DetachedHeadError("Cannot restore: currently on a detached HEAD.")
-
-        backup_branch = f"{self.BACKUP_PREFIX}{original_branch}"
-
-        if not self._branch_exists(backup_branch):
-            logger.warning(f"No backup branch found for {original_branch}")
-            return False
-
-        try:
-            # Build the restore command dynamically
-            cmd = [
-                "restore",
-                "--source",
-                backup_branch,
-                "--staged",
-                "--worktree",
-                "--",
-            ]
-
-            # Add the pathspecs
-            if exclude_path is not None:
-                # Restore everything BUT the excluded paths
-                cmd.append(".")
-                cmd.append(f":(exclude){exclude_path}")
-            else:
-                # Default behavior: restore everything
-                cmd.append(".")
-
-            # Restore all tracked changes from the backup branch
-            self._run(cmd)
-
-            # Unstage all the restored changes to make them appear as local modifications
-            self._run(["reset"])
-
-            return True
-
-        except Exception as e:
-            logger.warning(f"Failed to restore from backup: {e}")
-            return False
