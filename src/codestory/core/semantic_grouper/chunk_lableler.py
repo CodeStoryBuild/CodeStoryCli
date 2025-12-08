@@ -54,7 +54,9 @@ class Signature:
     def from_signatures(signatures: list["Signature"]) -> "Signature":
         # combine multiple signatures into one big one
         if len(signatures) == 0:
-            return Signature(set(), set(), set(), set(), set(), set(), set(), set(), set(), set())
+            return Signature(
+                set(), set(), set(), set(), set(), set(), set(), set(), set(), set()
+            )
 
         base_sig = next(sig for sig in signatures if sig is not None)
         base_new_symbols = set(base_sig.def_new_symbols)
@@ -289,7 +291,7 @@ class ChunkLabeler:
                     new_structural_scopes,
                     new_fqns,
                 ) = ChunkLabeler._get_signature_for_line_range(
-                    abs_new_start, abs_new_end,new_name, new_context
+                    abs_new_start, abs_new_end, new_name, new_context
                 )
                 def_new_symbols_acc.update(def_new_symbols)
                 extern_new_symbols_acc.update(extern_new_symbols)
@@ -419,7 +421,7 @@ class ChunkLabeler:
             # Update the stack to match current scopes
             # Keep only the common prefix
             scope_stack = current_scopes_list[:common_prefix_len]
-            
+
             # Add any new scopes from current
             if len(current_scopes_list) > common_prefix_len:
                 scope_stack.extend(current_scopes_list[common_prefix_len:])
@@ -428,7 +430,9 @@ class ChunkLabeler:
             prev_scopes_list = current_scopes_list
 
             # Collect structural scopes
-            named_structural_scopes = context.scope_map.structural_named_scope_lines.get(line)
+            named_structural_scopes = (
+                context.scope_map.structural_named_scope_lines.get(line)
+            )
             if named_structural_scopes:
                 named_structural_scopes_range.update(named_structural_scopes)
 

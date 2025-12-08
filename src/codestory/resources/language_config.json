@@ -868,5 +868,248 @@
             "((block_comment) @placeholder)"
         ],
         "share_tokens_between_files": "True"
+    },
+    "bash": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((variable_name) @placeholder)",
+                    "((word) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(variable_assignment name: (variable_name) @placeholder)",
+                    "(function_definition name: (word) @placeholder)",
+                    "(for_statement variable: (variable_name) @placeholder)",
+                    "(declaration_command (variable_assignment name: (variable_name) @placeholder))"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition name: (word) @placeholder.name) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((case_statement) @placeholder)",
+                "((compound_statement) @placeholder)",
+                "((do_group) @placeholder)",
+                "((subshell) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "c": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((identifier) @placeholder)",
+                    "((field_identifier) @placeholder)",
+                    "((type_identifier) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(declaration declarator: (identifier) @placeholder)",
+                    "(declaration declarator: (init_declarator declarator: (identifier) @placeholder))",
+                    "(function_definition declarator: (function_declarator declarator: (identifier) @placeholder))",
+                    "(parameter_declaration declarator: (identifier) @placeholder)",
+                    "(struct_specifier name: (type_identifier) @placeholder)",
+                    "(union_specifier name: (type_identifier) @placeholder)",
+                    "(enum_specifier name: (type_identifier) @placeholder)",
+                    "(type_definition declarator: (type_identifier) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
+                "((struct_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                "((union_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                "((enum_specifier name: (type_identifier) @placeholder.name) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((switch_statement) @placeholder)",
+                "((compound_statement) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "True"
+    },
+    "toml": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((bare_key) @placeholder)",
+                    "((quoted_key) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(table (bare_key) @placeholder)",
+                    "(table (dotted_key (bare_key) @placeholder))",
+                    "(table_array_element (bare_key) @placeholder)",
+                    "(table_array_element (dotted_key (bare_key) @placeholder))"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((table) @placeholder)",
+                "((table_array_element) @placeholder)",
+                "((array) @placeholder)",
+                "((inline_table) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "json": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((string_content) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(pair key: (string (string_content) @placeholder))"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((object) @placeholder)",
+                "((array) @placeholder)",
+                "((pair) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "yaml": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((string_scalar) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(block_mapping_pair key: (flow_node (plain_scalar (string_scalar) @placeholder)))"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((block_mapping) @placeholder)",
+                "((block_sequence) @placeholder)",
+                "((block_mapping_pair) @placeholder)",
+                "((flow_mapping) @placeholder)",
+                "((flow_sequence) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "markdown": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                ],
+                "definition_queries": [
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((section) @placeholder)",
+                "((atx_heading) @placeholder)",
+                "((paragraph) @placeholder)",
+                "((list) @placeholder)",
+                "((list_item) @placeholder)",
+                "((fenced_code_block) @placeholder)",
+                "((block_quote) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((html_block) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "rst": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                ],
+                "definition_queries": [
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((field_list) @placeholder)",
+                "((section) @placeholder)",
+                "((title) @placeholder)",
+                "((paragraph) @placeholder)",
+                "((bullet_list) @placeholder)",
+                "((enumerated_list) @placeholder)",
+                "((list_item) @placeholder)",
+                "((directive) @placeholder)",
+                "((block_quote) @placeholder)",
+                "((literal_block) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
+    },
+    "html": {
+        "shared_token_queries": {
+            "identifier_class": {
+                "general_queries": [
+                    "((tag_name) @placeholder)",
+                    "((attribute_name) @placeholder)"
+                ],
+                "definition_queries": [
+                    "(element (start_tag (tag_name) @placeholder))",
+                    "(attribute (attribute_name) @placeholder)"
+                ]
+            }
+        },
+        "scope_queries": {
+            "named_scope": [
+            ],
+            "structural_scope": [
+                "((element) @placeholder)",
+                "((script_element) @placeholder)",
+                "((style_element) @placeholder)",
+                "((attribute) @placeholder)"
+            ]
+        },
+        "comment_queries": [
+            "((comment) @placeholder)"
+        ],
+        "share_tokens_between_files": "False"
     }
 }
+
+

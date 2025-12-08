@@ -35,6 +35,7 @@ from codestory.onboarding import check_run_onboarding
 from codestory.runtimeutil import (
     ensure_utf8_output,
     get_log_dir_callback,
+    get_supported_languages_callback,
     setup_signal_handlers,
     version_callback,
 )
@@ -95,6 +96,13 @@ def main(
         "-LD",
         callback=get_log_dir_callback,
         help="Show log path (where logs for codestory live) and exit",
+    ),
+    supported_languages: bool = typer.Option(
+        False,
+        "--supported-languages",
+        "-SL",
+        callback=get_supported_languages_callback,
+        help="Show languages that support semantic analysis and grouping, then exit",
     ),
     repo_path: str = typer.Option(
         ".",

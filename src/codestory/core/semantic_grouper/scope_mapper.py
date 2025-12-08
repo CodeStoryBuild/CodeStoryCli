@@ -86,16 +86,24 @@ class ScopeMapper:
             # Get the scope nodes (captured as @named_scope) and name nodes
             name_nodes = match[1].get("named_scope.name", [])
             scope_nodes = match[1].get("named_scope", [])
-            
-            for name_node, scope_node in zip(name_nodes, scope_nodes):
+
+            if len(name_nodes) != len(scope_nodes):
+                raise RuntimeError(
+                    f"Mismatch in named scope match: {len(name_nodes)} name nodes vs {len(scope_nodes)} scope nodes",
+                    "Language config must ensure each named_scope has a name capture.",
+                )
+
+            for name_node, scope_node in zip(name_nodes, scope_nodes, strict=True):
                 # Get the FQN name from the name capture if available
                 fqn_name = name_node.text.decode("utf8", errors="replace").strip()
 
                 # Truncate if too long to keep scope names manageable
                 if len(fqn_name) > 80:
                     fqn_name = fqn_name[:77] + "..."
-                
-                for line_num in range(scope_node.start_point[0], scope_node.end_point[0] + 1):
+
+                for line_num in range(
+                    scope_node.start_point[0], scope_node.end_point[0] + 1
+                ):
                     line_to_named_scope_with_pos.setdefault(line_num, []).append(
                         (scope_node.start_byte, fqn_name)
                     )

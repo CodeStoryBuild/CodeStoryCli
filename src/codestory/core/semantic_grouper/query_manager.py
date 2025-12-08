@@ -108,7 +108,14 @@ class LanguageConfig:
 
     def get_source(
         self,
-        query_type: Literal["scope", "named_scope", "structural_scope", "comment", "token_general", "token_definition"],
+        query_type: Literal[
+            "scope",
+            "named_scope",
+            "structural_scope",
+            "comment",
+            "token_general",
+            "token_definition",
+        ],
     ):
         if query_type == "scope":
             named_lines = self.__get_source(
@@ -124,7 +131,9 @@ class LanguageConfig:
             )
         if query_type == "structural_scope":
             return "\n".join(
-                self.__get_source(self.scope_queries.structural_scope, "structural_scope")
+                self.__get_source(
+                    self.scope_queries.structural_scope, "structural_scope"
+                )
             )
         if query_type == "comment":
             return "\n".join(
@@ -211,7 +220,14 @@ class QueryManager:
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal["scope", "named_scope","structural_scope", "comment", "token_general", "token_definition"],
+        query_type: Literal[
+            "scope",
+            "named_scope",
+            "structural_scope",
+            "comment",
+            "token_general",
+            "token_definition",
+        ],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """
@@ -272,7 +288,14 @@ class QueryManager:
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal["scope", "named_scope","structural_scope", "comment", "token_general", "token_definition"],
+        query_type: Literal[
+            "scope",
+            "named_scope",
+            "structural_scope",
+            "comment",
+            "token_general",
+            "token_definition",
+        ],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """

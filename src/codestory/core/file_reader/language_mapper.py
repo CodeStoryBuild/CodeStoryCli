@@ -148,6 +148,7 @@ EXTENSION_MAP = {
     ".vue": "vue",
     ".zig": "zig",
     ".ml": "ocaml",
+    ".rst": "rst",
 }
 
 # Map Interpreter (Shebang) names to Language

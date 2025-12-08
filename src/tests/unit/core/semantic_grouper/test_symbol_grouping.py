@@ -414,6 +414,297 @@ def tools():
             True,
             "Scala: Class definition and type usage share symbol",
         ),
+        # === BASH ===
+        (
+            "bash",
+            "test.sh",
+            """
+            #!/bin/bash
+            MY_VAR="config"
+            
+            function use_config() {
+                echo $MY_VAR
+            }
+            
+            use_config
+            """,
+            [(1, 1), (3, 5)],  # Modify variable definition and usage
+            (1, 1),  # MY_VAR definition
+            (3, 5),  # use_config function
+            True,
+            "Bash: Variable definition and usage share symbol",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            function func_one() {
+                local x=1
+                echo $x
+            }
+            
+            function func_two() {
+                local y=2
+                echo $y
+            }
+            """,
+            [(0, 3), (5, 8)],  # Modify both functions
+            (0, 3),  # func_one
+            (5, 8),  # func_two
+            False,
+            "Bash: Different functions don't share local variables",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            CONFIG_FILE="/etc/app.conf"
+            
+            function load_config() {
+                cat $CONFIG_FILE
+            }
+            
+            function other_func() {
+                echo "other"
+            }
+            """,
+            [(0, 0), (2, 4)],  # Modify global var and usage
+            (0, 0),  # CONFIG_FILE definition
+            (2, 4),  # load_config using it
+            True,
+            "Bash: Global variable definition and function usage share symbol",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            function process() {
+                result="processed"
+                echo $result
+            }
+            
+            function display() {
+                msg="display"
+                echo $msg
+            }
+            """,
+            [(1, 1), (6, 6)],  # Modify local vars in different functions
+            (1, 1),  # result in process
+            (6, 6),  # msg in display
+            False,
+            "Bash: Local variables in different functions don't share",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            function calculate() {
+                sum=0
+                return $sum
+            }
+            
+            calculate
+            echo $sum
+            """,
+            [(1, 1), (6, 6)],  # Modify variable definition and later usage
+            (1, 1),  # sum in calculate
+            (6, 6),  # sum usage outside
+            True,
+            "Bash: Variable defined in function can be accessed outside",
+        ),
+        # === C ===
+        (
+            "c",
+            "test.c",
+            """
+            #include <stdio.h>
+            
+            int global_var = 42;
+            
+            void use_global() {
+                printf("%d", global_var);
+            }
+            
+            int main() {
+                use_global();
+                return 0;
+            }
+            """,
+            [(2, 2), (4, 6)],  # Modify global variable and usage
+            (2, 2),  # global_var definition
+            (4, 6),  # use_global function
+            True,
+            "C: Global variable definition and usage share symbol",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            void func_one() {
+                int x = 1;
+                printf("%d", x);
+            }
+            
+            void func_two() {
+                int y = 2;
+                printf("%d", y);
+            }
+            """,
+            [(0, 3), (5, 8)],  # Modify both functions
+            (0, 3),  # func_one
+            (5, 8),  # func_two
+            False,
+            "C: Different functions don't share local variables",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            struct Point {
+                int x;
+                int y;
+            };
+            
+            struct Point create_point(int a, int b) {
+                struct Point p;
+                p.x = a;
+                p.y = b;
+                return p;
+            }
+            """,
+            [(0, 3), (5, 10)],  # Modify struct definition and usage
+            (0, 3),  # Point struct definition
+            (5, 10),  # create_point function
+            True,
+            "C: Struct definition and type usage share symbol",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            int calculate(int n) {
+                int result = n * 2;
+                return result;
+            }
+            
+            int process(int m) {
+                int value = m + 1;
+                return value;
+            }
+            """,
+            [(1, 1), (6, 6)],  # Modify local vars in different functions
+            (1, 1),  # result in calculate
+            (6, 6),  # value in process
+            False,
+            "C: Local variables in different functions don't share",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            typedef struct {
+                int id;
+                char name[50];
+            } User;
+            
+            User create_user() {
+                User u;
+                u.id = 1;
+                return u;
+            }
+            """,
+            [(0, 3), (5, 9)],  # Modify typedef and usage
+            (0, 3),  # User typedef
+            (5, 9),  # create_user function
+            True,
+            "C: Typedef definition and usage share symbol",
+        ),
+        # === TOML ===
+        (
+            "toml",
+            "config.toml",
+            """
+            [package]
+            name = "myapp"
+            version = "1.0.0"
+            
+            [package.metadata]
+            authors = ["John Doe"]
+            """,
+            [(0, 2), (4, 5)],  # Modify package and package.metadata tables
+            (0, 2),  # package table
+            (4, 5),  # package.metadata table
+            True,
+            "TOML: Nested tables share parent table name",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [server]
+            host = "localhost"
+            port = 8080
+            
+            [database]
+            user = "admin"
+            password = "secret"
+            """,
+            [(0, 2), (4, 6)],  # Modify different tables
+            (0, 2),  # server table
+            (4, 6),  # database table
+            False,
+            "TOML: Different top-level tables don't share",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [[products]]
+            name = "Widget"
+            sku = 12345
+            
+            [[products]]
+            name = "Gadget"
+            sku = 67890
+            """,
+            [(0, 2), (4, 6)],  # Modify array table elements
+            (0, 2),  # first products element
+            (4, 6),  # second products element
+            True,
+            "TOML: Array table elements share table name",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [config]
+            debug = true
+            
+            [settings]
+            timeout = 30
+            """,
+            [(0, 1), (3, 4)],  # Modify different top-level tables
+            (0, 1),  # config table
+            (3, 4),  # settings table
+            False,
+            "TOML: Unrelated tables don't share symbols",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [build]
+            target = "release"
+            
+            [build.dependencies]
+            pkg1 = "1.0"
+            """,
+            [(0, 1), (3, 4)],  # Modify parent table and nested table
+            (0, 1),  # build table
+            (3, 4),  # build.dependencies table
+            True,
+            "TOML: Nested table shares parent table name",
+        ),
         # === EXTENDED PYTHON TESTS ===
         (
             "python",
@@ -2037,6 +2328,275 @@ def tools():
             (3, 3),  # result return (usage)
             True,
             "JavaScript: Definition and usage of same variable share symbol",
+        ),
+        # === JSON ===
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "name": "example",
+                "version": "1.0.0",
+                "config": {
+                    "name": "nested-name"
+                }
+            }
+            """,
+            [(1, 1), (4, 4)],  # Modify both "name" keys
+            (1, 1),  # Top-level "name" key
+            (4, 4),  # Nested "name" key in config
+            True,
+            "JSON: Same key name in different objects share symbol",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "database": {
+                    "host": "localhost",
+                    "port": 5432
+                },
+                "cache": {
+                    "host": "redis.local",
+                    "ttl": 3600
+                }
+            }
+            """,
+            [(2, 2), (6, 6)],  # Modify "host" in both database and cache
+            (2, 2),  # database.host
+            (6, 6),  # cache.host
+            True,
+            "JSON: Same key 'host' in different objects share symbol",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "users": [
+                    {"id": 1, "name": "Alice"},
+                    {"id": 2, "name": "Bob"}
+                ],
+                "products": [
+                    {"id": 100, "name": "Widget"}
+                ]
+            }
+            """,
+            [(2, 2), (6, 6)],  # Modify "id" in users and products
+            (2, 2),  # users[0].id
+            (6, 6),  # products[0].id
+            True,
+            "JSON: Same key 'id' in array items share symbol",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "server": {
+                    "port": 8080
+                },
+                "client": {
+                    "timeout": 30
+                }
+            }
+            """,
+            [(2, 2), (5, 5)],  # Modify different keys
+            (2, 2),  # server.port
+            (5, 5),  # client.timeout
+            False,
+            "JSON: Different keys don't share symbols",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "config": {
+                    "enabled": true,
+                    "level": "debug"
+                },
+                "settings": {
+                    "enabled": false,
+                    "mode": "production"
+                }
+            }
+            """,
+            [(2, 2), (6, 6)],  # Modify "enabled" in both config and settings
+            (2, 2),  # config.enabled
+            (6, 6),  # settings.enabled
+            True,
+            "JSON: Same key 'enabled' in different objects share symbol",
+        ),
+        # === YAML ===
+        (
+            "yaml",
+            "test.yaml",
+            """
+            name: example
+            version: 1.0.0
+            config:
+              name: nested-name
+            """,
+            [(0, 0), (3, 3)],  # Modify both "name" keys
+            (0, 0),  # Top-level "name" key
+            (3, 3),  # Nested "name" key in config
+            True,
+            "YAML: Same key name in different contexts share symbol",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            database:
+              host: localhost
+              port: 5432
+            cache:
+              host: redis.local
+              ttl: 3600
+            """,
+            [(1, 1), (4, 4)],  # Modify "host" in both database and cache
+            (1, 1),  # database.host
+            (4, 4),  # cache.host
+            True,
+            "YAML: Same key 'host' in different objects share symbol",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            users:
+              - id: 1
+                name: Alice
+              - id: 2
+                name: Bob
+            """,
+            [(1, 1), (3, 3)],  # Modify "id" in array items
+            (1, 1),  # users[0].id
+            (3, 3),  # users[1].id
+            True,
+            "YAML: Same key 'id' in array items share symbol",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            server:
+              port: 8080
+            client:
+              timeout: 30
+            """,
+            [(1, 1), (3, 3)],  # Modify different keys
+            (1, 1),  # server.port
+            (3, 3),  # client.timeout
+            False,
+            "YAML: Different keys don't share symbols",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            config:
+              enabled: true
+              level: debug
+            settings:
+              enabled: false
+              mode: production
+            """,
+            [(1, 1), (4, 4)],  # Modify "enabled" in both config and settings
+            (1, 1),  # config.enabled
+            (4, 4),  # settings.enabled
+            True,
+            "YAML: Same key 'enabled' in different objects share symbol",
+        ),
+        # === HTML ===
+        (
+            "html",
+            "test.html",
+            """
+            <div class="container">
+                <p class="text">First</p>
+            </div>
+            <div class="container">
+                <p class="text">Second</p>
+            </div>
+            """,
+            [(0, 0), (3, 3)],  # Modify both "container" class usages
+            (0, 0),  # First container div
+            (3, 3),  # Second container div
+            True,
+            "HTML: Same class name 'container' in different elements share symbol",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <div id="header">
+                <h1 id="title">Title</h1>
+            </div>
+            <div id="content">
+                <p id="text">Content</p>
+            </div>
+            """,
+            [(0, 0), (3, 3)],  # Modify both id attributes
+            (0, 0),  # header div
+            (3, 3),  # content div
+            True,
+            "HTML: Elements with id attributes share 'id' symbol",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <div class="card">
+                <h2 class="title">Card 1</h2>
+                <p class="description">Desc 1</p>
+            </div>
+            <div class="card">
+                <h2 class="title">Card 2</h2>
+                <p class="description">Desc 2</p>
+            </div>
+            """,
+            [(1, 1), (5, 5)],  # Modify "title" class in both cards
+            (1, 1),  # First title
+            (5, 5),  # Second title
+            True,
+            "HTML: Same class 'title' in different card elements share symbol",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <div data-component="modal">
+                <button data-action="close">X</button>
+            </div>
+            <div data-component="tooltip">
+                <span data-action="show">Info</span>
+            </div>
+            """,
+            [(1, 1), (4, 4)],  # Modify "data-action" attributes
+            (1, 1),  # close button
+            (4, 4),  # show span
+            True,
+            "HTML: Elements with data-action attributes share 'data-action' symbol",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <custom-element name="widget">
+                <custom-element name="button">Click</custom-element>
+            </custom-element>
+            <custom-element name="widget">
+                <custom-element name="input">Type</custom-element>
+            </custom-element>
+            """,
+            [(0, 0), (3, 3)],  # Modify both "widget" custom elements
+            (0, 0),  # First widget
+            (3, 3),  # Second widget
+            True,
+            "HTML: Same custom element name 'widget' share symbol",
         ),
     ],
 )

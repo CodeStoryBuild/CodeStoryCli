@@ -400,6 +400,269 @@ def tools():
             True,
             "Scala object methods share object scope",
         ),
+        # === BASH ===
+        (
+            "bash",
+            "test.sh",
+            """
+            function func_one() {
+                x=1
+                y=2
+                echo $((x + y))
+            }
+            
+            function func_two() {
+                a=10
+                b=20
+                echo $((a + b))
+            }
+            """,
+            (1, 2),  # func_one internals
+            (7, 8),  # func_two internals
+            False,
+            "Bash: Different functions have different scopes",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            function calculate() {
+                x=1
+                y=2
+                z=3
+                echo $((x + y + z))
+            }
+            """,
+            (1, 1),  # x = 1
+            (3, 3),  # z = 3
+            True,
+            "Bash: Lines within same function share scope",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            if [ "$1" = "test" ]; then
+                x=1
+                y=2
+            else
+                a=10
+                b=20
+            fi
+            """,
+            (1, 2),  # then branch
+            (4, 5),  # else branch
+            True,
+            "Bash: if/else branches share conditional scope",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            for i in {1..5}; do
+                sum=$((sum + i))
+                echo $sum
+            done
+            
+            for j in {1..3}; do
+                count=$((count + 1))
+            done
+            """,
+            (1, 2),  # first for loop
+            (6, 6),  # second for loop
+            False,
+            "Bash: Different loops have different scopes",
+        ),
+        (
+            "bash",
+            "test.sh",
+            """
+            case $1 in
+                start)
+                    echo "Starting"
+                    ;;
+                stop)
+                    echo "Stopping"
+                    ;;
+            esac
+            """,
+            (2, 2),  # start case
+            (5, 5),  # stop case
+            True,
+            "Bash: Case items share case statement scope",
+        ),
+        # === C ===
+        (
+            "c",
+            "test.c",
+            """
+            void foo() {
+                int x = 1;
+                int y = 2;
+                printf("%d", x + y);
+            }
+            
+            void bar() {
+                int a = 10;
+                int b = 20;
+                printf("%d", a + b);
+            }
+            """,
+            (1, 2),  # foo function
+            (7, 8),  # bar function
+            False,
+            "C: Different functions have different scopes",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            void calculate() {
+                int x = 1;
+                int y = 2;
+                int z = 3;
+                printf("%d", x + y + z);
+            }
+            """,
+            (1, 1),  # x = 1
+            (3, 3),  # z = 3
+            True,
+            "C: Lines within same function share scope",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            struct Data {
+                int value;
+                void process() {
+                    value = 10;
+                }
+            };
+            
+            struct Other {
+                int num;
+            };
+            """,
+            (0, 4),  # Data struct
+            (7, 9),  # Other struct
+            False,
+            "C: Different structs have different scopes",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            void process(int n) {
+                if (n > 0) {
+                    int x = 1;
+                    printf("%d", x);
+                } else {
+                    int y = 2;
+                    printf("%d", y);
+                }
+            }
+            """,
+            (2, 3),  # if branch
+            (5, 6),  # else branch
+            True,
+            "C: if/else branches share function scope",
+        ),
+        (
+            "c",
+            "test.c",
+            """
+            void loops() {
+                for (int i = 0; i < 5; i++) {
+                    printf("%d ", i);
+                }
+                
+                for (int j = 0; j < 3; j++) {
+                    printf("%d ", j);
+                }
+            }
+            """,
+            (1, 2),  # first for loop
+            (5, 6),  # second for loop
+            True,
+            "C: Loops within same function share function scope",
+        ),
+        # === TOML ===
+        (
+            "toml",
+            "config.toml",
+            """
+            [package]
+            name = "myapp"
+            version = "1.0.0"
+            authors = ["John Doe"]
+            """,
+            (1, 2),  # name and version
+            (3, 3),  # authors
+            True,
+            "TOML: Keys within same table share scope",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [server]
+            host = "localhost"
+            port = 8080
+            
+            [database]
+            host = "db.local"
+            port = 5432
+            """,
+            (1, 2),  # server table keys
+            (5, 6),  # database table keys
+            False,
+            "TOML: Different tables have different scopes",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [[products]]
+            name = "Widget"
+            price = 9.99
+            
+            [[products]]
+            name = "Gadget"
+            price = 19.99
+            """,
+            (1, 2),  # first product
+            (5, 6),  # second product
+            False,
+            "TOML: Array table elements have separate scopes",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            [server.database]
+            type = "postgres"
+            host = "localhost"
+            port = 5432
+            """,
+            (1, 2),  # type and host
+            (3, 3),  # port
+            True,
+            "TOML: Nested table keys share nested table scope",
+        ),
+        (
+            "toml",
+            "config.toml",
+            """
+            colors = ["red", "green"]
+            numbers = [1, 2, 3]
+            config = { debug = true }
+            """,
+            (0, 0),  # colors array
+            (2, 2),  # config inline table
+            False,
+            "TOML: Different value types (array vs inline table) are separate scopes",
+        ),
         # === TYPESCRIPT additional ===
         (
             "typescript",
@@ -1553,6 +1816,402 @@ def tools():
             (2, 2),  # y = i * 2
             True,
             "Lines in same for loop share scope",
+        ),
+        # === JSON ===
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "name": "example",
+                "version": "1.0.0"
+            }
+            """,
+            (1, 1),  # name property
+            (2, 2),  # version property
+            True,
+            "JSON: Properties in same object share scope",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "database": {
+                    "host": "localhost",
+                    "port": 5432
+                }
+            }
+            """,
+            (2, 2),  # host property
+            (3, 3),  # port property
+            True,
+            "JSON: Properties in same nested object share scope",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "users": [
+                    {"id": 1, "name": "Alice"},
+                    {"id": 2, "name": "Bob"}
+                ]
+            }
+            """,
+            (2, 2),  # First object in array
+            (3, 3),  # Second object in array
+            True,
+            "JSON: Objects in same array share array scope",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            [
+                {"id": 1},
+                {"id": 2}
+            ]
+            """,
+            (1, 1),  # First object
+            (2, 2),  # Second object
+            True,
+            "JSON: Array items share array scope",
+        ),
+        (
+            "json",
+            "test.json",
+            """
+            {
+                "config": {
+                    "enabled": true
+                },
+                "settings": {
+                    "timeout": 30
+                }
+            }
+            """,
+            (2, 2),  # config.enabled
+            (5, 5),  # settings.timeout
+            True,
+            "JSON: Different nested objects share root object scope",
+        ),
+        # === YAML ===
+        (
+            "yaml",
+            "test.yaml",
+            """
+            name: example
+            version: 1.0.0
+            """,
+            (0, 0),  # name key
+            (1, 1),  # version key
+            True,
+            "YAML: Keys in same root mapping share scope",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            database:
+              host: localhost
+              port: 5432
+            """,
+            (1, 1),  # host property
+            (2, 2),  # port property
+            True,
+            "YAML: Properties in same nested mapping share scope",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            users:
+              - id: 1
+                name: Alice
+              - id: 2
+                name: Bob
+            """,
+            (1, 2),  # First object
+            (3, 4),  # Second object
+            True,
+            "YAML: Objects in same sequence share sequence scope",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            config:
+              enabled: true
+            settings:
+              timeout: 30
+            """,
+            (1, 1),  # config.enabled
+            (3, 3),  # settings.timeout
+            True,
+            "YAML: Different nested mappings share root scope",
+        ),
+        (
+            "yaml",
+            "test.yaml",
+            """
+            services:
+              web:
+                port: 8080
+                env: production
+              db:
+                port: 5432
+                type: postgres
+            """,
+            (2, 3),  # web properties
+            (5, 6),  # db properties
+            True,
+            "YAML: Sibling nested mappings share parent scope",
+        ),
+        # === MARKDOWN ===
+        (
+            "markdown",
+            "test.md",
+            """
+            # Main Title
+            
+            First paragraph under main
+            
+            # Another Top Level
+            
+            Second paragraph under another
+            """,
+            (2, 2),  # First paragraph
+            (6, 6),  # Second paragraph
+            False,
+            "Markdown: Different top-level sections don't share scope",
+        ),
+        (
+            "markdown",
+            "test.md",
+            """
+            ## Section
+            
+            First paragraph
+            Second paragraph
+            """,
+            (2, 2),  # First paragraph
+            (3, 3),  # Second paragraph
+            True,
+            "Markdown: Paragraphs in same section share section scope",
+        ),
+        (
+            "markdown",
+            "test.md",
+            """
+            - Item 1
+            - Item 2
+            - Item 3
+            """,
+            (0, 0),  # Item 1
+            (2, 2),  # Item 3
+            True,
+            "Markdown: List items in same list share list scope",
+        ),
+        (
+            "markdown",
+            "test.md",
+            """
+            # Heading
+            
+            ```python
+            def foo():
+                pass
+            ```
+            
+            Regular paragraph
+            """,
+            (2, 4),  # Code block
+            (7, 7),  # Paragraph
+            True,
+            "Markdown: Code block and paragraph in same section share scope",
+        ),
+        (
+            "markdown",
+            "test.md",
+            """
+            ## First Section
+            
+            Content here
+            
+            ## Second Section
+            
+            More content
+            """,
+            (2, 2),  # Content in first section
+            (6, 6),  # Content in second section
+            False,
+            "Markdown: Content in different H2 sections don't share scope",
+        ),
+        # === RST ===
+        (
+            "rst",
+            "test.rst",
+            """
+            =====
+            Title
+            =====
+            
+            First paragraph
+            
+            Another Section
+            ===============
+            
+            Second paragraph
+            """,
+            (5, 5),  # First paragraph
+            (10, 10),  # Second paragraph
+            False,
+            "RST: Different top-level sections don't share scope",
+        ),
+        (
+            "rst",
+            "test.rst",
+            """
+            Section
+            =======
+            
+            First paragraph
+            Second paragraph
+            """,
+            (3, 3),  # First paragraph
+            (4, 4),  # Second paragraph
+            True,
+            "RST: Paragraphs in same section share section scope",
+        ),
+        (
+            "rst",
+            "test.rst",
+            """
+            - Item 1
+            - Item 2
+            - Item 3
+            """,
+            (0, 0),  # Item 1
+            (2, 2),  # Item 3
+            True,
+            "RST: List items in same list share list scope",
+        ),
+        (
+            "rst",
+            "test.rst",
+            """
+            Title
+            =====
+            
+            .. code-block:: python
+            
+               def foo():
+                   pass
+            
+            Regular paragraph
+            """,
+            (3, 6),  # Code block directive
+            (8, 8),  # Paragraph
+            False,
+            "RST: Directive and paragraph in global dont share scope",
+        ),
+        (
+            "rst",
+            "test.rst",
+            """
+            First Section
+            =============
+            
+            Content here
+            
+            Second Section
+            ==============
+            
+            More content
+            """,
+            (3, 3),  # Content in first section
+            (8, 8),  # Content in second section
+            False,
+            "RST: Content in different sections don't share scope",
+        ),
+        # === HTML ===
+        (
+            "html",
+            "test.html",
+            """
+            <div class="container">
+                <p>First paragraph</p>
+                <p>Second paragraph</p>
+            </div>
+            """,
+            (1, 1),  # First paragraph
+            (2, 2),  # Second paragraph
+            True,
+            "HTML: Elements in same container share scope",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <div class="header">
+                <h1>Title</h1>
+            </div>
+            <div class="footer">
+                <p>Footer text</p>
+            </div>
+            """,
+            (1, 1),  # header div content
+            (4, 4),  # footer div content
+            False,
+            "HTML: Different sibling elements don't share scope",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <ul>
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+            </ul>
+            """,
+            (1, 1),  # First li
+            (3, 3),  # Third li
+            True,
+            "HTML: List items in same ul share scope",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <html>
+                <head>
+                    <title>Test</title>
+                </head>
+                <body>
+                    <div>Content</div>
+                </body>
+            </html>
+            """,
+            (2, 2),  # title in head
+            (5, 5),  # div in body
+            True,
+            "HTML: head and body elements share html element scope",
+        ),
+        (
+            "html",
+            "test.html",
+            """
+            <div>
+                <span>Text 1</span>
+                <span>Text 2</span>
+            </div>
+            """,
+            (1, 1),  # First span
+            (2, 2),  # Second span
+            True,
+            "HTML: Nested elements share parent scope",
         ),
     ],
 )
