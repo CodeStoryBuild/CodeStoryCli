@@ -61,7 +61,7 @@ class SymbolMapper:
             SymbolMap containing the mapping of line numbers to qualified symbols
         """
         # Run symbol queries using the query manager
-        symbol_captures = self.query_manager.run_query(
+        symbol_captures = self.query_manager.run_query_captures(
             language_name,
             root_node,
             query_type="token_general",

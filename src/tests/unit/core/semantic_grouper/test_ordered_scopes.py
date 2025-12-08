@@ -27,15 +27,14 @@ def test_ordered_named_scopes():
         parsed.detected_language,
         parsed.root_node,
         b"test.py",
-        parsed.content_bytes,
         [(0, len(content.splitlines()) - 1)],
     )
 
     # Check that sorted scopes exist
-    assert scope_map.named_scope_lines_sorted is not None
+    assert scope_map.semantic_named_scopes is not None
 
     # Line 2 (method1) should have class scope first, then method scope
-    line_2_scopes = scope_map.named_scope_lines_sorted.get(1)  # 0-indexed
+    line_2_scopes = scope_map.semantic_named_scopes.get(1)  # 0-indexed
     if line_2_scopes:
         print(f"Line 2 scopes (ordered): {line_2_scopes}")
         # Class should come before method in the list (class starts at byte 0, method starts later)
@@ -44,7 +43,7 @@ def test_ordered_named_scopes():
         assert len(line_2_scopes) >= 1
 
     # Verify that for any line with multiple scopes, they are in a consistent order
-    for line_num, scopes in scope_map.named_scope_lines_sorted.items():
+    for line_num, scopes in scope_map.semantic_named_scopes.items():
         assert isinstance(scopes, list), f"Line {line_num} scopes should be a list"
         # Verify no duplicates
         assert len(scopes) == len(set(scopes)), (

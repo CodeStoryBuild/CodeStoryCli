@@ -480,7 +480,7 @@ class RewritePipeline:
         else:
             apply_final = typer.confirm(
                 f"Apply {num_acc} proposed commits?",
-                default=False,
+                default=True,
             )
 
         if not apply_final:

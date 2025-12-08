@@ -38,7 +38,7 @@ def test_extract_defined_symbols(MockQueryManager):
     node2 = Mock()
     node2.text = b"my_function"
 
-    qm.run_query.return_value = {"class": [node1], "function": [node2]}
+    qm.run_query_captures.return_value = {"class": [node1], "function": [node2]}
 
     # Mock create_qualified_symbol static method (it's called on the class)
     # Since we patched QueryManager class, we can configure the static method on the mock class
@@ -58,8 +58,8 @@ def test_extract_defined_symbols(MockQueryManager):
     assert "function:my_function" in symbols
 
     # Verify run_query call
-    qm.run_query.assert_called_once()
-    args, kwargs = qm.run_query.call_args
+    qm.run_query_captures.assert_called_once()
+    args, kwargs = qm.run_query_captures.call_args
     assert args[0] == "python"
     assert kwargs["query_type"] == "token_definition"
 
@@ -67,7 +67,7 @@ def test_extract_defined_symbols(MockQueryManager):
 @patch("codestory.core.semantic_grouper.symbol_extractor.QueryManager")
 def test_extract_defined_symbols_empty(MockQueryManager):
     qm = MockQueryManager.return_value
-    qm.run_query.return_value = {}
+    qm.run_query_captures.return_value = {}
 
     extractor = SymbolExtractor(qm)
     symbols = extractor.extract_defined_symbols("python", Mock(), [])

@@ -27,10 +27,10 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 class ScopeMap:
     """Maps each line number to scope inside it."""
 
-    named_scope_lines: dict[int, set[str]]
+    structural_named_scope_lines: dict[int, set[str]]
     structural_scope_lines: dict[int, set[str]]
     # Ordered list of named scopes per line, sorted by start position (for FQN construction)
-    named_scope_lines_sorted: dict[int, list[str]]
+    semantic_named_scopes: dict[int, list[str]]
 
 
 class ScopeMapper:
@@ -44,7 +44,6 @@ class ScopeMapper:
         language_name: str,
         root_node: Node,
         file_name: bytes,
-        content_bytes: bytes,
         line_ranges: list[tuple[int, int]],
     ) -> ScopeMap:
         """
@@ -60,8 +59,6 @@ class ScopeMapper:
 
             file_name: Name of the file being processed (for debugging/context)
 
-            content_bytes: The raw bytes of the file content
-
             line_ranges: list of tuples (start_line, end_line), to filter the tree sitter queries for a file
 
 
@@ -76,93 +73,55 @@ class ScopeMapper:
         # Track named scopes with their start positions for ordering
         line_to_named_scope_with_pos: dict[int, list[tuple[int, str]]] = {}
 
-        # Run scope queries using the query manager
+        # Run named_scope queries using run_query_matches to get matches with name captures
+        named_scope_matches = self.query_manager.run_query_matches(
+            language_name,
+            root_node,
+            query_type="named_scope",
+            line_ranges=line_ranges,
+        )
 
-        scope_captures = self.query_manager.run_query(
+        # Process named_scope matches for fully-qualified names
+        for match in named_scope_matches:
+            # Get the scope nodes (captured as @named_scope) and name nodes
+            name_nodes = match[1].get("named_scope.name", [])
+            scope_nodes = match[1].get("named_scope", [])
+            
+            for name_node, scope_node in zip(name_nodes, scope_nodes):
+                # Get the FQN name from the name capture if available
+                fqn_name = name_node.text.decode("utf8", errors="replace").strip()
+
+                # Truncate if too long to keep scope names manageable
+                if len(fqn_name) > 80:
+                    fqn_name = fqn_name[:77] + "..."
+                
+                for line_num in range(scope_node.start_point[0], scope_node.end_point[0] + 1):
+                    line_to_named_scope_with_pos.setdefault(line_num, []).append(
+                        (scope_node.start_byte, fqn_name)
+                    )
+
+        # Run structural_scope queries using the query manager
+        scope_captures = self.query_manager.run_query_captures(
             language_name,
             root_node,
             query_type="scope",
             line_ranges=line_ranges,
         )
 
-        # Process named_scope captures
-        if "named_scope" in scope_captures:
-            for node in scope_captures["named_scope"]:
-                # Extract the first line of the scope for semantic context
-
-                # Slice from node start to end, then find first newline
-
-                node_bytes = content_bytes[node.start_byte : node.end_byte]
-
-                # Find the first newline to get only the first line
-
-                newline_pos = node_bytes.find(b"\n")
-
-                if newline_pos != -1:
-                    first_line_bytes = node_bytes[:newline_pos]
-
-                else:
-                    first_line_bytes = node_bytes
-
-                # Decode and strip whitespace
-
-                first_line_text = first_line_bytes.decode(
-                    "utf8", errors="replace"
-                ).strip()
-
-                # Truncate if too long to keep scope names manageable
-
-                if len(first_line_text) > 80:
-                    first_line_text = first_line_text[:77] + "..."
-
-                # Create scope name: file:node_id:first_line_content
-
-                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}:{first_line_text}"
-                fqn_name = first_line_text
-
-                for line_num in range(node.start_point[0], node.end_point[0] + 1):
-                    line_to_named_scope.setdefault(line_num, set()).add(scope_name)
-                    # Store with start byte position for sorting
-                    line_to_named_scope_with_pos.setdefault(line_num, []).append(
-                        (node.start_byte, fqn_name)
-                    )
-
         # Process structural_scope captures
         if "structural_scope" in scope_captures:
             for node in scope_captures["structural_scope"]:
-                # Extract the first line of the scope for semantic context
-
-                # Slice from node start to end, then find first newline
-
-                node_bytes = content_bytes[node.start_byte : node.end_byte]
-
-                # Find the first newline to get only the first line
-
-                newline_pos = node_bytes.find(b"\n")
-
-                if newline_pos != -1:
-                    first_line_bytes = node_bytes[:newline_pos]
-
-                else:
-                    first_line_bytes = node_bytes
-
-                # Decode and strip whitespace
-
-                first_line_text = first_line_bytes.decode(
-                    "utf8", errors="replace"
-                ).strip()
-
-                # Truncate if too long to keep scope names manageable
-
-                if len(first_line_text) > 80:
-                    first_line_text = first_line_text[:77] + "..."
-
-                # Create scope name: file:node_id:first_line_content
-
-                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}:{first_line_text}"
+                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}"
 
                 for line_num in range(node.start_point[0], node.end_point[0] + 1):
                     line_to_structural_scope.setdefault(line_num, set()).add(scope_name)
+
+        if "named_scope" in scope_captures:
+            for node in scope_captures["named_scope"]:
+                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}"
+
+                for line_num in range(node.start_point[0], node.end_point[0] + 1):
+                    line_to_named_scope.setdefault(line_num, set()).add(scope_name)
 
         # Build sorted named scope mapping
         line_to_named_scope_sorted: dict[int, list[str]] = {}
@@ -174,7 +133,7 @@ class ScopeMapper:
             line_to_named_scope_sorted[line_num] = sorted_scopes
 
         return ScopeMap(
-            named_scope_lines=line_to_named_scope,
+            structural_named_scope_lines=line_to_named_scope,
             structural_scope_lines=line_to_structural_scope,
-            named_scope_lines_sorted=line_to_named_scope_sorted,
+            semantic_named_scopes=line_to_named_scope_sorted,
         )

@@ -45,7 +45,7 @@ class SymbolExtractor:
             set containing qualified symbols
         """
         # Run symbol queries using the query manager
-        defined_symbol_captures = self.query_manager.run_query(
+        defined_symbol_captures = self.query_manager.run_query_captures(
             language_name,
             root_node,
             query_type="token_definition",

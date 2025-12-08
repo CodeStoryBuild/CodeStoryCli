@@ -46,15 +46,15 @@ class Signature:
     # scopes that can only really be used for structural links
     new_structural_scopes: set[str]
     old_structural_scopes: set[str]
-    # ordered scopes that can be used for things like fully qualified names, but not grouping
-    new_named_scopes: list[str]
-    old_named_scopes: list[str]
+    # FQNs constructed from named scopes, used for grouping
+    new_fqns: set[str]
+    old_fqns: set[str]
 
     @staticmethod
     def from_signatures(signatures: list["Signature"]) -> "Signature":
         # combine multiple signatures into one big one
         if len(signatures) == 0:
-            return Signature(set(), set(), set(), set(), [], [], set(), set())
+            return Signature(set(), set(), set(), set(), set(), set(), set(), set(), set(), set())
 
         base_sig = next(sig for sig in signatures if sig is not None)
         base_new_symbols = set(base_sig.def_new_symbols)
@@ -67,11 +67,9 @@ class Signature:
         base_new_structural_scopes = set(base_sig.new_structural_scopes)
         base_old_structural_scopes = set(base_sig.old_structural_scopes)
 
-        # Use lists for named scopes to preserve order, track seen to avoid duplicates
-        base_new_named_scopes = list(base_sig.new_named_scopes)
-        base_old_named_scopes = list(base_sig.old_named_scopes)
-        seen_new_named = set(base_new_named_scopes)
-        seen_old_named = set(base_old_named_scopes)
+        # Use sets for FQNs
+        base_new_fqns = set(base_sig.new_fqns)
+        base_old_fqns = set(base_sig.old_fqns)
 
         for s in signatures:
             if s is None:
@@ -89,15 +87,9 @@ class Signature:
             base_new_structural_scopes.update(s.new_structural_scopes)
             base_old_structural_scopes.update(s.old_structural_scopes)
 
-            # Preserve order while avoiding duplicates for named scopes
-            for scope in s.new_named_scopes:
-                if scope not in seen_new_named:
-                    base_new_named_scopes.append(scope)
-                    seen_new_named.add(scope)
-            for scope in s.old_named_scopes:
-                if scope not in seen_old_named:
-                    base_old_named_scopes.append(scope)
-                    seen_old_named.add(scope)
+            # Union FQN sets
+            base_new_fqns.update(s.new_fqns)
+            base_old_fqns.update(s.old_fqns)
 
         return Signature(
             def_new_symbols=base_new_symbols,
@@ -108,8 +100,8 @@ class Signature:
             old_named_structural_scopes=base_old_named_structural_scopes,
             new_structural_scopes=base_new_structural_scopes,
             old_structural_scopes=base_old_structural_scopes,
-            new_named_scopes=base_new_named_scopes,
-            old_named_scopes=base_old_named_scopes,
+            new_fqns=base_new_fqns,
+            old_fqns=base_old_fqns,
         )
 
 
@@ -258,15 +250,14 @@ class ChunkLabeler:
         new_structural_scopes_acc = set()
         old_structural_scopes_acc = set()
 
-        new_named_scopes_acc = []  # Use list to preserve order
-        new_named_scopes_seen = set()  # Track seen to avoid duplicates
-        old_named_scopes_acc = []  # Use list to preserve order
-        old_named_scopes_seen = set()  # Track seen to avoid duplicates
+        new_fqns_acc = set()  # Use set for FQNs
+        old_fqns_acc = set()  # Use set for FQNs
 
         if diff_chunk.is_standard_modification or diff_chunk.is_file_rename:
             # For modifications/renames, analyze both old and new line ranges
 
             # Old version signature
+            old_name = diff_chunk.old_file_path.decode("utf-8", errors="replace")
             old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
@@ -275,21 +266,18 @@ class ChunkLabeler:
                     extern_old_symbols,
                     old_named_structural_scopes,
                     old_structural_scopes,
-                    old_named_scopes,
+                    old_fqns,
                 ) = ChunkLabeler._get_signature_for_line_range(
-                    diff_chunk.old_start, old_end, old_context
+                    diff_chunk.old_start, old_end, old_name, old_context
                 )
                 def_old_symbols_acc.update(def_old_symbols)
                 extern_old_symbols_acc.update(extern_old_symbols)
                 old_named_structural_scopes_acc.update(old_named_structural_scopes)
                 old_structural_scopes_acc.update(old_structural_scopes)
-                # Preserve order while avoiding duplicates
-                for scope in old_named_scopes:
-                    if scope not in old_named_scopes_seen:
-                        old_named_scopes_acc.append(scope)
-                        old_named_scopes_seen.add(scope)
+                old_fqns_acc.update(old_fqns)
 
             # New version signature
+            new_name = diff_chunk.new_file_path.decode("utf-8", errors="replace")
             new_context = context_manager.get_context(diff_chunk.new_file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
@@ -299,22 +287,19 @@ class ChunkLabeler:
                     extern_new_symbols,
                     new_named_structural_scopes,
                     new_structural_scopes,
-                    new_named_scopes,
+                    new_fqns,
                 ) = ChunkLabeler._get_signature_for_line_range(
-                    abs_new_start, abs_new_end, new_context
+                    abs_new_start, abs_new_end,new_name, new_context
                 )
                 def_new_symbols_acc.update(def_new_symbols)
                 extern_new_symbols_acc.update(extern_new_symbols)
                 new_named_structural_scopes_acc.update(new_named_structural_scopes)
                 new_structural_scopes_acc.update(new_structural_scopes)
-                # Preserve order while avoiding duplicates
-                for scope in new_named_scopes:
-                    if scope not in new_named_scopes_seen:
-                        new_named_scopes_acc.append(scope)
-                        new_named_scopes_seen.add(scope)
+                new_fqns_acc.update(new_fqns)
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
+            new_name = diff_chunk.new_file_path.decode("utf-8", errors="replace")
             new_context = context_manager.get_context(diff_chunk.new_file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
@@ -324,13 +309,14 @@ class ChunkLabeler:
                     extern_new_symbols_acc,
                     new_named_structural_scopes_acc,
                     new_structural_scopes_acc,
-                    new_named_scopes_acc,
+                    new_fqns_acc,
                 ) = ChunkLabeler._get_signature_for_line_range(
-                    abs_new_start, abs_new_end, new_context
+                    abs_new_start, abs_new_end, new_name, new_context
                 )
 
         elif diff_chunk.is_file_deletion:
             # For deletions, analyze old version only
+            old_name = diff_chunk.old_file_path.decode("utf-8", errors="replace")
             old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
@@ -339,9 +325,9 @@ class ChunkLabeler:
                     extern_old_symbols_acc,
                     old_named_structural_scopes_acc,
                     old_structural_scopes_acc,
-                    old_named_scopes_acc,
+                    old_fqns_acc,
                 ) = ChunkLabeler._get_signature_for_line_range(
-                    diff_chunk.old_start, old_end, old_context
+                    diff_chunk.old_start, old_end, old_name, old_context
                 )
 
         return Signature(
@@ -353,14 +339,14 @@ class ChunkLabeler:
             old_named_structural_scopes=old_named_structural_scopes_acc,
             new_structural_scopes=new_structural_scopes_acc,
             old_structural_scopes=old_structural_scopes_acc,
-            new_named_scopes=new_named_scopes_acc,
-            old_named_scopes=old_named_scopes_acc,
+            new_fqns=new_fqns_acc,
+            old_fqns=old_fqns_acc,
         )
 
     @staticmethod
     def _get_signature_for_line_range(
-        start_line: int, end_line: int, context: AnalysisContext
-    ) -> tuple[set[str], set[str], set[str], set[str], list[str]]:
+        start_line: int, end_line: int, file_name: str, context: AnalysisContext
+    ) -> tuple[set[str], set[str], set[str], set[str], set[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -370,15 +356,14 @@ class ChunkLabeler:
             context: AnalysisContext containing symbol map and scope map
 
         Returns:
-            Tuple of (defined symbols, external symbols, named scopes, structural scopes) for the specified line range.
-            Named scopes are returned as an ordered list for FQN construction.
+            Tuple of (defined symbols, external symbols, named scopes, structural scopes, fqns) for the specified line range.
+            FQNs are constructed by tracking scope changes line-by-line to handle chunks spanning multiple scopes.
         """
         defined_range_symbols = set()
         extern_range_symbols = set()
         named_structural_scopes_range = set()
         structural_scopes_range = set()
-        named_scopes_range = []  # Ordered list
-        named_scopes_seen = set()  # Track to avoid duplicates
+        fqns = set()  # Set of fully qualified names
 
         if start_line < 1 or end_line < start_line:
             # Chunks that are pure deletions can fall into this
@@ -387,12 +372,17 @@ class ChunkLabeler:
                 extern_range_symbols,
                 named_structural_scopes_range,
                 structural_scopes_range,
-                named_scopes_range,
+                fqns,
             )
 
         # convert to zero indexed
         start_index = start_line - 1
         end_index = end_line - 1
+
+        # Track scope stack for FQN construction
+        scope_stack = []
+        prev_scopes_list = []
+        scopes_added_since_last_save = False
 
         # Collect symbols from all lines in the range
         for line in range(start_index, end_index + 1):
@@ -407,16 +397,38 @@ class ChunkLabeler:
             if extern_line_symbols:
                 extern_range_symbols.update(extern_line_symbols)
 
-            # Collect named scopes in order, avoiding duplicates
-            sorted_named_scopes = context.scope_map.named_scope_lines_sorted.get(line)
-            if sorted_named_scopes:
-                for scope in sorted_named_scopes:
-                    if scope not in named_scopes_seen:
-                        named_scopes_range.append(scope)
-                        named_scopes_seen.add(scope)
+            # Get named scopes for this line (already sorted)
+            current_scopes_list = context.scope_map.semantic_named_scopes.get(line, [])
+
+            # Detect scope changes by comparing lists
+            # Find the common prefix length
+            common_prefix_len = 0
+            for i in range(min(len(prev_scopes_list), len(current_scopes_list))):
+                if prev_scopes_list[i] == current_scopes_list[i]:
+                    common_prefix_len += 1
+                else:
+                    break
+
+            # If we lost scopes (current is shorter or diverges), save the current FQN
+            if len(prev_scopes_list) > common_prefix_len and scope_stack:
+                fqn = f"{file_name}:{'.'.join(scope_stack)}"
+                if fqn:  # Only add non-empty FQNs
+                    fqns.add(fqn)
+                    scopes_added_since_last_save = False  # Reset after saving
+
+            # Update the stack to match current scopes
+            # Keep only the common prefix
+            scope_stack = current_scopes_list[:common_prefix_len]
+            
+            # Add any new scopes from current
+            if len(current_scopes_list) > common_prefix_len:
+                scope_stack.extend(current_scopes_list[common_prefix_len:])
+                scopes_added_since_last_save = True  # Mark that we added scopes
+
+            prev_scopes_list = current_scopes_list
 
             # Collect structural scopes
-            named_structural_scopes = context.scope_map.named_scope_lines.get(line)
+            named_structural_scopes = context.scope_map.structural_named_scope_lines.get(line)
             if named_structural_scopes:
                 named_structural_scopes_range.update(named_structural_scopes)
 
@@ -424,10 +436,16 @@ class ChunkLabeler:
             if structural_scopes:
                 structural_scopes_range.update(structural_scopes)
 
+        # At the end, only save if we have a stack AND we've added scopes since the last save
+        if scope_stack and scopes_added_since_last_save:
+            fqn = f"{file_name}:{'.'.join(scope_stack)}"
+            if fqn:
+                fqns.add(fqn)
+
         return (
             defined_range_symbols,
             extern_range_symbols,
             named_structural_scopes_range,
             structural_scopes_range,
-            named_scopes_range,
+            fqns,
         )

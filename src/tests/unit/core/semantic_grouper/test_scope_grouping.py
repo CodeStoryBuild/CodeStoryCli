@@ -1594,21 +1594,20 @@ def test_scope_based_grouping(
         parsed.detected_language,
         parsed.root_node,
         filename.encode("utf-8"),
-        parsed.content_bytes,
         [(0, total_lines - 1)],
     )
 
     # Get scopes for each chunk's lines
     chunk1_scopes = set()
     for line_num in range(chunk1_lines[0], chunk1_lines[1] + 1):
-        named_scopes = scope_map.named_scope_lines.get(line_num, set())
+        named_scopes = scope_map.structural_named_scope_lines.get(line_num, set())
         structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
         chunk1_scopes.update(named_scopes)
         chunk1_scopes.update(structural_scopes)
 
     chunk2_scopes = set()
     for line_num in range(chunk2_lines[0], chunk2_lines[1] + 1):
-        named_scopes = scope_map.named_scope_lines.get(line_num, set())
+        named_scopes = scope_map.structural_named_scope_lines.get(line_num, set())
         structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
         chunk2_scopes.update(named_scopes)
         chunk2_scopes.update(structural_scopes)
@@ -1652,13 +1651,12 @@ def test_scope_map_empty_file(tools):
         parsed.detected_language,
         parsed.root_node,
         b"test.py",
-        parsed.content_bytes,
         [(0, 0)],
     )
 
-    assert len(scope_map.named_scope_lines) == 0
+    assert len(scope_map.structural_named_scope_lines) == 0
     assert len(scope_map.structural_scope_lines) == 0
-    assert len(scope_map.named_scope_lines_sorted) == 0
+    assert len(scope_map.semantic_named_scopes) == 0
 
 
 def test_scope_map_single_line(tools):
@@ -1672,15 +1670,14 @@ def test_scope_map_single_line(tools):
         parsed.detected_language,
         parsed.root_node,
         b"test.py",
-        parsed.content_bytes,
         [(0, 0)],
     )
 
     # Single line may or may not have scope depending on language
     # This just ensures it doesn't crash
-    assert scope_map.named_scope_lines is not None
+    assert scope_map.structural_named_scope_lines is not None
     assert scope_map.structural_scope_lines is not None
-    assert scope_map.named_scope_lines_sorted is not None
+    assert scope_map.semantic_named_scopes is not None
 
 
 @pytest.mark.parametrize(
@@ -1706,7 +1703,6 @@ def test_scope_consistency(tools, language, filename, content):
         parsed.detected_language,
         parsed.root_node,
         filename.encode("utf-8"),
-        parsed.content_bytes,
         [(0, len(content.splitlines()) - 1)],
     )
 
@@ -1714,7 +1710,7 @@ def test_scope_consistency(tools, language, filename, content):
     scope_occurrences = {}
     # Merge both named and structural scopes
     all_scope_lines = {}
-    for line_num, scopes in scope_map.named_scope_lines.items():
+    for line_num, scopes in scope_map.structural_named_scope_lines.items():
         all_scope_lines.setdefault(line_num, set()).update(scopes)
     for line_num, scopes in scope_map.structural_scope_lines.items():
         all_scope_lines.setdefault(line_num, set()).update(scopes)
