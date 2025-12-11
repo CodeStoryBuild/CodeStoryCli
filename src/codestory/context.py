@@ -51,6 +51,7 @@ class GlobalConfig:
     auto_accept: bool = False
     silent: bool = False
     ask_for_commit_message: bool = False
+    display_diff_type: Literal["semantic", "git"] = "semantic"
 
     constraints = {
         "model": StringConstraint(),
@@ -79,6 +80,7 @@ class GlobalConfig:
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
         "ask_for_commit_message": BoolConstraint(),
+        "display_diff_type": LiteralTypeConstraint(allowed=["semantic", "git"]),
     }
 
     descriptions = {
@@ -94,7 +96,81 @@ class GlobalConfig:
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
         "ask_for_commit_message": "Allow asking you to provide commit messages to optionally override the auto generated ones",
+        "display_diff_type": "Type of diff to display when showing diffs (semantic or git)",
     }
+
+    arg_options = {
+        "model": ["--model"],
+        "api_key": ["--api-key"],
+        "logical_grouping_type": ["--logical-grouping-type"],
+        "temperature": ["--temperature"],
+        "relevance_filter_level": ["--relevance-filter-level"],
+        "secret_scanner_aggression": ["--secret-scanner-aggression"],
+        "fallback_grouping_strategy": ["--fallback-grouping-strategy"],
+        "split_hunks": ["--split-hunks"],
+        "verbose": ["--verbose", "-v"],
+        "auto_accept": ["--yes", "-y"],
+        "silent": ["--silent", "-s"],
+        "ask_for_commit_message": ["--ask-for-commit-message"],
+        "display_diff_type": ["--display-diff-type"],
+    }
+
+    @classmethod
+    def get_cli_params(cls):
+        """
+        Generate typer parameter specifications from GlobalConfig metadata.
+        Returns a dict mapping field names to their typer.Option configuration.
+        """
+        from dataclasses import fields
+
+        import typer
+
+        params = {}
+        for field in fields(cls):
+            field_name = field.name
+
+            # Get metadata for this field
+            arg_names = cls.arg_options.get(
+                field_name, [f"--{field_name.replace('_', '-')}"]
+            )
+            description = cls.descriptions.get(field_name, "")
+            field_type = field.type
+
+            # Build typer.Option kwargs - default is the first positional arg
+            option_kwargs = {"help": description}
+
+            # Handle typing to make fields optional (since they can be overridden)
+            # All CLI args should be optional to allow config file/env var precedence
+            if field_type is bool:
+                # For bool fields, keep as bool | None for CLI
+                params[field_name] = (
+                    bool | None,
+                    typer.Option(None, *arg_names, **option_kwargs),
+                )
+            elif field_type is float:
+                params[field_name] = (
+                    float | None,
+                    typer.Option(None, *arg_names, **option_kwargs),
+                )
+            elif field_type is int:
+                params[field_name] = (
+                    int | None,
+                    typer.Option(None, *arg_names, **option_kwargs),
+                )
+            elif hasattr(field_type, "__origin__") and field_type.__origin__ is Literal:
+                # Literal types - make optional
+                params[field_name] = (
+                    field_type | None,
+                    typer.Option(None, *arg_names, **option_kwargs),
+                )
+            else:
+                # String or other types - make optional
+                params[field_name] = (
+                    str | None,
+                    typer.Option(None, *arg_names, **option_kwargs),
+                )
+
+        return params
 
 
 @dataclass(frozen=True)

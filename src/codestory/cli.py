@@ -80,113 +80,118 @@ def load_global_config(custom_config_path: str, **input_args):
     )
 
 
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    version: bool = typer.Option(
-        False,
-        "--version",
-        "-V",
-        callback=version_callback,
-        help="Show version and exit",
-    ),
-    log_path: bool = typer.Option(
-        False,
-        "--log-dir",
-        "-LD",
-        callback=get_log_dir_callback,
-        help="Show log path (where logs for codestory live) and exit",
-    ),
-    supported_languages: bool = typer.Option(
-        False,
-        "--supported-languages",
-        "-SL",
-        callback=get_supported_languages_callback,
-        help="Show languages that support semantic analysis and grouping, then exit",
-    ),
-    repo_path: str = typer.Option(
-        ".",
-        "--repo",
-        help="Path to the git repository to operate on.",
-    ),
-    custom_config: str | None = typer.Option(
-        None,
-        "--custom-config",
-        help="Path to a custom config file",
-    ),
-    model: str | None = typer.Option(
-        None,
-        "--model",
-        help="AI model to use. Format provider/model (e.g., openai/gpt-4).",
-    ),
-    api_key: str | None = typer.Option(
-        None, "--api-key", help="API key for the model provider"
-    ),
-    temperature: float | None = typer.Option(
-        None,
-        "--temperature",
-        help="Sampling temperature for the AI model (0.0 to 1.0).",
-    ),
-    verbose: bool | None = typer.Option(
-        None,
-        "--verbose",
-        "-v",
-        help="Enable verbose logging.",
-    ),
-    silent: bool | None = typer.Option(
-        None,
-        "--silent",
-        "-s",
-        help="Do not output any text to the console, except for prompting acceptance of changes if auto_accept is False",
-    ),
-    auto_accept: bool | None = typer.Option(
-        None, "--yes", "-y", help="Automatically accept and commit all changes"
-    ),
-) -> None:
+def create_global_callback():
     """
-    Global setup callback. Initialize global context/config used by commands
+    Dynamically creates the main callback function with GlobalConfig parameters.
+    This allows the CLI arguments to be automatically synced with GlobalConfig fields.
     """
-    with handle_codestory_exception(exit_on_fail=True):
-        # conditions to not create global context
-        if ctx.invoked_subcommand is None:
-            print(ctx.get_help())
-            raise typer.Exit()
+    # Get dynamic parameters from GlobalConfig
+    cli_params = GlobalConfig.get_cli_params()
 
-        # skip --help in subcommands
-        if any(arg in ctx.help_option_names for arg in sys.argv):
-            return
+    # Define the callback function with dynamic signature
+    def callback(
+        ctx: typer.Context,
+        version: bool = typer.Option(
+            False,
+            "--version",
+            "-V",
+            callback=version_callback,
+            help="Show version and exit",
+        ),
+        log_path: bool = typer.Option(
+            False,
+            "--log-dir",
+            "-LD",
+            callback=get_log_dir_callback,
+            help="Show log path (where logs for codestory live) and exit",
+        ),
+        supported_languages: bool = typer.Option(
+            False,
+            "--supported-languages",
+            "-SL",
+            callback=get_supported_languages_callback,
+            help="Show languages that support semantic analysis and grouping, then exit",
+        ),
+        repo_path: str = typer.Option(
+            ".",
+            "--repo",
+            help="Path to the git repository to operate on.",
+        ),
+        custom_config: str | None = typer.Option(
+            None,
+            "--custom-config",
+            help="Path to a custom config file",
+        ),
+        **kwargs,  # Dynamic GlobalConfig params injected here
+    ) -> None:
+        """
+        Global setup callback. Initialize global context/config used by commands
+        """
+        with handle_codestory_exception(exit_on_fail=True):
+            # conditions to not create global context
+            if ctx.invoked_subcommand is None:
+                print(ctx.get_help())
+                raise typer.Exit()
 
-        if ctx.invoked_subcommand == config_override_command:
-            # dont try to load config
-            return
+            # skip --help in subcommands
+            if any(arg in ctx.help_option_names for arg in sys.argv):
+                return
 
-        if ctx.invoked_subcommand in no_context_commands:
-            return
+            if ctx.invoked_subcommand == config_override_command:
+                # dont try to load config
+                return
 
-        config, used_config_sources, used_default = load_global_config(
-            custom_config,
-            model=model,
-            api_key=api_key,
-            temperature=temperature,
-            verbose=verbose,
-            silent=silent,
-            auto_accept=auto_accept,
+            if ctx.invoked_subcommand in no_context_commands:
+                return
+
+            config, used_config_sources, used_default = load_global_config(
+                custom_config,
+                **kwargs,  # Pass all dynamic config args
+            )
+
+            setup_logger(
+                ctx.invoked_subcommand, debug=config.verbose, silent=config.silent
+            )
+
+            # if we run a command that requires a global context, check that the user has learned the onboarding process
+            if not used_config_sources and used_default:
+                # we only used defaults (so no user set config)
+                check_run_onboarding()
+                logger.debug("No configuration found. Using default values.")
+
+            logger.debug(f"Used {used_config_sources} to build global context.")
+            global_context = GlobalContext.from_global_config(config, Path(repo_path))
+            validate_git_repository(
+                global_context.git_interface
+            )  # fail immediately if we arent in a valid git repo as we expect one
+            ctx.obj = global_context
+
+    # Dynamically add GlobalConfig parameters to function signature
+    # This is necessary for typer to recognize them
+    import inspect
+
+    sig = inspect.signature(callback)
+    params = list(sig.parameters.values())
+
+    # Remove **kwargs and add actual dynamic parameters
+    params = [p for p in params if p.name != "kwargs"]
+    for param_name, (param_type, param_default) in cli_params.items():
+        params.append(
+            inspect.Parameter(
+                param_name,
+                inspect.Parameter.KEYWORD_ONLY,
+                default=param_default,
+                annotation=param_type,
+            )
         )
 
-        setup_logger(ctx.invoked_subcommand, debug=config.verbose, silent=config.silent)
+    callback.__signature__ = sig.replace(parameters=params)
+    return callback
 
-        # if we run a command that requires a global context, check that the user has learned the onboarding process
-        if not used_config_sources and used_default:
-            # we only used defaults (so no user set config)
-            check_run_onboarding()
-            logger.debug("No configuration found. Using default values.")
 
-        logger.debug(f"Used {used_config_sources} to build global context.")
-        global_context = GlobalContext.from_global_config(config, Path(repo_path))
-        validate_git_repository(
-            global_context.git_interface
-        )  # fail immediately if we arent in a valid git repo as we expect one
-        ctx.obj = global_context
+# Register the dynamically created callback
+main = create_global_callback()
+app.callback(invoke_without_command=True)(main)
 
 
 def load_env(path=".env"):
