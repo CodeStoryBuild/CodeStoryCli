@@ -318,20 +318,15 @@ class RewritePipeline:
             transient_step(
                 "Using AI to create meaningful commits...",
                 self.global_context.config.silent,
-            ) as pbar,
+            ),
             time_block("logical_grouping"),
         ):
             # Simple progress callback to keep the animation alive
-            def on_progress(percent):
-                if pbar is not None:
-                    pbar.update(1)
-
             logical_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
                 semantic_chunks,
                 immutable_chunks,
                 context_manager,
                 self.commit_context.message,
-                on_progress=on_progress,
             )
 
         if not logical_groups:

@@ -99,7 +99,7 @@ class SklearnLouvainClusterer:
             for node in community:
                 labels[node] = label_id
 
-        logger.info(
+        logger.debug(
             f"Clustered {n_samples} embeddings into {len(communities)} clusters."
         )
         return labels

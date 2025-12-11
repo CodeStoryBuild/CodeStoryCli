@@ -140,6 +140,17 @@ class LLMResponseError(CodestoryError):
     pass
 
 
+class LLMInitError(CodestoryError):
+    """
+    Errors during LLM initialization.
+
+    Raised when LLM setup fails due to missing API keys,
+    invalid model configurations, or connection issues.
+    """
+
+    pass
+
+
 class LogicalGroupingError(CodestoryError):
     """
     Errors during logical grouping step

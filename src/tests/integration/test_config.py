@@ -37,7 +37,7 @@ class TestConfigCommand:
 
         result = run_cli(
             cli_exe,
-            ["config", "model", "gemini:gemini-2.0-flash", "--scope", "local"],
+            ["config", "model", "gemini/gemini-2.0-flash", "--scope", "local"],
             cwd=temp_dir,
         )
         assert result.returncode == 0
@@ -49,7 +49,7 @@ class TestConfigCommand:
         # Verify content
         content = config_file.read_text()
         assert "model" in content
-        assert "gemini:gemini-2.0-flash" in content
+        assert "gemini/gemini-2.0-flash" in content
 
         # Verify .gitignore was updated
         gitignore_content = gitignore.read_text()

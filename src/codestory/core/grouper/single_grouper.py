@@ -32,7 +32,6 @@ class SingleGrouper(LogicalGrouper):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
-        on_progress=None,
     ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""
         groups: list[CommitGroup] = []
