@@ -217,10 +217,19 @@ def set_config(key: str, value: str, scope: str) -> None:
             elif isinstance(v, (int, float)):
                 f.write(f"{k} = {v}\n")
             else:
-                f.write(f'{k} = "{v}"\n')
+                # Use literal strings (single quotes) for TOML
+                f.write(f"{k} = '{v}'\n")
 
     scope_label = "global" if scope == "global" else "local"
-    print(f"{Fore.GREEN}Set {key} = {final_value} ({scope_label}){Style.RESET_ALL}")
+    # Format the display value to match how it's written to the file
+    if isinstance(final_value, bool):
+        display_value = str(final_value).lower()
+    elif isinstance(final_value, (int, float)):
+        display_value = str(final_value)
+    else:
+        display_value = f"'{final_value}'"
+
+    print(f"{Fore.GREEN}Set {key} = {display_value} ({scope_label}){Style.RESET_ALL}")
     print(f"Config file: {config_path.absolute()}")
 
 

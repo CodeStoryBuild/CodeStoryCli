@@ -154,6 +154,7 @@ class QueryManager:
     """
 
     _instance: "QueryManager | None" = None
+    _override_config_path: str | None = None
 
     def __init__(self):
         if QueryManager._instance is not None:
@@ -166,6 +167,10 @@ class QueryManager:
         self._language_configs: dict[str, LanguageConfig] = self._init_configs(
             content_text
         )
+
+        # Apply overrides if set via set_override
+        if QueryManager._override_config_path is not None:
+            self._init_overrides(QueryManager._override_config_path)
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
         self._cursor_cache: dict[str, tuple[Query, QueryCursor]] = {}
 
@@ -201,6 +206,18 @@ class QueryManager:
             cls._instance = cls()
         return cls._instance
 
+    @staticmethod
+    def set_override(override_config_path: str | None) -> None:
+        """
+        Set the path to a custom language config file. Must be called before
+        the first call to get_instance() to have any effect.
+
+        Args:
+            override_config_path: Path to custom language config JSON file,
+                                 or None to clear any previously set override.
+        """
+        QueryManager._override_config_path = override_config_path
+
     def has_language(self, language_name: str) -> bool:
         return language_name in self._language_configs
 
@@ -218,6 +235,47 @@ class QueryManager:
 
         except Exception as e:
             raise RuntimeError("Failed to parse language configs!") from e
+
+    def _init_overrides(self, override_config_path: str) -> None:
+        """
+        Load custom language configs from the override path and merge them
+        with the existing configs. If a language key exists in the override
+        config, it replaces the built-in config for that language.
+
+        Args:
+            override_config_path: Path to the custom language config JSON file.
+        """
+        try:
+            from pathlib import Path
+
+            config_path = Path(override_config_path)
+            if not config_path.exists():
+                logger.warning(
+                    f"Custom language config path does not exist: {override_config_path}"
+                )
+                return
+
+            with open(config_path, encoding="utf-8") as f:
+                override_content = f.read()
+
+            override_config = json.loads(override_content)
+
+            # Override configs for each language found in the custom config
+            for language_name, language_config in override_config.items():
+                try:
+                    self._language_configs[language_name] = (
+                        LanguageConfig.from_json_dict(language_name, language_config)
+                    )
+                    logger.info(
+                        f"Overridden language config for '{language_name}' from custom config"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to parse override config for language '{language_name}': {e}"
+                    )
+
+        except Exception as e:
+            logger.error(f"Failed to load custom language config: {e}")
 
     def run_query_captures(
         self,
