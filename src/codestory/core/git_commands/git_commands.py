@@ -77,9 +77,8 @@ class GitCommands:
         """
         binary_files: set[bytes] = set()
         cmd = ["diff", "--numstat", base, new]
-        try:
-            numstat_output = self.git.run_git_binary_out(cmd)
-        except Exception:
+        numstat_output = self.git.run_git_binary_out(cmd)
+        if numstat_output is None:
             return binary_files
 
         if not numstat_output:
@@ -347,11 +346,7 @@ class GitCommands:
     def need_reset(self) -> bool:
         """Checks if there are staged changes that need to be reset"""
         # 'git diff --cached --quiet' exits with 1 if there are staged changes, 0 otherwise
-        try:
-            self.git.run_git_text_out(["diff", "--cached", "--quiet"])
-            return False  # No staged changes (exit code 0)
-        except Exception:
-            return True  # Staged changes exist (exit code 1)
+        return self.git.run_git_text(["diff", "--cached", "--quiet"]) is None
 
     def need_track_untracked(self, target: str | None = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
@@ -474,11 +469,12 @@ class GitCommands:
         return self.git.run_git_text_out(["rev-parse", "HEAD"]).strip()
 
     def try_get_parent_hash(self, commit_hash: str, empty_on_fail: bool = False):
-        try:
-            parent_hash = self.git.run_git_text_out(
-                ["rev-parse", "--verify", f"{commit_hash}^"]
-            ).strip()
-        except Exception:
+        parent_hash_result = self.git.run_git_text_out(
+            ["rev-parse", "--verify", f"{commit_hash}^"]
+        )
+        if parent_hash_result is None:
             parent_hash = EMPTYTREEHASH if empty_on_fail else None
+        else:
+            parent_hash = parent_hash_result.strip()
 
         return parent_hash

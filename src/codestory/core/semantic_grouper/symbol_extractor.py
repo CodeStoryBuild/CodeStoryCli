@@ -60,7 +60,7 @@ class SymbolExtractor:
                 text = node.text.decode("utf8", errors="replace")
 
                 qualified_symbol = QueryManager.create_qualified_symbol(
-                    match_class, text
+                    match_class, text, language_name
                 )
 
                 # Add the qualified symbol to the line's symbol set

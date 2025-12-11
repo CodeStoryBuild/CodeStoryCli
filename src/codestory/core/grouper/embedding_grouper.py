@@ -30,14 +30,14 @@ from loguru import logger
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff_generation.diff_generator import DiffGenerator
+from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.embeddings.clusterer import Clusterer
 from codestory.core.embeddings.embedder import Embedder
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
 from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
 from codestory.core.semantic_grouper.context_manager import ContextManager
-from codestory.core.synthesizer.diff_generator import DiffGenerator
-from codestory.core.synthesizer.utils import get_patches_chunk
 
 # -----------------------------------------------------------------------------
 # Prompts (Optimized for 1.5B LLMs)
@@ -48,31 +48,46 @@ from codestory.core.synthesizer.utils import get_patches_chunk
 # 2. Explicitly define the tone (Imperative mood) to prevent chatting.
 # 3. Mention the input format (JSON) so the model doesn't hallucinate plain text.
 
-PROMPT = """### Instruction:
-Analyze the following git patch data provided in JSON format. 
-Write a single, concise git commit message (under 50 characters) in the imperative mood (e.g., "Fix login bug", "Update user schema").
-Focus on the technical change described in 'patch' and 'modified_symbols'.
-Do not provide explanations. Output ONLY the commit message.
+INITIAL_SUMMARY_PROMPT = """
+### Task:
+You are a specialized function that converts structured code change data into a concise Git commit message.
 
-### Input:
+**Input:**
+- `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.)
+- Focus only on *visible code changes*.
+
+**Rules:**
+1. Output a single-line commit message, max 72 characters.
+2. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor".
+3. Describe what changed and where (file/module/class/function) using the data.
+4. Do NOT include inferred goals, benefits, or context.
+5. Output ONLY the message, nothing else.
+
+**Changes:**
 {changes}
 
-### Response:
+**Commit Message:**
 """
 
-CLUSTER_SUMMARY_PROMPT = """### Instruction:
-You are a Release Manager. Combine the following list of change summaries into a single, cohesive git commit message.
 
-Rules:
-1. Synthesize the changes into one sentence.
-2. Use imperative mood (e.g., "Refactor authentication", not "Refactored").
-3. Do not simply list the items.
-4. Output ONLY the final message string.
+CLUSTER_SUMMARY_PROMPT = """
+### Task:
+You are a Git commit message generator. Your goal is to create a single cohesive commit message subject line from multiple commit summaries.
 
-### Input:
+**Input:**
+- A list of change summaries (`summaries`)
+
+**Rules:**
+1. Output a single-line message, max 72 characters.
+2. Use imperative mood (e.g., "Refactor", "Add", "Remove", "Update").
+3. Include all core technical actions and primary locations (files/modules).
+4. Do NOT add inferred goals, benefits, or justifications.
+5. Output ONLY the final message string.
+
+**Commit Summaries:**
 {summaries}
 
-### Response:
+**Final Commit Message:**
 """
 
 
@@ -87,28 +102,24 @@ class EmbeddingGrouper(LogicalGrouper):
         self.model = model
         self.embedder = Embedder()
         self.clusterer = Clusterer()
+        self.patch_cutoff_chars = 1000
 
     def generate_summaries(self, annotated_chunk_patches: list[str]):
-        tasks = [PROMPT.format(changes=patch) for patch in annotated_chunk_patches]
+        tasks = [
+            INITIAL_SUMMARY_PROMPT.format(changes=patch)
+            for patch in annotated_chunk_patches
+        ]
         logger.debug(f"Generating {len(tasks)} summaries using LLM.")
         summaries = self.model.invoke_batch(tasks)
         # Added stricter cleanup for small models which often output quotes or newlines
-        return [
-            summary.strip().strip('"').strip("'").split("\n")[0]
-            for summary in summaries
-        ]
+        return [summary.strip().strip('"').strip("'") for summary in summaries]
 
     def generate_annotated_patches(
         self, annotated_chunks: list[AnnotatedChunk], diff_generator: DiffGenerator
     ) -> list[str]:
         patches = []
         for annotated_chunk in annotated_chunks:
-            if annotated_chunk.signature is None:
-                patch = self.generate_minimal_patch(
-                    annotated_chunk.chunk, diff_generator
-                )
-            else:
-                patch = self.generate_annotated_patch(annotated_chunk, diff_generator)
+            patch = self.generate_annotated_patch(annotated_chunk, diff_generator)
             patches.append(patch)
         return patches
 
@@ -116,38 +127,56 @@ class EmbeddingGrouper(LogicalGrouper):
         self, annotated_chunk: AnnotatedChunk, diff_generator: DiffGenerator
     ) -> str:
         annotated_patch = []
+        chunks = annotated_chunk.chunk.get_chunks()
+        signatures = (
+            annotated_chunk.signature.signatures
+            if annotated_chunk.signature
+            else [None] * len(chunks)
+        )
         for chunk, signature in zip(
-            annotated_chunk.chunk.get_chunks(),
-            annotated_chunk.signature.signatures,
+            chunks,
+            signatures,
             strict=True,
         ):
-            patch = get_patches_chunk([chunk], diff_generator)[0]  # only one chunk
-            modified_symbols = signature.def_old_symbols.intersection(
-                signature.def_new_symbols
-            )
-            added_symbols = signature.def_new_symbols - modified_symbols
-            removed_symbols = signature.def_old_symbols - modified_symbols
+            # we get diff generator [0] since we pass only one chunk, then we cut off to limit size
+            patch = diff_generator.get_patch(chunk)[: self.patch_cutoff_chars]
+            patch_json = {}
 
-            patch_json = {
-                "patch": patch,
-                "modified_symbols": list(modified_symbols),
-                "added_symbols": list(added_symbols),
-                "removed_symbols": list(removed_symbols),
-                "new_affected_scopes": list(signature.new_fqns),
-                "old_affected_scopes": list(signature.old_fqns),
-            }
-            # print(json.dumps(patch_json, indent=2))
+            patch_json["git_patch"] = patch
+
+            # add only relevant info
+            if signature is not None:
+                # remove extra symbol info for cleaner output
+                # eg "foo identifier_class python" -> "foo"
+                new_symbols_cleaned = {
+                    sym.partition(" ")[0] for sym in signature.def_new_symbols
+                }
+                old_symbols_cleaned = {
+                    sym.partition(" ")[0] for sym in signature.def_old_symbols
+                }
+
+                modified_symbols = old_symbols_cleaned.intersection(new_symbols_cleaned)
+                added_symbols = new_symbols_cleaned - modified_symbols
+                removed_symbols = old_symbols_cleaned - modified_symbols
+
+                if annotated_chunk.signature.total_signature.languages:
+                    patch_json["languages"] = list(
+                        annotated_chunk.signature.total_signature.languages
+                    )
+                if modified_symbols:
+                    patch_json["modified_symbols"] = list(modified_symbols)
+                if added_symbols:
+                    patch_json["added_symbols"] = list(added_symbols)
+                if removed_symbols:
+                    patch_json["removed_symbols"] = list(removed_symbols)
+                if signature.new_fqns or signature.old_fqns:
+                    patch_json["affected_scopes"] = list(
+                        signature.new_fqns | signature.old_fqns
+                    )
+
             annotated_patch.append(patch_json)
 
         return json.dumps(annotated_patch, indent=2)
-
-    def generate_minimal_patch(
-        self, chunk: Chunk, diff_generator: DiffGenerator
-    ) -> str:
-        patch_json = {
-            "patch": get_patches_chunk([chunk], diff_generator)[0],
-        }
-        return json.dumps(patch_json, indent=2)
 
     def group_chunks(
         self,
@@ -164,7 +193,7 @@ class EmbeddingGrouper(LogicalGrouper):
             return []
 
         annotated_chunks = ChunkLabeler.annotate_chunks(chunks, context_manager)
-        diff_generator = DiffGenerator(
+        diff_generator = SemanticDiffGenerator(
             chunks
         )  # immutable chunks wont be used for total patch calcs
 
@@ -189,7 +218,7 @@ class EmbeddingGrouper(LogicalGrouper):
             ]
 
         embeddings = self.embedder.embed(summaries)
-        cluster_labels = self.clusterer.cluster(embeddings).labels_
+        cluster_labels = self.clusterer.cluster(embeddings)
 
         groups = []
         clusters = {}

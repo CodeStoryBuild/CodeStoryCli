@@ -38,7 +38,6 @@ def verify_repo_state(
     commands: GitCommands, target: str, auto_yes: bool = False
 ) -> bool:
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
-
     if commands.need_reset():
         if auto_yes:
             unstage = True

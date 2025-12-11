@@ -26,6 +26,7 @@ class LineNumbered:
     old_line: int
     abs_new_line: int  # Only for semantic grouping!
     content: bytes
+    newline_marker: bool = False
 
 
 @dataclass

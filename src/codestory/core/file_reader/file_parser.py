@@ -23,6 +23,7 @@ from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
 
 from codestory.core.file_reader.language_mapper import detect_tree_sitter_language
+from codestory.core.semantic_grouper.query_manager import QueryManager
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,13 @@ class FileParser:
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
             logger.debug(f"Failed to get detect language for {file_name}")
+            return None
+
+        # check that we support queries for this language
+        if not QueryManager.get_instance().has_language(detected_language):
+            logger.debug(
+                f"No query configuration found for detected language {detected_language}"
+            )
             return None
 
         # Get Tree-sitter parser for the detected language

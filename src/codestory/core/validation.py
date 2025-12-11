@@ -245,16 +245,9 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         GitError: If git is not available or not in a repository
     """
     # Check if git is available
-    try:
-        git_interface.run_git_text_out(
-            ["--version"],
-        )
-    except NotADirectoryError:
-        raise GitError("Current directory is not a git repository")
-    except Exception as e:
-        raise GitError(
-            f"Git version check failed: {e}",
-        )
+    version_result = git_interface.run_git_text_out(["--version"])
+    if version_result is None:
+        raise GitError("Git version check failed")
     # Check if we're in a git repository
     is_in_repo = git_interface.run_git_text_out(
         ["rev-parse", "--is-inside-work-tree"],
@@ -263,16 +256,14 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         raise GitError("Current directory is not a git repository")
 
     # validate that we are on a branch
-    try:
-        original_branch = (
-            git_interface.run_git_text_out(["branch", "--show-current"]) or ""
-        )
-        # check that not a detached branch
-        if not original_branch.strip():
-            msg = "Operation failed: You are in 'detached HEAD' state."
-            raise DetachedHeadError(msg)
-    except Exception as e:
-        raise GitError(f"Failed to check git branch status: {e}") from e
+    branch_result = git_interface.run_git_text_out(["branch", "--show-current"])
+    if branch_result is None:
+        raise GitError("Failed to check git branch status")
+    original_branch = branch_result or ""
+    # check that not a detached branch
+    if not original_branch.strip():
+        msg = "Operation failed: You are in 'detached HEAD' state."
+        raise DetachedHeadError(msg)
 
 
 def validate_no_merge_commits_in_range(

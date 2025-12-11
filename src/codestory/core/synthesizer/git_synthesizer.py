@@ -25,9 +25,9 @@ from loguru import logger
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff_generation.git_diff_generator import GitDiffGenerator
 from codestory.core.exceptions import GitError, SynthesizerError
 from codestory.core.git_interface.interface import GitInterface
-from codestory.core.synthesizer.diff_generator import DiffGenerator
 
 
 class GitSynthesizer:
@@ -72,7 +72,7 @@ class GitSynthesizer:
         base_commit_hash: str,
         diff_chunks: list[DiffChunk],
         immutable_chunks: list[ImmutableChunk],
-        diff_generator: DiffGenerator,
+        diff_generator: GitDiffGenerator,
     ) -> str:
         """
         Creates a new Git tree object by applying changes directly to a temporary Git Index.
@@ -95,9 +95,7 @@ class GitSynthesizer:
             self._run_git_binary("read-tree", base_commit_hash, env=env)
 
             # 4. Generate the combined patch
-            patches = diff_generator.generate_unified_diff(
-                diff_chunks, immutable_chunks
-            )
+            patches = diff_generator.generate_diff(diff_chunks, immutable_chunks)
 
             if patches:
                 ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
@@ -147,7 +145,7 @@ class GitSynthesizer:
         Executes the synthesis plan using pure Git plumbing.
         Returns the hash of the final commit.
         """
-        diff_generator = DiffGenerator(groups)
+        diff_generator = GitDiffGenerator(groups)
 
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
 
