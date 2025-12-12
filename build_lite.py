@@ -49,7 +49,12 @@ def main():
         # Include dynamically imported modules
         "--hidden-import=tree_sitter_language_pack.bindings",
         "--collect-all=tree_sitter_language_pack",
-        "--collect-all=codestory-cli",
+        "--collect-all=aisuite",
+        "--collect-all=codestory",
+        # Lazy imports from embedder.py and clusterer.py
+        "--hidden-import=fastembed",
+        "--hidden-import=sklearn",
+        "--hidden-import=networkx",
         # Include package data
         "--copy-metadata=tree_sitter_language_pack",
         "--copy-metadata=codestory-cli",

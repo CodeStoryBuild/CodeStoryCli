@@ -13,19 +13,19 @@ readme = "README.md"
 license = "GPL-2.0-only"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
+
 dependencies = [
-  "typer-slim>=0.12.0",
-  "colorama>=0.4.6",
-  "loguru>=0.7.3",
-  "tree-sitter>=0.21.0",
-  "tree-sitter-language-pack>=0.1.0",
-  "platformdirs>=4.5.0",
-  "httpx>=0.28.1",
-  "tqdm>=4.67.1",
-  "fastembed>=0.7.4",
-  "scikit-learn>=1.8.0",
-  "networkx>=3.0",
-  "litellm>=1.0.0"
+  "typer-slim==0.20.0",
+  "colorama==0.4.6",
+  "loguru==0.7.3",
+  "tree-sitter==0.25.2",
+  "tree-sitter-language-pack==0.13.0",
+  "platformdirs==4.5.0",
+  "tqdm==4.67.1",
+  "fastembed<1.0.0",
+  "scikit-learn<1.9.0,>=1.8.0",
+  "networkx<4.0,>=3.0",
+  "aisuite[anthropic,aws,azure,cerebras,cohere,deepseek,google,groq,huggingface,mistral,ollama,openai,watsonx,mcp]<1.0.0"
 ]
 
 [project.scripts]

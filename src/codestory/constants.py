@@ -18,6 +18,7 @@
 
 from pathlib import Path
 
+from aisuite.provider import ProviderFactory
 from platformdirs import user_config_dir, user_log_path
 
 APP_NAME = "codestory"
@@ -64,3 +65,14 @@ SUPPORTED_LANGUAGES = [
     "rst",
     "html",
 ]
+
+
+LOCAL_PROVIDERS = {"ollama"}
+
+UNSUPPORTED_PROVIDERS = {"deepgram"}
+
+CLOUD_PROVIDERS = {
+    provider
+    for provider in ProviderFactory.get_supported_providers()
+    if provider not in LOCAL_PROVIDERS and provider not in UNSUPPORTED_PROVIDERS
+}

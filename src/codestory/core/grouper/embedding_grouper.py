@@ -23,6 +23,7 @@
 
 import json
 from dataclasses import dataclass
+from typing import Literal
 
 from loguru import logger
 
@@ -33,6 +34,7 @@ from codestory.core.diff_generation.diff_generator import DiffGenerator
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.embeddings.clusterer import Clusterer
 from codestory.core.embeddings.embedder import Embedder
+from codestory.core.exceptions import LLMResponseError
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
 from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
@@ -42,14 +44,7 @@ from codestory.core.semantic_grouper.context_manager import ContextManager
 # Prompts (Optimized for 1.5B LLMs)
 # -----------------------------------------------------------------------------
 
-# 1.5B Model Strategy:
-# 1. Use "### Instruction / ### Input / ### Response" delimiters (standard for small models).
-# 2. Explicitly define the tone (Imperative mood) to prevent chatting.
-# 3. Mention the input format (JSON) so the model doesn't hallucinate plain text.
-
-INITIAL_SUMMARY_PROMPT = """
-### Task:
-You are a specialized function that converts structured code change data into a concise Git commit message.
+INITIAL_SUMMARY_SYSTEM = """You are a specialized function that converts structured code change data into a concise Git commit message.
 
 **Input:**
 - `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.)
@@ -60,18 +55,15 @@ You are a specialized function that converts structured code change data into a 
 2. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor".
 3. Describe what changed and where (file/module/class/function) using the data.
 4. Do NOT include inferred goals, benefits, or context.
-5. Output ONLY the message, nothing else.
+5. Output ONLY the message, nothing else."""
 
-**Changes:**
+INITIAL_SUMMARY_USER = """**Changes:**
 {changes}
 
-**Commit Message:**
-"""
+**Commit Message:**"""
 
 
-CLUSTER_SUMMARY_PROMPT = """
-### Task:
-You are a Git commit message generator. Your goal is to create a single cohesive commit message subject line from multiple commit summaries.
+CLUSTER_SUMMARY_SYSTEM = """You are a Git commit message generator. Your goal is to create a single cohesive commit message subject line from multiple commit summaries.
 
 **Input:**
 - A list of change summaries (`summaries`)
@@ -81,13 +73,32 @@ You are a Git commit message generator. Your goal is to create a single cohesive
 2. Use imperative mood (e.g., "Refactor", "Add", "Remove", "Update").
 3. Include all core technical actions and primary locations (files/modules).
 4. Do NOT add inferred goals, benefits, or justifications.
-5. Output ONLY the final message string.
+5. Output ONLY the final message string."""
 
-**Commit Summaries:**
+CLUSTER_SUMMARY_USER = """**Commit Summaries:**
 {summaries}
 
-**Final Commit Message:**
-"""
+**Final Commit Message:**"""
+
+
+BATCHED_SUMMARY_SYSTEM = """You are a specialized function that converts structured code change data into concise Git commit messages.
+
+**Input:**
+- A list of `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.)
+- Focus only on *visible code changes*.
+
+**Rules:**
+1. Output a JSON list of strings.
+2. Each string must be a single-line commit message, max 72 characters.
+3. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor".
+4. Describe what changed and where (file/module/class/function) using the data.
+5. Do NOT include inferred goals, benefits, or context.
+6. The order of the output list must match the order of the input list."""
+
+BATCHED_SUMMARY_USER = """**Changes:**
+{changes}
+
+**Output:**"""
 
 
 @dataclass
@@ -96,22 +107,204 @@ class Cluster:
     summaries: list[str]
 
 
+@dataclass
+class SummaryTask:
+    prompt: str
+    is_multiple: bool
+    indices: list[int]
+    original_patches: list[str]
+
+
 class EmbeddingGrouper(LogicalGrouper):
-    def __init__(self, model: CodeStoryAdapter):
+    def __init__(
+        self,
+        model: CodeStoryAdapter,
+        batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
+        max_tokens: int = 4096,
+    ):
         self.model = model
+        self.batching_strategy = batching_strategy
         self.embedder = Embedder()
         self.clusterer = Clusterer()
         self.patch_cutoff_chars = 1000
+        self.max_tokens = max_tokens
 
-    def generate_summaries(self, annotated_chunk_patches: list[str]):
-        tasks = [
-            INITIAL_SUMMARY_PROMPT.format(changes=patch)
-            for patch in annotated_chunk_patches
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate token count based on 3 chars per token."""
+        return len(text) // 3
+
+    def _partition_patches(
+        self, annotated_chunk_patches: list[str], strategy: str
+    ) -> list[list[tuple[int, str]]]:
+        """
+        Partitions patches into groups.
+        If strategy is 'requests', every group has size 1.
+        If strategy is 'prompt', groups are filled up to max_tokens.
+        Returns: List of groups, where each group is a list of (original_index, patch_string)
+        """
+        partitions = []
+
+        # If requests, simple 1-to-1 mapping
+        if strategy == "requests":
+            for i, patch in enumerate(annotated_chunk_patches):
+                partitions.append([(i, patch)])
+            return partitions
+
+        # Strategy == "prompt": Windowing logic
+        current_batch = []
+        # Calculate base overhead of the prompt template once
+        base_prompt_cost = self._estimate_tokens(
+            BATCHED_SUMMARY_SYSTEM
+        ) + self._estimate_tokens(BATCHED_SUMMARY_USER)
+        current_tokens = base_prompt_cost
+
+        for i, patch in enumerate(annotated_chunk_patches):
+            # Calculate formatting overhead for this specific item
+            # We construct the string we actually inject to measure it accurately
+            formatted_patch_overhead = f"--- Change {i + 1} ---\n\n\n"
+
+            patch_cost = self._estimate_tokens(patch) + self._estimate_tokens(
+                formatted_patch_overhead
+            )
+
+            # Check if adding this patch blows the window
+            # If the batch is not empty and adding this exceeds limit, seal the batch
+            if current_batch and (current_tokens + patch_cost > self.max_tokens):
+                partitions.append(current_batch)
+                current_batch = []
+                current_tokens = base_prompt_cost
+
+            # Add to current
+            current_batch.append((i, patch))
+            current_tokens += patch_cost
+
+        if current_batch:
+            partitions.append(current_batch)
+
+        return partitions
+
+    def _create_summary_tasks(
+        self, partitions: list[list[tuple[int, str]]]
+    ) -> list[SummaryTask]:
+        """
+        Converts partitions of patches into actionable LLM Tasks.
+        """
+        tasks = []
+        for group in partitions:
+            indices = [item[0] for item in group]
+            patches = [item[1] for item in group]
+
+            if len(group) == 1:
+                # Single Request Task
+                prompt = INITIAL_SUMMARY_USER.format(changes=patches[0])
+                tasks.append(
+                    SummaryTask(
+                        prompt=prompt,
+                        is_multiple=False,
+                        indices=indices,
+                        original_patches=patches,
+                    )
+                )
+            else:
+                # Batched Request Task
+                formatted_changes = []
+                for i, patch in enumerate(patches):
+                    # We use 1-based indexing for the prompt presentation
+                    formatted_changes.append(f"--- Change {i + 1} ---\n{patch}")
+
+                combined_changes = "\n\n".join(formatted_changes)
+                prompt = BATCHED_SUMMARY_USER.format(changes=combined_changes)
+                tasks.append(
+                    SummaryTask(
+                        prompt=prompt,
+                        is_multiple=True,
+                        indices=indices,
+                        original_patches=patches,
+                    )
+                )
+        return tasks
+
+    def generate_summaries(self, annotated_chunk_patches: list[str]) -> list[str]:
+        if not annotated_chunk_patches:
+            return []
+
+        strategy = self.batching_strategy
+        if strategy == "auto":
+            strategy = "requests" if self.model.is_local() else "prompt"
+
+        # 1. Partition based on strategy and window size
+        partitions = self._partition_patches(annotated_chunk_patches, strategy)
+
+        # 2. Create Tasks
+        tasks = self._create_summary_tasks(partitions)
+
+        logger.info(
+            f"Generating summaries for {len(annotated_chunk_patches)} changes (Strategy: {strategy})."
+        )
+
+        # 3. Invoke Batch
+        messages_list = [
+            [
+                {
+                    "role": "system",
+                    "content": BATCHED_SUMMARY_SYSTEM
+                    if t.is_multiple
+                    else INITIAL_SUMMARY_SYSTEM,
+                },
+                {"role": "user", "content": t.prompt},
+            ]
+            for t in tasks
         ]
-        logger.debug(f"Generating {len(tasks)} summaries using LLM.")
-        summaries = self.model.invoke_batch(tasks)
-        # Added stricter cleanup for small models which often output quotes or newlines
-        return [summary.strip().strip('"').strip("'") for summary in summaries]
+        responses = self.model.invoke_batch(messages_list)
+
+        # 4. Process Results
+        # We pre-allocate the result list to maintain order
+        final_summaries = [""] * len(annotated_chunk_patches)
+
+        for task, response in zip(tasks, responses, strict=True):
+            if not task.is_multiple:
+                # Single task: simple cleanup
+                clean_res = response.strip().strip('"').strip("'")
+                final_summaries[task.indices[0]] = clean_res
+            else:
+                # Multi task: Strict JSON parsing
+                # Find JSON list syntax
+                l_indx = response.find("[")
+                r_indx = response.rfind("]")
+
+                if l_indx == -1 or r_indx == -1:
+                    logger.error(
+                        "Failed to parse batch summary: No JSON list found in LLM response."
+                    )
+                    raise LLMResponseError("No JSON list found in response")
+
+                clean_response = response[l_indx : r_indx + 1]
+
+                try:
+                    batch_summaries = json.loads(clean_response)
+                except json.JSONDecodeError as e:
+                    logger.error(
+                        f"Failed to decode JSON from batch summary response: {e}"
+                    )
+                    raise LLMResponseError(
+                        "Failed to decode JSON from batch summary"
+                    ) from e
+
+                if not isinstance(batch_summaries, list):
+                    logger.error("Batch summary response is not a list.")
+                    raise LLMResponseError("Response is not a list")
+
+                if len(batch_summaries) != len(task.indices):
+                    logger.error(
+                        f"Summary count mismatch: Expected {len(task.indices)}, got {len(batch_summaries)}."
+                    )
+                    raise LLMResponseError("Batch summary count mismatch")
+
+                # Distribute results
+                for idx, summary in zip(task.indices, batch_summaries, strict=True):
+                    final_summaries[idx] = str(summary).strip().strip('"').strip("'")
+
+        return final_summaries
 
     def generate_annotated_patches(
         self, annotated_chunks: list[AnnotatedChunk], diff_generator: DiffGenerator
@@ -243,7 +436,15 @@ class EmbeddingGrouper(LogicalGrouper):
         for cluster_label, cluster in clusters.items():
             summaries_text = "\n".join(f"- {s}" for s in cluster.summaries)
             cluster_summary_tasks.append(
-                CLUSTER_SUMMARY_PROMPT.format(summaries=summaries_text)
+                [
+                    {"role": "system", "content": CLUSTER_SUMMARY_SYSTEM},
+                    {
+                        "role": "user",
+                        "content": CLUSTER_SUMMARY_USER.format(
+                            summaries=summaries_text
+                        ),
+                    },
+                ]
             )
             cluster_ids.append(cluster_label)
 
@@ -266,7 +467,7 @@ class EmbeddingGrouper(LogicalGrouper):
                 groups.append(group)
 
         logger.info(
-            f"Created {len(groups)} commit groups from {len(chunks) + len(immut_chunks)} semantic groups using embeddings."
+            f"Organized {len(chunks) + len(immut_chunks)} changes into {len(groups)} logical groups."
         )
 
         return groups

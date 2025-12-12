@@ -67,6 +67,11 @@ def main():
         "--include-package=codestory",
         "--include-package-data=codestory",
         "--include-package=tree_sitter",
+        "--include-package=aisuite",
+        # Lazy imports from embedder.py and clusterer.py
+        "--include-package=fastembed",
+        "--include-package=sklearn",
+        "--include-package=networkx",
         "--nofollow-import-to=sympy",
         "--nofollow-import-to=onnxruntime.quantization",
         "--nofollow-import-to=onnxruntime.transformers",

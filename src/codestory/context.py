@@ -40,7 +40,6 @@ class GlobalConfig:
     model: str | None = None
     api_key: str | None = None
     api_base: str | None = None
-    logical_grouping_type: Literal["embeddings", "brute_force_llm"] = "embeddings"
     temperature: float = 0
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
@@ -54,14 +53,12 @@ class GlobalConfig:
     ask_for_commit_message: bool = False
     display_diff_type: Literal["semantic", "git"] = "semantic"
     custom_language_config: str | None = None
+    batching_strategy: Literal["auto", "requests", "prompt"] = "auto"
 
     constraints = {
         "model": StringConstraint(),
         "api_key": StringConstraint(),
         "api_base": StringConstraint(),
-        "logical_grouping_type": LiteralTypeConstraint(
-            allowed=["embeddings", "brute_force_llm"]
-        ),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
         "relevance_filter_level": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
@@ -85,13 +82,15 @@ class GlobalConfig:
         "ask_for_commit_message": BoolConstraint(),
         "display_diff_type": LiteralTypeConstraint(allowed=["semantic", "git"]),
         "custom_language_config": StringConstraint(),
+        "batching_strategy": LiteralTypeConstraint(
+            allowed=["auto", "requests", "prompt"]
+        ),
     }
 
     descriptions = {
-        "model": "LLM model (format: provider/model, e.g., openai/gpt-4)",
+        "model": "LLM model (format: provider:model, e.g., openai:gpt-4)",
         "api_key": "API key for the LLM provider",
         "api_base": "Custom API base URL for the LLM provider (optional)",
-        "logical_grouping_type": "Strategy for logically grouping chunks. Note embeddings will make many batched api calls, only really recommended for local models",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
@@ -103,13 +102,13 @@ class GlobalConfig:
         "ask_for_commit_message": "Allow asking you to provide commit messages to optionally override the auto generated ones",
         "display_diff_type": "Type of diff to display when showing diffs (semantic or git)",
         "custom_language_config": "Path to custom language configuration JSON file to override built-in language configs",
+        "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
     }
 
     arg_options = {
         "model": ["--model"],
         "api_key": ["--api-key"],
         "api_base": ["--api-base"],
-        "logical_grouping_type": ["--logical-grouping-type"],
         "temperature": ["--temperature"],
         "relevance_filter_level": ["--relevance-filter-level"],
         "secret_scanner_aggression": ["--secret-scanner-aggression"],
@@ -121,6 +120,7 @@ class GlobalConfig:
         "ask_for_commit_message": ["--ask-for-commit-message"],
         "display_diff_type": ["--display-diff-type"],
         "custom_language_config": ["--custom-language-config"],
+        "batching_strategy": ["--batching-strategy"],
     }
 
     @classmethod
@@ -181,33 +181,38 @@ class GlobalConfig:
         return params
 
 
-@dataclass(frozen=True)
+@dataclass
 class GlobalContext:
     repo_path: Path
-    model: CodeStoryAdapter | None
     git_interface: GitInterface
     git_commands: GitCommands
     config: GlobalConfig
+    _model: CodeStoryAdapter | None = None
+
+    def get_model(self) -> CodeStoryAdapter | None:
+        """Lazy-loaded getter for the model instance."""
+        if self._model is not None:
+            return self._model
+        else:
+            if self.config.model == "no-model" or self.config.model is None:
+                self._model = None
+            else:
+                self._model = CodeStoryAdapter(
+                    ModelConfig(
+                        self.config.model,
+                        self.config.api_key,
+                        self.config.api_base,
+                        self.config.temperature,
+                        None,
+                    )
+                )
+        return self._model
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
-        if config.model == "no-model" or config.model is None:
-            model = None
-        else:
-            model = CodeStoryAdapter(
-                ModelConfig(
-                    config.model,
-                    config.api_key,
-                    config.api_base,
-                    config.temperature,
-                    None,
-                )
-            )
-
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
-
-        return GlobalContext(repo_path, model, git_interface, git_commands, config)
+        return GlobalContext(repo_path, git_interface, git_commands, config)
 
 
 @dataclass(frozen=True)
