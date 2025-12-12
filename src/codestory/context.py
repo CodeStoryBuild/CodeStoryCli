@@ -41,6 +41,7 @@ class GlobalConfig:
     api_key: str | None = None
     api_base: str | None = None
     temperature: float = 0
+    max_tokens: int | None = 4096
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     fallback_grouping_strategy: Literal[
@@ -60,6 +61,7 @@ class GlobalConfig:
         "api_key": StringConstraint(),
         "api_base": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
+        "max_tokens": RangeTypeConstraint(min_value=1),
         "relevance_filter_level": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
         ),
@@ -92,6 +94,7 @@ class GlobalConfig:
         "api_key": "API key for the LLM provider",
         "api_base": "Custom API base URL for the LLM provider (optional)",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
+        "max_tokens": "Maximum tokens for LLM responses. Ie the selected models context length",
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
         "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation",
@@ -110,6 +113,7 @@ class GlobalConfig:
         "api_key": ["--api-key"],
         "api_base": ["--api-base"],
         "temperature": ["--temperature"],
+        "max_tokens": ["--max-tokens"],
         "relevance_filter_level": ["--relevance-filter-level"],
         "secret_scanner_aggression": ["--secret-scanner-aggression"],
         "fallback_grouping_strategy": ["--fallback-grouping-strategy"],
