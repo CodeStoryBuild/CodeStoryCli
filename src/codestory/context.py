@@ -37,7 +37,7 @@ from codestory.core.llm import CodeStoryAdapter, ModelConfig
 
 @dataclass
 class GlobalConfig:
-    model: str | None = None
+    model: str = "no-model"
     api_key: str | None = None
     api_base: str | None = None
     temperature: float = 0
