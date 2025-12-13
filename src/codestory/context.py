@@ -199,21 +199,21 @@ class GlobalContext:
 
     def get_model(self) -> CodeStoryAdapter | None:
         """Lazy-loaded getter for the model instance."""
+        if self.config.model == "no-model":
+            return None
+
         if self._model is not None:
             return self._model
         else:
-            if self.config.model == "no-model" or self.config.model is None:
-                self._model = None
-            else:
-                self._model = CodeStoryAdapter(
-                    ModelConfig(
-                        self.config.model,
-                        self.config.api_key,
-                        self.config.api_base,
-                        self.config.temperature,
-                        None,
-                    )
+            self._model = CodeStoryAdapter(
+                ModelConfig(
+                    self.config.model,
+                    self.config.api_key,
+                    self.config.api_base,
+                    self.config.temperature,
+                    self.config.max_tokens,
                 )
+            )
         return self._model
 
     @classmethod
