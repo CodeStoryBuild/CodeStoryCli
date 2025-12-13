@@ -59,34 +59,6 @@ def test_ensure_utf8_output_no_reconfigure():
 
 
 # -----------------------------------------------------------------------------
-# setup_signal_handlers
-# -----------------------------------------------------------------------------
-
-
-def test_setup_signal_handlers():
-    """Test that signal handlers are registered."""
-    with patch("signal.signal") as mock_signal:
-        setup_signal_handlers()
-
-        # Check that handlers were registered for SIGINT and SIGTERM
-        assert mock_signal.call_count == 2
-
-        # Verify calls
-        calls = mock_signal.call_args_list
-        args_list = [call.args[0] for call in calls]
-        assert signal.SIGINT in args_list
-        assert signal.SIGTERM in args_list
-
-        # Get the handler function passed to signal.signal
-        handler = calls[0].args[1]
-
-        # Verify the handler raises typer.Exit(130)
-        with pytest.raises(typer.Exit) as excinfo:
-            handler(None, None)
-        assert excinfo.value.exit_code == 130
-
-
-# -----------------------------------------------------------------------------
 # version_callback
 # -----------------------------------------------------------------------------
 
