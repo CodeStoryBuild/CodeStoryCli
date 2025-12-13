@@ -47,6 +47,7 @@ def create_rewrite_pipeline(
             global_ctx.get_model(),
             batching_strategy=global_ctx.config.batching_strategy,
             max_tokens=global_ctx.config.max_tokens,
+            custom_embedding_model=global_ctx.config.custom_embedding_model,
         )
     else:
         logger.warning("Using no ai grouping as rewrite_pipeline recieved no model!")
