@@ -58,7 +58,6 @@ def main():
         sys.executable,
         "-m",
         "nuitka",
-        "--debug",
         "--standalone",
         "--assume-yes-for-downloads",
         "--show-modules",
