@@ -17,9 +17,10 @@
 # -----------------------------------------------------------------------------
 
 import asyncio
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from loguru import logger
 
@@ -84,20 +85,15 @@ class CodeStoryAdapter:
         """Cleanup method to properly close the persistent event loop."""
         if self._loop is not None and not self._loop.is_closed():
             try:
-                # Cancel all running tasks
+                # Cancel all running tasks immediately
                 pending = asyncio.all_tasks(self._loop)
                 for task in pending:
                     task.cancel()
 
-                # Allow cancellation to propagate
-                if pending:
-                    self._loop.run_until_complete(
-                        asyncio.gather(*pending, return_exceptions=True)
-                    )
-
-                self._loop.close()
+                # Force stop the loop without waiting
+                self._loop.stop()
             except Exception as e:
-                logger.warning(f"Error closing event loop: {e}")
+                logger.debug(f"Error closing event loop: {e}")
             finally:
                 self._loop = None
 
@@ -171,16 +167,28 @@ class CodeStoryAdapter:
 
     # --- Unified Invocation Methods ---
 
-    def invoke(self, messages: str | list[dict[str, str]]) -> str:
+    def invoke(
+        self,
+        messages: str | list[dict[str, str]],
+        update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+    ) -> str:
         """Unified sync invoke method. Returns the content string."""
         logger.debug(f"Invoking {self.model_string} (sync)")
         kwargs = self._prepare_request(messages)
 
         with self._handle_llm_error("Sync invocation"):
+            if update_callback:
+                update_callback("sent")
             response = self.client.chat.completions.create(**kwargs)
+            if update_callback:
+                update_callback("received")
             return response.choices[0].message.content
 
-    async def async_invoke(self, messages: str | list[dict[str, str]]) -> str:
+    async def async_invoke(
+        self,
+        messages: str | list[dict[str, str]],
+        update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+    ) -> str:
         """Unified async invoke method. Returns the content string."""
         logger.debug(f"Invoking {self.model_string} (async)")
         kwargs = self._prepare_request(messages)
@@ -188,9 +196,13 @@ class CodeStoryAdapter:
         with self._handle_llm_error("Async invocation"):
             # Run in executor since aisuite is often blocking/sync
             loop = asyncio.get_running_loop()
+            if update_callback:
+                update_callback("sent")
             response = await loop.run_in_executor(
                 None, lambda: self.client.chat.completions.create(**kwargs)
             )
+            if update_callback:
+                update_callback("received")
             return response.choices[0].message.content
 
     async def async_invoke_batch(
@@ -198,6 +210,7 @@ class CodeStoryAdapter:
         batch: list[str | list[dict[str, str]]],
         max_concurrent: int = 10,
         sleep_between_tasks: float = -1,
+        update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
     ) -> list[str]:
         """
         Run a batch of invocations in parallel.
@@ -214,7 +227,7 @@ class CodeStoryAdapter:
             async with semaphore:
                 if sleep_between_tasks > 0:
                     await asyncio.sleep(sleep_between_tasks)
-                return await self.async_invoke(item)
+                return await self.async_invoke(item, update_callback=update_callback)
 
         # Create tasks. We keep the reference to preserve order of results.
         tasks = [asyncio.create_task(sem_task(item)) for item in batch]
@@ -245,7 +258,10 @@ class CodeStoryAdapter:
         return [task.result() for task in tasks]
 
     def invoke_batch(
-        self, batch: list[str | list[dict[str, str]]], max_concurrent: int = 10
+        self,
+        batch: list[str | list[dict[str, str]]],
+        max_concurrent: int = 10,
+        update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
     ) -> list[str]:
         """
         Synchronous wrapper for batched calls reusing a persistent loop.
@@ -257,5 +273,7 @@ class CodeStoryAdapter:
 
         # Use the persistent loop to run the batch
         return self._loop.run_until_complete(
-            self.async_invoke_batch(batch, max_concurrent)
+            self.async_invoke_batch(
+                batch, max_concurrent, update_callback=update_callback
+            )
         )

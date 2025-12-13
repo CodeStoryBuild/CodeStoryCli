@@ -71,7 +71,7 @@ class CleanPipeline:
 
             # Stop at the first merge commit
             if self._is_merge(commit):
-                logger.info(
+                logger.debug(
                     "Stopping at merge commit {commit}. Cleaned {fixed} commits.",
                     commit=short,
                     fixed=fixed,
@@ -121,7 +121,7 @@ class CleanPipeline:
                     skipped += 1
                     continue
 
-            logger.info(
+            logger.debug(
                 "Fix commit {commit} ({idx}/{total})",
                 commit=short,
                 idx=idx,
@@ -130,7 +130,7 @@ class CleanPipeline:
             self.fix_command(commit)
             fixed += 1
 
-        logger.info(
+        logger.success(
             "Clean operation complete: fixed={fixed}, skipped={skipped}",
             fixed=fixed,
             skipped=skipped,

@@ -190,7 +190,7 @@ class GitSynthesizer:
                     new_tree_hash, last_synthetic_commit_hash, full_message
                 )
 
-                logger.info(
+                logger.success(
                     f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
                 )
 

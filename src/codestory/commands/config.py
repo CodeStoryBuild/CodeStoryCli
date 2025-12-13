@@ -26,7 +26,12 @@ import tomllib
 import typer
 from colorama import Fore, Style, init
 
-from codestory.constants import CONFIG_FILENAME, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE, ENV_APP_PREFIX
+from codestory.constants import (
+    CONFIG_FILENAME,
+    ENV_APP_PREFIX,
+    GLOBAL_CONFIG_FILE,
+    LOCAL_CONFIG_FILE,
+)
 from codestory.context import GlobalConfig
 from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
 
@@ -258,7 +263,7 @@ def get_config(key: str | None, scope: str | None) -> None:
     # Env
     if scope is None or scope == "env":
         env_config = {
-            k[len(ENV_APP_PREFIX):]: v
+            k[len(ENV_APP_PREFIX) :]: v
             for k, v in os.environ.items()
             if k.lower().startswith(ENV_APP_PREFIX.lower())
         }
@@ -380,11 +385,7 @@ def delete_config(key: str | None, scope: str) -> None:
             )
         return
 
-    # Determine config file path based on scope
-    if scope == "global":
-        config_path = GLOBAL_CONFIG_FILE
-    else:  # local
-        config_path = LOCAL_CONFIG_FILE
+    config_path = GLOBAL_CONFIG_FILE if scope == "global" else LOCAL_CONFIG_FILE
 
     if not config_path.exists():
         print(
@@ -484,11 +485,17 @@ def deleteall_config(key: str | None) -> None:
                                     f.write(f"{k} = '{v}'\n")
                     else:
                         LOCAL_CONFIG_FILE.unlink()
-                    print(f"{Fore.GREEN}Deleted {key} from local config{Style.RESET_ALL}")
+                    print(
+                        f"{Fore.GREEN}Deleted {key} from local config{Style.RESET_ALL}"
+                    )
                 else:
-                    print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in local config")
+                    print(
+                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in local config"
+                    )
             except tomllib.TOMLDecodeError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}")
+                print(
+                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}"
+                )
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
 
@@ -510,17 +517,23 @@ def deleteall_config(key: str | None) -> None:
                                     f.write(f"{k} = '{v}'\n")
                     else:
                         GLOBAL_CONFIG_FILE.unlink()
-                    print(f"{Fore.GREEN}Deleted {key} from global config{Style.RESET_ALL}")
+                    print(
+                        f"{Fore.GREEN}Deleted {key} from global config{Style.RESET_ALL}"
+                    )
                 else:
-                    print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in global config")
+                    print(
+                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in global config"
+                    )
             except tomllib.TOMLDecodeError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}")
+                print(
+                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}"
+                )
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
     else:
         # Delete all from both scopes
         confirm = typer.confirm(
-            f"Are you sure you want to delete ALL config from BOTH global and local scopes?"
+            "Are you sure you want to delete ALL config from BOTH global and local scopes?"
         )
         if not confirm:
             print("Delete cancelled.")
@@ -533,11 +546,17 @@ def deleteall_config(key: str | None) -> None:
                     config_data = tomllib.load(f)
                 if config_data:
                     LOCAL_CONFIG_FILE.unlink()
-                    print(f"{Fore.GREEN}Deleted all config from local scope{Style.RESET_ALL}")
+                    print(
+                        f"{Fore.GREEN}Deleted all config from local scope{Style.RESET_ALL}"
+                    )
                 else:
-                    print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Local config is already empty")
+                    print(
+                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Local config is already empty"
+                    )
             except tomllib.TOMLDecodeError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}")
+                print(
+                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}"
+                )
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
 
@@ -548,11 +567,17 @@ def deleteall_config(key: str | None) -> None:
                     config_data = tomllib.load(f)
                 if config_data:
                     GLOBAL_CONFIG_FILE.unlink()
-                    print(f"{Fore.GREEN}Deleted all config from global scope{Style.RESET_ALL}")
+                    print(
+                        f"{Fore.GREEN}Deleted all config from global scope{Style.RESET_ALL}"
+                    )
                 else:
-                    print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Global config is already empty")
+                    print(
+                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Global config is already empty"
+                    )
             except tomllib.TOMLDecodeError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}")
+                print(
+                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}"
+                )
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
 

@@ -124,11 +124,9 @@ def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
             path = diff_c.canonical_path().decode("utf-8", errors="replace")
             files[path] = files.get(path, 0) + 1
 
-        return "\n".join([f"{num} chunks in {path}" for path, num in files.items()])
+        return "\n".join([f"{num} changes in {path}" for path, num in files.items()])
     else:
-        return "A chunk for " + ImmutableChunk.canonical_path.decode(
-            "utf-8", errors="replace"
-        )
+        return "A change for " + data.canonical_path.decode("utf-8", errors="replace")
 
 
 class RewritePipeline:
@@ -261,8 +259,8 @@ class RewritePipeline:
                 logger.info(
                     f"Rejected {len(rejected_chunks)} chunks due to potental hardcoded secrets"
                 )
+                logger.info("---------- affected chunks ----------")
                 for chunk in rejected_chunks:
-                    logger.info("---------- affected chunks ----------")
                     logger.info(describe_chunk(chunk))
                 logger.info("These groups will simply stay as uncommited changes\n")
 
@@ -276,7 +274,7 @@ class RewritePipeline:
                 transient_step(
                     "Applying Relevance Filter...",
                     self.global_context.config.silent,
-                ),
+                ) as pbar,
                 time_block("relevance_filtering"),
             ):
                 relevance_filter = RelevanceFilter(
@@ -294,14 +292,15 @@ class RewritePipeline:
                     semantic_chunks,
                     immutable_chunks,
                     intent=self.commit_context.relevance_filter_intent,
+                    pbar=pbar,
                 )
 
             if rejected_relevance:
                 logger.info(
                     f"Rejected {len(rejected_relevance)} chunks due to not being relevant for the commit"
                 )
+                logger.info("---------- affected chunks ----------")
                 for chunk in rejected_relevance:
-                    logger.info("---------- affected chunks ----------")
                     logger.info(describe_chunk(chunk))
                 logger.info("These chunks will simply stay as uncommited changes\n")
 
@@ -318,7 +317,7 @@ class RewritePipeline:
             transient_step(
                 "Using AI to create meaningful commits...",
                 self.global_context.config.silent,
-            ),
+            ) as pbar,
             time_block("logical_grouping"),
         ):
             # Simple progress callback to keep the animation alive
@@ -327,6 +326,7 @@ class RewritePipeline:
                 immutable_chunks,
                 context_manager,
                 self.commit_context.message,
+                pbar=pbar,
             )
 
         if not logical_groups:
@@ -466,8 +466,8 @@ class RewritePipeline:
             logger.info(
                 f"Rejected {len(user_rejected_groups)} commits due to user input"
             )
+            logger.info("---------- affected chunks ----------")
             for group in user_rejected_groups:
-                logger.info("---------- affected chunks ----------")
                 logger.info(describe_chunk(group))
             logger.info("These chunks will simply stay as uncommited changes\n")
 

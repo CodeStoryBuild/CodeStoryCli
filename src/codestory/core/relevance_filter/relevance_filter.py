@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from loguru import logger
+from tqdm import tqdm
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -88,6 +89,31 @@ AGGRESSION_RULES = {
     """,
 }
 
+USER_PROMPT_TEMPLATE = """User Intent: "{intent}"
+
+Review the following changes. Identify which chunks are irrelevant to this intent based on the current Mode.
+
+CHANGES:
+{changes_json}
+"""
+
+
+def build_system_message(level: str, extra_instructions: str = "") -> dict[str, str]:
+    """Build the system message with mode-specific instructions."""
+    mode_instruction = AGGRESSION_RULES.get(level, AGGRESSION_RULES["standard"])
+    content = f"{BASE_SYSTEM_PROMPT}\n{mode_instruction}"
+
+    if extra_instructions:
+        content += f"\nAdditional Rules:\n{extra_instructions}"
+
+    return {"role": "system", "content": content}
+
+
+def build_user_message(intent: str, changes_json: str) -> dict[str, str]:
+    """Build the user message with intent and changes."""
+    content = USER_PROMPT_TEMPLATE.format(intent=intent, changes_json=changes_json)
+    return {"role": "user", "content": content}
+
 
 class RelevanceFilter:
     def __init__(self, model: CodeStoryAdapter, config: RelevanceFilterConfig):
@@ -144,41 +170,37 @@ class RelevanceFilter:
         chunks: list[Chunk],
         immut_chunks: list[ImmutableChunk],
         intent: str,
+        pbar: tqdm | None = None,
     ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
         if not (chunks or immut_chunks):
             return [], [], []
 
-        # 1. Select the correct philosophy
-        mode_instruction = AGGRESSION_RULES.get(
-            self.config.level, AGGRESSION_RULES["standard"]
-        )
-
-        system_instruction = f"{BASE_SYSTEM_PROMPT}\n{mode_instruction}"
-
-        if self.config.extra_instructions:
-            system_instruction += (
-                f"\nAdditional Rules:\n{self.config.extra_instructions}"
-            )
-
-        # 2. Construct the User Prompt
+        # 1. Build messages in the format models expect
         changes_json = self._prepare_payload(chunks, immut_chunks)
 
-        user_prompt = f"""User Intent: "{intent}"
-
-Review the following changes. Identify which chunks are irrelevant to this intent based on the current Mode.
-
-CHANGES:
-{changes_json}
-"""
-
-        # 2. Call LLM
         messages = [
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": user_prompt},
+            build_system_message(self.config.level, self.config.extra_instructions),
+            build_user_message(intent, changes_json),
         ]
 
+        # 3. Create callback for progress tracking
+        update_callback = None
+        if pbar is not None:
+            sent_count = 0
+            received_count = 0
+
+            def update_callback(status: Literal["sent", "received"]):
+                nonlocal sent_count, received_count
+                if status == "sent":
+                    sent_count += 1
+                elif status == "received":
+                    received_count += 1
+
+                pbar.set_postfix({"requests": f"{received_count}/{sent_count}"})
+
+        # 2. Call LLM
         try:
-            response_text = self.model.invoke(messages)
+            response_text = self.model.invoke(messages, update_callback=update_callback)
             response_data = self._clean_response(response_text)
 
             rejected_ids = set(response_data.get("rejected_chunk_ids", []))
@@ -189,7 +211,7 @@ CHANGES:
 
         except Exception as e:
             logger.warning(f"Holistic AI Filter failed: {e}. Defaulting to ACCEPT ALL.")
-            return chunks, [], []
+            return chunks, immut_chunks, []
 
         # 3. Partition
         accepted_chunks = []

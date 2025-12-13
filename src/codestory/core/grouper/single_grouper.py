@@ -18,6 +18,8 @@
 
 import time
 
+from tqdm import tqdm
+
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -32,6 +34,7 @@ class SingleGrouper(LogicalGrouper):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
+        pbar: tqdm | None = None,
     ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""
         groups: list[CommitGroup] = []
