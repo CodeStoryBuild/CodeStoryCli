@@ -78,7 +78,7 @@ class LanguageConfig:
         lines = []
         for query in queries:
             if "@placeholder" not in query:
-                logger.warning(
+                logger.debug(
                     f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!"
                 )
             else:

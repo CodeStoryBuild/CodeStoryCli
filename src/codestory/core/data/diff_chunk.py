@@ -202,7 +202,7 @@ class DiffChunk:
 
         # These initial checks are critical for establishing a valid starting point.
         if self.old_start is None:
-            logger.warning(f"Cannot split chunk with invalid start lines: {self}")
+            logger.debug(f"Cannot split chunk with invalid start lines: {self}")
             return [self]
 
         # only try to be smart and split hunks if its a pure addition or deletion

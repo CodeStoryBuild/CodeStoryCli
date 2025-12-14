@@ -139,11 +139,11 @@ def run_commit(
         # We use 'read-tree' WITHOUT '-u' so it doesn't touch physical files.
         global_context.git_interface.run_git_binary_out(["read-tree", "HEAD"])
 
-        logger.info(
+        logger.success(
             "Commit command completed successfully",
         )
     else:
-        logger.info(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
+        logger.error(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
 
 
 def main(

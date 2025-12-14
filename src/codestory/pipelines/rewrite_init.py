@@ -39,7 +39,6 @@ def create_rewrite_pipeline(
     new_commit_hash: str,
     source: Literal["commit", "fix"],
 ):
-    logger.info("Loading Rewrite Pipeline...")
     chunker = AtomicChunker(global_ctx.config.split_hunks)
 
     if global_ctx.get_model() is not None:
@@ -52,7 +51,9 @@ def create_rewrite_pipeline(
             cluster_strictness=global_ctx.config.cluster_strictness,
         )
     else:
-        logger.warning("Using no ai grouping as rewrite_pipeline recieved no model!")
+        logger.warning(
+            "Logical grouping is disabled as no model has been configured. To fix please check 'cst config model'."
+        )
         logical_grouper = SingleGrouper()
 
     if new_commit_hash is None:

@@ -154,7 +154,7 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
         # Sync the working directory to the new head
         global_context.git_interface.run_git_text_out(["read-tree", "HEAD"])
 
-        logger.info("Fix command completed successfully")
+        logger.success("Fix command completed successfully")
     else:
         logger.error(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
 

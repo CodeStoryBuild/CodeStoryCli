@@ -210,7 +210,8 @@ class RelevanceFilter:
                 logger.debug(f"Holistic Filter Reasoning: {reasoning}")
 
         except Exception as e:
-            logger.warning(f"Holistic AI Filter failed: {e}. Defaulting to ACCEPT ALL.")
+            logger.debug(f"Holistic Filter failed: {e}")
+            logger.warning("Holistic AI Filter failed. Defaulting to ACCEPT ALL.")
             return chunks, immut_chunks, []
 
         # 3. Partition

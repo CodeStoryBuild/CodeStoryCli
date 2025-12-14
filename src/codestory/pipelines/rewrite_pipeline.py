@@ -330,7 +330,6 @@ class RewritePipeline:
             )
 
         if not logical_groups:
-            logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
             return None
 
