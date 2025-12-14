@@ -42,18 +42,8 @@ def setup_signal_handlers(global_context=None):
 
     def signal_handler(sig, frame):
         logger.info(f"\n{Fore.YELLOW}Operation cancelled by user{Style.RESET_ALL}")
-        # Clean up model if available
-        if global_context is not None:
-            model = global_context.get_model()
-            if model is not None:
-                try:
-                    model.close()
-                except Exception as e:
-                    logger.debug(f"Error closing model: {e}")
-        # Force exit immediately
         import os
-
-        os._exit(130)  # Hard exit without cleanup
+        os._exit(130)  # Hard exit
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
