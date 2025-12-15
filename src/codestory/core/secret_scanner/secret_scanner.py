@@ -126,7 +126,7 @@ class SecretScanner:
     def _compile_content_patterns(self) -> list[Pattern]:
         regex_list = list(PATTERNS_SAFE)
 
-        if self.config.aggression in ["balanced", "STRICT"]:
+        if self.config.aggression in{"balanced", "strict"}:
             regex_list.extend(PATTERNS_BALANCED)
 
         if self.config.aggression == "strict":
@@ -144,10 +144,7 @@ class SecretScanner:
         return re.compile(combined, re.IGNORECASE)
 
     def _decode_bytes(self, data: bytes) -> str:
-        try:
-            return data.decode("utf-8", errors="ignore")
-        except Exception:
-            return ""
+        return data.decode("utf-8", errors="ignore")
 
     def is_filename_blocked(self, file_path: bytes | None) -> bool:
         if file_path is None:
