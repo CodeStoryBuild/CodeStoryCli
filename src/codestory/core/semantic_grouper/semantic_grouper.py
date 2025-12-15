@@ -91,7 +91,6 @@ class SemanticGrouper:
             if annotated_chunk.signature is not None:
                 analyzable_chunks.append(annotated_chunk)
             else:
-                # TODO smarter fallback logic, for example using file extensions
                 fallback_chunks.append(annotated_chunk.chunk)
 
         # Group analyzable chunks using Union-Find based on overlapping signatures
@@ -227,18 +226,15 @@ class SemanticGrouper:
 
         uf = UnionFind(chunk_ids)
 
-        # Create an inverted index from symbol -> list of chunk_ids
+        # Create an inverted index from symbol/scope -> list of chunk_ids
         symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
         scope_to_chunks: dict[str, list[int]] = defaultdict(list)
         for i, sig in enumerate(signatures):
-            # TODO: Consider splitting into two merge classes - one for symbol-based
-            # merging and another for scope-based merging to clarify behavior.
             for symbol in (
                 sig.total_signature.def_new_symbols
                 | sig.total_signature.def_old_symbols
             ):
                 symbol_to_chunks[symbol].append(i)
-            # TODO we are just plopping all scope info together here, consider if we could separate grouping
             # Convert named scope lists to sets for union operation
             for scope in (
                 sig.total_signature.new_named_structural_scopes

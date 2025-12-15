@@ -362,8 +362,6 @@ class ContextManager:
                 parsed_file.line_ranges,
             )
         except Exception as e:
-            # TODO: Narrow this catch to specific parsing/analysis exceptions
-            # Broad exceptions may mask unrelated issues and make debugging harder.
             logger.debug(f"Error building maps for {file_path}: {e}")
             return None
 

@@ -82,8 +82,7 @@ class LanguageConfig:
                     f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!"
                 )
             else:
-                # TODO consider if multiple @placeholders should be supported or warned against
-                # .replace will replace all instances of it
+                # .replace will replace all instances of placeholder
                 query_filled = query.replace("@placeholder", f"@{capture_class}")
                 lines.append(query_filled)
 

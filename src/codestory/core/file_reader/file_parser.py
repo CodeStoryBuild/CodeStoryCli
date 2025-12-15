@@ -57,7 +57,6 @@ class FileParser:
         Returns:
             ParsedFile containing the root node and detected language, or None if parsing failed
         """
-        # TODO see if we can parse only the relevant ranges in line_ranges
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
             logger.debug(f"Failed to get detect language for {file_name}")

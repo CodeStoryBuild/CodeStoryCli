@@ -48,7 +48,7 @@ app = typer.Typer(
     help=f"{APP_NAME}: Give your project a good story worth reading",
     pretty_exceptions_show_locals=False,
     pretty_exceptions_enable=False,
-    add_completion=False,  # TODO check if we want shell completion
+    add_completion=False,
 )
 
 # Main cli commands

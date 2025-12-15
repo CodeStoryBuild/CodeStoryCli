@@ -78,7 +78,7 @@ class CleanPipeline:
                 )
                 break
 
-            # TODO use for more cool stuff:
+            # TODO implement sliding window to possibly group small commits together *before* fixing all together
             # parent = self.global_context.git_commands.try_get_parent_hash(
             #     commit, empty_on_fail=True
             # )
