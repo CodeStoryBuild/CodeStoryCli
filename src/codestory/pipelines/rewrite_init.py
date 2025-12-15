@@ -52,7 +52,7 @@ def create_rewrite_pipeline(
         )
     else:
         logger.warning(
-            "Logical grouping is disabled as no model has been configured. To fix please check 'cst config model'."
+            "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
         )
         logical_grouper = SingleGrouper()
 
