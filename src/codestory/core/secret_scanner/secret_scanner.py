@@ -126,7 +126,7 @@ class SecretScanner:
     def _compile_content_patterns(self) -> list[Pattern]:
         regex_list = list(PATTERNS_SAFE)
 
-        if self.config.aggression in{"balanced", "strict"}:
+        if self.config.aggression in {"balanced", "strict"}:
             regex_list.extend(PATTERNS_BALANCED)
 
         if self.config.aggression == "strict":
