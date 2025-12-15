@@ -43,7 +43,7 @@ class ConfigLoader:
         env_app_prefix: str = ENV_APP_PREFIX,
         global_config_path: Path = GLOBAL_CONFIG_FILE,
         custom_config_path: Path | None = None,
-    ):
+    ) -> tuple["CodeStoryConfig", set[str], bool]:
         """Merges configuration from multiple sources with priority: input args, custom config, local config, environment variables, global config."""
 
         # priority: input_arg,s optional custom config, local_config_path, env vars, global_config_path,
@@ -66,13 +66,11 @@ class ConfigLoader:
             sources.insert(1, custom_config)
             source_names.insert(1, "Custom Config")
 
-        built_model, used_indexes, used_defaults = ConfigLoader.build(
-            config_model, sources
+        built_model, used_source_names, used_defaults = ConfigLoader.build(
+            config_model, sources, source_names
         )
 
-        source_names = [source_names[i] for i in used_indexes]
-
-        return built_model, source_names, used_defaults
+        return built_model, used_source_names, used_defaults
 
     @staticmethod
     def load_toml(path: Path):
@@ -103,32 +101,32 @@ class ConfigLoader:
 
     @staticmethod
     def build(
-        config_model: "CodeStoryConfig",
+        config_model: "type[CodeStoryConfig]",
         sources: list[dict],
-    ):
+        source_names: list[str],
+    ) -> tuple["CodeStoryConfig", set[str], bool]:
         """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
 
         remaining_keys = {field.name for field in fields(config_model)}
 
         final_data = {}
-        used_indices = set()
+        final_sources = {}
 
         # 2. Iterate in order of highest-lowest preference
-        for i, d in enumerate(sources):
+        for i, (source, name) in enumerate(zip(sources, source_names)):
             # Optimization: Stop if we have everything
             if not remaining_keys:
                 break
 
             # Find which useful keys this dict provides
             # We use set intersection, which is very fast
-            contributions = d.keys() & remaining_keys
+            contributions = source.keys() & remaining_keys
 
             if contributions:
-                used_indices.add(i)
-
                 # Add these keys to our final data
                 for key in contributions:
-                    final_data[key] = d[key]
+                    final_data[key] = source[key]
+                    final_sources[key] = name
 
                 # Remove found keys so we don't look for them in earlier dicts
                 remaining_keys -= contributions
@@ -140,6 +138,7 @@ class ConfigLoader:
             name = field.name
             if name in final_data:
                 value = final_data[name]
+                source_name = final_sources[name]
                 constraint = constraints_map.get(name)
 
                 try:
@@ -147,14 +146,16 @@ class ConfigLoader:
                     coerced_data[name] = coerced_value
                 except ConfigurationError as e:
                     logger.error(
-                        f"Failed to coerce config value for field {name!r} with value {value!r}: {e}. Skipping field."
+                        f"Failed to coerce config value for field {name!r} with value {value!r} from source {source_name}: {e}."
                     )
-                    continue
+                    raise ConfigurationError(
+                        f"Invalid configuration for field {name!r} from source {source_name}:\n{e}"
+                    )
 
         model = config_model(**coerced_data)
 
         # built model, what sources we used, and if we used any defaults
-        return model, used_indices, bool(remaining_keys)
+        return model, set(final_sources.values()), bool(remaining_keys)
 
     @staticmethod
     def coerce_value(
