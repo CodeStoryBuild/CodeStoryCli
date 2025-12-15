@@ -19,13 +19,14 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 from codestory.core.config.type_constraints import (
     BoolConstraint,
     LiteralTypeConstraint,
     RangeTypeConstraint,
     StringConstraint,
+    TypeConstraint,
 )
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.git_interface.interface import GitInterface
@@ -33,6 +34,17 @@ from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 from codestory.core.llm import CodeStoryAdapter, ModelConfig
+
+
+class CodeStoryConfig(Protocol):
+    """Protocol for CodeStory configuration objects."""
+
+    # fields
+    # ...
+    # indexed per field name
+    constraints: dict[str, TypeConstraint]
+    descriptions: dict[str, str]
+    arg_options: dict[str, list[str]]
 
 
 @dataclass
@@ -63,7 +75,7 @@ class GlobalConfig:
         "api_key": StringConstraint(),
         "api_base": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
-        "max_tokens": RangeTypeConstraint(min_value=1),
+        "max_tokens": RangeTypeConstraint(min_value=1, is_int=True),
         "relevance_filter_level": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
         ),

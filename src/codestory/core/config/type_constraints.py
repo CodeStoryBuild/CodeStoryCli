@@ -42,30 +42,21 @@ class TypeConstraint(ABC):
 class RangeTypeConstraint(TypeConstraint):
     min_value: float | int | None = None
     max_value: float | int | None = None
+    is_int: bool = False
 
     def coerce(self, value: Any) -> Any:
         try:
-            if isinstance(value, str):
-                # allow numeric strings
-                v = float(value) if "." in value else int(value)
-            else:
-                v = value
-
-            v = float(v)
-        except Exception:
-            raise ConfigurationError(f"Value {value!r} is not a number")
+            v = int(value) if self.is_int else float(value)
+        except (ValueError, TypeError, OverflowError):
+            raise ConfigurationError(
+                f"Value {value!r} is not a valid {'int' if self.is_int else 'float'}"
+            )
 
         if self.min_value is not None and v < self.min_value:
             raise ConfigurationError(f"{v} < min {self.min_value}")
         if self.max_value is not None and v > self.max_value:
             raise ConfigurationError(f"{v} > max {self.max_value}")
 
-        # If original inputs were integer-like, return float or int appropriately
-        if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
-            try:
-                return int(v)
-            except Exception:
-                return v
         return v
 
     def __str__(self) -> str:
@@ -77,38 +68,45 @@ class RangeTypeConstraint(TypeConstraint):
         return f"range({', '.join(parts)})"
 
 
-@dataclass
+@dataclass(init=False)
 class LiteralTypeConstraint(TypeConstraint):
-    allowed: Iterable[Any] = None
+    allowed: set[Any]
+    allowed_pretty: list[str]
+    strs: dict[str, str]
+
+    def __init__(self, allowed: Iterable[Any] = []):
+        self.strs = {}
+        for val in allowed:
+            if not isinstance(val, str):
+                continue
+            self.strs[str(val).lower()] = val
+
+        self.allowed_pretty = list(allowed)
+        self.allowed: set[Any] = set(allowed)
 
     def coerce(self, value: Any) -> Any:
         if value in self.allowed:
             return value
-        # allow case-insensitive match for strings
-        if isinstance(value, str):
-            for a in self.allowed:
-                if isinstance(a, str) and a.lower() == value.lower():
-                    return a
+
+        if isinstance(value, str) and value.lower() in self.strs:
+            return self.strs[value.lower()]
+
         raise ConfigurationError(
-            f"{value!r} not one of allowed values: {list(self.allowed)}"
+            f"{value!r} not one of allowed values: {self.allowed_pretty}"
         )
 
     def __str__(self) -> str:
-        return f"literal({list(self.allowed)})"
+        return f"literal({self.allowed_pretty})"
 
 
 class BoolConstraint(TypeConstraint):
     def coerce(self, value: Any) -> bool:
         if isinstance(value, bool):
             return value
-        if isinstance(value, str):
-            if value.lower() in ("true", "1", "yes", "on"):
-                return True
-            if value.lower() in ("false", "0", "no", "off"):
-                return False
-        if isinstance(value, (int, float)):
+        try:
             return bool(value)
-        raise ConfigurationError(f"Cannot coerce {value!r} to bool")
+        except (ValueError, TypeError) as e:
+            raise ConfigurationError(f"Cannot coerce {value!r} to bool: {e}")
 
     def __str__(self) -> str:
         return "bool"
@@ -118,7 +116,7 @@ class IntConstraint(TypeConstraint):
     def coerce(self, value: Any) -> int:
         try:
             return int(value)
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             raise ConfigurationError(f"Cannot coerce {value!r} to int")
 
     def __str__(self) -> str:
@@ -129,7 +127,7 @@ class FloatConstraint(TypeConstraint):
     def coerce(self, value: Any) -> float:
         try:
             return float(value)
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             raise ConfigurationError(f"Cannot coerce {value!r} to float")
 
     def __str__(self) -> str:
@@ -140,7 +138,10 @@ class StringConstraint(TypeConstraint):
     def coerce(self, value: Any) -> str:
         if value is None:
             return ""
-        return str(value)
+        try:
+            return str(value)
+        except (ValueError, TypeError) as e:
+            raise ConfigurationError(f"Cannot coerce {value!r} to str: {e}")
 
     def __str__(self) -> str:
         return "str"
