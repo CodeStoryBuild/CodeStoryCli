@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------------------
 
 import asyncio
+import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -25,7 +26,7 @@ from typing import Any, Literal
 from loguru import logger
 
 from codestory.constants import LOCAL_PROVIDERS
-from codestory.core.exceptions import LLMInitError
+from codestory.core.exceptions import LLMInitError, ModelRetryExhausted
 
 
 @dataclass
@@ -171,39 +172,75 @@ class CodeStoryAdapter:
         self,
         messages: str | list[dict[str, str]],
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+        num_retries: int = 3,
     ) -> str:
-        """Unified sync invoke method. Returns the content string."""
+        """Unified sync invoke method with retry logic. Returns the content string."""
         logger.debug(f"Invoking {self.model_string} (sync)")
         kwargs = self._prepare_request(messages)
 
-        with self._handle_llm_error("Sync invocation"):
-            if update_callback:
-                update_callback("sent")
-            response = self.client.chat.completions.create(**kwargs)
-            if update_callback:
-                update_callback("received")
-            return response.choices[0].message.content
+        for attempt in range(num_retries + 1):
+            with self._handle_llm_error("Sync invocation"):
+                if update_callback:
+                    update_callback("sent")
+                response = self.client.chat.completions.create(**kwargs)
+                if update_callback:
+                    update_callback("received")
+
+                content = response.choices[0].message.content
+                if content is not None:
+                    return content
+
+                # Content is None, retry if we haven't exhausted retries
+                if attempt < num_retries:
+                    logger.warning(
+                        f"Model returned None on attempt {attempt + 1}/{num_retries + 1}, retrying..."
+                    )
+                    time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+
+        # All retries exhausted and still None
+        raise ModelRetryExhausted(
+            f"Model {self.model_string} failed to return a valid response after {num_retries + 1} attempts. "
+            f"The model consistently returned None. Please check your model configuration or try a different model."
+        )
 
     async def async_invoke(
         self,
         messages: str | list[dict[str, str]],
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+        num_retries: int = 3,
     ) -> str:
-        """Unified async invoke method. Returns the content string."""
+        """Unified async invoke method with retry logic. Returns the content string."""
         logger.debug(f"Invoking {self.model_string} (async)")
         kwargs = self._prepare_request(messages)
 
-        with self._handle_llm_error("Async invocation"):
-            # Run in executor since aisuite is often blocking/sync
-            loop = asyncio.get_running_loop()
-            if update_callback:
-                update_callback("sent")
-            response = await loop.run_in_executor(
-                None, lambda: self.client.chat.completions.create(**kwargs)
-            )
-            if update_callback:
-                update_callback("received")
-            return response.choices[0].message.content
+        for attempt in range(num_retries + 1):
+            with self._handle_llm_error("Async invocation"):
+                # Run in executor since aisuite is often blocking/sync
+                loop = asyncio.get_running_loop()
+                if update_callback:
+                    update_callback("sent")
+                response = await loop.run_in_executor(
+                    None, lambda: self.client.chat.completions.create(**kwargs)
+                )
+                if update_callback:
+                    update_callback("received")
+
+                content = response.choices[0].message.content
+                if content is not None:
+                    return content
+
+                # Content is None, retry if we haven't exhausted retries
+                if attempt < num_retries:
+                    logger.warning(
+                        f"Model returned None on attempt {attempt + 1}/{num_retries + 1}, retrying..."
+                    )
+                    await asyncio.sleep(0.5 * (attempt + 1))  # Exponential backoff
+
+        # All retries exhausted and still None
+        raise ModelRetryExhausted(
+            f"Model {self.model_string} failed to return a valid response after {num_retries + 1} attempts. "
+            f"The model consistently returned None. Please check your model configuration or try a different model."
+        )
 
     async def async_invoke_batch(
         self,
@@ -211,6 +248,7 @@ class CodeStoryAdapter:
         max_concurrent: int = 10,
         sleep_between_tasks: float = -1,
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+        num_retries: int = 3,
     ) -> list[str]:
         """
         Run a batch of invocations in parallel.
@@ -227,7 +265,9 @@ class CodeStoryAdapter:
             async with semaphore:
                 if sleep_between_tasks > 0:
                     await asyncio.sleep(sleep_between_tasks)
-                return await self.async_invoke(item, update_callback=update_callback)
+                return await self.async_invoke(
+                    item, update_callback=update_callback, num_retries=num_retries
+                )
 
         # Create tasks. We keep the reference to preserve order of results.
         tasks = [asyncio.create_task(sem_task(item)) for item in batch]
@@ -262,6 +302,7 @@ class CodeStoryAdapter:
         batch: list[str | list[dict[str, str]]],
         max_concurrent: int = 10,
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
+        num_retries: int = 3,
     ) -> list[str]:
         """
         Synchronous wrapper for batched calls reusing a persistent loop.
@@ -274,6 +315,9 @@ class CodeStoryAdapter:
         # Use the persistent loop to run the batch
         return self._loop.run_until_complete(
             self.async_invoke_batch(
-                batch, max_concurrent, update_callback=update_callback
+                batch,
+                max_concurrent,
+                update_callback=update_callback,
+                num_retries=num_retries,
             )
         )

@@ -69,6 +69,7 @@ class GlobalConfig:
     batching_strategy: Literal["auto", "requests", "prompt"] = "auto"
     custom_embedding_model: str | None = None
     cluster_strictness: float = 0.5
+    num_retries: int = 3
 
     constraints = {
         "model": StringConstraint(),
@@ -103,6 +104,7 @@ class GlobalConfig:
         ),
         "custom_embedding_model": StringConstraint(),
         "cluster_strictness": RangeTypeConstraint(min_value=0.0, max_value=1.0),
+        "num_retries": RangeTypeConstraint(min_value=0, max_value=10, is_int=True),
     }
 
     descriptions = {
@@ -124,6 +126,7 @@ class GlobalConfig:
         "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
         "custom_embedding_model": "FastEmbed supported text embedding model (will download on first run if not cached)",
         "cluster_strictness": "Strictness of clustering logical groups together. Higher value = higher threshold of similarity required to group together.",
+        "num_retries": "How many times to retry calling a model if it fails to return an output",
     }
 
     arg_options = {
@@ -145,6 +148,7 @@ class GlobalConfig:
         "batching_strategy": ["--batching-strategy"],
         "custom_embedding_model": ["--custom-embedding-model"],
         "cluster_strictness": ["--cluster-strictness"],
+        "num_retries": ["--num-retries"],
     }
 
     @classmethod

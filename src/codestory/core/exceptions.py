@@ -102,6 +102,17 @@ class EmbeddingModelError(CodestoryError):
     pass
 
 
+class ModelRetryExhausted(CodestoryError):
+    """
+    Model retry exhausted errors.
+
+    Raised when an LLM model fails to return a valid response
+    after all retry attempts have been exhausted.
+    """
+
+    pass
+
+
 class FileSystemError(CodestoryError):
     """
     File system operation errors.
