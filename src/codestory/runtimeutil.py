@@ -77,3 +77,13 @@ def get_supported_languages_callback(value: bool):
 
         typer.echo(f"{str(SUPPORTED_LANGUAGES)}")
         raise typer.Exit()
+
+
+def get_supported_providers_callback(value: bool):
+    """Show version and exit."""
+    if value:
+        from codestory.constants import LOCAL_PROVIDERS, get_cloud_providers
+
+        all_providers = list(LOCAL_PROVIDERS.union(get_cloud_providers()))
+        typer.echo(f"{all_providers}")
+        raise typer.Exit()
