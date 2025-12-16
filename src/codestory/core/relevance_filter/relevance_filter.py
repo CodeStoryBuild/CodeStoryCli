@@ -29,6 +29,7 @@ from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.exceptions import LLMResponseError
 from codestory.core.llm import CodeStoryAdapter
+from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 
 
 @dataclass
@@ -129,16 +130,15 @@ class RelevanceFilter:
 
         # Process mutable chunks
         for i in range(len(chunks)):
-            changes.append({"chunk_id": i, "change": diff_map.get(i, "(no diff)")})
+            patch_content = truncate_patch(diff_map.get(i, "(no diff)"))
+            changes.append({"chunk_id": i, "change": patch_content})
 
         # Process immutable chunks
         idx = len(chunks)
         for immut_chunk in immut_chunks:
-            patch_content = immut_chunk.file_patch.decode("utf-8", errors="replace")
-            # Truncate large patches
-            if len(patch_content) > 300:
-                patch_content = patch_content[:285] + "... (truncated)"
-
+            patch_content = truncate_patch_bytes(immut_chunk.file_patch).decode(
+                "utf-8", errors="replace"
+            )
             changes.append({"chunk_id": idx, "change": patch_content})
             idx += 1
 

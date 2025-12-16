@@ -41,6 +41,7 @@ from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
 from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
 from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 
 # -----------------------------------------------------------------------------
 # Prompts (Optimized for 1.5B LLMs)
@@ -488,6 +489,23 @@ class EmbeddingGrouper(LogicalGrouper):
 
         return cluster_messages_map
 
+    def generate_immutable_annotated_patches(
+        self, immutable_chunks: list[ImmutableChunk]
+    ) -> list[dict]:
+        patches = []
+        for chunk in immutable_chunks:
+            patch = self.generate_immutable_annotated_patch(chunk)
+            patches.append(patch)
+        return patches
+
+    def generate_immutable_annotated_patch(self, chunk: ImmutableChunk) -> dict:
+        patch_json = {}
+        patch_json["file_path"] = chunk.file_patch.decode("utf-8", errors="replace")
+        patch_json["git_patch"] = truncate_patch_bytes(
+            chunk.file_patch, self.patch_cutoff_chars
+        ).decode("utf-8", errors="replace")
+        return patch_json
+
     def generate_annotated_patches(
         self, annotated_chunks: list[AnnotatedChunk], diff_generator: DiffGenerator
     ) -> list[list[dict]]:
@@ -513,7 +531,9 @@ class EmbeddingGrouper(LogicalGrouper):
             strict=True,
         ):
             # we get diff generator [0] since we pass only one chunk, then we cut off to limit size
-            patch = diff_generator.get_patch(chunk)[: self.patch_cutoff_chars]
+            patch = truncate_patch(
+                diff_generator.get_patch(chunk), self.patch_cutoff_chars
+            )
             patch_json = {}
 
             patch_json["git_patch"] = patch
@@ -574,11 +594,8 @@ class EmbeddingGrouper(LogicalGrouper):
         annotated_chunk_patches = self.generate_annotated_patches(
             annotated_chunks, diff_generator
         )
-        # add in immutable chunks (they have no annotated chunk "capablities")
-        immut_patches = [
-            immut.file_patch[:200].decode("utf-8", errors="replace")
-            for immut in immut_chunks
-        ]
+
+        immut_patches = self.generate_immutable_annotated_patches(immut_chunks)
 
         all_patch_data = annotated_chunk_patches + immut_patches
         all_chunks_reference = chunks + immut_chunks
