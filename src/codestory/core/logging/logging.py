@@ -27,7 +27,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from loguru import logger
 
 from codestory.constants import LOG_DIR
 
@@ -43,6 +42,8 @@ class StructuredLogger:
 
     def _setup_logger(self) -> None:
         """Set up loguru with proper formatting and sinks."""
+        from loguru import logger
+
         # Clear existing sinks to avoid duplicates
         logger.remove()
 
@@ -114,50 +115,6 @@ def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -
 
     structured_logger = StructuredLogger(command_name)
     return structured_logger.get_logfile()
-
-
-def log_performance(func_name: str, duration_ms: int, **kwargs) -> None:
-    """
-    Log performance metrics with structured data.
-
-    Args:
-        func_name: Name of the function being measured
-        duration_ms: Duration in milliseconds
-        **kwargs: Additional metrics to log
-    """
-    logger.bind(
-        performance=True, function=func_name, duration_ms=duration_ms, **kwargs
-    ).info(f"Performance: {func_name} completed in {duration_ms}ms")
-
-
-def log_operation(operation: str, success: bool, **details) -> None:
-    """
-    Log operation results with structured data.
-
-    Args:
-        operation: Name of the operation
-        success: Whether the operation succeeded
-        **details: Additional operation details
-    """
-    level = "info" if success else "error"
-    status = "SUCCESS" if success else "FAILED"
-
-    logger.bind(operation=operation, success=success, **details).__getattribute__(
-        level
-    )(f"Operation {operation}: {status}")
-
-
-def log_user_action(action: str, **context) -> None:
-    """
-    Log user actions for audit and debugging.
-
-    Args:
-        action: Description of the user action
-        **context: Additional context about the action
-    """
-    logger.bind(user_action=True, action=action, **context).info(
-        f"User action: {action}"
-    )
 
 
 def setup_debug_logging() -> None:

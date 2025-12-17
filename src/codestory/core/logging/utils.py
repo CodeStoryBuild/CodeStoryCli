@@ -19,7 +19,6 @@
 import contextlib
 from time import perf_counter
 
-from loguru import logger
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -30,6 +29,7 @@ def time_block(block_name: str):
     """
     A context manager to time the execution of a code block and log the result.
     """
+    from loguru import logger
 
     logger.debug(f"Starting {block_name}")
     start_time = perf_counter()
@@ -48,6 +48,8 @@ def time_block(block_name: str):
 def log_chunks(
     process_step: str, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
 ):
+    from loguru import logger
+
     unique_files = {
         (path.decode("utf-8", errors="replace") if isinstance(path, bytes) else path)
         for c in chunks

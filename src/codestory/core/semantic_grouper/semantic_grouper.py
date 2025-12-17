@@ -20,8 +20,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
-from loguru import logger
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
@@ -141,11 +139,6 @@ class SemanticGrouper:
             return Path(path_str).name
         elif self.fallback_grouping_strategy == "by_file_extension":
             return Path(path_str).suffix or "(no extension)"
-        else:
-            logger.debug(
-                f"Unknown fallback_grouping_strategy '{self.fallback_grouping_strategy}', using 'all_together'"
-            )
-            return "all"
 
     def _group_fallback_chunks(
         self, fallback_chunks: list[Chunk]
@@ -216,8 +209,6 @@ class SemanticGrouper:
         """
         if not annotated_chunks:
             return []
-
-        logger.debug(f"annotated chunks count={len(annotated_chunks)}")
 
         chunk_ids = [i for i in range(len(annotated_chunks))]
         signatures = [ac.signature for ac in annotated_chunks]

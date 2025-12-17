@@ -20,8 +20,6 @@ import os
 import tempfile
 from pathlib import Path
 
-from loguru import logger
-
 from codestory.core.exceptions import DetachedHeadError, GitError
 from codestory.core.git_interface.interface import GitInterface
 
@@ -82,6 +80,8 @@ class TempCommitCreator:
         - Commits this tree as a dangling commit (not attached to any branch).
         - Returns the old commit hash (HEAD) and the new dangling commit hash.
         """
+        from loguru import logger
+
         logger.debug("Creating dangling commit for current state...")
         original_branch = (self._run(["branch", "--show-current"]) or "").strip()
         # check that not a detached branch

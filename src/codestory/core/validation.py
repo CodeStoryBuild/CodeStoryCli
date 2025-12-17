@@ -280,33 +280,20 @@ def validate_no_merge_commits_in_range(
     Raises:
         ValidationError: If any merge commits are found in the range
     """
-    # Get all commits in the range
-    commits_out = git_interface.run_git_text_out(
-        ["rev-list", f"{start_commit}..{end_ref}"]
+    # Use --merges flag to efficiently find only merge commits in the range
+    # This is much faster than checking each commit individually
+    merge_commits_out = git_interface.run_git_text_out(
+        ["rev-list", "--merges", "-n", "1", f"{start_commit}..{end_ref}"]
     )
 
-    if not commits_out:
-        return  # No commits in range
-
-    commits = [line.strip() for line in commits_out.splitlines() if line.strip()]
-
-    # Check each commit for multiple parents
-    for commit in commits:
-        line = git_interface.run_git_text_out(
-            ["rev-list", "--parents", "-n", "1", commit]
+    if merge_commits_out and merge_commits_out.strip():
+        # Found at least one merge commit
+        merge_commit = merge_commits_out.strip().split()[0]
+        raise ValidationError(
+            f"Merge commit detected: {merge_commit[:7]}",
+            f"Cannot rewrite history that contains merge commits. "
+            f"The range {start_commit[:7]}..{end_ref[:7]} contains merge commits.",
         )
-        if not line:
-            continue
-
-        parts = line.strip().split()
-        # Format: <commit> <parent1> [<parent2> ...]
-        if len(parts) > 2:
-            # This is a merge commit
-            raise ValidationError(
-                f"Merge commit detected: {commit[:7]}",
-                f"Cannot rewrite history that contains merge commits. "
-                f"The range {start_commit[:7]}..{end_ref[:7]} contains merge commits.",
-            )
 
 
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:

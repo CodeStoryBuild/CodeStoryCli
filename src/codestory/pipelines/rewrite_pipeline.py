@@ -21,7 +21,6 @@ from typing import Literal
 
 import typer
 from colorama import Fore, Style
-from loguru import logger
 from tqdm import tqdm
 
 from codestory.context import CommitContext, GlobalContext
@@ -160,6 +159,8 @@ class RewritePipeline:
         self.can_reject_changes = source == "commit"
 
     def run(self) -> str | None:
+        from loguru import logger
+
         # Initial invocation summary
         logger.debug(
             "Pipeline run started: commit_context={commit_context} base_commit={base} new_commit={new}",

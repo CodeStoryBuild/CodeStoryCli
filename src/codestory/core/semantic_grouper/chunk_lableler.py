@@ -18,8 +18,6 @@
 
 from dataclasses import dataclass
 
-from loguru import logger
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.semantic_grouper.context_manager import (
@@ -173,6 +171,8 @@ class ChunkLabeler:
         """
         Generate a semantic signature for a list of DiffChunks
         """
+        from loguru import logger
+
         if not diff_chunks:
             return []  # No diff chunks, return empty signature list
 

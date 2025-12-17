@@ -18,8 +18,6 @@
 
 from dataclasses import dataclass
 
-from loguru import logger
-
 from codestory.core.data.hunk_wrapper import HunkWrapper
 from codestory.core.data.line_changes import Addition, Removal
 
@@ -202,7 +200,6 @@ class DiffChunk:
 
         # These initial checks are critical for establishing a valid starting point.
         if self.old_start is None:
-            logger.debug(f"Cannot split chunk with invalid start lines: {self}")
             return [self]
 
         # only try to be smart and split hunks if its a pure addition or deletion

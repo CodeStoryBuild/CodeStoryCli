@@ -20,7 +20,7 @@ import os
 from dataclasses import fields
 from pathlib import Path
 from textwrap import shorten
-from typing import Any, Literal
+from typing import Any
 
 import tomllib
 import typer
@@ -32,8 +32,7 @@ from codestory.constants import (
     GLOBAL_CONFIG_FILE,
     LOCAL_CONFIG_FILE,
 )
-from codestory.context import GlobalConfig
-from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
+from codestory.core.exceptions import ConfigurationError
 
 # Initialize colorama
 init(autoreset=True)
@@ -76,7 +75,8 @@ def display_config(
 
 def _get_config_schema() -> dict[str, dict[str, Any]]:
     """Get the schema of available config options from GlobalConfig."""
-    # Descriptions for each config field
+    from codestory.context import GlobalConfig
+
     schema = {}
 
     for field in fields(GlobalConfig):
@@ -629,103 +629,46 @@ def describe_callback(ctx: typer.Context, param, value: bool):
     raise typer.Exit()
 
 
-def main(
-    ctx: typer.Context,
-    describe: bool = typer.Option(
-        False,
-        "--describe",
-        callback=describe_callback,
-        is_eager=True,
-        help="Describe available configuration options and exit.",
-    ),
-    key: str | None = typer.Argument(None, help="Configuration key to get or set."),
-    value: str | None = typer.Argument(
-        None, help="Value to set (omit to get current value)."
-    ),
-    scope: Literal["local", "global", "env"] = typer.Option(
-        None,
-        "--scope",
-        help="Select which scope to modify. Defaults to local for setting/deleting, all for getting.",
-    ),
-    delete: bool = typer.Option(
-        False,
-        "--delete",
-        help="Delete configuration. Deletes all config in scope if no key specified, or specific key if provided.",
-    ),
-    deleteall: bool = typer.Option(
-        False,
-        "--deleteall",
-        help="Delete configuration from both global and local scopes.",
-    ),
+def run_config(
+    key: str | None, value: str | None, scope: str | None, delete: bool, deleteall: bool
 ) -> None:
-    """
-    Manage global and local codestory configurations.
+    # Check for conflicting operations
+    if delete and deleteall:
+        raise ConfigurationError(
+            f"{Fore.RED}Error:{Style.RESET_ALL} Cannot use --delete and --deleteall together"
+        )
 
-    Priority order: program arguments > custom config > local config > environment variables > global config
-
-    Examples:
-        # Get a configuration value
-        cst config model
-
-        # Set a local configuration value
-        cst config model "gemini/gemini-2.0-flash"
-
-        # Set a global configuration value
-        cst config model "openai/gpt-4" --scope global
-
-        # Show all configuration
-        cst config
-
-        # Delete a specific key from local config
-        cst config model --delete
-
-        # Delete all config from global scope
-        cst config --delete --scope global
-
-        # Delete a key from both global and local scopes
-        cst config model --deleteall
-
-        # Delete all config from both scopes
-        cst config --deleteall
-    """
-    with handle_codestory_exception():
-        # Check for conflicting operations
-        if delete and deleteall:
+    if deleteall:
+        # DELETEALL operation
+        if value is not None:
             raise ConfigurationError(
-                f"{Fore.RED}Error:{Style.RESET_ALL} Cannot use --delete and --deleteall together"
+                f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
+            )
+        if scope is not None:
+            print(
+                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} --scope is ignored when using --deleteall"
+            )
+        deleteall_config(key)
+    elif delete:
+        # DELETE operation
+        if value is not None:
+            raise ConfigurationError(
+                f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
+            )
+        # Default to local if deleting and no scope provided
+        target_scope = scope if scope is not None else "local"
+        delete_config(key, target_scope)
+    elif value is not None:
+        # SET operation
+        if key is None:
+            raise ConfigurationError(
+                f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value"
             )
 
-        if deleteall:
-            # DELETEALL operation
-            if value is not None:
-                raise ConfigurationError(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
-                )
-            if scope is not None:
-                print(
-                    f"{Fore.YELLOW}Warning:{Style.RESET_ALL} --scope is ignored when using --deleteall"
-                )
-            deleteall_config(key)
-        elif delete:
-            # DELETE operation
-            if value is not None:
-                raise ConfigurationError(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
-                )
-            # Default to local if deleting and no scope provided
-            target_scope = scope if scope is not None else "local"
-            delete_config(key, target_scope)
-        elif value is not None:
-            # SET operation
-            if key is None:
-                raise ConfigurationError(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value"
-                )
-
-            # Default to local if setting and no scope provided
-            target_scope = scope if scope is not None else "local"
-            set_config(key, value, target_scope)
-        else:
-            # GET operation
-            # If scope is None here, get_config handles searching all scopes
-            get_config(key, scope)
+        # Default to local if setting and no scope provided
+        target_scope = scope if scope is not None else "local"
+        set_config(key, value, target_scope)
+    else:
+        # GET operation
+        # If scope is None here, get_config handles searching all scopes
+        get_config(key, scope)

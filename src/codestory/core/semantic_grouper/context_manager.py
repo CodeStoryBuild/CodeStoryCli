@@ -18,7 +18,6 @@
 
 from dataclasses import dataclass
 
-from loguru import logger
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
@@ -90,9 +89,6 @@ class ContextManager:
         self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
         self._generate_parsed_files()
 
-        if not self._parsed_files:
-            logger.debug("Empty parsed files!")
-
         # First, build shared context
         self._build_shared_contexts()
 
@@ -103,6 +99,8 @@ class ContextManager:
         self._log_context_summary()
 
     def _log_context_summary(self) -> None:
+        from loguru import logger
+
         total_required = len(self._required_contexts.keys())
         total_built = len(self._context_cache)
         files_with_context = {fp for fp, _ in self._context_cache}
@@ -189,6 +187,8 @@ class ContextManager:
             return (start - 1, end - 1)
 
     def _generate_parsed_files(self) -> None:
+        from loguru import logger
+
         for (
             file_path,
             is_old_version,
@@ -249,6 +249,7 @@ class ContextManager:
         """
         Build shared analysis contexts for all required file versions.
         """
+        from loguru import logger
 
         languages: dict[str, list[ParsedFile]] = {}
 
@@ -278,6 +279,8 @@ class ContextManager:
         """
         Build analysis contexts for all required file versions.
         """
+        from loguru import logger
+
         for (
             file_path,
             is_old_version,
@@ -304,6 +307,8 @@ class ContextManager:
         Returns:
             AnalysisContext if successful, None if file cannot be processed
         """
+        from loguru import logger
+
         # check if any of the new ast has syntax errors
 
         def traverse_errors(node) -> bool:

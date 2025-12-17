@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from importlib.resources import files
 from typing import Literal
 
-from loguru import logger
 from tree_sitter import Node, Query, QueryCursor
 from tree_sitter_language_pack import get_language
 
@@ -75,6 +74,8 @@ class LanguageConfig:
         )
 
     def __get_source(self, queries: list[str], capture_class: str) -> str:
+        from loguru import logger
+
         lines = []
         for query in queries:
             if "@placeholder" not in query:
@@ -156,6 +157,8 @@ class QueryManager:
     _override_config_path: str | None = None
 
     def __init__(self):
+        from loguru import logger
+
         if QueryManager._instance is not None:
             raise RuntimeError(
                 "QueryManager is a singleton. Use QueryManager.get_instance() instead."
@@ -244,6 +247,8 @@ class QueryManager:
         Args:
             override_config_path: Path to the custom language config JSON file.
         """
+        from loguru import logger
+
         try:
             from pathlib import Path
 
@@ -290,6 +295,8 @@ class QueryManager:
         ],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
+        from loguru import logger
+
         """
         Run either the scope or shared token query for the language on `tree_root`.
         If `line_ranges` is provided, only matches within those 0-indexed (start, end) line ranges are returned.
@@ -363,6 +370,8 @@ class QueryManager:
         If `line_ranges` is provided, only matches within those 0-indexed (start, end) line ranges are returned.
         Returns a list of matches from the query.
         """
+        from loguru import logger
+
         key = f"{language_name}:{query_type}"
 
         language = get_language(language_name)

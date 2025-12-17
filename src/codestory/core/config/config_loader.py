@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import tomllib
-from loguru import logger
+
 
 from codestory.constants import ENV_APP_PREFIX, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE
 from codestory.core.config.type_constraints import TypeConstraint
@@ -91,6 +91,10 @@ class ConfigLoader:
     @staticmethod
     def load_env(app_prefix: str):
         """Extracts configuration values from environment variables prefixed with the app prefix, converting keys to lowercase."""
+        from dotenv import load_dotenv
+
+        # Load .env file if present
+        load_dotenv()
 
         data = {}
         for k, v in os.environ.items():
@@ -106,6 +110,7 @@ class ConfigLoader:
         source_names: list[str],
     ) -> tuple["CodeStoryConfig", set[str], bool]:
         """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
+        from loguru import logger
 
         remaining_keys = {field.name for field in fields(config_model)}
 

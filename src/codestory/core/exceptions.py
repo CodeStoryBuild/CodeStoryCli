@@ -19,7 +19,6 @@
 from contextlib import contextmanager
 
 import typer
-from loguru import logger
 
 """
 Custom exception hierarchy for the codestory CLI application.
@@ -208,7 +207,7 @@ def handle_codestory_exception(exit_on_fail: bool = False):
         yield
 
     except CodestoryError as e:
-        logger.exception(e)
+        typer.secho(f"Error: {e}", err=True)
 
         if exit_on_fail:
             raise typer.Exit(1)

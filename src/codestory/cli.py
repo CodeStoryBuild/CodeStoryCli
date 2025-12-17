@@ -18,17 +18,16 @@
 
 import sys
 from pathlib import Path
+from typing import Literal
 
 import typer
 from colorama import init
-from dotenv import load_dotenv
-from loguru import logger
 
-from codestory.commands import clean, commit, config, fix
+
+from codestory.commands.config import describe_callback
 from codestory.constants import APP_NAME
-from codestory.context import GlobalConfig, GlobalContext
 from codestory.core.config.config_loader import ConfigLoader
-from codestory.core.exceptions import handle_codestory_exception
+from codestory.core.exceptions import ValidationError, handle_codestory_exception
 from codestory.core.logging.logging import setup_logger
 from codestory.core.validation import validate_git_repository
 from codestory.onboarding import check_run_onboarding
@@ -41,6 +40,11 @@ from codestory.runtimeutil import (
     version_callback,
 )
 
+# which commands do not require a global context
+no_context_commands = {"config"}
+# if you have a broken config, the config command should stil allow you to fix it (or check)
+config_override_command = "config"
+
 # Initialize colorama (colored output in terminal)
 init(autoreset=True)
 
@@ -52,20 +56,199 @@ app = typer.Typer(
     add_completion=False,
 )
 
-# Main cli commands
-app.command(name="commit")(commit.main)
-app.command(name="fix")(fix.main)
-app.command(name="clean")(clean.main)
-app.command(name="config")(config.main)
 
-# which commands do not require a global context
-no_context_commands = {"config"}
-# if you have a broken config, the config command should stil allow you to fix it (or check)
-config_override_command = "config"
+# Main cli commands
+@app.command(name="commit")
+def main(
+    ctx: typer.Context,
+    target: str | None = typer.Argument(
+        None, help="Path to file or directory to commit."
+    ),
+    message: str | None = typer.Option(
+        None,
+        "-m",
+        help="Context or instructions for the AI to generate the commit message",
+    ),
+    intent: str | None = typer.Option(
+        None,
+        "--intent",
+        help="Intent or purpose for the commit, used for relevance filtering.",
+    ),
+    fail_on_syntax_errors: bool = typer.Option(
+        False,
+        "--fail-on-syntax-errors",
+        help="Fail the commit if syntax errors are detected in the changes.",
+    ),
+) -> None:
+    """
+    Commit current changes into small logical commits.
+    (If you wish to modify existing history, use codestory fix or codestory clean)
+
+    Examples:
+        # Commit all changes interactively
+        cst commit
+
+        # Commit specific directory with message
+        cst commit src/  -m "Make 2 commits, one for refactor, one for feature A..."
+
+        # Commit changes with an intent filter enabled
+        cst commit --intent "refactor abc into a class"
+    """
+    from codestory.commands.commit import run_commit
+
+    global_context = ctx.obj
+    with handle_codestory_exception():
+        if global_context.config.relevance_filter_level != "none" and intent is None:
+            raise ValidationError(
+                "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
+            )
+        run_commit(
+            ctx.obj,
+            target,
+            message,
+            global_context.config.secret_scanner_aggression,
+            global_context.config.relevance_filter_level,
+            intent,
+            fail_on_syntax_errors,
+        )
+
+
+@app.command(name="fix")
+def main(
+    ctx: typer.Context,
+    commit_hash: str = typer.Argument(
+        None, help="Hash of the end commit to split or fix"
+    ),
+    start_commit: str = typer.Option(
+        None,
+        "--start",
+        help="Hash of the start commit, non inclusive (optional). If not provided, uses end commit's parent.",
+    ),
+) -> None:
+    """Turn a past commit or range of commits into small logical commits.
+
+    Examples:
+        # Fix a specific commit (--start will be parent of def456)
+        cst fix def456
+
+        # Fix a range of commits from start to end
+        cst fix def456 --start abc123
+    """
+    from codestory.commands.fix import run_fix
+
+    with handle_codestory_exception():
+        run_fix(ctx.obj, commit_hash, start_commit)
+
+
+@app.command(name="clean")
+def main(
+    ctx: typer.Context,
+    ignore: list[str] | None = typer.Option(
+        None,
+        "--ignore",
+        help="Commit hashes or prefixes to ignore.",
+    ),
+    min_size: int | None = typer.Option(
+        None,
+        "--min-size",
+        help="Minimum change size (lines) to process.",
+    ),
+    start_from: str | None = typer.Argument(
+        None,
+        help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
+    ),
+) -> None:
+    """Fix your entire repository starting from the latest commit.
+
+    Note: This command will stop at the first merge commit encountered.
+    Merge commits cannot be rewritten and will mark the boundary of the clean operation.
+
+    Examples:
+        # Clean starting from the latest commit
+        cst clean
+
+        # Clean starting from a specific commit with a minimum line count of 5
+        cst clean abc123 --min-size 5
+
+        # Clean while ignoring certain commits
+        cst clean --ignore def456 --ignore ghi789
+    """
+    from codestory.commands.clean import run_clean
+
+    with handle_codestory_exception():
+        run_clean(ctx.obj, ignore, min_size, start_from)
+
+
+@app.command(name="config")
+def main(
+    ctx: typer.Context,
+    describe: bool = typer.Option(
+        False,
+        "--describe",
+        callback=describe_callback,
+        is_eager=True,
+        help="Describe available configuration options and exit.",
+    ),
+    key: str | None = typer.Argument(None, help="Configuration key to get or set."),
+    value: str | None = typer.Argument(
+        None, help="Value to set (omit to get current value)."
+    ),
+    scope: Literal["local", "global", "env"] = typer.Option(
+        None,
+        "--scope",
+        help="Select which scope to modify. Defaults to local for setting/deleting, all for getting.",
+    ),
+    delete: bool = typer.Option(
+        False,
+        "--delete",
+        help="Delete configuration. Deletes all config in scope if no key specified, or specific key if provided.",
+    ),
+    deleteall: bool = typer.Option(
+        False,
+        "--deleteall",
+        help="Delete configuration from both global and local scopes.",
+    ),
+) -> None:
+    """
+    Manage global and local codestory configurations.
+
+    Priority order: program arguments > custom config > local config > environment variables > global config
+
+    Examples:
+        # Get a configuration value
+        cst config model
+
+        # Set a local configuration value
+        cst config model "gemini/gemini-2.0-flash"
+
+        # Set a global configuration value
+        cst config model "openai/gpt-4" --scope global
+
+        # Show all configuration
+        cst config
+
+        # Delete a specific key from local config
+        cst config model --delete
+
+        # Delete all config from global scope
+        cst config --delete --scope global
+
+        # Delete a key from both global and local scopes
+        cst config model --deleteall
+
+        # Delete all config from both scopes
+        cst config --deleteall
+    """
+    from codestory.commands.config import run_config
+
+    with handle_codestory_exception():
+        run_config(key, value, scope, delete, deleteall)
 
 
 def load_global_config(custom_config_path: str, **input_args):
     # input args are the "runtime overrides" for configs
+    from codestory.context import GlobalConfig
+
     config_args = {}
 
     for key, item in input_args.items():
@@ -86,6 +269,8 @@ def create_global_callback():
     Dynamically creates the main callback function with GlobalConfig parameters.
     This allows the CLI arguments to be automatically synced with GlobalConfig fields.
     """
+    from codestory.context import GlobalConfig, GlobalContext
+
     # Get dynamic parameters from GlobalConfig
     cli_params = GlobalConfig.get_cli_params()
 
@@ -178,7 +363,6 @@ def create_global_callback():
                 ctx.invoked_subcommand, debug=config.verbose, silent=config.silent
             )
 
-            logger.debug(f"Used {used_config_sources} to build global context.")
             global_context = GlobalContext.from_global_config(config, Path(repo_path))
             validate_git_repository(
                 global_context.git_interface
@@ -221,8 +405,6 @@ def run_app():
     """Run the application with global exception handling."""
     # force stdout to be utf8
     ensure_utf8_output()
-    # load any .env files (config values possibly set through env)
-    load_dotenv()
     # launch cli
     app(prog_name="cst")
 
