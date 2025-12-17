@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------------------
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -69,7 +70,7 @@ class GitSynthesizer:
 
     def _build_tree_index_only(
         self,
-        base_commit_hash: str,
+        template_index_path: str,
         diff_chunks: list[DiffChunk],
         immutable_chunks: list[ImmutableChunk],
         diff_generator: GitDiffGenerator,
@@ -85,16 +86,15 @@ class GitSynthesizer:
         temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="codestory_index_")
         os.close(temp_index_fd)
 
+        # Copy the template index to the new temporary index
+        shutil.copy2(template_index_path, temp_index_path)
+
         # 2. Create an environment that forces Git to use this specific index file
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = temp_index_path
 
         try:
-            # 3. Load the base commit into this temporary index
-            # This effectively 'stages' the entire project state at that commit
-            self._run_git_binary("read-tree", base_commit_hash, env=env)
-
-            # 4. Generate the combined patch
+            # 3. Generate the combined patch
             patches = diff_generator.generate_diff(diff_chunks, immutable_chunks)
 
             if patches:
@@ -149,59 +149,74 @@ class GitSynthesizer:
 
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
 
-        # Track state
-        last_synthetic_commit_hash = original_base_commit_hash
-        cumulative_diff_chunks: list[DiffChunk] = []
-        cumulative_immutable_chunks: list[ImmutableChunk] = []
+        # Create a template index populated with the base commit
+        template_fd, template_index_path = tempfile.mkstemp(prefix="codestory_template_index_")
+        os.close(template_fd)
 
-        logger.debug(
-            "Execute plan (Index-Only): groups={groups} base={base}",
-            groups=len(groups),
-            base=original_base_commit_hash,
-        )
+        try:
+            # Populate the template index once
+            env = os.environ.copy()
+            env["GIT_INDEX_FILE"] = template_index_path
+            self._run_git_binary("read-tree", original_base_commit_hash, env=env)
 
-        total = len(groups)
+            # Track state
+            last_synthetic_commit_hash = original_base_commit_hash
+            cumulative_diff_chunks: list[DiffChunk] = []
+            cumulative_immutable_chunks: list[ImmutableChunk] = []
 
-        for i, group in enumerate(groups):
-            try:
-                # 1. Accumulate chunks (Cumulative Strategy)
-                # We rebuild from the ORIGINAL base every time using ALL previous chunks + new chunks.
-                # This provides maximum stability against context drift.
-                for chunk in group.chunks:
-                    if isinstance(chunk, ImmutableChunk):
-                        cumulative_immutable_chunks.append(chunk)
-                    else:
-                        cumulative_diff_chunks.extend(chunk.get_chunks())
+            logger.debug(
+                "Execute plan (Index-Only): groups={groups} base={base}",
+                groups=len(groups),
+                base=original_base_commit_hash,
+            )
 
-                # 2. Build the Tree (In Memory / Index)
-                new_tree_hash = self._build_tree_index_only(
-                    original_base_commit_hash,
-                    cumulative_diff_chunks,
-                    cumulative_immutable_chunks,
-                    diff_generator,
-                )
+            total = len(groups)
 
-                # 3. Create the Commit
-                full_message = group.commit_message
-                if group.extended_message:
-                    full_message += f"\n\n{group.extended_message}"
+            for i, group in enumerate(groups):
+                try:
+                    # 1. Accumulate chunks (Cumulative Strategy)
+                    # We rebuild from the ORIGINAL base every time using ALL previous chunks + new chunks.
+                    # This provides maximum stability against context drift.
+                    for chunk in group.chunks:
+                        if isinstance(chunk, ImmutableChunk):
+                            cumulative_immutable_chunks.append(chunk)
+                        else:
+                            cumulative_diff_chunks.extend(chunk.get_chunks())
 
-                new_commit_hash = self._create_commit(
-                    new_tree_hash, last_synthetic_commit_hash, full_message
-                )
+                    # 2. Build the Tree (In Memory / Index)
+                    new_tree_hash = self._build_tree_index_only(
+                        template_index_path,
+                        cumulative_diff_chunks,
+                        cumulative_immutable_chunks,
+                        diff_generator,
+                    )
 
-                logger.success(
-                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
-                )
+                    # 3. Create the Commit
+                    full_message = group.commit_message
+                    if group.extended_message:
+                        full_message += f"\n\n{group.extended_message}"
 
-                # 4. Update parent for next loop
-                last_synthetic_commit_hash = new_commit_hash
+                    new_commit_hash = self._create_commit(
+                        new_tree_hash, last_synthetic_commit_hash, full_message
+                    )
 
-            except Exception as e:
-                raise SynthesizerError(
-                    f"FATAL: Synthesis failed during group #{i + 1}. No changes applied."
-                ) from e
+                    logger.success(
+                        f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
+                    )
 
-        final_commit_hash = last_synthetic_commit_hash
+                    # 4. Update parent for next loop
+                    last_synthetic_commit_hash = new_commit_hash
 
-        return final_commit_hash
+                except Exception as e:
+                    raise SynthesizerError(
+                        f"FATAL: Synthesis failed during group #{i + 1}. No changes applied."
+                    ) from e
+
+            final_commit_hash = last_synthetic_commit_hash
+
+            return final_commit_hash
+
+        finally:
+            # Cleanup the template index file
+            if os.path.exists(template_index_path):
+                os.unlink(template_index_path)
