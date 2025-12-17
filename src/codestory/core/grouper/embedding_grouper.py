@@ -586,6 +586,8 @@ class EmbeddingGrouper(LogicalGrouper):
         """
         Main entry point.
         """
+        from loguru import logger
+        
         if not (chunks or immut_chunks):
             return []
 

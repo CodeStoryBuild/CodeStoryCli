@@ -27,7 +27,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-
 from codestory.constants import LOG_DIR
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)

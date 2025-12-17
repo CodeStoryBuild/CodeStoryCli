@@ -23,7 +23,6 @@ from typing import Literal
 import typer
 from colorama import init
 
-
 from codestory.commands.config import describe_callback
 from codestory.constants import APP_NAME
 from codestory.core.config.config_loader import ConfigLoader
@@ -59,7 +58,7 @@ app = typer.Typer(
 
 # Main cli commands
 @app.command(name="commit")
-def main(
+def main_commit(
     ctx: typer.Context,
     target: str | None = typer.Argument(
         None, help="Path to file or directory to commit."
@@ -114,7 +113,7 @@ def main(
 
 
 @app.command(name="fix")
-def main(
+def main_fix(
     ctx: typer.Context,
     commit_hash: str = typer.Argument(
         None, help="Hash of the end commit to split or fix"
@@ -141,7 +140,7 @@ def main(
 
 
 @app.command(name="clean")
-def main(
+def main_clean(
     ctx: typer.Context,
     ignore: list[str] | None = typer.Option(
         None,
@@ -180,7 +179,7 @@ def main(
 
 
 @app.command(name="config")
-def main(
+def main_config(
     ctx: typer.Context,
     describe: bool = typer.Option(
         False,

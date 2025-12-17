@@ -19,7 +19,6 @@
 import subprocess
 from pathlib import Path
 
-
 from codestory.core.git_interface.interface import GitInterface
 
 
