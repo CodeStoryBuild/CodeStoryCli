@@ -43,6 +43,9 @@ class GitDiffGenerator(DiffGenerator):
         if immutable_chunks is None:
             immutable_chunks = []
 
+        # Compute completeness map to determine if file deletions are complete
+        completeness_map = self._get_completeness_map_from_diff_chunks(diff_chunks)
+
         patches: dict[bytes, bytes] = {}
 
         # process immutable chunks
@@ -64,8 +67,8 @@ class GitDiffGenerator(DiffGenerator):
             if not file_chunks:
                 continue
 
-            current_count = len(file_chunks)
-            total_expected = self.total_chunks_per_file.get(file_path)
+            # Check if all chunks for this file are present
+            is_complete = completeness_map.get(file_path, False)
 
             patch_lines = []
             single_chunk = file_chunks[0]
@@ -73,7 +76,7 @@ class GitDiffGenerator(DiffGenerator):
             # we need all chunks to mark as deletion
             file_deletion = (
                 all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and current_count >= total_expected
+                and is_complete
             )
             file_addition = all(
                 [file_chunk.is_file_addition for file_chunk in file_chunks]
@@ -82,7 +85,7 @@ class GitDiffGenerator(DiffGenerator):
                 [file_chunk.is_standard_modification for file_chunk in file_chunks]
             ) or (
                 all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and current_count < total_expected
+                and not is_complete
             )
             file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
 
@@ -141,7 +144,7 @@ class GitDiffGenerator(DiffGenerator):
 
             old_file_header = b"a/" + old_file_path if old_file_path else DEVNULLBYTES
             new_file_header = b"b/" + new_file_path if new_file_path else DEVNULLBYTES
-            if single_chunk.is_file_deletion and current_count < total_expected:
+            if single_chunk.is_file_deletion and not is_complete:
                 new_file_header = old_file_header
 
             patch_lines.append(b"--- " + old_file_header)
