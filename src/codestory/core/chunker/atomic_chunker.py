@@ -18,6 +18,7 @@
 
 from collections import defaultdict
 from collections.abc import Callable
+from typing import Literal
 
 from codestory.core.chunker.interface import MechanicalChunker
 from codestory.core.data.chunk import Chunk
@@ -33,8 +34,10 @@ class AtomicChunker(MechanicalChunker):
     pure comment line (as determined via `CommentMap`).
     """
 
-    def __init__(self, split_hunks: bool = True):
-        self.split_hunks = split_hunks
+    def __init__(
+        self, chunking_level: Literal["none", "full_files", "all_files"] = True
+    ):
+        self.chunking_level = chunking_level
 
     @staticmethod
     def _is_blank(line_text: bytes) -> bool:
@@ -92,16 +95,24 @@ class AtomicChunker(MechanicalChunker):
     ) -> list[Chunk]:
         mechanical_chunks: list[Chunk] = []
         for chunk in diff_chunks:
-            if self.split_hunks and isinstance(chunk, DiffChunk):
-                atomic_chunks = chunk.split_into_atomic_chunks()
-                mechanical_chunks.extend(
-                    self._group_by_chunk_predicate(
-                        lambda c: self._chunk_is_context(c, context_manager),
-                        atomic_chunks,
-                    )
-                )
-            else:
+            if self.chunking_level == "none" or not isinstance(chunk, DiffChunk):
                 mechanical_chunks.append(chunk)
+                continue
+
+            if self.chunking_level == "full_files" and not (
+                chunk.is_file_addition or chunk.is_file_deletion
+            ):
+                mechanical_chunks.append(chunk)
+                continue
+
+            atomic_chunks = chunk.split_into_atomic_chunks()
+            mechanical_chunks.extend(
+                self._group_by_chunk_predicate(
+                    lambda c: self._chunk_is_context(c, context_manager),
+                    atomic_chunks,
+                )
+            )
+
         return mechanical_chunks
 
     def _group_by_chunk_predicate(

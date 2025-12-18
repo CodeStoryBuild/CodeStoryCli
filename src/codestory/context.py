@@ -59,7 +59,7 @@ class GlobalConfig:
     fallback_grouping_strategy: Literal[
         "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
     ] = "all_together"
-    split_hunks: bool = True
+    chunking_level: Literal["none", "full_files", "all_files"] = "all_files"
     verbose: bool = False
     auto_accept: bool = False
     silent: bool = False
@@ -92,7 +92,9 @@ class GlobalConfig:
                 "all_alone",
             )
         ),
-        "split_hunks": BoolConstraint(),
+        "chunking_level": LiteralTypeConstraint(
+            allowed=["none", "full_files", "all_files"]
+        ),
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
@@ -116,7 +118,7 @@ class GlobalConfig:
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
         "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation",
-        "split_hunks": "Whether to split git hunks into smaller atomic chunks",
+        "chunking_level": "Which type of files should be chunked further",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
@@ -138,7 +140,7 @@ class GlobalConfig:
         "relevance_filter_level": ["--relevance-filter-level"],
         "secret_scanner_aggression": ["--secret-scanner-aggression"],
         "fallback_grouping_strategy": ["--fallback-grouping-strategy"],
-        "split_hunks": ["--split-hunks"],
+        "chunking_level": ["--chunking-level"],
         "verbose": ["--verbose", "-v"],
         "auto_accept": ["--yes", "-y"],
         "silent": ["--silent", "-s"],

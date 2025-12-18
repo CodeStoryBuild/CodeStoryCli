@@ -39,7 +39,7 @@ def create_rewrite_pipeline(
 ):
     from loguru import logger
 
-    chunker = AtomicChunker(global_ctx.config.split_hunks)
+    chunker = AtomicChunker(global_ctx.config.chunking_level)
 
     if global_ctx.get_model() is not None:
         logger.info(f"Using model {global_ctx.config.model} for AI grouping.")
