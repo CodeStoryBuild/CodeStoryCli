@@ -49,6 +49,7 @@ def create_rewrite_pipeline(
             max_tokens=global_ctx.config.max_tokens,
             custom_embedding_model=global_ctx.config.custom_embedding_model,
             cluster_strictness=global_ctx.config.cluster_strictness,
+            embedder=global_ctx.get_embedder(),
         )
     else:
         logger.warning(

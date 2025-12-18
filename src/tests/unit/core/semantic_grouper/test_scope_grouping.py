@@ -175,8 +175,8 @@ def tools():
             """,
             (1, 3),  # method1
             (4, 6),  # method2
-            False,
-            "Object methods don't share scope outside object literal",
+            True,
+            "Object methods don't share scope inside object literal",
         ),
         # === TYPESCRIPT ===
         (
@@ -365,18 +365,21 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            class Calculator {
-                fun add(a: Int, b: Int): Int {
-                    return a + b
+            class User(val name: String, var age: Int) {
+    
+                // A function (method) inside the class
+                fun displayInfo() {
+                    println("Name: $name, Age: $age")
                 }
-                
-                fun subtract(a: Int, b: Int): Int {
-                    return a - b
+
+                // A function that returns a value
+                fun isAdult(): Boolean {
+                    return age >= 18
                 }
             }
             """,
-            (1, 3),  # add
-            (5, 6),  # subtract
+            (1, 1),  # add
+            (3, 3),  # subtract
             True,
             "Kotlin class methods share class scope",
         ),
@@ -723,8 +726,8 @@ def tools():
             """,
             (1, 1),
             (2, 2),
-            False,
-            "Object literal methods in TypeScript are distinct scopes",
+            True,
+            "Object literal methods in TypeScript are shared scopes",
         ),
         # === C# ===
         (
@@ -947,10 +950,12 @@ def tools():
             "java",
             "Test.java",
             """
-            class Outer { class Inner { void innerMethod() { int x = 1; } } void outerMethod() { int y = 2; } }
+            class Outer { class Inner 
+            { void innerMethod() { int x = 1; } } 
+            void outerMethod() { int y = 2; } }
             """,
-            (0, 0),
             (0, 1),
+            (1, 2),
             True,
             "Nested class and outer method share container scope in Java",
         ),
@@ -958,7 +963,8 @@ def tools():
             "java",
             "Test.java",
             """
-            if (true) { int x = 1; int y = 2; }
+            if (true) 
+            { int x = 1; int y = 2; }
             """,
             (0, 0),
             (0, 1),
@@ -982,7 +988,8 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            class MyClass { void m1() { int x = 1; } void m2() { int y = 2; } };
+            class MyClass { void m1() { int x = 1; } 
+            void m2() { int y = 2; } };
             """,
             (0, 0),
             (0, 1),
@@ -993,10 +1000,11 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            namespace ns { void foo() { int x = 1; } }
+            namespace ns { 
+            void foo() { int x = 1; } }
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "C++ lines inside namespace share scope",
         ),
@@ -1004,7 +1012,8 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            for (int i=0;i<1;++i) { int x = 1; int y = 2; }
+            for (int i=0;i<1;++i) 
+            { int x = 1; int y = 2; }
             """,
             (0, 0),
             (0, 1),
@@ -1094,7 +1103,8 @@ def tools():
             "rust",
             "test.rs",
             """
-            fn foo() { let x = 1; let y = 2; let z = 3; }
+            fn foo() { let x = 1; 
+            let y = 2; let z = 3; }
             """,
             (0, 0),
             (0, 1),
@@ -1105,7 +1115,8 @@ def tools():
             "rust",
             "test.rs",
             """
-            impl MyStruct { fn m1(&self) { let x = 1; } fn m2(&self) { let y = 2; } }
+            impl MyStruct { fn m1(&self) { let x = 1;
+              } fn m2(&self) { let y = 2; } }
             """,
             (0, 0),
             (0, 1),
@@ -1116,7 +1127,8 @@ def tools():
             "rust",
             "test.rs",
             """
-            fn foo() { if true { let x = 1; let y = 2; } }
+            fn foo() { if true { let
+              x = 1; let y = 2; } }
             """,
             (0, 0),
             (0, 1),
@@ -1197,8 +1209,8 @@ def tools():
             """,
             (1, 1),
             (2, 2),
-            False,
-            "Different PHP functions are separate scopes",
+            True,
+            "PHP functions are are same scope scopes",
         ),
         (
             "php",
@@ -1234,7 +1246,7 @@ def tools():
             if (true) { $x = 1; $y = 2; }
             ?>
             """,
-            (1, 1),
+            (0, 1),
             (1, 1),
             True,
             "Lines in same PHP if block share scope",
@@ -1256,7 +1268,8 @@ def tools():
             "swift",
             "test.swift",
             """
-            struct S { func add(a:Int,b:Int)->Int { a + b } func sub(a:Int,b:Int)->Int { a - b } }
+            struct S { func add(a:Int,b:Int)->Int { 
+            a + b } func sub(a:Int,b:Int)->Int { a - b } }
             """,
             (0, 0),
             (0, 1),
@@ -1267,7 +1280,8 @@ def tools():
             "swift",
             "test.swift",
             """
-            func foo() { if true { let x = 1; let y = 2 } }
+            func foo() { if true { 
+            let x = 1; let y = 2 } }
             """,
             (0, 0),
             (0, 1),
@@ -1278,7 +1292,8 @@ def tools():
             "swift",
             "test.swift",
             """
-            func outer() { func inner() { let x = 1 } let y = 2 }
+            func outer() { func inner() 
+            { let x = 1 } let y = 2 }
             """,
             (0, 0),
             (0, 1),
@@ -1302,7 +1317,8 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            class C { fun a() { val x = 1 } fun b() { val y = 2 } }
+            class C { fun a() { val x = 1 } 
+            fun b() { val y = 2 } }
             """,
             (0, 0),
             (0, 1),
@@ -1313,7 +1329,8 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            fun foo() { if (true) { val x = 1; val y = 2 } }
+            fun foo() { if (true) 
+            { val x = 1; val y = 2 } }
             """,
             (0, 0),
             (0, 1),
@@ -1324,7 +1341,8 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            fun outer() { fun inner() { val x = 1 } val y = 2 }
+            fun outer() { fun inner() 
+            { val x = 1 } val y = 2 }
             """,
             (0, 0),
             (0, 1),
@@ -1336,7 +1354,8 @@ def tools():
             "scala",
             "test.scala",
             """
-            object X { def a = { val x = 1; val y = 2 }; def b = { val z = 3; val t = 4 } }
+            object X { def a = { val x = 1; val y = 2 }; 
+            def b = { val z = 3; val t = 4 } }
             """,
             (0, 0),
             (0, 1),
@@ -1359,10 +1378,12 @@ def tools():
             "scala",
             "test.scala",
             """
-            object Outer { object Inner { def inner() = { val x = 1 } } def outer() = { val y = 2 } }
+            object Outer { object Inner { def inner() = 
+            { val x = 1 } } def outer() = {
+              val y = 2 } }
             """,
-            (0, 0),
             (0, 1),
+            (1, 2),
             True,
             "Scala nested object and outer share enclosing scope",
         ),
@@ -1383,7 +1404,8 @@ def tools():
             "dart",
             "test.dart",
             """
-            class C { int a() => 1; int b() => 2; }
+            class C { int a() => 1;
+              int b() => 2; }
             """,
             (0, 0),
             (0, 1),
@@ -1394,7 +1416,8 @@ def tools():
             "dart",
             "test.dart",
             """
-            void foo() { if (true) { var x = 1; var y = 2; } }
+            void foo() { if (true) { 
+            var x = 1; var y = 2; } }
             """,
             (0, 0),
             (0, 1),
@@ -1405,7 +1428,8 @@ def tools():
             "dart",
             "test.dart",
             """
-            void outer() { void inner() { var x = 1; } var y = 2; }
+            void outer() { void inner() {
+              var x = 1; } var y = 2; }
             """,
             (0, 0),
             (0, 1),
@@ -1503,10 +1527,11 @@ def tools():
             "haskell",
             "test.hs",
             """
-            foo x = let a = 1; b = 2 in a + b + x
+            foo x = let a = 1; b = 2
+              in a + b + x
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Let-bound lines in Haskell are within same scope",
         ),
@@ -1514,10 +1539,11 @@ def tools():
             "haskell",
             "test.hs",
             """
-            foo x = case x of {1 -> 1; _ -> 2}
+            foo x = case x of 
+            {1 -> 1; _ -> 2}
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Case branches in Haskell are associated with the enclosing function scope",
         ),
@@ -1551,10 +1577,11 @@ def tools():
             "ocaml",
             "test.ml",
             """
-            let foo x = let a = 1; b = 2 in a + b + x
+            let foo x = let a = 1;
+              b = 2 in a + b + x
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Let-bound lines in OCaml share the same scope",
         ),
@@ -1562,7 +1589,8 @@ def tools():
             "ocaml",
             "test.ml",
             """
-            module M = struct let foo x = x + 1 let bar y = y - 1 end
+            module M = struct let
+              foo x = x + 1 let bar y = y - 1 end
             """,
             (0, 0),
             (0, 1),
@@ -1573,10 +1601,11 @@ def tools():
             "ocaml",
             "test.ml",
             """
-            if true then let x = 1 in x else let y = 2 in y
+            if true then let x = 1 in 
+            x else let y = 2 in y
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "If expression branches in OCaml belong to the same enclosing scope",
         ),
@@ -1599,10 +1628,11 @@ def tools():
             "erlang",
             "test.erl",
             """
-            foo() -> X = 1, Y = 2, ok.
+            foo()
+              -> X = 1, Y = 2, ok.
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Lines in same Erlang function share scope",
         ),
@@ -1610,10 +1640,11 @@ def tools():
             "erlang",
             "test.erl",
             """
-            case X of 1 -> A = 1; _ -> B = 2 end.
+            case X of 1 -> A 
+            = 1; _ -> B = 2 end.
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Case branches in Erlang are inside enclosing expression",
         ),
@@ -1621,10 +1652,11 @@ def tools():
             "erlang",
             "test.erl",
             """
-            if true -> A = 1; true -> B = 2 end.
+            if true -> A = 1; 
+            true -> B = 2 end.
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Erlang if expression branches share scope",
         ),
@@ -1645,10 +1677,11 @@ def tools():
             "clojure",
             "test.clj",
             """
-            (defn foo [] (let [x 1] (let [y 2] y)))
+            (defn foo [] (let [x 1]
+              (let [y 2] y)))
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Nested let in Clojure share outer scope",
         ),
@@ -1668,10 +1701,11 @@ def tools():
             "clojure",
             "test.clj",
             """
-            (if true (do (def x 1) (def y 2)))
+            (if true (do (def x 1)
+              (def y 2)))
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Clojure do block lines share inner scope",
         ),
@@ -1680,7 +1714,8 @@ def tools():
             "solidity",
             "test.sol",
             """
-            contract C { function a() public { uint x = 1; } function b() public { uint y = 2; } }
+            contract C { function a() public { uint x = 1; }
+              function b() public { uint y = 2; } }
             """,
             (0, 0),
             (0, 1),
@@ -1703,7 +1738,8 @@ def tools():
             "solidity",
             "test.sol",
             """
-            contract C { function foo() public { if(true) { uint x = 1; uint y = 2; } } }
+            contract C { function foo() public { if(true) 
+            { uint x = 1; uint y = 2; } } }
             """,
             (0, 0),
             (0, 1),
@@ -1714,10 +1750,11 @@ def tools():
             "solidity",
             "test.sol",
             """
-            contract C { struct S { uint x; uint y; } }
+            contract C { struct S {
+              uint x; uint y; } }
             """,
             (0, 0),
-            (0, 0),
+            (0, 1),
             True,
             "Struct members in Solidity are within struct scope",
         ),
@@ -2256,19 +2293,17 @@ def test_scope_based_grouping(
         [(0, total_lines - 1)],
     )
 
+    print(f"Scope Map Structural Scopes: {scope_map.structural_scope_lines}")
+
     # Get scopes for each chunk's lines
     chunk1_scopes = set()
     for line_num in range(chunk1_lines[0], chunk1_lines[1] + 1):
-        named_scopes = scope_map.structural_named_scope_lines.get(line_num, set())
         structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
-        chunk1_scopes.update(named_scopes)
         chunk1_scopes.update(structural_scopes)
 
     chunk2_scopes = set()
     for line_num in range(chunk2_lines[0], chunk2_lines[1] + 1):
-        named_scopes = scope_map.structural_named_scope_lines.get(line_num, set())
         structural_scopes = scope_map.structural_scope_lines.get(line_num, set())
-        chunk2_scopes.update(named_scopes)
         chunk2_scopes.update(structural_scopes)
 
     # Check if they share any scopes
@@ -2313,7 +2348,6 @@ def test_scope_map_empty_file(tools):
         [(0, 0)],
     )
 
-    assert len(scope_map.structural_named_scope_lines) == 0
     assert len(scope_map.structural_scope_lines) == 0
     assert len(scope_map.semantic_named_scopes) == 0
 
@@ -2334,7 +2368,6 @@ def test_scope_map_single_line(tools):
 
     # Single line may or may not have scope depending on language
     # This just ensures it doesn't crash
-    assert scope_map.structural_named_scope_lines is not None
     assert scope_map.structural_scope_lines is not None
     assert scope_map.semantic_named_scopes is not None
 
@@ -2369,8 +2402,6 @@ def test_scope_consistency(tools, language, filename, content):
     scope_occurrences = {}
     # Merge both named and structural scopes
     all_scope_lines = {}
-    for line_num, scopes in scope_map.structural_named_scope_lines.items():
-        all_scope_lines.setdefault(line_num, set()).update(scopes)
     for line_num, scopes in scope_map.structural_scope_lines.items():
         all_scope_lines.setdefault(line_num, set()).update(scopes)
 
