@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from re import Pattern
 from typing import Literal
 
+from tqdm import tqdm
+
 # Assumed imports from your codebase
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
@@ -232,6 +234,7 @@ def filter_hunks(
     chunks: list[Chunk],
     immut_chunks: list[ImmutableChunk],
     config: ScannerConfig | None = None,
+    pbar: tqdm | None = None,
 ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
     """
     Filters chunks and immutable chunks for hardcoded secrets.
@@ -243,6 +246,7 @@ def filter_hunks(
         chunks: List of mutable Chunk wrappers.
         immut_chunks: List of ImmutableChunk objects (binary/large files).
         config: Scanner configuration.
+        pbar: Optional progress bar.
 
     Returns:
         (accepted_chunks, accepted_immut_chunks, rejected_all)
@@ -256,8 +260,15 @@ def filter_hunks(
     accepted_immut_chunks: list[ImmutableChunk] = []
     rejected: list[Chunk | ImmutableChunk] = []
 
+    total = len(chunks) + len(immut_chunks)
+    if pbar is not None:
+        pbar.total = total
+        pbar.refresh()
+
     # 1. Process Mutable Chunks (Chunk wrappers)
     for chunk in chunks:
+        if pbar is not None:
+            pbar.update(1)
         # Check all internal DiffChunk objects
         internal_diffs = chunk.get_chunks()
 
@@ -275,6 +286,8 @@ def filter_hunks(
 
     # 2. Process Immutable Chunks
     for immut_chunk in immut_chunks:
+        if pbar is not None:
+            pbar.update(1)
         # We use the specialized ImmutableChunk check
         if scanner.check_immutable_chunk(immut_chunk):
             rejected.append(immut_chunk)

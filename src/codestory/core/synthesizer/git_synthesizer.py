@@ -21,6 +21,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from tqdm import tqdm
+
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -138,6 +140,7 @@ class GitSynthesizer:
         self,
         groups: list[CommitGroup],
         base_commit: str,
+        pbar: tqdm | None = None,
     ) -> str:
         """
         Executes the synthesis plan using pure Git plumbing.
@@ -173,6 +176,9 @@ class GitSynthesizer:
             )
 
             total = len(groups)
+            if pbar is not None:
+                pbar.total = total
+                pbar.refresh()
 
             for i, group in enumerate(groups):
                 try:
@@ -202,9 +208,16 @@ class GitSynthesizer:
                         new_tree_hash, last_synthetic_commit_hash, full_message
                     )
 
-                    logger.success(
-                        f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
-                    )
+                    if pbar is not None:
+                        pbar.update(1)
+                        msg = group.commit_message
+                        if len(msg) > 60:
+                            msg = msg[:57] + "..."
+                        pbar.set_description(f"Commit Progress: [{msg}]")
+                    else:
+                        logger.success(
+                            f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
+                        )
 
                     # 4. Update parent for next loop
                     last_synthetic_commit_hash = new_commit_hash

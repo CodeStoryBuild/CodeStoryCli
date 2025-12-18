@@ -18,6 +18,8 @@
 
 from dataclasses import dataclass
 
+from tqdm import tqdm
+
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.exceptions import SyntaxErrorDetected
@@ -63,6 +65,7 @@ class ContextManager:
         chunks: list[Chunk],
         file_reader: FileReader,
         fail_on_syntax_errors: bool = False,
+        pbar: tqdm | None = None,
     ):
         self.file_reader = file_reader
         self.diff_chunks = [
@@ -85,14 +88,20 @@ class ContextManager:
         self._required_contexts: dict[tuple[bytes, bool], list[tuple[int, int]]] = {}
         self._analyze_required_contexts()
 
+        num_files = len(self._required_contexts)
+        if pbar is not None:
+            # We have 3 phases: Parsing, Shared Context, and Final Context
+            pbar.total = num_files * 3
+            pbar.refresh()
+
         self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
-        self._generate_parsed_files()
+        self._generate_parsed_files(pbar=pbar)
 
         # First, build shared context
-        self._build_shared_contexts()
+        self._build_shared_contexts(pbar=pbar)
 
         # THen, Build all required contexts (dependant on shared context)
-        self._build_all_contexts()
+        self._build_all_contexts(pbar=pbar)
 
         # Log a summary of built contexts
         self._log_context_summary()
@@ -185,39 +194,49 @@ class ContextManager:
                 return (chunk.old_start - 1, chunk.old_start - 1)
             return (start - 1, end - 1)
 
-    def _generate_parsed_files(self) -> None:
+    def _generate_parsed_files(self, pbar: tqdm | None = None) -> None:
         from loguru import logger
 
         for (
             file_path,
             is_old_version,
         ), line_ranges in self._required_contexts.items():
-            if not line_ranges:
-                logger.debug(
-                    f"No line ranges for file: {file_path}, skipping semantic generation"
+            try:
+                if not line_ranges:
+                    logger.debug(
+                        f"No line ranges for file: {file_path}, skipping semantic generation"
+                    )
+                    continue
+
+                # Decode bytes file path for file_reader
+                path_str = (
+                    file_path.decode("utf-8", errors="replace")
+                    if isinstance(file_path, bytes)
+                    else file_path
                 )
-                continue
+                content = self.file_reader.read(path_str, old_content=is_old_version)
+                if content is None:
+                    logger.debug(f"Content read for {path_str} is None")
+                    continue
 
-            # Decode bytes file path for file_reader
-            path_str = (
-                file_path.decode("utf-8", errors="replace")
-                if isinstance(file_path, bytes)
-                else file_path
-            )
-            content = self.file_reader.read(path_str, old_content=is_old_version)
-            if content is None:
-                logger.debug(f"Content read for {path_str} is None")
-                continue
+                # Parse the file (file_parser expects string path)
+                parsed_file = FileParser.parse_file(
+                    path_str, content, self.simplify_overlapping_ranges(line_ranges)
+                )
+                if parsed_file is None:
+                    logger.debug(f"Parsed file for {path_str} is None")
+                    continue
 
-            # Parse the file (file_parser expects string path)
-            parsed_file = FileParser.parse_file(
-                path_str, content, self.simplify_overlapping_ranges(line_ranges)
-            )
-            if parsed_file is None:
-                logger.debug(f"Parsed file for {path_str} is None")
-                continue
-
-            self._parsed_files[(file_path, is_old_version)] = parsed_file
+                self._parsed_files[(file_path, is_old_version)] = parsed_file
+            finally:
+                if pbar is not None:
+                    pbar.update(1)
+                    pbar.set_postfix(
+                        {
+                            "phase": "parsing",
+                            "files": f"{len(self._parsed_files)}/{len(self._required_contexts)}",
+                        }
+                    )
 
     def simplify_overlapping_ranges(
         self, ranges: list[tuple[int, int]]
@@ -244,7 +263,7 @@ class ContextManager:
 
         return new_ranges
 
-    def _build_shared_contexts(self) -> None:
+    def _build_shared_contexts(self, pbar: tqdm | None = None) -> None:
         """
         Build shared analysis contexts for all required file versions.
         """
@@ -257,40 +276,80 @@ class ContextManager:
                 parsed_file
             )
 
+        # If some files failed to parse, we should still advance the pbar for them in this phase
+        # to keep the total consistent.
+        files_processed_in_this_phase = 0
+        total_files = len(self._required_contexts)
+
         for (language, is_old), parsed_files in languages.items():
             defined_symbols: set[str] = set()
             try:
                 for parsed_file in parsed_files:
-                    defined_symbols.update(
-                        self.symbol_extractor.extract_defined_symbols(
-                            parsed_file.detected_language,
-                            parsed_file.root_node,
-                            parsed_file.line_ranges,
+                    try:
+                        defined_symbols.update(
+                            self.symbol_extractor.extract_defined_symbols(
+                                parsed_file.detected_language,
+                                parsed_file.root_node,
+                                parsed_file.line_ranges,
+                            )
                         )
-                    )
+                    finally:
+                        if pbar is not None:
+                            pbar.update(1)
+                            files_processed_in_this_phase += 1
+                            pbar.set_postfix(
+                                {
+                                    "phase": "shared",
+                                    "files": f"{files_processed_in_this_phase}/{total_files}",
+                                }
+                            )
 
                 context = SharedContext(defined_symbols)
                 self._shared_context_cache[(language, is_old)] = context
             except Exception as e:
                 logger.debug(f"Failed to build shared context for {language}: {e}")
 
-    def _build_all_contexts(self) -> None:
+        # Advance pbar for any files that were required but not parsed (so not in self._parsed_files)
+        if pbar is not None:
+            remaining = total_files - files_processed_in_this_phase
+            if remaining > 0:
+                pbar.update(remaining)
+
+    def _build_all_contexts(self, pbar: tqdm | None = None) -> None:
         """
         Build analysis contexts for all required file versions.
         """
         from loguru import logger
 
+        total_files = len(self._required_contexts)
+        files_processed_in_this_phase = 0
+
         for (
             file_path,
             is_old_version,
-        ), parsed_file in self._parsed_files.items():
-            context = self._build_context(file_path, is_old_version, parsed_file)
-            if context is not None:
-                self._context_cache[(file_path, is_old_version)] = context
-            else:
-                logger.debug(
-                    f"Failed to build context for {file_path} (old={is_old_version})"
-                )
+        ) in self._required_contexts:
+            try:
+                parsed_file = self._parsed_files.get((file_path, is_old_version))
+                if parsed_file:
+                    context = self._build_context(
+                        file_path, is_old_version, parsed_file
+                    )
+                    if context is not None:
+                        self._context_cache[(file_path, is_old_version)] = context
+                    else:
+                        logger.debug(
+                            f"Failed to build context for {file_path} (old={is_old_version})"
+                        )
+            finally:
+                if pbar is not None:
+                    pbar.update(1)
+                    files_processed_in_this_phase += 1
+                    pbar.set_postfix(
+                        {
+                            "phase": "final",
+                            "contexts": f"{len(self._context_cache)}/{total_files}",
+                        }
+                    )
 
     def _build_context(
         self, file_path: bytes, is_old_version: bool, parsed_file: ParsedFile

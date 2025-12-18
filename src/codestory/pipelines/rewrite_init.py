@@ -52,9 +52,6 @@ def create_rewrite_pipeline(
             embedder=global_ctx.get_embedder(),
         )
     else:
-        logger.warning(
-            "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
-        )
         logical_grouper = SingleGrouper()
 
     if new_commit_hash is None:
