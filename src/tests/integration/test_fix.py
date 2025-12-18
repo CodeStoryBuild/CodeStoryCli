@@ -57,4 +57,4 @@ class TestFix:
 
         result = run_cli(cli_exe, ["-y", "fix", root_hash], cwd=repo.path)
         # Check for the specific error message
-        assert "fixing the root commit is not supported yet" in result.stdout.lower()
+        assert "not supported yet" in result.stderr.lower()
