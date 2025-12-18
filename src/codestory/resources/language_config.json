@@ -101,6 +101,8 @@
                 ],
                 "definition_queries": [
                     "(variable_declarator name: (identifier) @placeholder)",
+                    "(import_declaration (scoped_identifier name: (identifier) @placeholder))",
+                    "(import_declaration (scoped_identifier scope: (scoped_identifier name: (identifier) @placeholder)))",
                     "(method_declaration name: (identifier) @placeholder)",
                     "(class_declaration name: (identifier) @placeholder)",
                     "(interface_declaration name: (identifier) @placeholder)",
