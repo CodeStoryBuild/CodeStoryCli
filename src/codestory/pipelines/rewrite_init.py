@@ -24,7 +24,6 @@ from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.exceptions import GitError
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.grouper.embedding_grouper import EmbeddingGrouper
-from codestory.core.grouper.single_grouper import SingleGrouper
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
 from codestory.pipelines.rewrite_pipeline import RewritePipeline
@@ -37,22 +36,17 @@ def create_rewrite_pipeline(
     new_commit_hash: str,
     source: Literal["commit", "fix"],
 ):
-    from loguru import logger
 
     chunker = AtomicChunker(global_ctx.config.chunking_level)
 
-    if global_ctx.get_model() is not None:
-        logger.info(f"Using model {global_ctx.config.model} for AI grouping.")
-        logical_grouper = EmbeddingGrouper(
-            global_ctx.get_model(),
-            batching_strategy=global_ctx.config.batching_strategy,
-            max_tokens=global_ctx.config.max_tokens,
-            custom_embedding_model=global_ctx.config.custom_embedding_model,
-            cluster_strictness=global_ctx.config.cluster_strictness,
-            embedder=global_ctx.get_embedder(),
-        )
-    else:
-        logical_grouper = SingleGrouper()
+    logical_grouper = EmbeddingGrouper(
+        global_ctx.get_model(),
+        batching_strategy=global_ctx.config.batching_strategy,
+        max_tokens=global_ctx.config.max_tokens,
+        custom_embedding_model=global_ctx.config.custom_embedding_model,
+        cluster_strictness=global_ctx.config.cluster_strictness,
+        embedder=global_ctx.get_embedder(),
+    )
 
     if new_commit_hash is None:
         raise GitError("Failed to backup working state, exiting.")

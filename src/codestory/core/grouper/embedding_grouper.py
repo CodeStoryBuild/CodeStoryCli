@@ -38,8 +38,14 @@ from codestory.core.embeddings.embedder import Embedder
 from codestory.core.exceptions import LLMResponseError
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
-from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
+from codestory.core.semantic_grouper.chunk_lableler import (
+    AnnotatedChunk,
+    ChunkLabeler,
+)
 from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.semantic_grouper.deterministic_summarizer import (
+    DeterministicSummarizer,
+)
 from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 
 # -----------------------------------------------------------------------------
@@ -126,6 +132,7 @@ Provide {count} commit messages as a JSON array:"""
 class Cluster:
     chunks: list[Chunk | ImmutableChunk]
     summaries: list[str]
+    annotated_chunks: list[AnnotatedChunk | ImmutableChunk]
 
 
 @dataclass
@@ -147,7 +154,7 @@ class ClusterSummaryTask:
 class EmbeddingGrouper(LogicalGrouper):
     def __init__(
         self,
-        model: CodeStoryAdapter,
+        model: CodeStoryAdapter | None,
         batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
         max_tokens: int = 4096,
         custom_embedding_model: str | None = None,
@@ -160,6 +167,7 @@ class EmbeddingGrouper(LogicalGrouper):
         self.clusterer = Clusterer(cluster_strictness)
         self.patch_cutoff_chars = 1000
         self.max_tokens = max_tokens
+        self.deterministic_summarizer = DeterministicSummarizer()
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count based on 3 chars per token."""
@@ -354,25 +362,41 @@ class EmbeddingGrouper(LogicalGrouper):
         return tasks
 
     def generate_summaries(
-        self, annotated_chunk_patches: list[list[dict]], pbar: tqdm | None = None
+        self,
+        all_chunks: list[AnnotatedChunk | ImmutableChunk],
+        diff_generator: DiffGenerator,
+        pbar: tqdm | None = None,
     ) -> list[str]:
         from loguru import logger
 
-        if not annotated_chunk_patches:
+        if not all_chunks:
             return []
+
+        if self.model is None:
+            return self.deterministic_summarizer.summarize_all(all_chunks)
+
+        # Prepare patches for LLM
+        annotated_chunks = [c for c in all_chunks if isinstance(c, AnnotatedChunk)]
+        immut_chunks = [c for c in all_chunks if isinstance(c, ImmutableChunk)]
+
+        annotated_chunk_patches = self.generate_annotated_patches(
+            annotated_chunks, diff_generator
+        )
+        immut_patches = self.generate_immutable_annotated_patches(immut_chunks)
+        all_patch_data = annotated_chunk_patches + immut_patches
 
         strategy = self.batching_strategy
         if strategy == "auto":
             strategy = "requests" if self.model.is_local() else "prompt"
 
         # 1. Partition based on strategy and window size
-        partitions = self._partition_patches(annotated_chunk_patches, strategy)
+        partitions = self._partition_patches(all_patch_data, strategy)
 
         # 2. Create Tasks
         tasks = self._create_summary_tasks(partitions)
 
         logger.debug(
-            f"Generating summaries for {len(annotated_chunk_patches)} changes (Strategy: {strategy})."
+            f"Generating summaries for {len(all_patch_data)} changes (Strategy: {strategy})."
         )
 
         # 3. Create callback for progress tracking
@@ -405,7 +429,7 @@ class EmbeddingGrouper(LogicalGrouper):
 
         # 4. Process Results
         # We pre-allocate the result list to maintain order
-        final_summaries = [""] * len(annotated_chunk_patches)
+        final_summaries = [""] * len(all_patch_data)
 
         for task, response in zip(tasks, responses, strict=True):
             if not task.is_multiple:
@@ -429,6 +453,9 @@ class EmbeddingGrouper(LogicalGrouper):
 
         if not clusters:
             return {}
+
+        if self.model is None:
+            return self.deterministic_summarizer.summarize_clusters(clusters)
 
         strategy = self.batching_strategy
         if strategy == "auto":
@@ -597,22 +624,23 @@ class EmbeddingGrouper(LogicalGrouper):
             chunks
         )  # immutable chunks wont be used for total patch calcs
 
-        annotated_chunk_patches = self.generate_annotated_patches(
-            annotated_chunks, diff_generator
+        # Combine all chunks into a single list of objects for summarization
+        all_chunks_reference: list[AnnotatedChunk | ImmutableChunk] = list(
+            annotated_chunks
+        ) + list(immut_chunks)
+
+        summaries = self.generate_summaries(
+            all_chunks_reference, diff_generator, pbar=pbar
         )
-
-        immut_patches = self.generate_immutable_annotated_patches(immut_chunks)
-
-        all_patch_data = annotated_chunk_patches + immut_patches
-        all_chunks_reference = chunks + immut_chunks
-
-        summaries = self.generate_summaries(all_patch_data, pbar=pbar)
 
         if len(all_chunks_reference) == 1:
             # no clustering, just one commit group
+            # Extract the underlying Chunk or ImmutableChunk
+            ref = all_chunks_reference[0]
+            actual_chunk = ref.chunk if isinstance(ref, AnnotatedChunk) else ref
             return [
                 CommitGroup(
-                    chunks=[all_chunks_reference[0]],
+                    chunks=[actual_chunk],
                     commit_message=summaries[0],
                 )
             ]
@@ -623,21 +651,25 @@ class EmbeddingGrouper(LogicalGrouper):
         clusters = {}
 
         # Build clusters: group chunks and their summaries by cluster label
-        for any_chunk, summary, cluster_label in zip(
+        for ref, summary, cluster_label in zip(
             all_chunks_reference, summaries, cluster_labels, strict=True
         ):
+            actual_chunk = ref.chunk if isinstance(ref, AnnotatedChunk) else ref
             if cluster_label == -1:
                 # noise, assign as its own group. Reuse summary as group message
                 group = CommitGroup(
-                    chunks=[any_chunk],
+                    chunks=[actual_chunk],
                     commit_message=summary,
                 )
                 groups.append(group)
             else:
                 if cluster_label not in clusters:
-                    clusters[cluster_label] = Cluster(chunks=[], summaries=[])
-                clusters[cluster_label].chunks.append(any_chunk)
+                    clusters[cluster_label] = Cluster(
+                        chunks=[], summaries=[], annotated_chunks=[]
+                    )
+                clusters[cluster_label].chunks.append(actual_chunk)
                 clusters[cluster_label].summaries.append(summary)
+                clusters[cluster_label].annotated_chunks.append(ref)
 
         # Generate final commit messages for each cluster using batching
         if clusters:
