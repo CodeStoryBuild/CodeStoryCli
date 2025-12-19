@@ -1,30 +1,14 @@
 name: Deploy to PyPI
 
 on:
-  workflow_run:
-    workflows: ["Build and Release"]
-    types:
-      - completed
-    branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to deploy (e.g., v1.0.0)'
-        required: true
-        type: string
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version to deploy (e.g., v1.0.0)'
-        required: true
-        type: string
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   deploy_pypi:
     name: Deploy to PyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     
     steps:
       - name: Checkout code
@@ -38,11 +22,7 @@ jobs:
       - name: Extract version
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION=$(git describe --tags --abbrev=0)
-          fi
+          VERSION="${{ github.ref_name }}"
           VERSION=$(echo "$VERSION" | sed 's/^v//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
@@ -63,14 +43,6 @@ jobs:
 
       - name: Check distribution
         run: twine check dist/*
-
-      - name: Publish to Test PyPI (optional)
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
-        run: |
-          twine upload --repository testpypi dist/* --skip-existing || true
 
       - name: Publish to PyPI
         env:
