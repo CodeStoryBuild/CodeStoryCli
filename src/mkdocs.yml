@@ -1,5 +1,5 @@
 site_name: CodeStory CLI Documentation
-site_url: https://docs.codestory.build/
+site_url: https://cli.codestory.build/docs
 plugins:
   - search
   - mkdocs-typer2:
