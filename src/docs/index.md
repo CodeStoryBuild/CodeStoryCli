@@ -1,6 +1,6 @@
 # CodeStory CLI Documentation
 
-`codestory` is a CLI tool designed to help you maintain a clean, logical Git history. It uses a combination of mechanical chunking, semantic analysis (via Tree-sitter), and logical grouping (via LLMs) to decompose large changes into atomic, meaningful commits.
+### Main CLI Website [Here](https://cli.codestory.build)
 
 ## Getting Started
 
