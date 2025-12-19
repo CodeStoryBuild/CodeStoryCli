@@ -1,38 +1,31 @@
-# Mechanical Grouping: The Foundation
+# Mechanical Chunking
 
-Before we can do any of the fancy semantic analysis or intelligent grouping, we need to solve a fundamental problem with how Git sees the world. This step is the bedrock of our system.
+Mechanical chunking is the process of decomposing a large Git diff into the smallest possible independent units of change. This is the foundation upon which all higher-level semantic and logical analysis is built.
 
-### The "Hunk" Problem
-In the world of Git, the most granular level you can manage changes with is called a **Hunk**.
-*   [Read more about Git Hunks here](https://medium.com/@michotall95/hunk-in-git-f7b7855d47ae)
+## The Hunk Limitation
+In standard Git, the most granular unit of change is a **hunk**. A hunk is a contiguous block of changes within a file. However, Git's default hunk generation is often too coarse. For example, if you add multiple functions to a new file, Git treats the entire file as a single hunk.
 
-However, generic Git hunks are often not ideal when you want to create small, logical commits. 
+To enable precise history rewriting, `codestory` must be able to manipulate these changes at a much finer level.
 
-**Why?**
-Let's say you have created a new file with a dozen different functions inside it, or perhaps you have deleted a massive file that contained multiple features. To Git, the "hunk" for these changes is just one massive block—the entire file change.
+## Decomposition Strategy
+`codestory` analyzes each Git hunk and attempts to split it into smaller, independent pieces. This allows the engine to:
+1.  **Isolate Changes**: Separate unrelated modifications that happen to be near each other.
+2.  **Reorder Safely**: Move changes between different logical commits.
+3.  **Filter Precisely**: Exclude specific lines (like debug logs) without rejecting the entire file change.
 
-Git is not able to split those changes any smaller by design. But for our system, we want to have granular changes that we can actually manipulate.
+## The Pairwise Disjoint Rule
+The most critical constraint in mechanical chunking is that all resulting chunks must be **pairwise disjoint**. This means:
+- No two chunks can modify the same line of code.
+- The sum of all chunks must exactly equal the original diff.
+- Each chunk must be "mechanically valid," meaning it contains enough context to be applied independently using standard patching tools.
 
-### Breaking it Down
-To solve this, we take those massive Git hunks and split them into the **smallest possible mechanical pieces**, provided it is safe to do so.
+## Configuration
+Users can control the granularity of this process through the `chunking_level` configuration:
+- `none`: No additional chunking beyond standard Git hunks.
+- `full_files`: Only split hunks that represent entire file additions or deletions.
+- `all_files`: Aggressively attempt to split all hunks into the smallest possible units.
 
-Instead of one giant block representing a new file, we might split it into ten smaller blocks. By doing this, we gain the ability to arbitrarily pick and choose which pieces we want to group together later.
+## Why It Matters
+By ensuring that chunks are independent and disjoint, `codestory` guarantees that any combination of these chunks can be applied to the codebase without causing merge conflicts or line-offset errors. This mechanical robustness is what makes complex history transformations safe.
 
-*Note: Based on your configuration, you can choose how aggressively you want us to try and break these down.*
-
-### The Critical Rule: Pairwise Disjoint
-When we split a hunk, we create smaller hunks that must themselves be valid. The most critical constraint we follow is that every hunk must be **pairwise disjoint**.
-
-**What does this mean?**
-It means that only one hunk can modify a specific range of lines in a file—and *only* that one. No two changes can ever fight over the same line of code.
-
-We also have to be incredibly careful with how we manage added and removed lines to ensure that the sum of these small parts actually equals the original whole.
-
-### The Guarantee
-Why go through all this trouble?
-
-By ensuring that these smaller hunks are valid and independent, we guarantee that **no matter how you order or combine these pieces**, they can be applied validly.
-
-This mechanical robustness is what allows the rest of our system to work its magic without breaking your code.
-
-*   [See how we re-assemble these pieces in the Commit Strategy](./commit-strategy.md)
+**[Next: Semantic Grouping](./semantic-grouping.md)**

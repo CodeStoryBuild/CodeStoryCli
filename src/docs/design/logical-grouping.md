@@ -1,47 +1,30 @@
 # Logical Grouping
 
-### Why do we create logical groups?
-As mentioned in the [How It Works](./how-it-works.md) page, there are some relations between changes that you simply cannot grasp using only semantics. 
+Logical grouping is the final stage of change analysis, where `codestory` uses Large Language Models (LLMs) to identify relationships that are not visible through static code analysis alone.
 
-For example, imagine you are writing documentation in Markdown (`.md`) for a new feature, while the actual code is written in Python (`.py`). These two files might not share variables or functions—meaning our semantic grouping engine won't see a link—but they are deeply related! To correctly create groups in these scenarios, we need to look at the **higher-level relation** between files. 
+## Why Logical Grouping?
+Static analysis (semantic grouping) is excellent for finding links within source code, but it cannot easily connect:
+- **Code and Documentation**: A change in a `.py` file and a corresponding update in a `.md` file.
+- **Code and Tests**: A new feature and its integration tests in a separate directory.
+- **Cross-Language Changes**: A frontend change in TypeScript and a backend change in Go.
 
-This is where we use **Large Language Models (LLMs)** to bridge the gap.
+Logical grouping bridges these gaps by analyzing the *intent* and *context* of the changes.
 
-### Why Language Models? 
-You might be wondering: what makes an LLM good at this specific task? To understand our approach, it helps to look at the difference between **Interpolation** and **Extrapolation**.
+## The Role of LLMs
+`codestory` uses LLMs for **analysis (interpolation)** rather than **generation (extrapolation)**. Instead of asking the model to "invent" code, we provide it with the existing codebase state and the proposed changes. The model's task is to:
+1.  **Analyze Relationships**: Determine if two semantic groups are part of the same logical task.
+2.  **Summarize Intent**: Generate a concise, meaningful commit message for each logical group.
 
-*   **Extrapolation (Prediction):** This is what you see when you ask an AI to write code for you. It takes a prompt and tries to predict or "invent" what you want. It is making a guess based on patterns.
-*   **Interpolation (Analysis):** This is using existing data to draw a conclusion about that data.
+By focusing on summarization and relationship analysis, the engine achieves high accuracy and consistency.
 
-When we use language models for logical grouping, we aren't asking them to invent anything. We are asking them to **summarize**.
+## Intent Filtering
+When the `relevance_filter_level` is enabled, the logical grouping engine can also filter changes based on a user-provided `--intent`. This allows you to focus on specific tasks (e.g., "refactor auth") while ignoring unrelated changes (e.g., "fix typos").
 
-At every point in time, the model has all the information it needs right in front of it: your current codebase state and your new changes. It doesn't need to make wild guesses about the relations between changes because the logic is defined right there in the diffs. By asking the model to analyze rather than generate, we get highly accurate logical groupings.
+## Supported Providers
+`codestory` supports a wide range of LLM providers via `aisuite`:
+- **Cloud**: OpenAI, Anthropic, Google, Azure, AWS, Mistral, DeepSeek, Groq, etc.
+- **Local**: Ollama, LM Studio.
 
-### A Note on Commit Messages
-While the model is great at grouping, it does have to use some assumptions when generating the **commit messages** for those groups. This is never going to be perfect, as a perfect commit message often relies on intent or context that exists only in your head.
+For a full list of supported providers and how to configure them, see [Supported Providers & Languages](../reference/supported.md).
 
-That is why you can always override the custom commit messages with your own. You can also add arguments to the command to ensure the model understands your specific intent with the changes.
-
-### Supported Models
-We currently support most major providers, as well as local options. You can also specify a custom baseurl for custom endpoints
-Currently Supported Providers:
-- Ollama
-- Cohere
-- OpenAI
-- Google
-- Cerebras
-- XAI
-- Nebius
-- Hugging Face
-- Together
-- AWS
-- Anthropic
-- LMStudio
-- Groq
-- SambaNova
-- WatsonX
-- Inception
-- Fireworks
-- Azure
-- Deepseek
-- Mistral
+**[Next: Commit Strategy](./commit-strategy.md)**

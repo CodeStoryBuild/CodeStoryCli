@@ -11,5 +11,9 @@ theme:
 
 nav:
   - Introduction: index.md
-  - Architecture Design: design/index.md
-  - CLI Reference: reference/root.md
+  - Usage Guide: usage/index.md
+  - Extensibility: extensibility/index.md
+  - Architecture: design/index.md
+  - Reference:
+      - CLI Commands: reference/root.md
+      - Providers & Languages: reference/supported.md

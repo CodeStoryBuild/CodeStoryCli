@@ -114,11 +114,11 @@ class GlobalConfig:
         "api_key": "API key for the LLM provider",
         "api_base": "Custom API base URL for the LLM provider (optional)",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
-        "max_tokens": "Maximum tokens for LLM responses. Ie the selected models context length",
-        "relevance_filter_level": "How much to filter irrelevant changes",
-        "secret_scanner_aggression": "How aggresively to scan for secrets",
-        "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation",
-        "chunking_level": "Which type of files should be chunked further",
+        "max_tokens": "Maximum tokens to send for LLM requests",
+        "relevance_filter_level": "How much to filter irrelevant changes, used with the --intent option ('cst commit' only)",
+        "secret_scanner_aggression": "How aggresively to scan for secrets ('cst commit' only)",
+        "fallback_grouping_strategy": "Strategy for grouping changes that were not able to be analyzed",
+        "chunking_level": "Which type of changes should be chunked further into smaller pieces",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
@@ -127,8 +127,8 @@ class GlobalConfig:
         "custom_language_config": "Path to custom language configuration JSON file to override built-in language configs",
         "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
         "custom_embedding_model": "FastEmbed supported text embedding model (will download on first run if not cached)",
-        "cluster_strictness": "Strictness of clustering logical groups together. Higher value = higher threshold of similarity required to group together.",
-        "num_retries": "How many times to retry calling a model if it fails to return an output",
+        "cluster_strictness": "Strictness of clustering logical groups together. (0-1) Higher value = higher threshold of similarity required to group together.",
+        "num_retries": "How many times to retry calling a model if it fails to return an output (0-10)",
     }
 
     arg_options = {

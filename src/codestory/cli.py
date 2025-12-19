@@ -305,9 +305,9 @@ def create_global_callback():
             help="Show all supported model providers you can use for logical grouping. Set using 'codestory config model provider:model'",
         ),
         repo_path: str = typer.Option(
-            ".",
+            None,
             "--repo",
-            help="Path to the git repository to operate on.",
+            help="Path to the git repository to operate on. Defaults to current directory.",
         ),
         custom_config: str | None = typer.Option(
             None,
@@ -369,7 +369,9 @@ def create_global_callback():
                     "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
                 )
 
-            global_context = GlobalContext.from_global_config(config, Path(repo_path))
+            global_context = GlobalContext.from_global_config(
+                config, Path(repo_path) if repo_path is not None else Path(".")
+            )
             validate_git_repository(
                 global_context.git_interface
             )  # fail immediately if we arent in a valid git repo as we expect one
