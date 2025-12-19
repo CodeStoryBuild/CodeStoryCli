@@ -1,4 +1,4 @@
-# codestory
+# The Codestory CLI
 
 Git is a powerful tool. It is also an excellent tool for shooting yourself in the foot.
 
