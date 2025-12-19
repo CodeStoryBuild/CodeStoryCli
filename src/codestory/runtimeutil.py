@@ -16,7 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import importlib
 import signal
 import sys
 
@@ -53,17 +52,17 @@ def setup_signal_handlers(global_context=None):
 
 def version_callback(value: bool):
     """Show version and exit."""
+    from importlib.metadata import version, PackageNotFoundError
     if value:
         try:
-            version = importlib.metadata.version("codestory")
+            version = version("codestory")
             typer.echo(f"codestory version {version}")
-        except importlib.metadata.PackageNotFoundError:
+        except PackageNotFoundError:
             typer.echo("codestory version: development")
         raise typer.Exit()
 
 
 def get_log_dir_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.core.logging.logging import LOG_DIR
 
@@ -72,7 +71,6 @@ def get_log_dir_callback(value: bool):
 
 
 def get_supported_languages_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.constants import SUPPORTED_LANGUAGES
 
@@ -81,7 +79,6 @@ def get_supported_languages_callback(value: bool):
 
 
 def get_supported_providers_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.constants import LOCAL_PROVIDERS, get_cloud_providers
 

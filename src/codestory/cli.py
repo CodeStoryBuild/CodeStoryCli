@@ -101,6 +101,11 @@ def main_commit(
             raise ValidationError(
                 "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
             )
+        
+        if intent is not None and global_context.config.relevance_filter_level == "none":
+            from loguru import logger
+            logger.warning("You are using the --intent option, but have not enabled the relevance filter! Check 'cst config relevance_filter_level'")
+
         run_commit(
             ctx.obj,
             target,
