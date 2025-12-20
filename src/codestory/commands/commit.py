@@ -23,7 +23,6 @@ from colorama import Fore, Style
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.exceptions import (
     GitError,
-    ValidationError,
 )
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
