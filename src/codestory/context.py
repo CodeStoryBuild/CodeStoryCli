@@ -217,6 +217,7 @@ class GlobalContext:
     git_interface: GitInterface
     git_commands: GitCommands
     config: GlobalConfig
+    current_branch: str
     _model: CodeStoryAdapter | None = None
     _embedder = None
 
@@ -250,10 +251,14 @@ class GlobalContext:
         return self._embedder
 
     @classmethod
-    def from_global_config(cls, config: GlobalConfig, repo_path: Path):
+    def from_global_config(
+        cls, config: GlobalConfig, repo_path: Path, current_branch: str = ""
+    ):
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
-        return GlobalContext(repo_path, git_interface, git_commands, config)
+        return GlobalContext(
+            repo_path, git_interface, git_commands, config, current_branch
+        )
 
 
 @dataclass(frozen=True)

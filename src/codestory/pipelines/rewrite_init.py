@@ -58,17 +58,16 @@ def create_rewrite_pipeline(
         raise GitError("Failed to backup working state, exiting.")
 
     file_reader = GitFileReader(
-        global_ctx.git_interface, base_commit_hash, new_commit_hash
+        global_ctx.git_commands, base_commit_hash, new_commit_hash
     )
 
     semantic_grouper = SemanticGrouper(global_ctx.config.fallback_grouping_strategy)
 
-    synthesizer = GitSynthesizer(global_ctx.git_interface)
+    synthesizer = GitSynthesizer(global_ctx.git_commands)
 
     pipeline = RewritePipeline(
         global_ctx,
         commit_ctx,
-        global_ctx.git_interface,
         global_ctx.git_commands,
         chunker,
         semantic_grouper,

@@ -32,7 +32,7 @@ def run_clean(
     ignore: list[str] | None,
     min_size: int | None,
     start_from: str | None,
-):
+) -> bool:
     from loguru import logger
 
     validated_ignore = validate_ignore_patterns(ignore)
@@ -40,36 +40,36 @@ def run_clean(
     validated_start_from = None
 
     if start_from:
-        validated_start_from = validate_commit_hash(start_from)
+        validated_start_from = validate_commit_hash(
+            start_from, global_context.git_commands, global_context.current_branch
+        )
 
         # Verify the commit exists
-        resolved_commit = global_context.git_interface.run_git_text_out(
-            ["rev-parse", validated_start_from]
-        )
-        if not resolved_commit or not resolved_commit.strip():
+        try:
+            validated_start_from = global_context.git_commands.get_commit_hash(
+                validated_start_from
+            )
+        except ValueError:
             raise GitError(f"Commit not found: {validated_start_from}")
 
-        validated_start_from = resolved_commit.strip()
-
-        # Verify the commit is an ancestor of HEAD (exists in current branch history)
-        head_hash = global_context.git_interface.run_git_text_out(["rev-parse", "HEAD"])
-        if not head_hash or not head_hash.strip():
-            raise GitError("Failed to resolve HEAD")
-
-        head_hash = head_hash.strip()
-
-        is_ancestor = global_context.git_interface.run_git_text(
-            ["merge-base", "--is-ancestor", validated_start_from, head_hash]
+        # Verify the commit is an ancestor of the branch tip (exists in target branch history)
+        branch_head_hash = global_context.git_commands.get_commit_hash(
+            global_context.current_branch
         )
-        if is_ancestor is None or is_ancestor.returncode != 0:
+
+        if not global_context.git_commands.is_ancestor(
+            validated_start_from, branch_head_hash
+        ):
             raise GitError(
-                f"Commit {validated_start_from[:7]} is not in the current branch history. "
-                "The start_from commit must be an ancestor of HEAD."
+                f"Commit {validated_start_from[:7]} is not in the target branch history. "
+                f"The start_from commit must be an ancestor of {global_context.current_branch}."
             )
 
         # Validate that there are no merge commits in the range to be cleaned
         validate_no_merge_commits_in_range(
-            global_context.git_interface, validated_start_from, "HEAD"
+            global_context.git_commands,
+            validated_start_from,
+            global_context.current_branch,
         )
 
     clean_context = CleanContext(
@@ -94,5 +94,7 @@ def run_clean(
 
     if success:
         logger.success("Clean command completed successfully")
+        return True
     else:
         logger.error("Clean operation failed")
+        return False

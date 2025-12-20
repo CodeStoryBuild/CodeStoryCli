@@ -43,8 +43,6 @@ class FixPipeline:
         self.global_context = global_context
         self.fix_context = fix_context
         self.rewrite_pipeline = rewrite_pipeline
-        # Use the abstract interface as requested
-        self.git = self.global_context.git_interface
 
     def run(self) -> str:
         from loguru import logger
@@ -64,7 +62,7 @@ class FixPipeline:
         new_commit_hash = self.rewrite_pipeline.run()
 
         if not new_commit_hash:
-            raise FixCommitError("Commit pipeline returned no hash. Aborting.")
+            raise FixCommitError("Aborting Fix Command")
 
         if new_commit_hash == old_end_hash:
             logger.debug(
@@ -80,15 +78,13 @@ class FixPipeline:
         )
 
         # Get list of downstream commits (oldest to newest)
-        downstream_out = self.git.run_git_text_out(
-            ["rev-list", "--reverse", f"{old_end_hash}..HEAD"]
+        downstream_commits = self.global_context.git_commands.get_rev_list(
+            f"{old_end_hash}..{self.global_context.current_branch}", reverse=True
         )
 
-        if not downstream_out or not downstream_out.strip():
+        if not downstream_commits:
             # No downstream commits, we're done
             return new_commit_hash
-
-        downstream_commits = downstream_out.strip().splitlines()
 
         # Use merge-tree to rebase each commit (bare-repo friendly)
         import os
@@ -98,8 +94,8 @@ class FixPipeline:
         for commit in downstream_commits:
             # Get commit metadata
             log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
-            meta_out = self.git.run_git_text_out(
-                ["log", "-1", f"--format={log_format}", commit]
+            meta_out = self.global_context.git_commands.get_commit_metadata(
+                commit, log_format
             )
 
             if not meta_out:
@@ -118,30 +114,21 @@ class FixPipeline:
             message = "\n".join(lines[6:])
 
             # Get the parent of the original commit
-            original_parent_out = self.git.run_git_text_out(["rev-parse", f"{commit}^"])
-            if not original_parent_out:
+            original_parent = self.global_context.git_commands.try_get_parent_hash(
+                commit
+            )
+            if not original_parent:
                 raise FixCommitError(f"Failed to get parent of commit {commit[:7]}")
 
-            original_parent = original_parent_out.strip()
-
             # Use merge-tree to compute the new tree
-            tree_out = self.git.run_git_text_out(
-                [
-                    "merge-tree",
-                    "--write-tree",
-                    "--merge-base",
-                    original_parent,
-                    new_parent,
-                    commit,
-                ]
+            new_tree = self.global_context.git_commands.merge_tree(
+                original_parent, new_parent, commit
             )
 
-            if not tree_out:
+            if not new_tree:
                 raise FixCommitError(
                     f"Failed to merge-tree for commit {commit[:7]}. May have conflicts."
                 )
-
-            new_tree = tree_out.strip()
 
             # Create commit with the new tree
             cmd_env = os.environ.copy()
@@ -152,14 +139,13 @@ class FixPipeline:
             cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
             cmd_env["GIT_COMMITTER_DATE"] = committer_date
 
-            new_commit = self.git.run_git_text_out(
-                ["commit-tree", new_tree, "-p", new_parent, "-m", message],
-                env=cmd_env,
+            new_commit = self.global_context.git_commands.commit_tree(
+                new_tree, [new_parent], message, env=cmd_env
             )
 
             if not new_commit:
                 raise FixCommitError(f"Failed to create commit for {commit[:7]}")
 
-            new_parent = new_commit.strip()
+            new_parent = new_commit
 
         return new_parent

@@ -159,3 +159,33 @@ class RepoState:
             check=True,
         )
         return result.stdout.strip()
+
+    def create_branch(self, name: str):
+        """Create a new branch."""
+        subprocess.run(["git", "branch", name], cwd=self.path, check=True)
+
+    def checkout(self, name: str):
+        """Checkout a branch or commit."""
+        subprocess.run(["git", "checkout", name], cwd=self.path, check=True)
+
+    def get_current_branch(self) -> str:
+        """Get the name of the current branch."""
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=self.path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+
+    def get_commit_hash(self, ref: str = "HEAD") -> str:
+        """Get the commit hash of a reference."""
+        result = subprocess.run(
+            ["git", "rev-parse", ref],
+            cwd=self.path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()

@@ -17,162 +17,207 @@
 # -----------------------------------------------------------------------------
 
 from itertools import groupby
+from typing import TYPE_CHECKING
 
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
-from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.data.line_changes import Removal
 from codestory.core.diff_generation.diff_generator import DiffGenerator
 from codestory.core.synthesizer.chunk_merger import merge_diff_chunks_by_file
+
+if TYPE_CHECKING:
+    from codestory.core.data.chunk import Chunk
+    from codestory.core.data.commit_group import CommitGroup
+    from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
 class SemanticDiffGenerator(DiffGenerator):
     """
     Generates a semantic, human-readable diff optimized for LLMs (1.5B+).
-    It strictly follows the DiffGenerator architecture to ensure correct
-    File Status detection (Renames, Partial Deletions, etc).
-
-    Output Format:
-    ### MODIFIED FILE: src/utils.py
-    Line 20:
-    - old_code()
-    + new_code()
+    Enforces a strict [Header -> Context -> Content] structure for clarity.
     """
+
+    def __init__(
+        self,
+        all_chunks: list["Chunk | ImmutableChunk | CommitGroup"],
+        context_manager: "ContextManager | None" = None,
+        context_lines: int = 3,
+    ):
+        super().__init__(all_chunks)
+        self.context_manager = context_manager
+        self.context_lines = context_lines
 
     def generate_diff(
         self,
         diff_chunks: list[DiffChunk],
         immutable_chunks: list[ImmutableChunk] | None = None,
     ) -> dict[bytes, bytes]:
-        """
-        Generates a dictionary of semantic diff strings (encoded as bytes) for each file.
-        """
         if immutable_chunks is None:
             immutable_chunks = []
 
-        # Compute completeness map to determine if file deletions are complete
         completeness_map = self._get_completeness_map_from_diff_chunks(diff_chunks)
-
         patches: dict[bytes, bytes] = {}
 
-        # 1. Process Immutable Chunks
+        # 1. Binary/Immutable Chunks
         for immutable_chunk in immutable_chunks:
-            semantic_patch = (
+            patches[immutable_chunk.canonical_path] = (
                 b"### BINARY FILE:"
                 + immutable_chunk.canonical_path
                 + b"\n"
                 + immutable_chunk.file_patch
             )
-            patches[immutable_chunk.canonical_path] = semantic_patch
 
-        # 2. Merge diff chunks to reduce fragmentation
+        # 2. Merge and Sort
         merged_chunks = merge_diff_chunks_by_file(diff_chunks)
-
-        # 3. Sort chunks
         sorted_chunks = sorted(merged_chunks, key=lambda c: c.canonical_path())
 
-        # 4. Group by file
+        # 3. Process by File
         for file_path, file_chunks_iter in groupby(
             sorted_chunks, key=lambda c: c.canonical_path()
         ):
             file_chunks: list[DiffChunk] = list(file_chunks_iter)
-
             if not file_chunks:
                 continue
 
-            # --- LOGIC MIRRORING GITDIFFGENERATOR STARTS HERE ---
-
-            # Check if all chunks for this file are present
             is_complete = completeness_map.get(file_path, False)
+            header = self._generate_header(file_chunks, is_complete)
 
-            single_chunk = file_chunks[0]
+            out_lines = [header]
 
-            # We need all chunks to mark as deletion
-            file_deletion = (
-                all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and is_complete
-            )
-            file_addition = all(
-                [file_chunk.is_file_addition for file_chunk in file_chunks]
-            )
-            # Standard modification OR a deletion where we don't have all chunks yet
-            standard_modification = all(
-                [file_chunk.is_standard_modification for file_chunk in file_chunks]
-            ) or (
-                all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and not is_complete
-            )
-            file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
-
-            # Prepare string buffers
-            out_lines = []
-
-            # Decode paths for LLM readability
-            old_path_str = (
-                single_chunk.old_file_path.decode("utf-8", errors="replace")
-                if single_chunk.old_file_path
-                else "dev/null"
-            )
-            new_path_str = (
-                single_chunk.new_file_path.decode("utf-8", errors="replace")
-                if single_chunk.new_file_path
-                else "dev/null"
-            )
-
-            # --- HEADER GENERATION ---
-
-            if standard_modification:
-                # If partial deletion, we fallback to old_path (just like diff --git a/old b/old)
-                if single_chunk.is_file_deletion:
-                    out_lines.append(f"### MODIFIED FILE: {old_path_str}")
-                else:
-                    out_lines.append(f"### MODIFIED FILE: {new_path_str}")
-            elif file_rename:
-                out_lines.append(f"### RENAMED FILE: {old_path_str} -> {new_path_str}")
-            elif file_deletion:
-                out_lines.append(f"### DELETED FILE: {old_path_str}")
-            elif file_addition:
-                out_lines.append(f"### NEW FILE: {new_path_str}")
-            else:
-                # Fallback for mixed states
-                out_lines.append(f"### MODIFIED FILE: {new_path_str}")
-
-            # If it's a rename with no content changes, we are done
-            has_content = any(c.has_content for c in file_chunks)
-            if file_rename and not has_content:
+            # Short-circuit for empty renames
+            if "RENAMED" in header and not any(c.has_content for c in file_chunks):
                 patches[file_path] = ("\n".join(out_lines) + "\n").encode("utf-8")
                 continue
 
-            # --- BODY GENERATION ---
-
-            # Sort chunks by their sort key (old_start)
+            old_file_lines = self._get_old_file_lines(file_path)
             sorted_file_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
+
+            last_line_emitted = 0
+            is_pure_addition = all(c.is_file_addition for c in file_chunks)
 
             for i, chunk in enumerate(sorted_file_chunks):
                 if not chunk.has_content:
                     continue
 
-                # Visual separator for disjoint chunks in the same file
-                if i > 0:
-                    out_lines.append("...")
+                curr_start = chunk.old_start or 1
+                curr_end = curr_start + (chunk.old_len() - 1)
 
-                # Header for the chunk location.
-                # We skip detailed range info (@@ -12,4 +12,5 @@) as it confuses small models.
-                # New files (additions) effectively start at 0, so explicit lines are less relevant.
-                if not file_addition:
-                    start_line = chunk.old_start if chunk.old_start is not None else 0
-                    out_lines.append(f"Line {start_line}:")
+                # Determine where context should start for this chunk
+                ideal_context_start = max(1, curr_start - self.context_lines)
 
-                # Process lines
+                # Gap Filling Logic:
+                # If the gap between the last emitted line and the ideal context start
+                # is small (<= context_lines), we fill the gap instead of breaking the hunk.
+                # This mimics git diff's behavior of merging close hunks.
+                if ideal_context_start > last_line_emitted + 1:
+                    skipped_lines = ideal_context_start - (last_line_emitted + 1)
+                    if skipped_lines <= self.context_lines:
+                        context_start = last_line_emitted + 1
+                    else:
+                        context_start = ideal_context_start
+                else:
+                    context_start = max(last_line_emitted + 1, ideal_context_start)
+
+                # --- VISUAL HUNK START ---
+                # A new visual hunk starts if:
+                # 1. It is the first chunk (i==0)
+                # 2. OR there is a gap between the last emitted line and our context start
+                is_gap = context_start > last_line_emitted + 1
+                is_start_of_hunk = (i == 0) or is_gap
+
+                if is_start_of_hunk:
+                    if is_gap and last_line_emitted > 0:
+                        out_lines.append("...")
+
+                    # PRINT HEADER FIRST (Before Context)
+                    # We skip the header for pure new files as it's redundant
+                    if not is_pure_addition:
+                        out_lines.append(f"Line {curr_start}:")
+
+                # --- LEADING CONTEXT ---
+                if old_file_lines:
+                    for ln in range(context_start, curr_start):
+                        if 1 <= ln <= len(old_file_lines):
+                            out_lines.append(f"  {old_file_lines[ln - 1]}")
+
+                # --- CHUNK CONTENT ---
                 if chunk.parsed_content:
                     for item in chunk.parsed_content:
                         text = item.content.decode("utf-8", errors="replace").rstrip()
-                        if isinstance(item, Removal):
-                            out_lines.append(f"- {text}")
-                        elif isinstance(item, Addition):
-                            out_lines.append(f"+ {text}")
+                        prefix = "-" if isinstance(item, Removal) else "+"
+                        out_lines.append(f"{prefix} {text}")
 
-            # Join and encode to bytes
-            final_output = "\n".join(out_lines) + "\n"
-            patches[file_path] = final_output.encode("utf-8")
+                # Update last_line_emitted to include the current chunk's content range
+                # Use max to prevent regression if chunks overlap strangely
+                last_line_emitted = max(last_line_emitted, curr_end)
+
+                # --- TRAILING CONTEXT (With Lookahead) ---
+                if old_file_lines:
+                    # Look ahead to next chunk to avoid overlapping context
+                    next_chunk_start = (
+                        sorted_file_chunks[i + 1].old_start
+                        if i + 1 < len(sorted_file_chunks)
+                        else float("inf")
+                    )
+
+                    # Stop context at context_limit OR just before next chunk
+                    after_end = min(
+                        curr_end + self.context_lines,
+                        len(old_file_lines),
+                        next_chunk_start - 1,
+                    )
+
+                    # START at max(curr_end + 1, last_line_emitted + 1) to prevent duplicating lines
+                    # that might have been emitted by a previous chunk's trailing context
+                    # or if the current chunk is an insertion inside previously emitted context.
+                    start_ln = max(curr_end + 1, last_line_emitted + 1)
+
+                    for ln in range(start_ln, int(after_end) + 1):
+                        out_lines.append(f"  {old_file_lines[ln - 1]}")
+                        last_line_emitted = ln
+
+            patches[file_path] = ("\n".join(out_lines) + "\n").encode("utf-8")
 
         return patches
+
+    def _get_old_file_lines(self, file_path: bytes) -> list[str]:
+        if not self.context_manager:
+            return []
+        analysis_context = self.context_manager.get_context(
+            file_path, is_old_version=True
+        )
+        if analysis_context and analysis_context.parsed_file:
+            return analysis_context.parsed_file.content_bytes.decode(
+                "utf-8", errors="replace"
+            ).splitlines()
+        return []
+
+    def _generate_header(self, chunks: list[DiffChunk], is_complete: bool) -> str:
+        single = chunks[0]
+        old_path = (single.old_file_path or b"dev/null").decode(
+            "utf-8", errors="replace"
+        )
+        new_path = (single.new_file_path or b"dev/null").decode(
+            "utf-8", errors="replace"
+        )
+
+        # Logic mirroring Git behavior
+        file_deletion = all(c.is_file_deletion for c in chunks) and is_complete
+        file_addition = all(c.is_file_addition for c in chunks)
+        file_rename = all(c.is_file_rename for c in chunks)
+        standard_modification = all(c.is_standard_modification for c in chunks) or (
+            all(c.is_file_deletion for c in chunks) and not is_complete
+        )
+
+        if standard_modification:
+            # For partial deletions, we refer to the old path (git behavior)
+            path = old_path if single.is_file_deletion else new_path
+            return f"### MODIFIED FILE: {path}"
+        elif file_rename:
+            return f"### RENAMED FILE: {old_path} -> {new_path}"
+        elif file_deletion:
+            return f"### DELETED FILE: {old_path}"
+        elif file_addition:
+            return f"### NEW FILE: {new_path}"
+
+        return f"### MODIFIED FILE: {new_path}"

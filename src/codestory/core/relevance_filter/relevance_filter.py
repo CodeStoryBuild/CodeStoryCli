@@ -19,7 +19,7 @@
 import json
 import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from tqdm import tqdm
 
@@ -29,6 +29,9 @@ from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffG
 from codestory.core.exceptions import LLMResponseError
 from codestory.core.llm import CodeStoryAdapter
 from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
+
+if TYPE_CHECKING:
+    from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
 @dataclass
@@ -121,11 +124,16 @@ class RelevanceFilter:
         self.config = config
 
     def _prepare_payload(
-        self, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
+        self,
+        chunks: list[Chunk],
+        immut_chunks: list[ImmutableChunk],
+        context_manager: "ContextManager | None" = None,
     ) -> str:
         """Convert chunks to a simplified structure for LLM analysis."""
         changes = []
-        diff_map = SemanticDiffGenerator(chunks).get_patches(chunks)
+        diff_map = SemanticDiffGenerator(
+            chunks, context_manager=context_manager
+        ).get_patches(chunks)
 
         # Process mutable chunks
         for i in range(len(chunks)):
@@ -168,6 +176,7 @@ class RelevanceFilter:
         chunks: list[Chunk],
         immut_chunks: list[ImmutableChunk],
         intent: str,
+        context_manager: "ContextManager | None" = None,
         pbar: tqdm | None = None,
     ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
         from loguru import logger
@@ -176,7 +185,9 @@ class RelevanceFilter:
             return [], [], []
 
         # 1. Build messages in the format models expect
-        changes_json = self._prepare_payload(chunks, immut_chunks)
+        changes_json = self._prepare_payload(
+            chunks, immut_chunks, context_manager=context_manager
+        )
 
         messages = [
             build_system_message(self.config.level, self.config.extra_instructions),

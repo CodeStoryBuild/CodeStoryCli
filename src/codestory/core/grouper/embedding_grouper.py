@@ -49,7 +49,7 @@ from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages. 
 
 Given code changes with git patches and metadata (added/removed/modified symbols), write a concise commit message that describes what changed.
-
+{message}
 Rules:
 - Single line, max 72 characters
 - Imperative mood (Add, Update, Remove, Refactor)
@@ -66,7 +66,7 @@ Commit message:"""
 CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given multiple related commit messages, combine them into one cohesive commit message.
-
+{message}
 Rules:
 - Single line, max 72 characters
 - Imperative mood (Add, Update, Remove, Refactor)
@@ -83,7 +83,7 @@ Combined commit message:"""
 BATCHED_CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given a JSON array where each element contains multiple related commit messages, combine each group into one cohesive commit message.
-
+{message}
 Rules:
 - Output a JSON array of strings with one message per input group
 - Each message: single line, max 72 characters, imperative mood
@@ -104,7 +104,7 @@ Provide {count} combined commit messages as a JSON array:"""
 BATCHED_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given a JSON array of code changes, write a commit message for each one. Each change includes git patches and metadata about added/removed/modified symbols.
-
+{message}
 Rules:
 - Output a JSON array of strings with one message per input change
 - Each message: single line, max 72 characters, imperative mood
@@ -112,7 +112,7 @@ Rules:
 - Match the input order exactly
 
 Example:
-Input: [{"git_patch": "..."}, {"git_patch": "..."}]
+Input: [{{"git_patch": "..."}}, {{"git_patch": "..."}}]
 Output: ["Add user authentication", "Update config parser"]"""
 
 BATCHED_SUMMARY_USER = """Here are {count} code changes:
@@ -160,6 +160,12 @@ class EmbeddingGrouper(LogicalGrouper):
         self.clusterer = Clusterer(cluster_strictness)
         self.patch_cutoff_chars = 1000
         self.max_tokens = max_tokens
+
+    def create_intent_message(self, intent_message: str | None):
+        if intent_message is None:
+            return ""
+
+        return f"\nThe user has provided additional information about the global intent of all their changes. If relevant you should use this information to enhance your summaries\nBEGIN INTENT\n{intent_message}\nEND INTENT\n"
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count based on 3 chars per token."""
@@ -232,31 +238,35 @@ class EmbeddingGrouper(LogicalGrouper):
         return [str(s).strip().strip('"').strip("'") for s in batch_items]
 
     def _partition_patches(
-        self, annotated_chunk_patches: list[str], strategy: str
-    ) -> list[list[tuple[int, str]]]:
+        self,
+        annotated_chunk_patches: list[list[dict]],
+        strategy: str,
+        intent_message: str,
+    ) -> list[list[tuple[int, list[dict]]]]:
         """
         Partitions patches into groups.
         If strategy is 'requests', every group has size 1.
         If strategy is 'prompt', groups are filled up to max_tokens.
-        Returns: List of groups, where each group is a list of (original_index, patch_string)
+        Returns: List of groups, where each group is a list of (original_index, patch_data)
         """
         base_prompt_cost = self._estimate_tokens(
-            BATCHED_SUMMARY_SYSTEM
+            BATCHED_SUMMARY_SYSTEM.format(message=intent_message)
         ) + self._estimate_tokens(BATCHED_SUMMARY_USER)
 
         items = list(enumerate(annotated_chunk_patches))
 
-        def cost_fn(item: tuple[int, str]) -> int:
-            i, patch = item
+        def cost_fn(item: tuple[int, list[dict]]) -> int:
+            i, patch_data = item
+            patch_str = json.dumps(patch_data)
             formatted_patch_overhead = f"--- Change {i + 1} ---\n\n\n"
-            return self._estimate_tokens(patch) + self._estimate_tokens(
+            return self._estimate_tokens(patch_str) + self._estimate_tokens(
                 formatted_patch_overhead
             )
 
         return self._partition_items(items, cost_fn, base_prompt_cost, strategy)
 
     def _create_summary_tasks(
-        self, partitions: list[list[tuple[int, str]]]
+        self, partitions: list[list[tuple[int, list[dict]]]]
     ) -> list[SummaryTask]:
         """
         Converts partitions of patches into actionable LLM Tasks.
@@ -275,7 +285,7 @@ class EmbeddingGrouper(LogicalGrouper):
                         prompt=prompt,
                         is_multiple=False,
                         indices=indices,
-                        original_patches=patches,
+                        original_patches=[changes_json],
                     )
                 )
             else:
@@ -292,17 +302,17 @@ class EmbeddingGrouper(LogicalGrouper):
                         prompt=prompt,
                         is_multiple=True,
                         indices=indices,
-                        original_patches=patches,
+                        original_patches=[json.dumps(p) for p in patches],
                     )
                 )
         return tasks
 
     def _partition_cluster_summaries(
-        self, clusters_dict: dict[int, Cluster], strategy: str
+        self, clusters_dict: dict[int, Cluster], strategy: str, intent_message: str
     ) -> list[list[tuple[int, list[str]]]]:
         """Partition cluster summaries into groups for batching."""
         base_prompt_cost = self._estimate_tokens(
-            BATCHED_CLUSTER_SUMMARY_SYSTEM
+            BATCHED_CLUSTER_SUMMARY_SYSTEM.format(message=intent_message)
         ) + self._estimate_tokens(BATCHED_CLUSTER_SUMMARY_USER)
 
         cluster_items = [
@@ -354,7 +364,10 @@ class EmbeddingGrouper(LogicalGrouper):
         return tasks
 
     def generate_summaries(
-        self, annotated_chunk_patches: list[list[dict]], pbar: tqdm | None = None
+        self,
+        annotated_chunk_patches: list[list[dict]],
+        intent_message: str,
+        pbar: tqdm | None = None,
     ) -> list[str]:
         from loguru import logger
 
@@ -366,7 +379,9 @@ class EmbeddingGrouper(LogicalGrouper):
             strategy = "requests" if self.model.is_local() else "prompt"
 
         # 1. Partition based on strategy and window size
-        partitions = self._partition_patches(annotated_chunk_patches, strategy)
+        partitions = self._partition_patches(
+            annotated_chunk_patches, strategy, intent_message
+        )
 
         # 2. Create Tasks
         tasks = self._create_summary_tasks(partitions)
@@ -391,9 +406,9 @@ class EmbeddingGrouper(LogicalGrouper):
             [
                 {
                     "role": "system",
-                    "content": BATCHED_SUMMARY_SYSTEM
+                    "content": BATCHED_SUMMARY_SYSTEM.format(message=intent_message)
                     if t.is_multiple
-                    else INITIAL_SUMMARY_SYSTEM,
+                    else INITIAL_SUMMARY_SYSTEM.format(message=intent_message),
                 },
                 {"role": "user", "content": t.prompt},
             ]
@@ -423,7 +438,10 @@ class EmbeddingGrouper(LogicalGrouper):
         return final_summaries
 
     def generate_cluster_summaries(
-        self, clusters: dict[int, Cluster], pbar: tqdm | None = None
+        self,
+        clusters: dict[int, Cluster],
+        intent_message: str,
+        pbar: tqdm | None = None,
     ) -> dict[int, str]:
         from loguru import logger
 
@@ -435,7 +453,9 @@ class EmbeddingGrouper(LogicalGrouper):
             strategy = "requests" if self.model.is_local() else "prompt"
 
         # Partition clusters
-        partitions = self._partition_cluster_summaries(clusters, strategy)
+        partitions = self._partition_cluster_summaries(
+            clusters, strategy, intent_message
+        )
 
         # Create tasks
         cluster_tasks = self._create_cluster_summary_tasks(partitions)
@@ -462,9 +482,11 @@ class EmbeddingGrouper(LogicalGrouper):
             [
                 {
                     "role": "system",
-                    "content": BATCHED_CLUSTER_SUMMARY_SYSTEM
+                    "content": BATCHED_CLUSTER_SUMMARY_SYSTEM.format(
+                        message=intent_message
+                    )
                     if t.is_multiple
-                    else CLUSTER_SUMMARY_SYSTEM,
+                    else CLUSTER_SUMMARY_SYSTEM.format(message=intent_message),
                 },
                 {"role": "user", "content": t.prompt},
             ]
@@ -502,13 +524,13 @@ class EmbeddingGrouper(LogicalGrouper):
             patches.append(patch)
         return patches
 
-    def generate_immutable_annotated_patch(self, chunk: ImmutableChunk) -> dict:
+    def generate_immutable_annotated_patch(self, chunk: ImmutableChunk) -> list[dict]:
         patch_json = {}
         patch_json["file_path"] = chunk.file_patch.decode("utf-8", errors="replace")
         patch_json["git_patch"] = truncate_patch_bytes(
             chunk.file_patch, self.patch_cutoff_chars
         ).decode("utf-8", errors="replace")
-        return patch_json
+        return [patch_json]
 
     def generate_annotated_patches(
         self, annotated_chunks: list[AnnotatedChunk], diff_generator: DiffGenerator
@@ -534,7 +556,6 @@ class EmbeddingGrouper(LogicalGrouper):
             signatures,
             strict=True,
         ):
-            # we get diff generator [0] since we pass only one chunk, then we cut off to limit size
             patch = truncate_patch(
                 diff_generator.get_patch(chunk), self.patch_cutoff_chars
             )
@@ -592,9 +613,12 @@ class EmbeddingGrouper(LogicalGrouper):
         if not (chunks or immut_chunks):
             return []
 
+        intent_message = self.create_intent_message(message)
+
         annotated_chunks = ChunkLabeler.annotate_chunks(chunks, context_manager)
+
         diff_generator = SemanticDiffGenerator(
-            chunks
+            chunks, context_manager=context_manager
         )  # immutable chunks wont be used for total patch calcs
 
         annotated_chunk_patches = self.generate_annotated_patches(
@@ -606,7 +630,7 @@ class EmbeddingGrouper(LogicalGrouper):
         all_patch_data = annotated_chunk_patches + immut_patches
         all_chunks_reference = chunks + immut_chunks
 
-        summaries = self.generate_summaries(all_patch_data, pbar=pbar)
+        summaries = self.generate_summaries(all_patch_data, intent_message, pbar=pbar)
 
         if len(all_chunks_reference) == 1:
             # no clustering, just one commit group
@@ -641,7 +665,9 @@ class EmbeddingGrouper(LogicalGrouper):
 
         # Generate final commit messages for each cluster using batching
         if clusters:
-            cluster_messages_map = self.generate_cluster_summaries(clusters, pbar=pbar)
+            cluster_messages_map = self.generate_cluster_summaries(
+                clusters, intent_message, pbar=pbar
+            )
 
             # Create commit groups from clusters
             for cluster_id, cluster in clusters.items():

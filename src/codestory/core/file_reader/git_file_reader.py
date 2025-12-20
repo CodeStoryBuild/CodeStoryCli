@@ -16,12 +16,14 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from codestory.core.git_interface.interface import GitInterface
+from codestory.core.git_commands.git_commands import GitCommands
 
 
 class GitFileReader:
-    def __init__(self, git: GitInterface, base_commit: str, patched_commit: str):
-        self.git = git
+    def __init__(
+        self, git_commands: GitCommands, base_commit: str, patched_commit: str
+    ):
+        self.git_commands = git_commands
         self.base_commit = base_commit
         self.patched_commit = patched_commit
 
@@ -35,4 +37,4 @@ class GitFileReader:
         # rel_path should be in posix format for git
         rel_path_git = path.replace("\\", "/").strip()
         obj = f"{commit}:{rel_path_git}"
-        return self.git.run_git_text_out(["cat-file", "-p", obj])
+        return self.git_commands.cat_file(obj)
