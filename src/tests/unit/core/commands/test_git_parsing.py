@@ -44,7 +44,7 @@ def git_repo(tmp_path: Path):
     repo_path.mkdir()
     os.chdir(repo_path)
 
-    subprocess.check_call(["git", "init"])
+    subprocess.check_call(["git", "init", "-b", "main"])
     subprocess.check_call(["git", "config", "user.name", "Test User"])
     subprocess.check_call(["git", "config", "user.email", "test@example.com"])
 

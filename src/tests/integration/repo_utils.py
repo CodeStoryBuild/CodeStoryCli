@@ -32,7 +32,7 @@ class RepoState:
             shutil.rmtree(self.path)
         self.path.mkdir(parents=True)
 
-        subprocess.run(["git", "init"], cwd=self.path, check=True)
+        subprocess.run(["git", "init", "-b", "main"], cwd=self.path, check=True)
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"],
             cwd=self.path,
