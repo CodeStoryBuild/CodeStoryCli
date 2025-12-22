@@ -282,3 +282,4 @@ class CleanContext:
     ignore: Sequence[str] | None = None
     min_size: int | None = None
     start_from: str | None = None
+    end_at: str | None = None

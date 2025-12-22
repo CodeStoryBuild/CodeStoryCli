@@ -19,13 +19,14 @@
 from codestory.context import CleanContext, GlobalContext
 from codestory.core.exceptions import GitError
 from codestory.core.logging.utils import time_block
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.validation import (
+    is_root_commit,
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
     validate_no_merge_commits_in_range,
 )
-from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def run_clean(
@@ -33,50 +34,79 @@ def run_clean(
     ignore: list[str] | None,
     min_size: int | None,
     start_from: str | None,
+    end_at: str | None = None,
 ) -> bool:
     from loguru import logger
 
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
     validated_start_from = None
+    validated_end_at = None
 
+    # Resolve Branch Head
+    branch_head_hash = global_context.git_commands.get_commit_hash(
+        global_context.current_branch
+    )
+
+    # 1. Validate End At (if provided)
+    if end_at:
+        validated_end_at = validate_commit_hash(
+            end_at, global_context.git_commands, global_context.current_branch
+        )
+        try:
+            validated_end_at = global_context.git_commands.get_commit_hash(
+                validated_end_at
+            )
+        except ValueError:
+            raise GitError(f"End commit not found: {validated_end_at}")
+
+        # Verify end_at is in history of HEAD
+        if validated_end_at != branch_head_hash and not global_context.git_commands.is_ancestor(
+            validated_end_at, branch_head_hash
+        ):
+            raise GitError(
+                f"End commit {validated_end_at[:7]} is not in the target branch history ({global_context.current_branch})."
+            )
+    else:
+        validated_end_at = branch_head_hash
+
+    # 2. Validate Start From (if provided)
     if start_from:
         validated_start_from = validate_commit_hash(
             start_from, global_context.git_commands, global_context.current_branch
         )
-
-        # Verify the commit exists
         try:
             validated_start_from = global_context.git_commands.get_commit_hash(
                 validated_start_from
             )
         except ValueError:
-            raise GitError(f"Commit not found: {validated_start_from}")
+            raise GitError(f"Start commit not found: {validated_start_from}")
 
-        # Verify the commit is an ancestor of the branch tip (exists in target branch history)
-        branch_head_hash = global_context.git_commands.get_commit_hash(
-            global_context.current_branch
-        )
-
-        if not global_context.git_commands.is_ancestor(
-            validated_start_from, branch_head_hash
+        # Verify start < end
+        if validated_start_from != validated_end_at and not global_context.git_commands.is_ancestor(
+            validated_start_from, validated_end_at
         ):
-            raise GitError(
-                f"Commit {validated_start_from[:7]} is not in the target branch history. "
-                f"The start_from commit must be an ancestor of {global_context.current_branch}."
+             raise GitError(
+                f"Start commit {validated_start_from[:7]} is not an ancestor of end commit {validated_end_at[:7]}."
             )
 
-        # Validate that there are no merge commits in the range to be cleaned
+        # 3. Validate No Merges in Range
+        # start_from is INCLUSIVE. To validate it, we check from its parent.
+        if is_root_commit(global_context.git_commands, validated_start_from):
+            raise GitError("Cleaning starting from the root commit is not supported yet!")
+
+        start_parent = global_context.git_commands.try_get_parent_hash(validated_start_from)
         validate_no_merge_commits_in_range(
             global_context.git_commands,
-            validated_start_from,
-            global_context.current_branch,
+            start_parent,
+            validated_end_at,
         )
 
     clean_context = CleanContext(
         ignore=validated_ignore,
         min_size=validated_min_size,
         start_from=validated_start_from,
+        end_at=validated_end_at,
     )
 
     logger.debug(
@@ -84,6 +114,7 @@ def run_clean(
         ignore_patterns=validated_ignore,
         min_size=validated_min_size,
         start_from=validated_start_from,
+        end_at=validated_end_at,
     )
 
     # Execute cleaning
@@ -92,19 +123,23 @@ def run_clean(
     with GitSandbox(global_context) as sandbox:
         with time_block("Clean Runner E2E"):
             runner = CleanPipeline(global_context, clean_context)
-            final_head = runner.run() # Now returns the hash string
-        
+            final_head = runner.run()
+
         if final_head:
             sandbox.sync(final_head)
 
     if final_head:
         # Update references
-        target_ref = global_context.current_branch
+        # If we stopped at end_at, we might need to rebase downstream or update HEAD
+        # The pipeline handles downstream rebasing if end_at != HEAD.
+        # So we just update the branch pointer to the final result of the pipeline.
+        
+        target_ref = global_context.current_branch or "HEAD"
         global_context.git_commands.update_ref(target_ref, final_head)
-        
+
         if global_context.current_branch:
-             global_context.git_commands.read_tree(target_ref)
-        
+            global_context.git_commands.read_tree(target_ref)
+
         logger.success("Clean command completed successfully")
         return True
     else:

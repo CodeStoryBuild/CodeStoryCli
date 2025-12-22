@@ -175,7 +175,11 @@ def main_clean(
     ),
     start_from: str | None = typer.Argument(
         None,
-        help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
+        help="Where to start cleaning from (inclusive). Defaults to earliest possible commit.",
+    ),
+    end_at: str | None = typer.Argument(
+        None,
+        help="Where to end cleaning at. (inclusive). Defaults to HEAD.",
     ),
 ) -> None:
     """Fix your entire repository starting from the latest commit.
@@ -196,7 +200,7 @@ def main_clean(
     from codestory.commands.clean import run_clean
 
     with handle_codestory_exception():
-        if run_clean(ctx.obj, ignore, min_size, start_from):
+        if run_clean(ctx.obj, ignore, min_size, start_from, end_at):
             raise typer.Exit(0)
         else:
             raise typer.Exit(1)

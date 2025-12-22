@@ -470,7 +470,7 @@ class RewritePipeline:
                 else:
                     if self.can_reject_changes:
                         keep = typer.confirm(
-                            "Do you want to commit this change?", default=True
+                            "Do you want to commit this change?"
                         )
                         if keep:
                             accepted_groups.append(group)
@@ -502,7 +502,6 @@ class RewritePipeline:
         else:
             apply_final = typer.confirm(
                 f"Apply {num_acc} proposed commits?",
-                default=True,
             )
 
         if not apply_final:
