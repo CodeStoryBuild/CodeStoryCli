@@ -17,7 +17,7 @@ cst -SP
 | **AWS** | `aws` | [aws.amazon.com/bedrock](https://aws.amazon.com/bedrock/) |
 | **Azure** | `azure` | [azure.microsoft.com](https://azure.microsoft.com/en-us/products/ai-foundry/models) |
 | **Cerebras** | `cerebras` | [cerebras.net](https://cerebras.net/) |
-| **CentML** | `centml` | [centml.ai](https://centml.ai/) |
+| **CentML** | `centml` | [centml.ai](https://docs.centml.ai/home/quickstart) |
 | **Cohere** | `cohere` | [cohere.com](https://cohere.com/) |
 | **DeepSeek** | `deepseek` | [deepseek.com](https://deepseek.com/) |
 | **Fireworks** | `fireworks` | [fireworks.ai](https://fireworks.ai/) |
