@@ -178,7 +178,7 @@ class RewritePipeline:
             raw_chunks, immutable_chunks = self.commands.get_processed_working_diff(
                 self.base_commit_hash,
                 self.new_commit_hash,
-                str(self.commit_context.target) if self.commit_context.target else None,
+                self.commit_context.target,
             )
 
         log_chunks(

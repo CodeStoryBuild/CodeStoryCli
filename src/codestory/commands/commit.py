@@ -35,7 +35,7 @@ from codestory.core.validation import (
 )
 
 
-def verify_repo_state(commands: GitCommands, target: str) -> bool:
+def verify_repo_state(commands: GitCommands, target: list[str] | None) -> bool:
     from loguru import logger
 
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
@@ -46,8 +46,9 @@ def verify_repo_state(commands: GitCommands, target: str) -> bool:
     # always track all files that are not explicitly excluded using gitignore or target path selector
     # this is a very explicit design choice to simplify (remove) the concept of staged/unstaged changes
     if commands.need_track_untracked(target):
+        target_desc = f'"{target}"' if target else "all files"
         logger.debug(
-            f'Untracked files detected within "{target}", starting to track them.',
+            f"Untracked files detected within {target_desc}, starting to track them.",
         )
 
         commands.track_untracked(target)
@@ -85,7 +86,7 @@ def run_commit(
     # verify repo state specifically for commit command
     verify_repo_state(
         global_context.git_commands,
-        str(commit_context.target),
+        commit_context.target,
     )
     # Create a dangling commit for the current working tree state.
     tempcommiter = TempCommitCreator(

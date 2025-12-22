@@ -48,14 +48,21 @@ class GitCommands:
         self,
         base_hash: str,
         new_hash: str,
-        target: str | None = None,
+        target: str | list[str] | None = None,
         similarity: int = 50,
     ) -> list[HunkWrapper | ImmutableHunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
         This is the authoritative source of diff information.
         """
-        path_args = ["--"] + ([target] if target else [])
+        if isinstance(target, str):
+            targets = [target]
+        elif target is None:
+            targets = []
+        else:
+            targets = target
+
+        path_args = ["--"] + targets
         diff_output_bytes = self.git.run_git_binary_out(
             [
                 "diff",
@@ -328,12 +335,13 @@ class GitCommands:
         """Reset staged changes (keeping working directory intact)"""
         self.git.run_git_text_out(["reset"])
 
-    def track_untracked(self, target: str | None = None) -> None:
+    def track_untracked(self, target: str | list[str] | None = None) -> None:
         """
         Make untracked files tracked without staging their content, using 'git add -N'.
         """
         if target:
-            self.git.run_git_text_out(["add", "-N", target])
+            targets = [target] if isinstance(target, str) else target
+            self.git.run_git_text_out(["add", "-N"] + targets)
         else:
             # Track all untracked files
             untracked = self.git.run_git_text_out(
@@ -348,9 +356,15 @@ class GitCommands:
         # 'git diff --cached --quiet' exits with 1 if there are staged changes, 0 otherwise
         return self.git.run_git_text(["diff", "--cached", "--quiet"]) is None
 
-    def need_track_untracked(self, target: str | None = None) -> bool:
+    def need_track_untracked(self, target: str | list[str] | None = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
-        path_args = [target] if target else []
+        if isinstance(target, str):
+            path_args = [target]
+        elif target is None:
+            path_args = []
+        else:
+            path_args = target
+
         untracked_files = self.git.run_git_text_out(
             ["ls-files", "--others", "--exclude-standard"] + path_args
         )
@@ -538,7 +552,10 @@ class GitCommands:
         return bool(result and result.strip() == "true")
 
     def get_processed_working_diff(
-        self, base_hash: str, new_hash: str, target: str | None = None
+        self,
+        base_hash: str,
+        new_hash: str,
+        target: str | list[str] | None = None,
     ) -> tuple[list[Chunk], list[ImmutableChunk]]:
         """
         Parses the git diff once and converts each hunk directly into an

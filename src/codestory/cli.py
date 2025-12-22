@@ -64,8 +64,8 @@ app = typer.Typer(
 @app.command(name="commit")
 def main_commit(
     ctx: typer.Context,
-    target: str | None = typer.Argument(
-        None, help="Path to file or directory to commit."
+    target: list[str] | None = typer.Argument(
+        None, help="Path(s) to file or directory to commit (supports git pathspecs)."
     ),
     message: str | None = typer.Option(
         None,
