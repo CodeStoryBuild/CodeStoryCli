@@ -136,6 +136,11 @@ def main_fix(
     commit_hash: str = typer.Argument(
         None, help="Hash of the end commit to split or fix"
     ),
+    message: str | None = typer.Option(
+        None,
+        "-m",
+        help="Context or instructions for the AI to generate the commit message",
+    ),
     start_commit: str = typer.Option(
         None,
         "--start",
@@ -154,7 +159,7 @@ def main_fix(
     from codestory.commands.fix import run_fix
 
     with handle_codestory_exception():
-        if run_fix(ctx.obj, commit_hash, start_commit):
+        if run_fix(ctx.obj, commit_hash, start_commit, message):
             raise typer.Exit(0)
         else:
             raise typer.Exit(1)

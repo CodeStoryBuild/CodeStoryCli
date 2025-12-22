@@ -108,6 +108,7 @@ class TestAPIBackwardCompatibility:
         "flag",
         [
             "--start",
+            "-m",
         ],
     )
     def test_fix_api(self, cli_exe, flag):
