@@ -59,7 +59,8 @@ def version_callback(value: bool):
             version = version("codestory")
             typer.echo(f"codestory version {version}")
         except PackageNotFoundError:
-            typer.echo("codestory version: development")
+            from codestory.constants import VERSION
+            typer.echo(f"codestory version: {VERSION}")
         raise typer.Exit()
 
 
