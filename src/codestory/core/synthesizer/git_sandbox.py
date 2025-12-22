@@ -16,6 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
+import contextlib
 import os
 import shutil
 import tempfile
@@ -49,7 +50,7 @@ class GitSandbox(AbstractContextManager):
         # Determine real paths
         # We use the raw git interface to ensure we get the resolved paths
         git = self.context.git_interface
-        
+
         # Note: We use run_git_text_out directly from interface, not commands, to reduce circular deps
         objects_dir = git.run_git_text_out(["rev-parse", "--git-path", "objects"])
         if objects_dir:
@@ -97,10 +98,8 @@ class GitSandbox(AbstractContextManager):
 
         # Cleanup temp dir
         if self.temp_dir and os.path.exists(self.temp_dir):
-            try:
+            with contextlib.suppress(OSError):
                 shutil.rmtree(self.temp_dir)
-            except OSError:
-                pass  # Best effort cleanup
 
     def sync(self, new_commit_hash: str):
         """

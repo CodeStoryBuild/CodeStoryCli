@@ -53,14 +53,11 @@ class CleanPipeline:
         # ------------------------------------------------------------------
         # Pass end_at from context
         commits_to_rewrite = self._get_linear_history(
-            self.clean_context.start_from, 
-            getattr(self.clean_context, "end_at", None)
+            self.clean_context.start_from, getattr(self.clean_context, "end_at", None)
         )
 
         if not commits_to_rewrite:
-            logger.warning(
-                "No commits eligible for cleaning."
-            )
+            logger.warning("No commits eligible for cleaning.")
             return None
 
         start_commit = commits_to_rewrite[0]
@@ -183,14 +180,14 @@ class CleanPipeline:
 
             # Check for downstream commits (rebase required if end_at != branch_tip)
             # We look at what the original end_at was supposed to be vs current branch tip
-            
+
             original_branch_head = self.global_context.git_commands.get_commit_hash(
                 self.global_context.current_branch
             )
-            
-            # end_commit is the last commit we rewrote. 
+
+            # end_commit is the last commit we rewrote.
             # If we were cleaning up to end_at, end_commit should correspond to end_at.
-            
+
             if end_commit != original_branch_head:
                 logger.info("Rebasing downstream commits...")
                 # We need to rebase from (old) end_commit ... tip
@@ -211,7 +208,9 @@ class CleanPipeline:
             logger.error(f"Clean pipeline failed: {e}")
             return None
 
-    def _get_linear_history(self, start_from: str | None = None, end_at: str | None = None) -> list[str]:
+    def _get_linear_history(
+        self, start_from: str | None = None, end_at: str | None = None
+    ) -> list[str]:
         """
         Returns a list of commit hashes to rewrite (Oldest -> Newest).
         Ensures the root commit is excluded (cannot be rewritten).
@@ -225,17 +224,12 @@ class CleanPipeline:
             )
 
         range_spec = None
-        
+
         if start_from:
             start_sha = self.global_context.git_commands.get_commit_hash(start_from)
             parent = self.global_context.git_commands.try_get_parent_hash(start_sha)
-            
-            if parent:
-                # effectively acts as A..B (commits reachable from B not A).
-                range_spec = f"{parent}...{end_sha}"
-            else:
-                # Root commit: just end_sha implies reachable from end_sha
-                range_spec = end_sha
+
+            range_spec = f"{parent}...{end_sha}" if parent else end_sha
         else:
             # Auto-detect mode: clean from last merge up to end
             stop_commits = self.global_context.git_commands.get_rev_list(
@@ -265,13 +259,15 @@ class CleanPipeline:
     def _rebase_commit(self, commit: str, new_parent: str) -> str:
         # (Included for completeness of logic flow)
         log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
-        meta_out = self.global_context.git_commands.get_commit_metadata(commit, log_format)
+        meta_out = self.global_context.git_commands.get_commit_metadata(
+            commit, log_format
+        )
         if not meta_out:
             raise CleanCommandError(f"Failed to get metadata for {commit}")
 
         lines = meta_out.splitlines()
         if len(lines) < 7:
-             raise CleanCommandError(f"Invalid metadata for {commit}")
+            raise CleanCommandError(f"Invalid metadata for {commit}")
 
         author_name, author_email, author_date = lines[0], lines[1], lines[2]
         committer_name, committer_email, committer_date = lines[3], lines[4], lines[5]
@@ -295,9 +291,12 @@ class CleanPipeline:
         cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
         cmd_env["GIT_COMMITTER_DATE"] = committer_date
 
-        return self.global_context.git_commands.commit_tree(
-            new_tree, [new_parent], message, env=cmd_env
-        ) or ""
+        return (
+            self.global_context.git_commands.commit_tree(
+                new_tree, [new_parent], message, env=cmd_env
+            )
+            or ""
+        )
 
     def _copy_commit_index_only(
         self, original_commit: str, new_base: str

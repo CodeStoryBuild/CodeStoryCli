@@ -61,8 +61,11 @@ def run_clean(
             raise GitError(f"End commit not found: {validated_end_at}")
 
         # Verify end_at is in history of HEAD
-        if validated_end_at != branch_head_hash and not global_context.git_commands.is_ancestor(
-            validated_end_at, branch_head_hash
+        if (
+            validated_end_at != branch_head_hash
+            and not global_context.git_commands.is_ancestor(
+                validated_end_at, branch_head_hash
+            )
         ):
             raise GitError(
                 f"End commit {validated_end_at[:7]} is not in the target branch history ({global_context.current_branch})."
@@ -83,19 +86,26 @@ def run_clean(
             raise GitError(f"Start commit not found: {validated_start_from}")
 
         # Verify start < end
-        if validated_start_from != validated_end_at and not global_context.git_commands.is_ancestor(
-            validated_start_from, validated_end_at
+        if (
+            validated_start_from != validated_end_at
+            and not global_context.git_commands.is_ancestor(
+                validated_start_from, validated_end_at
+            )
         ):
-             raise GitError(
+            raise GitError(
                 f"Start commit {validated_start_from[:7]} is not an ancestor of end commit {validated_end_at[:7]}."
             )
 
         # 3. Validate No Merges in Range
         # start_from is INCLUSIVE. To validate it, we check from its parent.
         if is_root_commit(global_context.git_commands, validated_start_from):
-            raise GitError("Cleaning starting from the root commit is not supported yet!")
+            raise GitError(
+                "Cleaning starting from the root commit is not supported yet!"
+            )
 
-        start_parent = global_context.git_commands.try_get_parent_hash(validated_start_from)
+        start_parent = global_context.git_commands.try_get_parent_hash(
+            validated_start_from
+        )
         validate_no_merge_commits_in_range(
             global_context.git_commands,
             start_parent,
@@ -133,7 +143,7 @@ def run_clean(
         # If we stopped at end_at, we might need to rebase downstream or update HEAD
         # The pipeline handles downstream rebasing if end_at != HEAD.
         # So we just update the branch pointer to the final result of the pipeline.
-        
+
         target_ref = global_context.current_branch or "HEAD"
         global_context.git_commands.update_ref(target_ref, final_head)
 

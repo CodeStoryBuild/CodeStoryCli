@@ -26,13 +26,13 @@ from codestory.core.exceptions import (
 )
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.temp_commiter.temp_commiter import TempCommitCreator
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
 )
-from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def verify_repo_state(commands: GitCommands, target: str) -> bool:
@@ -107,7 +107,7 @@ def run_commit(
             )
 
             new_commit_hash = runner.run()
-        
+
         # Only sync if we actually have a result
         if new_commit_hash and new_commit_hash != base_commit_hash:
             sandbox.sync(new_commit_hash)

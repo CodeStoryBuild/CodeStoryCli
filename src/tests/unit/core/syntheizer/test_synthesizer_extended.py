@@ -24,13 +24,13 @@ import pytest
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 
 # Assuming the synthesizer class is here
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
-from codestory.core.git_commands.git_commands import GitCommands
 
 
 # Helper fixture to create a repo with two files
