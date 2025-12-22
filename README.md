@@ -1,3 +1,8 @@
+![Tests](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/pytest.yml?label=tests)
+![Docs](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/deploy-docs.yml?label=docs)
+![GitHub Release](https://img.shields.io/github/v/release/CodeStoryBuild/CodeStoryCli?include_prereleases&label=release)
+![PyPI Version](https://img.shields.io/pypi/v/codestory-cli?color=blue&label=pypi)
+
 # The Codestory CLI
 
 Git is a powerful tool. It is also an excellent tool for shooting yourself in the foot.
