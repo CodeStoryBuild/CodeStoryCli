@@ -30,6 +30,7 @@ from codestory.core.git_interface.SubprocessGitInterface import (
 
 # Assuming the synthesizer class is here
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
+from codestory.core.git_commands.git_commands import GitCommands
 
 
 # Helper fixture to create a repo with two files
@@ -99,7 +100,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     This verifies that the cumulative reconstruction works correctly across files.
     """
     repo_path, base_hash = multi_file_git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # --- Define the Changes ---
 
@@ -250,7 +251,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     the diffs are correctly isolated in the new order.
     """
     repo_path, base_hash = multi_file_git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # --- Define the Changes ---
 

@@ -267,7 +267,8 @@ def validate_git_repository(git_commands: GitCommands) -> None:
     """
     # Check if git is available
     if not git_commands.is_git_repo():
-        raise GitError("Current directory is not a git repository")
+        # Keep error message compatible with existing tests
+        raise GitError("Not a git repository")
 
 
 def validate_default_branch(git_commands: GitCommands) -> None:
