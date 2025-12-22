@@ -70,7 +70,7 @@ SUPPORTED_LANGUAGES = [
 
 LOCAL_PROVIDERS = {"ollama"}
 
-UNSUPPORTED_PROVIDERS = {"deepgram"}
+UNSUPPORTED_PROVIDERS = {"deepgram", "googlevertexai"}
 
 
 def get_cloud_providers() -> set[str]:
