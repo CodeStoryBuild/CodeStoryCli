@@ -19,6 +19,7 @@
 import os
 import shutil
 import subprocess
+import uuid
 from pathlib import Path
 
 
@@ -122,8 +123,8 @@ class RepoState:
         This does NOT modify the actual index or HEAD.
         It uses a temporary index to calculate the tree object.
         """
-        # Create a temporary index file
-        temp_index = self.path / ".git" / "temp_index"
+        # Create a temporary index file with a cryptographically unique name
+        temp_index = self.path / ".git" / f"temp_index_{uuid.uuid4().hex}"
         env = os.environ.copy()
         env["GIT_INDEX_FILE"] = str(temp_index)
 
