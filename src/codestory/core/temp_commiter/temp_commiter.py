@@ -26,9 +26,12 @@ from codestory.core.git_commands.git_commands import GitCommands
 class TempCommitCreator:
     """Save working directory changes into a dangling commit and restore them."""
 
-    def __init__(self, git_commands: GitCommands, current_branch: str):
+    def __init__(
+        self, git_commands: GitCommands, current_branch: str, pathspec: list[str] | None
+    ):
         self.git_commands = git_commands
         self.current_branch = current_branch
+        self.pathspec = pathspec
 
     def _branch_exists(self, branch_name: str) -> bool:
         """Check if a branch exists using `git rev-parse --verify --quiet`."""
@@ -99,9 +102,10 @@ class TempCommitCreator:
             # Load the current branch tip into the temporary index
             self.git_commands.read_tree(self.current_branch, env=env)
 
-            # Add all working directory changes to the temporary index
-            # This includes untracked files
-            self.git_commands.add(["-A"], env=env)
+            # Add working directory changes to the temporary index
+            # Uses the pathspec if provided, otherwise adds current directory
+            add_args = self.pathspec if self.pathspec else ["."]
+            self.git_commands.add(add_args, env=env)
 
             # Write the index state to a tree object
             new_tree_hash = self.git_commands.write_tree(env=env)

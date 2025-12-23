@@ -89,11 +89,18 @@ def run_commit(
         commit_context.target,
     )
     # Create a dangling commit for the current working tree state.
-    tempcommiter = TempCommitCreator(
-        global_context.git_commands, global_context.current_branch
-    )
+    # This also runs in a sandbox to avoid polluting the main object directory.
+    with GitSandbox(global_context) as tempcommit_sandbox:
+        tempcommiter = TempCommitCreator(
+            global_context.git_commands,
+            global_context.current_branch,
+            commit_context.target,
+        )
 
-    base_commit_hash, new_commit_hash = tempcommiter.create_reference_commit()
+        base_commit_hash, new_commit_hash = tempcommiter.create_reference_commit()
+
+        # Sync the temp commit to the real object store so the rewrite pipeline can see it
+        tempcommit_sandbox.sync(new_commit_hash)
 
     from codestory.pipelines.rewrite_init import create_rewrite_pipeline
 
