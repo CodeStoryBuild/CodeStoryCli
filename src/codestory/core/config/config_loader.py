@@ -17,11 +17,10 @@
 # -----------------------------------------------------------------------------
 
 import os
+import tomllib
 from dataclasses import fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-
-import tomllib
 
 from codestory.constants import ENV_APP_PREFIX, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE
 from codestory.core.config.type_constraints import TypeConstraint
