@@ -409,12 +409,12 @@ def create_global_callback():
 
             # Initialize git interface and commands to resolve branch
             from codestory.core.git_commands.git_commands import GitCommands
-            from codestory.core.git_interface.SubprocessGitInterface import (
-                SubprocessGitInterface,
+            from codestory.core.git_interface import (
+                GitInterface,
             )
 
             resolved_repo_path = Path(repo_path) if repo_path is not None else Path(".")
-            git_interface = SubprocessGitInterface(resolved_repo_path)
+            git_interface = GitInterface(resolved_repo_path)
             git_commands = GitCommands(git_interface)
 
             validate_git_repository(

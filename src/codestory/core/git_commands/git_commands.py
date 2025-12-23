@@ -26,7 +26,7 @@ from codestory.core.data.hunk_wrapper import HunkWrapper
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.immutable_hunk_wrapper import ImmutableHunkWrapper
 from codestory.core.git_commands.git_const import EMPTYTREEHASH
-from codestory.core.git_interface.interface import GitInterface
+from codestory.core.git_interface import GitInterface
 
 
 class GitCommands:

@@ -35,8 +35,10 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
 
-    def __init__(self, command_name: str):
+    def __init__(self, command_name: str, debug: bool = False, silent: bool = False):
         self.command_name = command_name
+        self.debug = debug
+        self.silent = silent
         self._setup_logger()
 
     def _setup_logger(self) -> None:
@@ -46,9 +48,16 @@ class StructuredLogger:
         # Clear existing sinks to avoid duplicates
         logger.remove()
 
-        # Determine log level from environment
-        log_level = os.getenv("CODESTORY_LOG_LEVEL", "INFO").upper()
-        console_level = os.getenv("CODESTORY_CONSOLE_LOG_LEVEL", log_level).upper()
+        # Determine log level - flags override env vars
+        if self.debug:
+            log_level = "DEBUG"
+            console_level = "DEBUG"
+        elif self.silent:
+            log_level = "ERROR"
+            console_level = "ERROR"
+        else:
+            log_level = os.getenv("CODESTORY_LOG_LEVEL", "INFO").upper()
+            console_level = os.getenv("CODESTORY_CONSOLE_LOG_LEVEL", log_level).upper()
 
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -98,28 +107,23 @@ def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -
 
     Args:
         command_name: Name of the command being executed
-        console: Rich console for output
         debug: Enable debug logging
+        silent: Suppress most console output (only errors)
 
     Returns:
         Path to the log file
     """
-    # Override log level if debug is requested
-    if debug:
-        os.environ["CODESTORY_LOG_LEVEL"] = "DEBUG"
-        os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "DEBUG"
-    elif silent:
-        os.environ["CODESTORY_LOG_LEVEL"] = "ERROR"
-        os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "ERROR"
-
-    structured_logger = StructuredLogger(command_name)
+    structured_logger = StructuredLogger(command_name, debug=debug, silent=silent)
     return structured_logger.get_logfile()
 
 
 def setup_debug_logging() -> None:
-    """Enable debug logging for troubleshooting."""
-    os.environ["CODESTORY_LOG_LEVEL"] = "DEBUG"
-    os.environ["CODESTORY_CONSOLE_LOG_LEVEL"] = "DEBUG"
+    """
+    Enable debug logging for troubleshooting.
+
+    Note: This creates a new StructuredLogger with debug=True.
+    """
+    StructuredLogger("debug", debug=True)
 
 
 def get_log_directory() -> Path:

@@ -25,8 +25,8 @@ from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
 from codestory.core.git_commands.git_commands import GitCommands
-from codestory.core.git_interface.SubprocessGitInterface import (
-    SubprocessGitInterface,
+from codestory.core.git_interface import (
+    GitInterface,
 )
 
 # Assuming the synthesizer class is here
@@ -100,7 +100,7 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     This verifies that the cumulative reconstruction works correctly across files.
     """
     repo_path, base_hash = multi_file_git_repo
-    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
+    synthesizer = GitSynthesizer(GitCommands(GitInterface(repo_path)))
 
     # --- Define the Changes ---
 
@@ -251,7 +251,7 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     the diffs are correctly isolated in the new order.
     """
     repo_path, base_hash = multi_file_git_repo
-    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
+    synthesizer = GitSynthesizer(GitCommands(GitInterface(repo_path)))
 
     # --- Define the Changes ---
 

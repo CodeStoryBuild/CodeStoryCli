@@ -34,23 +34,28 @@ class GitSandbox(AbstractContextManager):
     intermediate processing. Use .sync(commit_hash) to migrate the result.
     """
 
+    # Keys that the sandbox overrides in the git interface environment
+    _SANDBOX_ENV_KEYS = frozenset(
+        ["GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES"]
+    )
+
     def __init__(self, context: GlobalContext):
         self.context = context
         self.temp_dir = None
-        self.original_env = {}
-        self.sandbox_env = {}
+        self.original_override: dict | None = None
+        self.sandbox_override: dict = {}
 
     def __enter__(self):
         # Create temp directory for objects
         self.temp_dir = tempfile.mkdtemp(prefix="codestory_sandbox_")
 
-        # Capture original environment
-        self.original_env = os.environ.copy()
+        git = self.context.git_interface
+
+        # Capture original override state (might be None or a dict)
+        self.original_override = git.global_env_override
 
         # Determine real paths
         # We use the raw git interface to ensure we get the resolved paths
-        git = self.context.git_interface
-
         # Note: We use run_git_text_out directly from interface, not commands, to reduce circular deps
         objects_dir = git.run_git_text_out(["rev-parse", "--git-path", "objects"])
         if objects_dir:
@@ -69,32 +74,28 @@ class GitSandbox(AbstractContextManager):
         if existing_alternates:
             new_alternates.extend(existing_alternates.split(sep))
 
-        self.sandbox_env = self.original_env.copy()
-        self.sandbox_env["GIT_OBJECT_DIRECTORY"] = self.temp_dir
-        self.sandbox_env["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = sep.join(new_alternates)
+        # Build sandbox override - only the specific keys we need
+        self.sandbox_override = {
+            "GIT_OBJECT_DIRECTORY": self.temp_dir,
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": sep.join(new_alternates),
+        }
 
-        # Apply to current process
-        os.environ.update(self.sandbox_env)
+        # Apply override to git interface (NOT os.environ)
+        # If there was an existing override, merge our keys on top
+        if self.original_override:
+            git.global_env_override = {
+                **self.original_override,
+                **self.sandbox_override,
+            }
+        else:
+            git.global_env_override = self.sandbox_override
 
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Restore environment
-        if "GIT_OBJECT_DIRECTORY" in self.original_env:
-            os.environ["GIT_OBJECT_DIRECTORY"] = self.original_env[
-                "GIT_OBJECT_DIRECTORY"
-            ]
-        else:
-            if "GIT_OBJECT_DIRECTORY" in os.environ:
-                del os.environ["GIT_OBJECT_DIRECTORY"]
-
-        if "GIT_ALTERNATE_OBJECT_DIRECTORIES" in self.original_env:
-            os.environ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = self.original_env[
-                "GIT_ALTERNATE_OBJECT_DIRECTORIES"
-            ]
-        else:
-            if "GIT_ALTERNATE_OBJECT_DIRECTORIES" in os.environ:
-                del os.environ["GIT_ALTERNATE_OBJECT_DIRECTORIES"]
+        # Restore original git interface override state
+        git = self.context.git_interface
+        git.global_env_override = self.original_override
 
         # Cleanup temp dir
         if self.temp_dir and os.path.exists(self.temp_dir):
@@ -137,7 +138,6 @@ class GitSandbox(AbstractContextManager):
 
         # 2. Generate Pack (Sandbox Environment)
         # 'pack-objects' reads the list of objects from stdin and outputs a pack stream
-        # We pass self.sandbox_env explicitely just to be safe, though os.environ is already set
         pack_data = git.run_git_binary_out(
             ["pack-objects", "--stdout"], input_bytes=input_bytes
         )
@@ -145,16 +145,19 @@ class GitSandbox(AbstractContextManager):
         if not pack_data:
             raise GitError("Failed to create pack of sandbox objects")
 
-        # 3. Ingest Pack (Original Environment)
-        # 'index-pack' reads the pack stream and writes .pack and .idx to the main repo
-        # CRITICAL: We must use self.original_env here so that index-pack writes
-        # to the REAL .git/objects directory, ignoring the current GIT_OBJECT_DIRECTORY env var.
         logger.debug("Indexing pack into real repository...")
 
-        git.run_git_binary_out(
-            ["index-pack", "--stdin", "--fix-thin"],
-            input_bytes=pack_data,
-            env=self.original_env,  # Must use original env to write to real object dir
-        )
+        # Pass original override to bypass the sandbox overrides and write to the real object dir
+        original = git.global_env_override
+        git.global_env_override = (
+            self.original_override
+        )  # Temporarily restore to pre-sandbox state
+        try:
+            git.run_git_binary_out(
+                ["index-pack", "--stdin", "--fix-thin"],
+                input_bytes=pack_data,
+            )
+        finally:
+            git.global_env_override = original  # Restore sandbox override
 
         logger.debug("Sandbox sync complete.")

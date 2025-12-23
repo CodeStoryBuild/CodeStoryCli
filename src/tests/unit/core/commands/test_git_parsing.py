@@ -27,8 +27,8 @@ from codestory.core.data.immutable_hunk_wrapper import ImmutableHunkWrapper
 
 # Assume the classes are in a package named 'git_parsing'
 from codestory.core.git_commands.git_commands import GitCommands
-from codestory.core.git_interface.SubprocessGitInterface import (
-    SubprocessGitInterface,
+from codestory.core.git_interface import (
+    GitInterface,
 )
 
 
@@ -63,7 +63,7 @@ class TestGitDiffParsing:
 
     def setup_method(self, git_repo: Path):
         """Setup a GitCommands instance for each test method."""
-        self.git_commands = GitCommands(git=SubprocessGitInterface("."))
+        self.git_commands = GitCommands(git=GitInterface("."))
 
     def test_parse_simple_modification(self, git_repo: Path):
         """Test parsing a diff for a simple text file modification."""
