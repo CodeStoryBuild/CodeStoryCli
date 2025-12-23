@@ -102,7 +102,7 @@ class GitSandbox(AbstractContextManager):
             with contextlib.suppress(OSError):
                 shutil.rmtree(self.temp_dir)
 
-    def sync(self, new_commit_hash: str):
+    def sync(self, new_commit_hash: str, thin_pack: bool = False):
         """
         Packs objects reachable from new_commit_hash (but not in the main repo)
         and indexes them into the main repository.
@@ -138,9 +138,12 @@ class GitSandbox(AbstractContextManager):
 
         # 2. Generate Pack (Sandbox Environment)
         # 'pack-objects' reads the list of objects from stdin and outputs a pack stream
-        pack_data = git.run_git_binary_out(
-            ["pack-objects", "--stdout"], input_bytes=input_bytes
-        )
+        if thin_pack:
+            cmd_pack = ["pack-objects", "--stdout", "--thin", "--delta-base-offset"]
+        else:
+            cmd_pack = ["pack-objects", "--stdout"]
+
+        pack_data = git.run_git_binary_out(cmd_pack, input_bytes=input_bytes)
 
         if not pack_data:
             raise GitError("Failed to create pack of sandbox objects")
