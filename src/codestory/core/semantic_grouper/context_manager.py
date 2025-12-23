@@ -24,7 +24,7 @@ from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.exceptions import SyntaxErrorDetected
 from codestory.core.file_reader.file_parser import FileParser, ParsedFile
-from codestory.core.file_reader.protocol import FileReader
+from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.semantic_grouper.comment_mapper import CommentMap, CommentMapper
 from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.scope_mapper import ScopeMap, ScopeMapper
@@ -63,11 +63,15 @@ class ContextManager:
     def __init__(
         self,
         chunks: list[Chunk],
-        file_reader: FileReader,
+        file_reader: GitFileReader,
+        base_commit: str,
+        patched_commit: str,
         fail_on_syntax_errors: bool = False,
         pbar: tqdm | None = None,
     ):
         self.file_reader = file_reader
+        self.base_commit = base_commit
+        self.patched_commit = patched_commit
         self.diff_chunks = [
             diff_chunk for chunk in chunks for diff_chunk in chunk.get_chunks()
         ]
@@ -197,28 +201,56 @@ class ContextManager:
     def _generate_parsed_files(self, pbar: tqdm | None = None) -> None:
         from loguru import logger
 
+        # Gather all required files
+        old_files = []
+        new_files = []
+        context_keys = []
+
         for (
             file_path,
             is_old_version,
         ), line_ranges in self._required_contexts.items():
-            try:
-                if not line_ranges:
-                    logger.debug(
-                        f"No line ranges for file: {file_path}, skipping semantic generation"
-                    )
-                    continue
-
-                # Decode bytes file path for file_reader
-                path_str = (
-                    file_path.decode("utf-8", errors="replace")
-                    if isinstance(file_path, bytes)
-                    else file_path
+            if not line_ranges:
+                logger.debug(
+                    f"No line ranges for file: {file_path}, skipping semantic generation"
                 )
-                content = self.file_reader.read(path_str, old_content=is_old_version)
+                continue
+
+            # Decode bytes file path for file_reader
+            path_str = (
+                file_path.decode("utf-8", errors="replace")
+                if isinstance(file_path, bytes)
+                else file_path
+            )
+
+            if is_old_version:
+                old_files.append(path_str)
+            else:
+                new_files.append(path_str)
+
+            context_keys.append((file_path, is_old_version, path_str))
+
+        # Read all files at once
+        old_contents, new_contents = self.file_reader.read_all(
+            self.base_commit, self.patched_commit, old_files, new_files
+        )
+
+        # Map contents back to context keys
+        content_map: dict[tuple[str, bool], str | None] = {}
+        for i, path in enumerate(old_files):
+            content_map[(path, True)] = old_contents[i]
+        for i, path in enumerate(new_files):
+            content_map[(path, False)] = new_contents[i]
+
+        # Parse each file
+        for file_path, is_old_version, path_str in context_keys:
+            try:
+                content = content_map.get((path_str, is_old_version))
                 if content is None:
                     logger.debug(f"Content read for {path_str} is None")
                     continue
 
+                line_ranges = self._required_contexts[(file_path, is_old_version)]
                 # Parse the file (file_parser expects string path)
                 parsed_file = FileParser.parse_file(
                     path_str, content, self.simplify_overlapping_ranges(line_ranges)

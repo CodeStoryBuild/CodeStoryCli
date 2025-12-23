@@ -16,23 +16,30 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from typing import Protocol
+"""Utilities for sanitizing LLM outputs."""
 
 
-class FileReader(Protocol):
-    """An interface for reading file content."""
+def sanitize_llm_text(text: str) -> str:
+    """
+    Sanitizes text output from LLMs by removing problematic characters.
 
-    def read(self, path: str, old_content: bool = False) -> str | None:
-        """
-        Reads the content of a file.
+    LLMs occasionally produce control characters like null bytes (\x00) which
+    cause failures in downstream processing, particularly on Windows where
+    subprocess.CreateProcess cannot handle null characters in arguments.
 
-        Args:
-            path: The canonical path to the file.
-            old_content: If True, read the 'before' version of the file.
-                         If False, read the 'after' version.
+    Args:
+        text: Raw text from LLM output.
 
-        Returns:
-            The file content as a string, or None if it doesn't exist
-            (e.g., reading the 'old' version of a newly added file).
-        """
-        ...
+    Returns:
+        Sanitized text with problematic characters removed.
+    """
+    if not text:
+        return text
+
+    # Remove null bytes - these break Windows subprocess calls
+    result = text.replace("\x00", "")
+
+    # Strip leading/trailing whitespace that LLMs often include
+    result = result.strip()
+
+    return result

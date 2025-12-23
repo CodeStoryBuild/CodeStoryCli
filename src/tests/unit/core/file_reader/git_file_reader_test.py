@@ -21,47 +21,42 @@ from unittest.mock import Mock
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.git_commands.git_commands import GitCommands
 
-# -----------------------------------------------------------------------------
-# Tests
-# -----------------------------------------------------------------------------
 
-
-def test_read_new_content():
+def test_read_all():
     mock_git = Mock(spec=GitCommands)
-    mock_git.cat_file.return_value = "content"
+    # mock_git.cat_file_batch returns a list of bytes or None
+    mock_git.cat_file_batch.return_value = [
+        b"old content 1",
+        b"old content 2",
+        b"new content 1",
+        None,  # missing new content
+    ]
 
-    reader = GitFileReader(mock_git, "base", "head")
-    content = reader.read("path/to/file.txt", old_content=False)
+    reader = GitFileReader(mock_git)
+    old_files = ["old1.txt", "old2.txt"]
+    new_files = ["new1.txt", "new2.txt"]
 
-    assert content == "content"
-    mock_git.cat_file.assert_called_once_with("head:path/to/file.txt")
+    old_contents, new_contents = reader.read_all(
+        "old_sha", "new_sha", old_files, new_files
+    )
+
+    assert old_contents == ["old content 1", "old content 2"]
+    assert new_contents == ["new content 1", None]
+
+    expected_objs = [
+        "old_sha:old1.txt",
+        "old_sha:old2.txt",
+        "new_sha:new1.txt",
+        "new_sha:new2.txt",
+    ]
+    mock_git.cat_file_batch.assert_called_once_with(expected_objs)
 
 
-def test_read_old_content():
+def test_read_all_path_normalization():
     mock_git = Mock(spec=GitCommands)
-    mock_git.cat_file.return_value = "old content"
+    mock_git.cat_file_batch.return_value = [b"content"]
 
-    reader = GitFileReader(mock_git, "base", "head")
-    content = reader.read("path/to/file.txt", old_content=True)
+    reader = GitFileReader(mock_git)
+    reader.read_all("old", "new", ["path\\to\\file.txt"], [])
 
-    assert content == "old content"
-    mock_git.cat_file.assert_called_once_with("base:path/to/file.txt")
-
-
-def test_read_path_normalization():
-    mock_git = Mock(spec=GitCommands)
-
-    reader = GitFileReader(mock_git, "base", "head")
-    reader.read("path\\to\\file.txt")
-
-    mock_git.cat_file.assert_called_once_with("head:path/to/file.txt")
-
-
-def test_read_returns_none_on_failure():
-    mock_git = Mock(spec=GitCommands)
-    mock_git.cat_file.return_value = None
-
-    reader = GitFileReader(mock_git, "base", "head")
-    content = reader.read("nonexistent.txt")
-
-    assert content is None
+    mock_git.cat_file_batch.assert_called_once_with(["old:path/to/file.txt"])

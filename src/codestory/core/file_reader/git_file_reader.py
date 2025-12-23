@@ -20,21 +20,40 @@ from codestory.core.git_commands.git_commands import GitCommands
 
 
 class GitFileReader:
-    def __init__(
-        self, git_commands: GitCommands, base_commit: str, patched_commit: str
-    ):
+    def __init__(self, git_commands: GitCommands):
         self.git_commands = git_commands
-        self.base_commit = base_commit
-        self.patched_commit = patched_commit
 
-    def read(self, path: str, old_content: bool = False) -> str | None:
+    def read_all(
+        self,
+        old_commit_hash: str,
+        new_commit_hash: str,
+        old_files: list[str],
+        new_files: list[str],
+    ) -> tuple[list[str | None], list[str | None]]:
         """
-        Returns the file content from the specified commit using git cat-file.
-        version: 'old' for base_commit, 'new' for patched_commit (HEAD by default)
+        Returns the content of multiple files from base and patched commits using git cat-file --batch.
         """
-        commit = self.base_commit if old_content else self.patched_commit
-        # Use git cat-file to get file content
-        # rel_path should be in posix format for git
-        rel_path_git = path.replace("\\", "/").strip()
-        obj = f"{commit}:{rel_path_git}"
-        return self.git_commands.cat_file(obj)
+        # Prepare all objects to read
+        old_objs = [
+            f"{old_commit_hash}:{path.replace('\\', '/').strip()}" for path in old_files
+        ]
+        new_objs = [
+            f"{new_commit_hash}:{path.replace('\\', '/').strip()}" for path in new_files
+        ]
+
+        all_objs = old_objs + new_objs
+        all_contents = self.git_commands.cat_file_batch(all_objs)
+
+        # Split back into old and new
+        old_contents_bytes = all_contents[: len(old_files)]
+        new_contents_bytes = all_contents[len(old_files) :]
+
+        def to_str(content: bytes | None) -> str | None:
+            if content is None:
+                return None
+            return content.decode("utf-8", errors="replace")
+
+        return (
+            [to_str(c) for c in old_contents_bytes],
+            [to_str(c) for c in new_contents_bytes],
+        )

@@ -30,7 +30,7 @@ from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.diff_generation.git_diff_generator import GitDiffGenerator
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
-from codestory.core.file_reader.protocol import FileReader
+from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.logging.utils import log_chunks, time_block
@@ -144,7 +144,7 @@ class RewritePipeline:
         semantic_grouper: SemanticGrouper,
         logical_grouper: LogicalGrouper,
         synthesizer: GitSynthesizer,
-        file_reader: FileReader,
+        file_reader: GitFileReader,
         base_commit_hash: str,
         new_commit_hash: str,
         source: Literal["commit", "fix"],
@@ -204,6 +204,8 @@ class RewritePipeline:
             context_manager = ContextManager(
                 raw_chunks,
                 self.file_reader,
+                self.base_commit_hash,
+                self.new_commit_hash,
                 self.commit_context.fail_on_syntax_errors,
                 pbar=pbar,
             )

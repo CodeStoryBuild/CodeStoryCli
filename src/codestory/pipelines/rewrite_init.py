@@ -57,9 +57,7 @@ def create_rewrite_pipeline(
     if new_commit_hash is None:
         raise GitError("Failed to backup working state, exiting.")
 
-    file_reader = GitFileReader(
-        global_ctx.git_commands, base_commit_hash, new_commit_hash
-    )
+    file_reader = GitFileReader(global_ctx.git_commands)
 
     semantic_grouper = SemanticGrouper(global_ctx.config.fallback_grouping_strategy)
 

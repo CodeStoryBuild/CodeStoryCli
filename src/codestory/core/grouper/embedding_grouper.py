@@ -41,6 +41,7 @@ from codestory.core.llm import CodeStoryAdapter
 from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
 from codestory.core.semantic_grouper.context_manager import ContextManager
 from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
+from codestory.core.utils.sanitize import sanitize_llm_text
 
 # -----------------------------------------------------------------------------
 # Prompts (Optimized for 1.5B LLMs)
@@ -424,16 +425,16 @@ class EmbeddingGrouper(LogicalGrouper):
 
         for task, response in zip(tasks, responses, strict=True):
             if not task.is_multiple:
-                # Single task: simple cleanup
-                clean_res = response.strip().strip('"').strip("'")
+                # Single task: simple cleanup + sanitize LLM output
+                clean_res = sanitize_llm_text(response.strip('"').strip("'"))
                 final_summaries[task.indices[0]] = clean_res
             else:
                 batch_summaries = self._parse_json_list_response(
                     response, len(task.indices)
                 )
-                # Distribute results
+                # Distribute results, sanitizing each summary
                 for idx, summary in zip(task.indices, batch_summaries, strict=True):
-                    final_summaries[idx] = summary
+                    final_summaries[idx] = sanitize_llm_text(summary)
 
         return final_summaries
 
@@ -500,18 +501,18 @@ class EmbeddingGrouper(LogicalGrouper):
         cluster_messages_map = {}
         for task, response in zip(cluster_tasks, responses, strict=True):
             if not task.is_multiple:
-                # Single cluster
-                clean_msg = response.strip().strip('"').strip("'")
+                # Single cluster: sanitize LLM output
+                clean_msg = sanitize_llm_text(response.strip('"').strip("'"))
                 cluster_messages_map[task.cluster_ids[0]] = clean_msg
             else:
                 batch_messages = self._parse_json_list_response(
                     response, len(task.cluster_ids)
                 )
-                # Map results
+                # Map results, sanitizing each message
                 for cluster_id, message in zip(
                     task.cluster_ids, batch_messages, strict=True
                 ):
-                    cluster_messages_map[cluster_id] = message
+                    cluster_messages_map[cluster_id] = sanitize_llm_text(message)
 
         return cluster_messages_map
 
