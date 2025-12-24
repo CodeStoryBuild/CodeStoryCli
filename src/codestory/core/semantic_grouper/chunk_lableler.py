@@ -26,7 +26,7 @@ from codestory.core.semantic_grouper.context_manager import (
     AnalysisContext,
     ContextManager,
 )
-from codestory.core.synthesizer.chunk_merger import merge_chunks
+from codestory.core.synthesizer.chunk_merger import merge_chunk
 
 
 @dataclass(frozen=True)
@@ -151,50 +151,60 @@ class AnnotatedChunk:
 class ChunkLabeler:
     @staticmethod
     def annotate_chunks(
-        original_chunks: list[Chunk],
+        chunks: list[Chunk],
         context_manager: ContextManager,
         pbar: tqdm | None = None,
-    ) -> list[AnnotatedChunk]:
+    ) -> list[AnnotatedChunk | None]:
         """
         Generate semantic signatures for each original chunk.
         """
-        merged_chunks = merge_chunks(original_chunks)
         # ensure these chunks are merged
         annotated_chunks = []
 
         if pbar is not None:
-            pbar.total = len(merged_chunks)
+            pbar.total = len(chunks)
             pbar.refresh()
 
-        for chunk in merged_chunks:
+        for chunk in chunks:
             if pbar is not None:
                 pbar.update(1)
 
-            # Get all DiffChunks that belong to this original chunk
-            chunk_diff_chunks = chunk.get_chunks()
-
-            # Generate signature for this chunk, which might fail (return None)
-            signatures = ChunkLabeler._generate_signatures(
-                chunk_diff_chunks, context_manager
-            )
-
-            if all(sig is None for sig in signatures):
-                # Analysis failed for this chunk
-                chunk_signature = None
-            else:
-                chunk_signature = ChunkSignature(
-                    total_signature=Signature.from_signatures(signatures),
-                    signatures=signatures,
-                )
-
-            annotated = AnnotatedChunk(
-                chunk=chunk,
-                signature=chunk_signature,
+            annotated = ChunkLabeler.annotate_chunk(
+                chunk=chunk, context_manager=context_manager
             )
 
             annotated_chunks.append(annotated)
 
         return annotated_chunks
+
+    @staticmethod
+    def annotate_chunk(
+        chunk: Chunk, context_manager: ContextManager
+    ) -> AnnotatedChunk | None:
+        # do cleanup inside the chunk and merge possible continous diff chunks
+        chunk = merge_chunk(chunk)
+
+        # Get all DiffChunks that belong to this original chunk
+        chunk_diff_chunks = chunk.get_chunks()
+
+        # Generate signature for this chunk, which might fail (return None)
+        signatures = ChunkLabeler._generate_signatures(
+            chunk_diff_chunks, context_manager
+        )
+
+        if all(sig is None for sig in signatures):
+            # Analysis failed for this chunk
+            chunk_signature = None
+        else:
+            chunk_signature = ChunkSignature(
+                total_signature=Signature.from_signatures(signatures),
+                signatures=signatures,
+            )
+
+        return AnnotatedChunk(
+            chunk=chunk,
+            signature=chunk_signature,
+        )
 
     @staticmethod
     def _generate_signatures(
