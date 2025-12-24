@@ -139,7 +139,9 @@ def context_manager_deps(mocks):
 
 def test_analyze_required_contexts_mod(context_manager_deps):
     chunk = create_chunk()
-    cm = ContextManager([chunk], context_manager_deps["reader"], False)
+    cm = ContextManager(
+        [chunk], context_manager_deps["reader"], "base", "patched", False
+    )
 
     req = cm.get_required_contexts()
     assert (b"file.txt", True) in req
@@ -148,7 +150,9 @@ def test_analyze_required_contexts_mod(context_manager_deps):
 
 def test_analyze_required_contexts_add(context_manager_deps):
     chunk = create_chunk(is_add=True, old_path=None)
-    cm = ContextManager([chunk], context_manager_deps["reader"], False)
+    cm = ContextManager(
+        [chunk], context_manager_deps["reader"], "base", "patched", False
+    )
 
     req = cm.get_required_contexts()
     assert (b"file.txt", False) in req
@@ -157,7 +161,9 @@ def test_analyze_required_contexts_add(context_manager_deps):
 
 def test_analyze_required_contexts_del(context_manager_deps):
     chunk = create_chunk(is_del=True, new_path=None)
-    cm = ContextManager([chunk], context_manager_deps["reader"], False)
+    cm = ContextManager(
+        [chunk], context_manager_deps["reader"], "base", "patched", False
+    )
 
     req = cm.get_required_contexts()
     assert (b"file.txt", True) in req
@@ -166,7 +172,7 @@ def test_analyze_required_contexts_del(context_manager_deps):
 
 def test_simplify_overlapping_ranges(context_manager_deps):
     # We can test this static-like method by instantiating with empty chunks
-    cm = ContextManager([], context_manager_deps["reader"], False)
+    cm = ContextManager([], context_manager_deps["reader"], "base", "patched", False)
 
     ranges = [(1, 5), (3, 7), (10, 12)]
     simplified = cm.simplify_overlapping_ranges(ranges)
@@ -186,7 +192,8 @@ def test_build_context_success(context_manager_deps):
     chunk = create_chunk()
 
     # Setup mocks for successful build
-    context_manager_deps["reader"].read.return_value = "content"
+    context_manager_deps["reader"].read_all.side_effect = None
+    context_manager_deps["reader"].read_all.return_value = (["content"], ["content"])
 
     parsed_file = Mock()
     parsed_file.root_node.has_error = False
@@ -211,7 +218,9 @@ def test_build_context_success(context_manager_deps):
     # Patch parse to return the mocked parsed_file
     context_manager_deps["file_parser_parse"].return_value = parsed_file
 
-    cm = ContextManager([chunk], context_manager_deps["reader"], False)
+    cm = ContextManager(
+        [chunk], context_manager_deps["reader"], "base", "patched", False
+    )
 
     assert cm.has_context(b"file.txt", True)
     assert cm.has_context(b"file.txt", False)
@@ -225,7 +234,8 @@ def test_build_context_success(context_manager_deps):
 def test_build_context_syntax_error(context_manager_deps):
     chunk = create_chunk()
 
-    context_manager_deps["reader"].read.return_value = "content"
+    context_manager_deps["reader"].read_all.side_effect = None
+    context_manager_deps["reader"].read_all.return_value = (["content"], ["content"])
 
     parsed_file = Mock()
     parsed_file.root_node.has_error = True  # Syntax error
@@ -244,6 +254,8 @@ def test_build_context_syntax_error(context_manager_deps):
     cm = ContextManager(
         [chunk],
         context_manager_deps["reader"],
+        "base",
+        "patched",
         False,
     )
 
@@ -257,5 +269,7 @@ def test_build_context_syntax_error(context_manager_deps):
         ContextManager(
             [chunk],
             context_manager_deps["reader"],
+            "base",
+            "patched",
             True,
         )
