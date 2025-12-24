@@ -21,7 +21,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from codestory.core.data.diff_chunk import DiffChunk
-from codestory.core.file_reader.protocol import FileReader
+from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.semantic_grouper.context_manager import (
     AnalysisContext,
     ContextManager,
@@ -64,12 +64,31 @@ def create_chunk(
 
 @pytest.fixture
 def mocks():
+    reader = Mock(spec=GitFileReader)
+
+    def read_all_side_effect(base, patched, old_files, new_files):
+        return [None] * len(old_files), [None] * len(new_files)
+
+    reader.read_all.side_effect = read_all_side_effect
+
+    symbol_extractor = Mock()
+    symbol_extractor.extract_defined_symbols.return_value = set()
+
+    scope_mapper = Mock()
+    scope_mapper.build_scope_map.return_value = Mock()
+
+    symbol_mapper = Mock()
+    symbol_mapper.build_symbol_map.return_value = Mock()
+
+    comment_mapper = Mock()
+    comment_mapper.build_comment_map.return_value = Mock()
+
     return {
-        "reader": Mock(spec=FileReader),
-        "scope_mapper": Mock(),
-        "symbol_mapper": Mock(),
-        "symbol_extractor": Mock(),
-        "comment_mapper": Mock(),
+        "reader": reader,
+        "scope_mapper": scope_mapper,
+        "symbol_mapper": symbol_mapper,
+        "symbol_extractor": symbol_extractor,
+        "comment_mapper": comment_mapper,
     }
 
 
