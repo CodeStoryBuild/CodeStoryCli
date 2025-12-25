@@ -19,72 +19,27 @@
 import os
 import tempfile
 
-from codestory.core.exceptions import DetachedHeadError, GitError
+from codestory.core.exceptions import GitError
 from codestory.core.git_commands.git_commands import GitCommands
 
 
 class TempCommitCreator:
-    """Save working directory changes into a dangling commit and restore them."""
+    """Save working directory changes into a dangling commit."""
 
-    def __init__(
-        self, git_commands: GitCommands, current_branch: str, pathspec: list[str] | None
-    ):
-        self.git_commands = git_commands
-        self.current_branch = current_branch
-        self.pathspec = pathspec
-
-    def _branch_exists(self, branch_name: str) -> bool:
-        """Check if a branch exists using `git rev-parse --verify --quiet`."""
-        try:
-            self.git_commands.get_commit_hash(branch_name)
-            return True
-        except ValueError:
-            return False
-
-    def create_reference_commit(self) -> tuple[str, str]:
+    @staticmethod
+    def create_reference_commit(
+        git_commands: GitCommands,
+        pathspec: list[str] | None,
+        head_hash: str,
+    ) -> str:
         """
         Save the current working directory into a dangling commit using index manipulation.
 
         - Creates a tree object from the current working directory state.
         - Commits this tree as a dangling commit (not attached to any branch).
-        - Returns the old commit hash (HEAD) and the new dangling commit hash.
+        - Returns the new dangling commit hash.
         """
         from loguru import logger
-
-        logger.debug("Creating dangling commit for current state...")
-        original_branch = self.current_branch
-        # check that not a detached branch
-        if not original_branch:
-            msg = "Cannot backup: currently on a detached HEAD."
-            raise DetachedHeadError(msg)
-
-        # TODO remove this logic from here into better place
-        # check if branch is empty
-        try:
-            head_commit = self.git_commands.get_commit_hash(self.current_branch)
-        except ValueError:
-            head_commit = ""
-
-        if not head_commit:
-            logger.debug(
-                f"Branch '{original_branch}' is empty: creating initial empty commit"
-            )
-            # Create an empty tree
-            empty_tree_hash = self.git_commands.write_tree()
-            if not empty_tree_hash:
-                raise GitError("Failed to create empty tree")
-
-            # Create initial commit
-            head_commit = self.git_commands.commit_tree(
-                empty_tree_hash, [], "Initial commit"
-            )
-            if not head_commit:
-                raise GitError("Failed to create initial commit")
-
-            # Update branch to point to initial commit
-            self.git_commands.update_ref(original_branch, head_commit)
-
-        old_commit_hash = self.git_commands.get_commit_hash(self.current_branch)
 
         logger.debug("Creating dangling commit from working directory state")
 
@@ -99,23 +54,23 @@ class TempCommitCreator:
         env["GIT_INDEX_FILE"] = temp_index_path
 
         try:
-            # Load the current branch tip into the temporary index
-            self.git_commands.read_tree(self.current_branch, env=env)
+            # Load the head tip into the temporary index
+            git_commands.read_tree(head_hash, env=env)
 
             # Add working directory changes to the temporary index
             # Uses the pathspec if provided, otherwise adds current directory
-            add_args = self.pathspec if self.pathspec else ["."]
-            self.git_commands.add(add_args, env=env)
+            add_args = pathspec if pathspec else ["."]
+            git_commands.add(add_args, env=env)
 
             # Write the index state to a tree object
-            new_tree_hash = self.git_commands.write_tree(env=env)
+            new_tree_hash = git_commands.write_tree(env=env)
             if not new_tree_hash:
                 raise GitError("Failed to write-tree for backup")
 
             # Create a commit from this tree
-            commit_msg = f"Temporary backup of working state from {original_branch}"
-            new_commit_hash = self.git_commands.commit_tree(
-                new_tree_hash, [old_commit_hash], commit_msg, env=env
+            commit_msg = f"Temporary backup of working state from {head_hash}"
+            new_commit_hash = git_commands.commit_tree(
+                new_tree_hash, [head_hash], commit_msg, env=env
             )
 
             if not new_commit_hash:
@@ -128,7 +83,4 @@ class TempCommitCreator:
             if os.path.exists(temp_index_path):
                 os.unlink(temp_index_path)
 
-        return (
-            old_commit_hash,
-            new_commit_hash,
-        )
+        return new_commit_hash
