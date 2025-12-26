@@ -21,7 +21,6 @@ from unittest.mock import Mock
 import pytest
 
 from codestory.core.chunker.atomic_chunker import AtomicChunker
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
 
@@ -115,22 +114,21 @@ def test_group_whitespace_context(context_manager):
     result = chunker.chunk([big_chunk], context_manager)
 
     # Logic:
-    # 1. Split into 3 atomic chunks.
+    # 1. Split into atomic chunks with context grouping.
     # 2. c2 is context (blank/whitespace).
     # 3. c1 and c3 are not.
-    # 4. c2 should be attached to c1 or c3.
-    # Implementation preference: next group (c3) if possible, else previous (c1).
-    # So c2 attaches to c3.
-    # Result: [c1, Composite(c2, c3)]
+    # 4. c2 should be attached to c3 as a single merged DiffChunk.
+    # Result: [DiffChunk(code1), DiffChunk(whitespace+code2)]
 
     assert len(result) == 2
     assert isinstance(result[0], DiffChunk)
     assert result[0].parsed_content[0].content == b"code1"
 
-    assert isinstance(result[1], CompositeDiffChunk)
-    assert len(result[1].chunks) == 2
-    assert result[1].chunks[0].parsed_content[0].content == b"   "
-    assert result[1].chunks[1].parsed_content[0].content == b"code2"
+    # Second chunk should be a merged DiffChunk with whitespace + code2
+    assert isinstance(result[1], DiffChunk)
+    assert len(result[1].parsed_content) == 2
+    assert result[1].parsed_content[0].content == b"   "
+    assert result[1].parsed_content[1].content == b"code2"
 
 
 def test_group_comment_context(context_manager):
@@ -153,10 +151,12 @@ def test_group_comment_context(context_manager):
 
     result = chunker.chunk([big_chunk], context_manager)
 
-    # Should group comment with next code chunk
+    # Should group comment with next code chunk as a merged DiffChunk
     assert len(result) == 2
-    assert isinstance(result[1], CompositeDiffChunk)
-    assert result[1].chunks[0].parsed_content[0].content == b"// comment"
+    assert isinstance(result[1], DiffChunk)
+    assert len(result[1].parsed_content) == 2
+    assert result[1].parsed_content[0].content == b"// comment"
+    assert result[1].parsed_content[1].content == b"code2"
 
 
 def test_all_context(context_manager):
@@ -168,11 +168,12 @@ def test_all_context(context_manager):
 
     result = chunker.chunk([big_chunk], context_manager)
 
-    # Should return a single group (Composite or list of chunks depending on implementation)
-    # Implementation: returns [CompositeDiffChunk(all)] if > 1
+    # Should return a single merged DiffChunk with all context lines
     assert len(result) == 1
-    assert isinstance(result[0], CompositeDiffChunk)
-    assert len(result[0].chunks) == 2
+    assert isinstance(result[0], DiffChunk)
+    assert len(result[0].parsed_content) == 2
+    assert result[0].parsed_content[0].content == b" "
+    assert result[0].parsed_content[1].content == b"  "
 
 
 def test_no_context(context_manager):
