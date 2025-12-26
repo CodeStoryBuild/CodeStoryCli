@@ -17,10 +17,7 @@
 # -----------------------------------------------------------------------------
 
 import re
-from itertools import groupby
 
-from codestory.core.data.chunk import Chunk
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -614,7 +611,7 @@ class GitCommands:
         base_hash: str,
         new_hash: str,
         target: str | list[str] | None = None,
-    ) -> tuple[list[Chunk], list[ImmutableChunk]]:
+    ) -> tuple[list[DiffChunk], list[ImmutableChunk]]:
         """
         Parses the git diff once and converts each hunk directly into an
         atomic DiffChunk object (DiffChunk).
@@ -625,7 +622,7 @@ class GitCommands:
 
     def parse_and_merge_hunks(
         self, hunks: list[HunkWrapper | ImmutableHunkWrapper]
-    ) -> tuple[list[Chunk], list[ImmutableChunk]]:
+    ) -> tuple[list[DiffChunk], list[ImmutableChunk]]:
         chunks: list[DiffChunk] = []
         immut_chunks: list[DiffChunk] = []
         for hunk in hunks:
@@ -636,75 +633,7 @@ class GitCommands:
             else:
                 chunks.append(DiffChunk.from_hunk(hunk))
 
-        # Merge overlapping or touching chunks into CompositeDiffChunks
-        merged = self.merge_overlapping_chunks(chunks)
-        return merged, immut_chunks
-
-    def merge_overlapping_chunks(self, chunks: list[DiffChunk]) -> list[Chunk]:
-        """
-        Merge DiffChunks that are not disjoint (i.e., overlapping or touching)
-        into CompositeDiffChunks, grouped per canonical path (file).
-
-        A merge occurs if two chunks within the same file overlap or touch
-        in either their old or new line ranges.
-
-        Returns:
-            A list of DiffChunk and CompositeDiffChunk objects, each representing
-            a disjoint edit region.
-        """
-        if not chunks:
-            return []
-
-        merged_results = []
-
-        # Sort once globally by canonical path, then by sort key (old_start, abs_new_line)
-        chunks_sorted = sorted(
-            chunks,
-            key=lambda c: (
-                c.canonical_path(),
-                c.get_sort_key(),
-            ),
-        )
-
-        # Helper for overlap/touch logic
-        # Chunks are disjoint if they don't overlap in old file coordinates
-        def overlaps_or_touches(a: DiffChunk, b: DiffChunk) -> bool:
-            a_old_start = a.old_start or 0
-            a_old_end = a_old_start + a.old_len()
-            b_old_start = b.old_start or 0
-
-            # Chunks overlap if a's end is >= b's start
-            # This handles touching chunks (end == start) as overlapping for merging
-            return a_old_end >= b_old_start
-
-        # Group by canonical path (so merges only happen within same file)
-        for _, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):
-            file_chunks = list(group)
-            if not file_chunks:
-                continue
-
-            current_group: list[DiffChunk] = [file_chunks[0]]
-
-            for h in file_chunks[1:]:
-                last = current_group[-1]
-                if overlaps_or_touches(last, h):
-                    current_group.append(h)
-                else:
-                    # finalize group
-                    if len(current_group) == 1:
-                        merged_results.append(current_group[0])
-                    else:
-                        merged_results.append(CompositeDiffChunk(current_group.copy()))
-                    current_group = [h]
-
-            # finalize last group (if present)
-            if current_group:
-                if len(current_group) == 1:
-                    merged_results.append(current_group[0])
-                else:
-                    merged_results.append(CompositeDiffChunk(current_group))
-
-        return merged_results
+        return chunks, immut_chunks
 
     def is_bare_repository(self) -> bool:
         """

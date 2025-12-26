@@ -20,7 +20,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper
 from codestory.core.data.immutable_hunk_wrapper import ImmutableHunkWrapper
@@ -211,46 +210,6 @@ def create_chunk(path, old_start, old_len, new_start, new_len):
         new_len=new_len,
     )
     return DiffChunk.from_hunk(hunk)
-
-
-def test_merge_overlapping_chunks_disjoint(git_commands):
-    c1 = create_chunk("file.txt", 1, 1, 1, 1)  # lines 1-2
-    c2 = create_chunk("file.txt", 10, 1, 10, 1)  # lines 10-11
-
-    merged = git_commands.merge_overlapping_chunks([c1, c2])
-    assert len(merged) == 2
-    assert merged[0] == c1
-    assert merged[1] == c2
-
-
-def test_merge_overlapping_chunks_overlap(git_commands):
-    c1 = create_chunk("file.txt", 1, 5, 1, 5)  # 1-6
-    c2 = create_chunk("file.txt", 3, 5, 3, 5)  # 3-8 (overlaps)
-
-    merged = git_commands.merge_overlapping_chunks([c1, c2])
-    assert len(merged) == 1
-    assert isinstance(merged[0], CompositeDiffChunk)
-    assert len(merged[0].chunks) == 2
-
-
-def test_merge_overlapping_chunks_touching(git_commands):
-    c1 = create_chunk("file.txt", 1, 5, 1, 5)  # 1-6 (ends at 6)
-    c2 = create_chunk("file.txt", 6, 5, 6, 5)  # 6-11 (starts at 6)
-
-    merged = git_commands.merge_overlapping_chunks([c1, c2])
-    assert len(merged) == 1
-    assert isinstance(merged[0], CompositeDiffChunk)
-
-
-def test_merge_overlapping_chunks_different_files(git_commands):
-    c1 = create_chunk("a.txt", 1, 5, 1, 5)
-    c2 = create_chunk("b.txt", 1, 5, 1, 5)  # Same lines, diff file
-
-    merged = git_commands.merge_overlapping_chunks([c1, c2])
-    assert len(merged) == 2
-    # Order depends on sorting, likely a.txt then b.txt
-    assert merged[0].canonical_path() == b"a.txt"
-    assert merged[1].canonical_path() == b"b.txt"
 
 
 # -----------------------------------------------------------------------------
