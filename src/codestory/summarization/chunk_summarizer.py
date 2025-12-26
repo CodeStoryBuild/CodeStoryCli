@@ -26,12 +26,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.diff_generation.diff_generator import DiffGenerator
 from codestory.core.exceptions import LLMResponseError
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.utils.sanitize import sanitize_llm_text
 from codestory.summarization.prompts import (
     BATCHED_CLUSTER_SUMMARY_SYSTEM,
@@ -110,7 +109,6 @@ class ChunkSummarizer:
         context_manager: ContextManager,
         diff_generator: DiffGenerator,
         intent_message: str | None = None,
-        pbar: tqdm | None = None,
     ) -> list[str]:
         """
         Generate commit message summaries for a list of chunks.
@@ -120,7 +118,6 @@ class ChunkSummarizer:
             context_manager: ContextManager for semantic analysis
             diff_generator: DiffGenerator for patch generation
             intent_message: Optional user-provided intent message
-            pbar: Optional progress bar
 
         Returns:
             List of summary strings, one per chunk
@@ -141,7 +138,7 @@ class ChunkSummarizer:
 
         # Generate summaries from patches
         formatted_intent = self._create_intent_message(intent_message)
-        return self._generate_summaries(annotated_patches, formatted_intent, pbar=pbar)
+        return self._generate_summaries(annotated_patches, formatted_intent)
 
     def summarize_chunk(
         self,
@@ -321,7 +318,6 @@ class ChunkSummarizer:
         self,
         annotated_chunk_patches: list[list[dict]],
         intent_message: str,
-        pbar: tqdm | None = None,
     ) -> list[str]:
         """
         Generate summaries for annotated chunk patches.
@@ -349,13 +345,17 @@ class ChunkSummarizer:
 
         # 3. Create callback for progress tracking
         update_callback = None
+        pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
             request_count = {"sent": 0, "received": 0}
 
             def update_callback(status: Literal["sent", "received"]):
                 request_count[status] += 1
                 pbar.set_postfix(
-                    {"requests": f"{request_count['received']}/{len(tasks)}"}
+                    {
+                        "phase": "summarize",
+                        "requests": f"{request_count['received']}/{len(tasks)}",
+                    }
                 )
 
         # 4. Invoke Batch
@@ -402,7 +402,6 @@ class ChunkSummarizer:
         self,
         clusters: dict[int, list[str]],
         intent_message: str | None = None,
-        pbar: tqdm | None = None,
     ) -> dict[int, str]:
         """
         Generate combined commit messages for clusters of related summaries.
@@ -410,7 +409,6 @@ class ChunkSummarizer:
         Args:
             clusters: Dict mapping cluster_id to list of summaries in that cluster
             intent_message: Optional user-provided intent message
-            pbar: Optional progress bar
 
         Returns:
             Dict mapping cluster_id to combined commit message
@@ -440,6 +438,7 @@ class ChunkSummarizer:
 
         # Create callback
         cluster_callback = None
+        pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
             cluster_count = {"sent": 0, "received": 0}
 
@@ -447,7 +446,8 @@ class ChunkSummarizer:
                 cluster_count[status] += 1
                 pbar.set_postfix(
                     {
-                        "cluster_requests": f"{cluster_count['received']}/{len(cluster_tasks)}"
+                        "phase": "cluster",
+                        "requests": f"{cluster_count['received']}/{len(cluster_tasks)}",
                     }
                 )
 

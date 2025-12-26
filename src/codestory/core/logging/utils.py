@@ -20,6 +20,7 @@ import contextlib
 from time import perf_counter
 
 from codestory.core.data.chunk import Chunk
+from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
 
 
@@ -64,3 +65,18 @@ def log_chunks(
         count=len(chunks) + len(immut_chunks),
         files=len(unique_files),
     )
+
+
+def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
+    if isinstance(data, CommitGroup):
+        return "\n".join([describe_chunk(chunk) for chunk in data.chunks])
+
+    if isinstance(data, Chunk):
+        files: dict[str, int] = {}
+        for diff_c in data.get_chunks():
+            path = diff_c.canonical_path().decode("utf-8", errors="replace")
+            files[path] = files.get(path, 0) + 1
+
+        return "\n".join([f"{num} changes in {path}" for path, num in files.items()])
+    else:
+        return "A change for " + data.canonical_path.decode("utf-8", errors="replace")

@@ -54,8 +54,7 @@ def __merge_diff_chunks(sorted_chunks: list[DiffChunk]) -> list[DiffChunk]:
     Merges a list of sorted, atomic DiffChunks into the smallest possible
     list of larger, valid DiffChunks.
 
-    This acts as the inverse of the `split_into_atomic_chunks` method. It
-    first groups adjacent chunks and then merges each group into a single
+    This method groups adjacent chunks and then merges each group into a single
     new chunk using the `from_parsed_content_slice` factory.
 
     Args:

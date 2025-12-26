@@ -16,13 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from codestory.core.data.chunk import Chunk
-from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.user_filter.cmd_user_filter import CMDUserFilter
+from codestory.core.user_filter.protocol import UserFilter
 
-
-class SimpleChunker:
-    def chunk(
-        self, diff_chunks: list[Chunk], context_manager: ContextManager
-    ) -> list[Chunk]:
-        """Just returns as is"""
-        return diff_chunks
+__all__ = ["CMDUserFilter", "UserFilter"]

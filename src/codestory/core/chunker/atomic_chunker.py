@@ -16,28 +16,26 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from collections import defaultdict
-from collections.abc import Callable
 from typing import Literal
 
-from tqdm import tqdm
-
-from codestory.core.chunker.interface import MechanicalChunker
-from codestory.core.data.chunk import Chunk
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
-class AtomicChunker(MechanicalChunker):
-    """Mechanical chunker that merges adjacent context-only atomic chunks into
-    their neighboring non-context chunk. A context line is either blank or a
-    pure comment line (as determined via `CommentMap`).
+class AtomicChunker:
+    """Mechanical chunker that splits pure add/delete chunks into per-line atomic chunks.
+
+    Uses a sliding window approach to:
+    1. Split each line into its own atomic chunk
+    2. Attach context-only lines (blank/comment) to the next non-context line
+    3. Return DiffChunks (or CompositeDiffChunk when context attaches to non-context)
     """
 
     def __init__(
-        self, chunking_level: Literal["none", "full_files", "all_files"] = True
+        self, chunking_level: Literal["none", "full_files", "all_files"] = "all_files"
     ):
         self.chunking_level = chunking_level
 
@@ -51,11 +49,7 @@ class AtomicChunker(MechanicalChunker):
         parent_chunk: DiffChunk,
         context_manager: ContextManager,
     ) -> bool:
-        """Return True if the line is blank or a pure comment.
-
-        Uses the appropriate file version's `CommentMap` if available, falling
-        back to blank-line only classification if context is missing.
-        """
+        """Return True if the line is blank or a pure comment."""
         # Blank lines are always treated as context
         if self._is_blank(change.content):
             return True
@@ -73,38 +67,36 @@ class AtomicChunker(MechanicalChunker):
 
         file_ctx = context_manager.get_context(file_path, is_old)
         if not file_ctx:
-            # Without analysis context we can't confirm pure comment
             return False
 
         comment_lines = file_ctx.comment_map.pure_comment_lines
-        # Diff line numbers are 1-indexed; comment map uses 0-indexed
         line_idx = (change.old_line if is_old else change.abs_new_line) - 1
         return line_idx in comment_lines
 
-    def _chunk_is_context(
-        self, atomic_chunk: DiffChunk, ctx_mgr: ContextManager
-    ) -> bool:
-        if not atomic_chunk.parsed_content:
-            return False
-        for change in atomic_chunk.parsed_content:
-            if not self._line_is_context(change, atomic_chunk, ctx_mgr):
-                return False
-
-        return True
-
     def chunk(
         self,
-        diff_chunks: list[Chunk],
+        diff_chunks: list[DiffChunk],
         context_manager: ContextManager,
-        pbar: tqdm | None = None,
-    ) -> list[Chunk]:
-        mechanical_chunks: list[Chunk] = []
+    ) -> list[DiffChunk | CompositeDiffChunk]:
+        """Split and group diff chunks into mechanical chunks.
 
-        for chunk in diff_chunks:
+        Returns a list of DiffChunk or CompositeDiffChunk objects.
+        """
+        pbar = ProgressBarManager.get_pbar()
+        mechanical_chunks: list[DiffChunk | CompositeDiffChunk] = []
+
+        for i, chunk in enumerate(diff_chunks):
             if pbar is not None:
                 pbar.update(1)
+                pbar.set_postfix(
+                    {"phase": "atomic", "chunks": f"{i + 1}/{len(diff_chunks)}"}
+                )
 
-            if self.chunking_level == "none" or not isinstance(chunk, DiffChunk):
+            if not isinstance(chunk, DiffChunk):
+                # Skip non-DiffChunk (shouldn't happen with proper input)
+                continue
+
+            if self.chunking_level == "none":
                 mechanical_chunks.append(chunk)
                 continue
 
@@ -114,75 +106,115 @@ class AtomicChunker(MechanicalChunker):
                 mechanical_chunks.append(chunk)
                 continue
 
-            atomic_chunks = chunk.split_into_atomic_chunks()
-            mechanical_chunks.extend(
-                self._group_by_chunk_predicate(
-                    lambda c: self._chunk_is_context(c, context_manager),
-                    atomic_chunks,
-                )
-            )
+            # Apply sliding window split+group
+            split_chunks = self._split_and_group_chunk(chunk, context_manager)
+            mechanical_chunks.extend(split_chunks)
 
         return mechanical_chunks
 
-    def _group_by_chunk_predicate(
-        self, predicate: Callable[[DiffChunk], bool], chunks: list[DiffChunk]
-    ) -> list[Chunk]:
-        """Group contiguous atomic chunks where `predicate` holds, then attach
-        those groups to the adjacent non-predicate chunk (mirroring prior
-        whitespace behavior)."""
-        n = len(chunks)
-        i = 0
-        grouped: list[tuple[Chunk, bool]] = []
+    def _split_and_group_chunk(
+        self,
+        chunk: DiffChunk,
+        context_manager: ContextManager,
+    ) -> list[DiffChunk | CompositeDiffChunk]:
+        """
+        Split pure add/delete chunks into per-line atomic chunks and attach context.
 
-        while i < n:
-            current_chunk = chunks[i]
-            combined_indices: list[int] = []
+        For each line:
+        - If context (blank/comment): accumulate to attach to next non-context
+        - If non-context: create atomic chunk (with pending context attached)
 
-            while i < n and predicate(chunks[i]):
-                combined_indices.append(i)
-                i += 1
+        Returns a list of DiffChunk or CompositeDiffChunk.
+        """
+        # If chunk has no content, return as-is
+        if not chunk.has_content or not chunk.parsed_content:
+            return [chunk]
 
-            if combined_indices:
-                # Build composite for multiple consecutive context chunks
-                if len(combined_indices) > 1:
-                    group_chunk = CompositeDiffChunk(
-                        [chunks[idx] for idx in combined_indices]
+        # Only split pure additions/deletions
+        if not (chunk.pure_addition() or chunk.pure_deletion()):
+            return [chunk]
+
+        parsed = chunk.parsed_content
+        final_chunks: list[DiffChunk | CompositeDiffChunk] = []
+        pending_context_lines: list[Addition | Removal] = []
+
+        for line in parsed:
+            is_ctx = self._line_is_context(line, chunk, context_manager)
+
+            if is_ctx:
+                # Accumulate context lines to attach to next non-context line
+                pending_context_lines.append(line)
+            else:
+                # Non-context line: create atomic chunk
+                # If we have pending context, attach it via CompositeDiffChunk
+                non_ctx_chunk = DiffChunk.from_parsed_content_slice(
+                    old_file_path=chunk.old_file_path,
+                    new_file_path=chunk.new_file_path,
+                    file_mode=chunk.file_mode,
+                    contains_newline_fallback=chunk.contains_newline_fallback,
+                    parsed_slice=[line],
+                )
+
+                if pending_context_lines:
+                    # Create DiffChunks for each context line, then composite
+                    context_chunks = [
+                        DiffChunk.from_parsed_content_slice(
+                            old_file_path=chunk.old_file_path,
+                            new_file_path=chunk.new_file_path,
+                            file_mode=chunk.file_mode,
+                            contains_newline_fallback=chunk.contains_newline_fallback,
+                            parsed_slice=[ctx_line],
+                        )
+                        for ctx_line in pending_context_lines
+                    ]
+                    # Composite: context chunks + non-context chunk
+                    final_chunks.append(
+                        CompositeDiffChunk(context_chunks + [non_ctx_chunk])
+                    )
+                    pending_context_lines = []
+                else:
+                    final_chunks.append(non_ctx_chunk)
+
+        # Handle trailing context with no following non-context
+        if pending_context_lines:
+            if final_chunks:
+                # Attach to the last chunk
+                last_chunk = final_chunks[-1]
+                trailing_context_chunks = [
+                    DiffChunk.from_parsed_content_slice(
+                        old_file_path=chunk.old_file_path,
+                        new_file_path=chunk.new_file_path,
+                        file_mode=chunk.file_mode,
+                        contains_newline_fallback=chunk.contains_newline_fallback,
+                        parsed_slice=[ctx_line],
+                    )
+                    for ctx_line in pending_context_lines
+                ]
+                if isinstance(last_chunk, CompositeDiffChunk):
+                    # Extend the existing composite
+                    final_chunks[-1] = CompositeDiffChunk(
+                        last_chunk.chunks + trailing_context_chunks
                     )
                 else:
-                    group_chunk: Chunk = chunks[combined_indices[0]]
-                grouped.append((group_chunk, True))
+                    # Wrap last chunk + context into composite
+                    final_chunks[-1] = CompositeDiffChunk(
+                        [last_chunk] + trailing_context_chunks
+                    )
             else:
-                grouped.append((current_chunk, False))
-                i += 1
-
-        if len(grouped) == 1:
-            return [grouped[0][0]]
-
-        links: dict[int, list[Chunk]] = defaultdict(list)
-        for idx, (group, is_ctx) in enumerate(grouped):
-            if is_ctx:
-                # Attach context group to neighbor non-context group
-                # preference for next group if possible, else previous
-                if idx < len(grouped) - 1:
-                    links[idx + 1].append(group)
+                # All lines were context - create a single composite
+                context_chunks = [
+                    DiffChunk.from_parsed_content_slice(
+                        old_file_path=chunk.old_file_path,
+                        new_file_path=chunk.new_file_path,
+                        file_mode=chunk.file_mode,
+                        contains_newline_fallback=chunk.contains_newline_fallback,
+                        parsed_slice=[ctx_line],
+                    )
+                    for ctx_line in pending_context_lines
+                ]
+                if len(context_chunks) == 1:
+                    final_chunks.append(context_chunks[0])
                 else:
-                    links[idx - 1].append(group)
-            else:
-                links[idx].append(group)
+                    final_chunks.append(CompositeDiffChunk(context_chunks))
 
-        if not links and grouped:
-            # This handles the case where all chunks were context chunks
-            # We should return them as a single group.
-            all_chunks = [g[0] for g in grouped]
-            if len(all_chunks) > 1:
-                return [CompositeDiffChunk(all_chunks)]
-            return all_chunks  # Or just [grouped[0][0]]
-
-        final_groups: list[Chunk] = []
-        for idx in sorted(links.keys()):
-            chunk_list = links[idx]
-            if len(chunk_list) > 1:
-                final_groups.append(CompositeDiffChunk(chunk_list))
-            else:
-                final_groups.append(chunk_list[0])
-        return final_groups
+        return final_chunks if final_chunks else [chunk]

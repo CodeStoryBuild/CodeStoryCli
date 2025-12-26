@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------------------
 
 from codestory.context import FixContext, GlobalContext
+from codestory.core.data.commit_group import CommitGroup
 from codestory.core.exceptions import FixCommitError
 from codestory.pipelines.rewrite_pipeline import RewritePipeline
 
@@ -39,16 +40,20 @@ class FixPipeline:
         global_context: GlobalContext,
         fix_context: FixContext,
         rewrite_pipeline: RewritePipeline,
+        base_commit_hash: str,
+        new_commit_hash: str,
     ):
         self.global_context = global_context
         self.fix_context = fix_context
         self.rewrite_pipeline = rewrite_pipeline
+        self.base_commit_hash = base_commit_hash
+        self.new_commit_hash = new_commit_hash
 
-    def run(self) -> str:
+    def run(self, final_groups: list[CommitGroup]) -> str:
         from loguru import logger
 
-        base_hash = self.rewrite_pipeline.base_commit_hash
-        old_end_hash = self.rewrite_pipeline.new_commit_hash
+        base_hash = self.base_commit_hash
+        old_end_hash = self.new_commit_hash
 
         logger.debug(
             "Starting expansion for base {base} to end {end}",
@@ -59,7 +64,7 @@ class FixPipeline:
         # Run the expansion pipeline
         # This generates the new commit(s) in the object database.
         # Returns the hash of the *last* commit in the new sequence.
-        new_commit_hash = self.rewrite_pipeline.run()
+        new_commit_hash = self.rewrite_pipeline.run(base_hash, final_groups)
 
         if not new_commit_hash:
             raise FixCommitError("Aborting Fix Command")

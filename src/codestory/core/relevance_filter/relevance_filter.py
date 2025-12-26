@@ -21,13 +21,12 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.exceptions import LLMResponseError
 from codestory.core.llm import CodeStoryAdapter
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 
 if TYPE_CHECKING:
@@ -177,7 +176,6 @@ class RelevanceFilter:
         immut_chunks: list[ImmutableChunk],
         intent: str,
         context_manager: "ContextManager | None" = None,
-        pbar: tqdm | None = None,
     ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
         from loguru import logger
 
@@ -196,6 +194,7 @@ class RelevanceFilter:
 
         # 3. Create callback for progress tracking
         update_callback = None
+        pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
             sent_count = 0
             received_count = 0
@@ -207,7 +206,9 @@ class RelevanceFilter:
                 elif status == "received":
                     received_count += 1
 
-                pbar.set_postfix({"requests": f"{received_count}/{sent_count}"})
+                pbar.set_postfix(
+                    {"phase": "relevance", "requests": f"{received_count}/{sent_count}"}
+                )
 
         # 2. Call LLM
         try:

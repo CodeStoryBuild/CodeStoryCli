@@ -18,11 +18,12 @@
 
 from colorama import Fore, Style
 
-from codestory.context import CommitContext, FixContext, GlobalContext
+from codestory.context import FixContext, GlobalContext
 from codestory.core.exceptions import (
     DetachedHeadError,
     GitError,
 )
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.logging.utils import time_block
 from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.validation import (
@@ -30,6 +31,8 @@ from codestory.core.validation import (
     validate_commit_hash,
     validate_no_merge_commits_in_range,
 )
+from codestory.pipelines.diff_context import DiffContext
+from codestory.pipelines.grouping_context import GroupingConfig, GroupingContext
 
 
 def get_info(global_context: GlobalContext, fix_context: FixContext):
@@ -119,27 +122,78 @@ def run_fix(
 
     base_hash, new_hash, base_branch = get_info(global_context, fix_context)
 
-    commit_context = CommitContext(
-        target=None,
-        message=message,
-        # no filters because we cannot selectively edit changes in a fix
-        relevance_filter_level="none",
-        relevance_filter_intent=None,
-        secret_scanner_aggression="none",
-        fail_on_syntax_errors=False,
-    )
-
-    from codestory.pipelines.fix_pipeline import FixPipeline
-    from codestory.pipelines.rewrite_init import create_rewrite_pipeline
-
-    with GitSandbox(global_context) as sandbox:
-        rewrite_pipeline = create_rewrite_pipeline(
-            global_context, commit_context, base_hash, new_hash, source="fix"
+    # Create diff context for the fix range
+    with ProgressBarManager.set_pbar(
+        description="Analyzing commit changes", silent=global_context.config.silent
+    ):
+        diff_context = DiffContext(
+            global_context.git_commands,
+            base_hash,
+            new_hash,
+            target=None,
+            chunking_level=global_context.config.chunking_level,
+            fail_on_syntax_errors=False,
         )
 
+    if not diff_context.has_changes():
+        logger.info("No changes to process.")
+        logger.info(f"{Fore.YELLOW}Is this an empty commit?{Style.RESET_ALL}")
+        return False
+
+    # Create grouping context (no filtering for fix - we can't reject changes)
+    with ProgressBarManager.set_pbar(
+        description="Grouping Changes", silent=global_context.config.silent
+    ):
+        grouping_config = GroupingConfig(
+            fallback_grouping_strategy=global_context.config.fallback_grouping_strategy,
+            relevance_filter_level="none",  # No filtering for fix
+            secret_scanner_aggression="none",  # No filtering for fix
+            batching_strategy=global_context.config.batching_strategy,
+            cluster_strictness=global_context.config.cluster_strictness,
+            relevance_intent=None,
+            guidance_message=message,
+            model=global_context.get_model(),
+            embedder=global_context.get_embedder(),
+        )
+
+        grouping_context = GroupingContext(diff_context, grouping_config)
+
+    # For fix command, we don't allow partial rejection
+    # Let user review and optionally modify commit messages
+    from codestory.core.user_filter.cmd_user_filter import CMDUserFilter
+
+    filter_ = CMDUserFilter(
+        auto_accept=global_context.config.auto_accept,
+        ask_for_commit_message=global_context.config.ask_for_commit_message,
+        can_partially_reject_changes=False,  # Cannot reject changes in fix
+        silent=global_context.config.silent,
+        context_manager=(
+            diff_context.get_context_manager()
+            if global_context.config.display_diff_type == "semantic"
+            else None
+        ),
+    )
+    final_groups = filter_.filter(grouping_context.final_logical_groups)
+
+    if not final_groups:
+        logger.info("No AI groups proposed; aborting pipeline")
+        return False
+
+    from codestory.pipelines.fix_pipeline import FixPipeline
+    from codestory.pipelines.rewrite_pipeline import RewritePipeline
+
+    with GitSandbox(global_context) as sandbox:
+        rewrite_pipeline = RewritePipeline(global_context.git_commands)
+
         with time_block("Fix Pipeline E2E"):
-            service = FixPipeline(global_context, fix_context, rewrite_pipeline)
-            final_head = service.run()
+            service = FixPipeline(
+                global_context,
+                fix_context,
+                rewrite_pipeline,
+                base_hash,
+                new_hash,
+            )
+            final_head = service.run(final_groups)
 
         if final_head:
             sandbox.sync(final_head)

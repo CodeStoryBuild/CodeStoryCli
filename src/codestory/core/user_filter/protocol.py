@@ -16,20 +16,14 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 
-from tqdm import tqdm
-
-from codestory.core.data.chunk import Chunk
-from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.data.commit_group import CommitGroup
 
 
-class MechanicalChunker(ABC):
-    @abstractmethod
-    def chunk(
-        self,
-        diff_chunks: list[Chunk],
-        context_manager: ContextManager,
-        pbar: tqdm | None = None,
-    ) -> list[Chunk]:
-        """Split hunks into smaller chunks or sub-hunks"""
+class UserFilter(Protocol):
+    """Protocol for user filtering of commit groups."""
+
+    def filter(self, groups: list[CommitGroup]) -> list[CommitGroup]:
+        """Filter commit groups based on user preferences."""
+        ...
