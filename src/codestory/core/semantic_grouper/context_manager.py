@@ -16,7 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
@@ -51,12 +51,89 @@ class SharedContext:
     defined_symbols: set[str]
 
 
+@dataclass
 class ContextManager:
     """
-    Manages analysis context for files mentioned in diff chunks.
+    Data container for analysis contexts.
 
-    Creates scope and symbol maps for old and new versions of files that appear
-    in diff chunks, enabling semantic analysis across file changes.
+    This is a pure data class containing the computed analysis results.
+    Use ContextManagerBuilder to construct instances.
+
+    Fields:
+        _context_cache: Mapping from (file_path, is_old_version) to AnalysisContext
+        _shared_context_cache: Mapping from (language, is_old_version) to SharedContext
+        base_commit: The base commit hash
+        patched_commit: The patched commit hash
+    """
+
+    _context_cache: dict[tuple[bytes, bool], AnalysisContext] = field(
+        default_factory=dict
+    )
+    _shared_context_cache: dict[tuple[str, bool], SharedContext] = field(
+        default_factory=dict
+    )
+    base_commit: str = ""
+    patched_commit: str = ""
+
+    def get_context(
+        self, file_path: bytes, is_old_version: bool
+    ) -> AnalysisContext | None:
+        """
+        Get analysis context for a specific file version.
+
+        Args:
+            file_path: Path to the file
+            is_old_version: True for old version, False for new version
+
+        Returns:
+            AnalysisContext if available, None if not found or not required
+        """
+        return self._context_cache.get((file_path, is_old_version))
+
+    def get_available_contexts(self) -> list[AnalysisContext]:
+        """
+        Get all available analysis contexts.
+
+        Returns:
+            List of all successfully built AnalysisContext objects
+        """
+        return list(self._context_cache.values())
+
+    def has_context(self, file_path: bytes, is_old_version: bool) -> bool:
+        """
+        Check if context is available for a specific file version.
+
+        Args:
+            file_path: Path to the file
+            is_old_version: True for old version, False for new version
+
+        Returns:
+            True if context is available, False otherwise
+        """
+        return (file_path, is_old_version) in self._context_cache
+
+    def get_file_paths(self) -> set[bytes]:
+        """
+        Get all unique file paths that have contexts.
+
+        Returns:
+            Set of file paths that have at least one context (old or new)
+        """
+        return {file_path for file_path, _ in self._context_cache}
+
+
+class ContextManagerBuilder:
+    """
+    Builds a ContextManager from chunks and file reader.
+
+    This class encapsulates all the transient builder logic:
+    - File parsing with tree-sitter
+    - Scope/symbol/comment mapping
+    - Context construction
+
+    Usage:
+        builder = ContextManagerBuilder(chunks, file_reader, base, patched)
+        context_manager = builder.build()
     """
 
     def __init__(
@@ -81,29 +158,43 @@ class ContextManager:
         self.symbol_mapper = SymbolMapper(self.query_manager)
         self.symbol_extractor = SymbolExtractor(self.query_manager)
         self.comment_mapper = CommentMapper(self.query_manager)
-        # Context storage: (file_type (language name)) -> SharedContext
-        self._shared_context_cache: dict[tuple[str, bool], SharedContext] = {}
-        # Context storage: (file_path, is_old_version) -> AnalysisContext
-        self._context_cache: dict[tuple[bytes, bool], AnalysisContext] = {}
 
-        # Determine which file versions need to be analyzed
+        # Internal state for building
+        self._shared_context_cache: dict[tuple[str, bool], SharedContext] = {}
+        self._context_cache: dict[tuple[bytes, bool], AnalysisContext] = {}
         self._required_contexts: dict[tuple[bytes, bool], list[tuple[int, int]]] = {}
+        self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
+
+    def build(self) -> ContextManager:
+        """
+        Build and return a ContextManager with all computed contexts.
+
+        Returns:
+            ContextManager instance containing all analysis contexts
+        """
+        # Determine which file versions need to be analyzed
         self._analyze_required_contexts()
 
-        len(self._required_contexts)
         ProgressBarManager.get_pbar()
 
-        self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
         self._generate_parsed_files()
 
         # First, build shared context
         self._build_shared_contexts()
 
-        # THen, Build all required contexts (dependant on shared context)
+        # Then, build all required contexts (dependent on shared context)
         self._build_all_contexts()
 
         # Log a summary of built contexts
         self._log_context_summary()
+
+        # Return data-only ContextManager
+        return ContextManager(
+            _context_cache=self._context_cache,
+            _shared_context_cache=self._shared_context_cache,
+            base_commit=self.base_commit,
+            patched_commit=self.patched_commit,
+        )
 
     def _log_context_summary(self) -> None:
         from loguru import logger
@@ -147,24 +238,24 @@ class ContextManager:
                 # Standard modification: need both old and new versions of the same file
                 file_path = chunk.canonical_path()
                 self._required_contexts.setdefault((file_path, True), []).append(
-                    ContextManager._get_line_range(chunk, True)
+                    self._get_line_range(chunk, True)
                 )  # old version
                 self._required_contexts.setdefault((file_path, False), []).append(
-                    ContextManager._get_line_range(chunk, False)
+                    self._get_line_range(chunk, False)
                 )  # new version
 
             elif chunk.is_file_addition:
                 # File addition: only need new version
                 file_path = chunk.new_file_path
                 self._required_contexts.setdefault((file_path, False), []).append(
-                    ContextManager._get_line_range(chunk, False)
+                    self._get_line_range(chunk, False)
                 )  # new version only
 
             elif chunk.is_file_deletion:
                 # File deletion: only need old version
                 file_path = chunk.old_file_path
                 self._required_contexts.setdefault((file_path, True), []).append(
-                    ContextManager._get_line_range(chunk, True)
+                    self._get_line_range(chunk, True)
                 )  # old version only
 
             elif chunk.is_file_rename:
@@ -172,10 +263,10 @@ class ContextManager:
                 old_path = chunk.old_file_path
                 new_path = chunk.new_file_path
                 self._required_contexts.setdefault((old_path, True), []).append(
-                    ContextManager._get_line_range(chunk, True)
+                    self._get_line_range(chunk, True)
                 )  # old version with old name
                 self._required_contexts.setdefault((new_path, False), []).append(
-                    ContextManager._get_line_range(chunk, False)
+                    self._get_line_range(chunk, False)
                 )  # new version with new name
 
     @staticmethod
@@ -248,7 +339,7 @@ class ContextManager:
                 line_ranges = self._required_contexts[(file_path, is_old_version)]
                 # Parse the file (file_parser expects string path)
                 parsed_file = FileParser.parse_file(
-                    path_str, content, self.simplify_overlapping_ranges(line_ranges)
+                    path_str, content, self._simplify_overlapping_ranges(line_ranges)
                 )
                 if parsed_file is None:
                     logger.debug(f"Parsed file for {path_str} is None")
@@ -266,7 +357,7 @@ class ContextManager:
                         }
                     )
 
-    def simplify_overlapping_ranges(
+    def _simplify_overlapping_ranges(
         self, ranges: list[tuple[int, int]]
     ) -> list[tuple[int, int]]:
         # simplify by filtering invalid ranges, and collapsing overlapping ranges
@@ -391,7 +482,7 @@ class ContextManager:
         Args:
             file_path: Path to the file
             is_old_version: True for old version, False for new version
-            line_ranges: list of tuples (start_line, end_line), to filter the tree sitter queries for a file
+            parsed_file: The parsed file
 
         Returns:
             AnalysisContext if successful, None if file cannot be processed
@@ -472,58 +563,3 @@ class ContextManager:
         logger.debug(f"{context=}")
 
         return context
-
-    def get_context(
-        self, file_path: bytes, is_old_version: bool
-    ) -> AnalysisContext | None:
-        """
-        Get analysis context for a specific file version.
-
-        Args:
-            file_path: Path to the file
-            is_old_version: True for old version, False for new version
-
-        Returns:
-            AnalysisContext if available, None if not found or not required
-        """
-        return self._context_cache.get((file_path, is_old_version))
-
-    def get_available_contexts(self) -> list[AnalysisContext]:
-        """
-        Get all available analysis contexts.
-
-        Returns:
-            List of all successfully built AnalysisContext objects
-        """
-        return list(self._context_cache.values())
-
-    def has_context(self, file_path: bytes, is_old_version: bool) -> bool:
-        """
-        Check if context is available for a specific file version.
-
-        Args:
-            file_path: Path to the file
-            is_old_version: True for old version, False for new version
-
-        Returns:
-            True if context is available, False otherwise
-        """
-        return (file_path, is_old_version) in self._context_cache
-
-    def get_required_contexts(self) -> set[tuple[bytes, bool]]:
-        """
-        Get the set of required contexts based on diff chunks.
-
-        Returns:
-            Set of (file_path, is_old_version) tuples that were determined to be needed
-        """
-        return self._required_contexts.copy()
-
-    def get_file_paths(self) -> set[bytes]:
-        """
-        Get all unique file paths that have contexts.
-
-        Returns:
-            Set of file paths that have at least one context (old or new)
-        """
-        return {file_path for file_path, _ in self._context_cache}

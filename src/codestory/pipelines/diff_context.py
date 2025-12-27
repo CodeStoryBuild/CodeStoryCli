@@ -24,7 +24,10 @@ from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import log_chunks, time_block
-from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.semantic_grouper.context_manager import (
+    ContextManager,
+    ContextManagerBuilder,
+)
 
 
 class DiffContext:
@@ -60,16 +63,16 @@ class DiffContext:
             immutable_chunks,
         )
 
-        # Initialize context_manager for semantic analysis
+        # Initialize context_manager for semantic analysis using builder
         with time_block("context manager init"):
             file_reader = GitFileReader(git_commands)
-            context_manager = ContextManager(
+            context_manager = ContextManagerBuilder(
                 raw_chunks,
                 file_reader,
                 base_commit_hash,
                 new_commit_hash,
                 fail_on_syntax_errors,
-            )
+            ).build()
 
         # Run atomic chunker to create smallest valid change units
         chunker = AtomicChunker(chunking_level)
