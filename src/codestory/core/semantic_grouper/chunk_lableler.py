@@ -324,7 +324,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
-                languages.add(old_context.parsed_file.detected_language)
+                languages.add(old_context.detected_language)
                 def_old_symbols_acc.update(def_old_symbols)
                 def_old_symbols_filtered_acc.update(def_old_symbols_filtered)
                 extern_old_symbols_acc.update(extern_old_symbols)
@@ -348,7 +348,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
-                languages.add(new_context.parsed_file.detected_language)
+                languages.add(new_context.detected_language)
                 def_new_symbols_acc.update(def_new_symbols)
                 def_new_symbols_filtered_acc.update(def_new_symbols_filtered)
                 extern_new_symbols_acc.update(extern_new_symbols)
@@ -373,7 +373,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
-                languages.add(new_context.parsed_file.detected_language)
+                languages.add(new_context.detected_language)
 
         elif diff_chunk.is_file_deletion:
             # For deletions, analyze old version only
@@ -391,7 +391,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
-                languages.add(old_context.parsed_file.detected_language)
+                languages.add(old_context.detected_language)
 
         return Signature(
             languages=languages,
