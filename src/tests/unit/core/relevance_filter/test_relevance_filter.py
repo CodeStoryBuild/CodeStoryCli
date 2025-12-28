@@ -145,8 +145,10 @@ class TestRelevanceFilter:
         """
         mock_adapter.invoke.return_value = raw_response
 
-        c1 = self._create_mock_chunk("valid code")
-        c2 = self._create_mock_chunk("junk")
+        c1 = self._create_mock_chunk("valid code", "main.py")
+        c2 = self._create_mock_chunk(
+            "junk", "other.py"
+        )  # Different file to avoid disjoint violation
 
         accepted, _, rejected = filter_.filter([c1, c2], [], intent="feat")
 
@@ -233,9 +235,11 @@ class TestRelevanceFilter:
         )
 
         chunk1 = self._create_mock_chunk("good code", "main.py")
-        chunk2 = self._create_mock_chunk("bad code", "main.py")
+        chunk2 = self._create_mock_chunk(
+            "bad code", "other.py"
+        )  # Different file to avoid disjoint violation
         immut_chunk1 = self._create_mock_immut_chunk("bad patch", "lib.py")
-        immut_chunk2 = self._create_mock_immut_chunk("good patch", "lib.py")
+        immut_chunk2 = self._create_mock_immut_chunk("good patch", "lib2.py")
 
         accepted_chunks, accepted_immut, rejected = filter_.filter(
             [chunk1, chunk2], [immut_chunk1, immut_chunk2], intent="refactor"
