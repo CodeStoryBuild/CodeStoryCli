@@ -170,3 +170,88 @@ class EmbeddingGrouper(LogicalGrouper):
         )
 
         return groups
+
+    def group_chunks_from_summaries(
+        self,
+        chunks: list[Chunk | ImmutableChunk],
+        summaries: list[str],
+        message: str,
+    ) -> list[CommitGroup]:
+        """
+        Group chunks using pre-computed summaries.
+
+        Skips ChunkSummarizer.summarize_chunks, directly embeds and clusters.
+        Used by finalize_smart_merge when summaries are already available.
+
+        Args:
+            chunks: List of Chunk or ImmutableChunk objects
+            summaries: Pre-computed summaries for each chunk (same order)
+            message: User-provided intent message for cluster message generation
+
+        Returns:
+            List of CommitGroup objects, each containing related chunks and a commit message
+        """
+        from loguru import logger
+
+        if not chunks:
+            return []
+
+        if len(chunks) != len(summaries):
+            raise ValueError(
+                f"Chunks and summaries must have same length: {len(chunks)} vs {len(summaries)}"
+            )
+
+        # Handle single chunk case (no clustering needed)
+        if len(chunks) == 1:
+            return [
+                CommitGroup(
+                    chunks=[chunks[0]],
+                    commit_message=summaries[0],
+                )
+            ]
+
+        # Embed summaries and cluster them
+        embeddings = self.embedder.embed(summaries)
+        cluster_labels = self.clusterer.cluster(embeddings)
+
+        groups = []
+        clusters: dict[int, Cluster] = {}
+
+        # Build clusters - group chunks and their summaries by cluster label
+        for any_chunk, summary, cluster_label in zip(
+            chunks, summaries, cluster_labels, strict=True
+        ):
+            if cluster_label == -1:
+                # Noise: assign as its own group, reuse summary as commit message
+                group = CommitGroup(
+                    chunks=[any_chunk],
+                    commit_message=summary,
+                )
+                groups.append(group)
+            else:
+                if cluster_label not in clusters:
+                    clusters[cluster_label] = Cluster(chunks=[], summaries=[])
+                clusters[cluster_label].chunks.append(any_chunk)
+                clusters[cluster_label].summaries.append(summary)
+
+        # Generate combined commit messages for each cluster
+        if clusters:
+            cluster_messages_map = self._chunk_summarizer.summarize_clusters(
+                clusters={cid: cluster.summaries for cid, cluster in clusters.items()},
+                intent_message=message,
+            )
+
+            # Create commit groups from clusters
+            for cluster_id, cluster in clusters.items():
+                commit_message = cluster_messages_map[cluster_id]
+                group = CommitGroup(
+                    chunks=cluster.chunks,
+                    commit_message=commit_message,
+                )
+                groups.append(group)
+
+        logger.debug(
+            f"Grouped {len(chunks)} chunks into {len(groups)} logical groups (from pre-computed summaries)."
+        )
+
+        return groups
