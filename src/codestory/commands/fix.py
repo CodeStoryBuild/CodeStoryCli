@@ -182,7 +182,7 @@ def run_fix(
     from codestory.pipelines.fix_pipeline import FixPipeline
     from codestory.pipelines.rewrite_pipeline import RewritePipeline
 
-    with GitSandbox(global_context) as sandbox:
+    with GitSandbox.from_context(global_context) as sandbox:
         rewrite_pipeline = RewritePipeline(global_context.git_commands)
 
         with time_block("Fix Pipeline E2E"):

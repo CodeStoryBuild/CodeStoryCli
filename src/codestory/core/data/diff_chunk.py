@@ -170,7 +170,7 @@ class DiffChunk:
 
         Two chunks are disjoint if their old file ranges don't overlap.
         This is the key property that allows chunks to be applied in any order.
-        
+
         For pure insertions at the same old_start, we use abs_new_line to determine
         if they're at different insertion points.
         """

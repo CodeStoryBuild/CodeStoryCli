@@ -125,7 +125,7 @@ def run_commit(
 
     # Create a dangling commit for the current working tree state.
     # This also runs in a sandbox to avoid polluting the main object directory.
-    with GitSandbox(global_context) as tempcommit_sandbox:
+    with GitSandbox.from_context(global_context) as tempcommit_sandbox:
         new_working_commit_hash = TempCommitCreator.create_reference_commit(
             global_context.git_commands,
             commit_context.target,
@@ -195,7 +195,7 @@ def run_commit(
 
     from codestory.pipelines.rewrite_pipeline import RewritePipeline
 
-    with GitSandbox(global_context) as sandbox:
+    with GitSandbox.from_context(global_context) as sandbox:
         pipeline = RewritePipeline(global_context.git_commands)
 
         new_commit_hash = pipeline.run(head_commit, final_groups)
