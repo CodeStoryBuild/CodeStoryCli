@@ -98,7 +98,7 @@ def generate_annotated_patch(
             return _generate_basic_chunk_patch(
                 chunk, diff_generator, patch_cutoff_chars
             )
-        return _generate_annotated_chunk_patch(
+        return generate_annotated_chunk_patch(
             annotated_chunk, diff_generator, patch_cutoff_chars
         )
 
@@ -131,7 +131,7 @@ def _generate_basic_chunk_patch(
     return annotated_patch
 
 
-def _generate_annotated_chunk_patch(
+def generate_annotated_chunk_patch(
     annotated_chunk: AnnotatedChunk,
     diff_generator: DiffGenerator,
     patch_cutoff_chars: int,

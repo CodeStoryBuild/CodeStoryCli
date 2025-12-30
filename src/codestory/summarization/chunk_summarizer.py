@@ -44,11 +44,16 @@ from codestory.summarization.prompts import (
 )
 from codestory.summarization.summarizer_utils import (
     DEFAULT_PATCH_CUTOFF_CHARS,
+    generate_annotated_chunk_patch,
     generate_annotated_patch,
 )
 
 if TYPE_CHECKING:
     from codestory.core.llm import CodeStoryAdapter
+    from codestory.core.semantic_grouper.chunk_lableler import (
+        AnnotatedChunk,
+        ChunkSignature,
+    )
     from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
@@ -166,6 +171,41 @@ class ChunkSummarizer:
             intent_message=intent_message,
         )
         return summaries[0] if summaries else ""
+
+    def summarize_semantic_groups(
+        self,
+        groups: list[tuple[Chunk, ChunkSignature]],
+        diff_generator: DiffGenerator,
+        intent_message: str | None = None,
+    ) -> list[str]:
+        """
+        Generate summaries for semantic groups using pre-computed signatures.
+
+        Args:
+            groups: List of (chunk, signature) tuples
+            diff_generator: DiffGenerator for patch generation
+            intent_message: Optional user-provided intent message
+
+        Returns:
+            List of summary strings, one per group
+        """
+        if not groups:
+            return []
+
+        annotated_patches = []
+        for chunk, signature in groups:
+            # Create AnnotatedChunk with the pre-computed signature
+            annotated_chunk = AnnotatedChunk(chunk=chunk, signature=signature)
+
+            patch = generate_annotated_chunk_patch(
+                annotated_chunk=annotated_chunk,
+                diff_generator=diff_generator,
+                patch_cutoff_chars=self.patch_cutoff_chars,
+            )
+            annotated_patches.append(patch)
+
+        formatted_intent = self._create_intent_message(intent_message)
+        return self._generate_summaries(annotated_patches, formatted_intent)
 
     def _create_intent_message(self, intent_message: str | None) -> str:
         """Format the intent message for inclusion in prompts."""
