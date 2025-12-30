@@ -102,8 +102,15 @@ class EmbeddingGrouper(LogicalGrouper):
         if not (chunks or immut_chunks):
             return []
 
+        # Use the cached old_file_content_map from context_manager
+        old_file_content_map = (
+            context_manager.old_file_content_map if context_manager else {}
+        )
+
         # Create diff generator for patch generation
-        diff_generator = SemanticDiffGenerator(chunks, context_manager=context_manager)
+        diff_generator = SemanticDiffGenerator(
+            chunks, old_file_content_map=old_file_content_map
+        )
 
         # Combine all chunks for summarization
         all_chunks: list[Chunk | ImmutableChunk] = list(chunks) + list(immut_chunks)

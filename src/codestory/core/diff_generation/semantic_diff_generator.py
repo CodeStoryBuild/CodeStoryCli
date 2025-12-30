@@ -28,7 +28,6 @@ from codestory.core.synthesizer.chunk_merger import merge_diff_chunks_by_file
 if TYPE_CHECKING:
     from codestory.core.data.chunk import Chunk
     from codestory.core.data.commit_group import CommitGroup
-    from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
 class SemanticDiffGenerator(DiffGenerator):
@@ -40,11 +39,11 @@ class SemanticDiffGenerator(DiffGenerator):
     def __init__(
         self,
         all_chunks: list["Chunk | ImmutableChunk | CommitGroup"],
-        context_manager: "ContextManager | None" = None,
+        old_file_content_map: dict[bytes, bytes] | None = None,
         context_lines: int = 3,
     ):
         super().__init__(all_chunks)
-        self.context_manager = context_manager
+        self.old_file_content_map = old_file_content_map or {}
         self.context_lines = context_lines
 
     def generate_diff(
@@ -183,16 +182,13 @@ class SemanticDiffGenerator(DiffGenerator):
         return patches
 
     def _get_old_file_lines(self, file_path: bytes) -> list[str]:
-        if not self.context_manager:
+        if not file_path or file_path not in self.old_file_content_map:
             return []
-        analysis_context = self.context_manager.get_context(
-            file_path, is_old_version=True
+        return (
+            self.old_file_content_map[file_path]
+            .decode("utf-8", errors="replace")
+            .splitlines()
         )
-        if analysis_context and analysis_context.content_bytes:
-            return analysis_context.content_bytes.decode(
-                "utf-8", errors="replace"
-            ).splitlines()
-        return []
 
     def _generate_header(self, chunks: list[DiffChunk], is_complete: bool) -> str:
         single = chunks[0]

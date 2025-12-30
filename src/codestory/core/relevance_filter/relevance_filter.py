@@ -130,8 +130,14 @@ class RelevanceFilter:
     ) -> str:
         """Convert chunks to a simplified structure for LLM analysis."""
         changes = []
+
+        # Use the cached old_file_content_map from context_manager
+        old_file_content_map = (
+            context_manager.old_file_content_map if context_manager else {}
+        )
+
         diff_map = SemanticDiffGenerator(
-            chunks, context_manager=context_manager
+            chunks, old_file_content_map=old_file_content_map
         ).get_patches(chunks)
 
         # Process mutable chunks
