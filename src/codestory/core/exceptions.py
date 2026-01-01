@@ -30,22 +30,20 @@ error handling and user experience.
 
 
 class CodestoryError(Exception):
-    """
-    Base exception for all codestory-related errors.
+    """Base exception for all codestory-related errors.
 
-    All codestory-specific exceptions should inherit from this class
-    to enable consistent error handling throughout the application.
+    All codestory-specific exceptions should inherit from this class to
+    enable consistent error handling throughout the application.
     """
 
     pass
 
 
 class GitError(CodestoryError):
-    """
-    Errors related to git operations.
+    """Errors related to git operations.
 
-    Raised when git commands fail or when git repository
-    state is invalid for the requested operation.
+    Raised when git commands fail or when git repository state is
+    invalid for the requested operation.
     """
 
     pass
@@ -62,150 +60,129 @@ class GitRebaseFailed(GitError):
 
 
 class ValidationError(CodestoryError):
-    """
-    Input validation errors.
+    """Input validation errors.
 
-    Raised when user input fails validation checks,
-    such as invalid file paths, malformed commit hashes, etc.
+    Raised when user input fails validation checks, such as invalid file
+    paths, malformed commit hashes, etc.
     """
 
     pass
 
 
 class ConfigurationError(CodestoryError):
-    """
-    Configuration-related errors.
+    """Configuration-related errors.
 
-    Raised when configuration files are invalid, missing,
-    or contain incompatible settings.
+    Raised when configuration files are invalid, missing, or contain
+    incompatible settings.
     """
 
     pass
 
 
 class AIServiceError(CodestoryError):
-    """
-    AI service related errors.
+    """AI service related errors.
 
-    Raised when AI API calls fail, timeout, or return
-    invalid responses.
+    Raised when AI API calls fail, timeout, or return invalid responses.
     """
 
     pass
 
 
 class EmbeddingModelError(CodestoryError):
-    """
-    Custom embedding model errors.
+    """Custom embedding model errors.
 
-    Raised when custom embedding model fails to download,
-    is invalid, or encounters errors during initialization.
+    Raised when custom embedding model fails to download, is invalid, or
+    encounters errors during initialization.
     """
 
     pass
 
 
 class ModelRetryExhausted(CodestoryError):
-    """
-    Model retry exhausted errors.
+    """Model retry exhausted errors.
 
-    Raised when an LLM model fails to return a valid response
-    after all retry attempts have been exhausted.
+    Raised when an LLM model fails to return a valid response after all
+    retry attempts have been exhausted.
     """
 
     pass
 
 
 class FileSystemError(CodestoryError):
-    """
-    File system operation errors.
+    """File system operation errors.
 
-    Raised when file or directory operations fail,
-    such as permission issues or missing files.
+    Raised when file or directory operations fail, such as permission
+    issues or missing files.
     """
 
     pass
 
 
 class ChunkingError(CodestoryError):
-    """
-    Errors during diff chunking operations.
+    """Errors during diff chunking operations.
 
-    Raised when the chunking process encounters
-    invalid diffs or fails to parse changes.
+    Raised when the chunking process encounters invalid diffs or fails
+    to parse changes.
     """
 
     pass
 
 
 class SynthesizerError(CodestoryError):
-    """
-    Errors during commit synthesis.
+    """Errors during commit synthesis.
 
-    Raised when the commit synthesis process fails
-    to create valid commits from chunks.
+    Raised when the commit synthesis process fails to create valid
+    commits from chunks.
     """
 
     pass
 
 
 class FixCommitError(CodestoryError):
-    """
-    Errors during fix command run
-    """
+    """Errors during fix command run."""
 
     pass
 
 
 class LLMResponseError(CodestoryError):
-    """
-    Errors when llm response failed or was invalid
-    """
+    """Errors when llm response failed or was invalid."""
 
     pass
 
 
 class LLMInitError(CodestoryError):
-    """
-    Errors during LLM initialization.
+    """Errors during LLM initialization.
 
-    Raised when LLM setup fails due to missing API keys,
-    invalid model configurations, or connection issues.
+    Raised when LLM setup fails due to missing API keys, invalid model
+    configurations, or connection issues.
     """
 
     pass
 
 
 class LogicalGroupingError(CodestoryError):
-    """
-    Errors during logical grouping step
-    """
+    """Errors during logical grouping step."""
 
     pass
 
 
 class CleanCommandError(CodestoryError):
-    """
-    Errors specific to running the cst clean command
-    """
+    """Errors specific to running the cst clean command."""
 
 
 class SyntaxErrorDetected(CodestoryError):
-    """
-    Raised when syntax errors are detected in code files.
-    """
+    """Raised when syntax errors are detected in code files."""
 
     pass
 
 
 @contextmanager
 def handle_codestory_exception():
-    """
-    Function-based context manager to handle CodestoryError exceptions.
+    """Function-based context manager to handle CodestoryError exceptions.
 
     Yields control to the 'with' block's content. The code after 'yield'
-    acts as the '__exit__' method, running only if the 'with' block is done
-    or raises an exception.
+    acts as the '__exit__' method, running only if the 'with' block is
+    done or raises an exception.
     """
     try:
         yield

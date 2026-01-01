@@ -28,8 +28,8 @@ from codestory.core.exceptions import LLMInitError, ModelRetryExhausted
 
 @dataclass
 class ModelConfig:
-    """
-    Configuration for the LLM Adapter.
+    """Configuration for the LLM Adapter.
+
     model_string format: "provider:model_name" (e.g. "openai:gpt-4o")
     """
 

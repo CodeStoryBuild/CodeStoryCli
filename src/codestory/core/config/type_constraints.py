@@ -35,7 +35,10 @@ class TypeConstraint(ABC):
 
     @abstractmethod
     def coerce(self, value: Any) -> Any:
-        """Try to coerce and validate `value`. Return coerced value or raise."""
+        """Try to coerce and validate `value`.
+
+        Return coerced value or raise.
+        """
 
 
 @dataclass
