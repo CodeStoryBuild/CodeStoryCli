@@ -144,8 +144,7 @@ def setup_logger(
 
 
 def setup_debug_logging() -> None:
-    """
-    Enable debug logging for troubleshooting.
+    """Enable debug logging for troubleshooting.
 
     Note: This creates a new StructuredLogger with debug=True.
     """
@@ -158,8 +157,7 @@ def get_log_directory() -> Path:
 
 
 def cleanup_old_logs(days: int = 14) -> int:
-    """
-    Clean up log files older than the specified number of days.
+    """Clean up log files older than the specified number of days.
 
     Args:
         days: Number of days to keep logs

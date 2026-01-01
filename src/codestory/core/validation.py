@@ -33,8 +33,7 @@ from codestory.core.git.git_commands import GitCommands
 
 
 def is_root_commit(git_commands: GitCommands, commit_hash: str) -> bool:
-    """
-    Check if a commit is a root commit (has no parents).
+    """Check if a commit is a root commit (has no parents).
 
     Args:
         git_commands: Git commands to run
@@ -49,10 +48,9 @@ def is_root_commit(git_commands: GitCommands, commit_hash: str) -> bool:
 def validate_commit_hash(
     value: str, git_commands: GitCommands | None = None, branch: str | None = None
 ) -> str:
-    """
-    Validate and normalize a git commit hash. If `value` is the string "HEAD",
-    and a `git_commands` and `branch` are provided, resolve it by running
-    `git rev-parse <branch>` and return the resolved commit hash.
+    """Validate and normalize a git commit hash. If `value` is the string "HEAD", and a
+    `git_commands` and `branch` are provided, resolve it by running `git rev-parse
+    <branch>` and return the resolved commit hash.
 
     Args:
         value: The commit hash string to validate
@@ -96,9 +94,8 @@ def validate_commit_hash(
 
 
 def validate_target_path(value: str | list[str] | None) -> list[str] | None:
-    """
-    Validate that target paths are valid strings.
-    Git pathspecs are flexible, so we primarily ensure they are non-empty strings.
+    """Validate that target paths are valid strings. Git pathspecs are flexible, so we
+    primarily ensure they are non-empty strings.
 
     Args:
         value: The path string or list of path strings to validate
@@ -131,8 +128,7 @@ def validate_target_path(value: str | list[str] | None) -> list[str] | None:
 
 
 def validate_message_length(value: str | None) -> str | None:
-    """
-    Validate commit message length and content.
+    """Validate commit message length and content.
 
     Args:
         value: The commit message to validate (can be None)
@@ -171,8 +167,7 @@ def validate_message_length(value: str | None) -> str | None:
 
 
 def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
-    """
-    Validate ignore patterns for commit hashes.
+    """Validate ignore patterns for commit hashes.
 
     Args:
         patterns: List of commit hash patterns to ignore
@@ -217,8 +212,7 @@ def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
 
 
 def validate_min_size(value: int | None) -> int | None:
-    """
-    Validate minimum size parameter.
+    """Validate minimum size parameter.
 
     Args:
         value: The minimum size value
@@ -247,8 +241,7 @@ def validate_min_size(value: int | None) -> int | None:
 
 
 def validate_git_repository(git_commands: GitCommands) -> None:
-    """
-    Validate that we're in a git repository.
+    """Validate that we're in a git repository.
 
     Args:
         git_commands: Git commands to run
@@ -263,8 +256,7 @@ def validate_git_repository(git_commands: GitCommands) -> None:
 
 
 def validate_default_branch(git_commands: GitCommands) -> None:
-    """
-    Validate that we are on a branch (not in detached HEAD state).
+    """Validate that we are on a branch (not in detached HEAD state).
 
     Args:
         git_commands: Git commands to run
@@ -283,8 +275,7 @@ def validate_default_branch(git_commands: GitCommands) -> None:
 
 
 def validate_branch(git_commands: GitCommands, branch_name: str) -> None:
-    """
-    Validate that a branch exists in the repository.
+    """Validate that a branch exists in the repository.
 
     Args:
         git_commands: Git commands to run
@@ -302,8 +293,8 @@ def validate_branch(git_commands: GitCommands, branch_name: str) -> None:
 def validate_no_merge_commits_in_range(
     git_commands: GitCommands, start_commit: str, end_ref: str
 ) -> None:
-    """
-    Validate that there are no merge commits in the range from start_commit to end_ref.
+    """Validate that there are no merge commits in the range from start_commit to
+    end_ref.
 
     Args:
         git_commands: Git commands to run
@@ -329,8 +320,7 @@ def validate_no_merge_commits_in_range(
 
 
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
-    """
-    Sanitize user input to prevent security issues.
+    """Sanitize user input to prevent security issues.
 
     Args:
         user_input: The input string to sanitize

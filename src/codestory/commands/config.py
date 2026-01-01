@@ -277,7 +277,10 @@ def print_describe_options():
 
 
 def _check_key_exists(key: str, exit_on_fail: bool = True) -> dict:
-    """Check if a config key exists. If not, show available options and exit."""
+    """Check if a config key exists.
+
+    If not, show available options and exit.
+    """
     schema = _get_config_schema()
 
     if key not in schema:

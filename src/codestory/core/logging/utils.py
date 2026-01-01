@@ -24,9 +24,7 @@ from codestory.core.diff.data.atomic_container import AtomicContainer
 
 @contextlib.contextmanager
 def time_block(block_name: str):
-    """
-    A context manager to time the execution of a code block and log the result.
-    """
+    """A context manager to time the execution of a code block and log the result."""
     from loguru import logger
 
     logger.debug(f"Starting {block_name}")
