@@ -16,11 +16,10 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-Enhanced logging configuration for the codestory CLI application.
+"""Enhanced logging configuration for the codestory CLI application.
 
-This module provides structured logging with proper formatting,
-log levels, and file management for better observability and debugging.
+This module provides structured logging with proper formatting, log
+levels, and file management for better observability and debugging.
 """
 
 import os

@@ -19,9 +19,7 @@
 import contextlib
 from time import perf_counter
 
-from codestory.core.data.chunk import Chunk
-from codestory.core.data.commit_group import CommitGroup
-from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff.data.atomic_container import AtomicContainer
 
 
 @contextlib.contextmanager
@@ -45,38 +43,34 @@ def time_block(block_name: str):
         )
 
 
-def log_chunks(
-    process_step: str, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
-):
+def log_changes(process_step: str, containers: list[AtomicContainer]):
     from loguru import logger
 
-    unique_files = {
-        (path.decode("utf-8", errors="replace") if isinstance(path, bytes) else path)
-        for c in chunks
-        for path in c.canonical_paths()
-    }
-
-    for immut_chunk in immut_chunks:
-        unique_files.add(immut_chunk.canonical_path)
+    num_changes = 0
+    unique_files = set()
+    for container in containers:
+        unique_files.update(container.canonical_paths())
+        num_changes += len(container.get_atomic_chunks())
 
     logger.debug(
         "{process_step}: chunks={count} files={files}",
         process_step=process_step,
-        count=len(chunks) + len(immut_chunks),
+        count=num_changes,
         files=len(unique_files),
     )
 
 
-def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
-    if isinstance(data, CommitGroup):
-        return "\n".join([describe_chunk(chunk) for chunk in data.chunks])
-
-    if isinstance(data, Chunk):
-        files: dict[str, int] = {}
-        for diff_c in data.get_chunks():
-            path = diff_c.canonical_path().decode("utf-8", errors="replace")
-            files[path] = files.get(path, 0) + 1
-
-        return "\n".join([f"{num} changes in {path}" for path, num in files.items()])
+def grammar(path, num):
+    if num == 1:
+        return f"A change in {path}"
     else:
-        return "A change for " + data.canonical_path.decode("utf-8", errors="replace")
+        return f"{num} changes in {path}"
+
+
+def describe_container(data: AtomicContainer) -> str:
+    files: dict[bytes, int] = {}
+    for chunk in data.get_atomic_chunks():
+        path = chunk.canonical_path()
+        files[path] = files.get(path, 0) + 1
+
+    return "\n".join([grammar(path, num) for path, num in files.items()])

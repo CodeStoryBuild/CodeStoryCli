@@ -31,7 +31,8 @@ if TYPE_CHECKING:
 
 
 class ConfigLoader:
-    """Handles loading and merging configuration from multiple sources into a unified model."""
+    """Handles loading and merging configuration from multiple sources into a unified
+    model."""
 
     @staticmethod
     def get_full_config(
@@ -72,7 +73,8 @@ class ConfigLoader:
 
     @staticmethod
     def load_toml(path: Path):
-        """Loads configuration data from a TOML file, returning an empty dict if the file doesn't exist or is invalid."""
+        """Loads configuration data from a TOML file, returning an empty dict if the
+        file doesn't exist or is invalid."""
 
         if not path.exists():
             return {}
@@ -88,7 +90,8 @@ class ConfigLoader:
 
     @staticmethod
     def load_env(app_prefix: str):
-        """Extracts configuration values from environment variables prefixed with the app prefix, converting keys to lowercase."""
+        """Extracts configuration values from environment variables prefixed with the
+        app prefix, converting keys to lowercase."""
         from dotenv import load_dotenv
 
         # Load .env file if present
@@ -107,7 +110,8 @@ class ConfigLoader:
         sources: list[dict],
         source_names: list[str],
     ) -> tuple["CodeStoryConfig", set[str], bool]:
-        """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
+        """Builds the configuration model by merging data from sources in priority
+        order, filling in defaults where needed."""
         from loguru import logger
 
         remaining_keys = {field.name for field in fields(config_model)}
@@ -167,7 +171,8 @@ class ConfigLoader:
     ) -> Any:
         """Coerce a value using the constraint from constraints_map.
 
-        Type is determined solely by constraints[field_name], not by type annotations.
+        Type is determined solely by constraints[field_name], not by
+        type annotations.
         """
 
         # Use constraint if available

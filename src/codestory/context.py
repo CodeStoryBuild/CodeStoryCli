@@ -16,7 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
@@ -28,8 +27,8 @@ from codestory.core.config.type_constraints import (
     StringConstraint,
     TypeConstraint,
 )
-from codestory.core.git_commands.git_commands import GitCommands
-from codestory.core.git_interface import GitInterface
+from codestory.core.git.git_commands import GitCommands
+from codestory.core.git.git_interface import GitInterface
 from codestory.core.llm import CodeStoryAdapter, ModelConfig
 
 
@@ -51,7 +50,8 @@ class GlobalConfig:
     api_base: str | None = None
     temperature: float = 0
     max_tokens: int | None = 4096
-    relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
+    relevance_filtering: bool = False
+    relevance_filter_similarity_threshold: float = 0.75
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     fallback_grouping_strategy: Literal[
         "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
@@ -75,8 +75,9 @@ class GlobalConfig:
         "api_base": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
         "max_tokens": RangeTypeConstraint(min_value=1, is_int=True),
-        "relevance_filter_level": LiteralTypeConstraint(
-            allowed=["safe", "standard", "strict", "none"]
+        "relevance_filtering": BoolConstraint(),
+        "relevance_filter_similarity_threshold": RangeTypeConstraint(
+            0, 1, is_int=False
         ),
         "secret_scanner_aggression": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
@@ -114,7 +115,8 @@ class GlobalConfig:
         "api_base": "Custom API base URL for the LLM provider (optional)",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
         "max_tokens": "Maximum tokens to send for LLM requests",
-        "relevance_filter_level": "How much to filter irrelevant changes, used with the --intent option ('cst commit' only)",
+        "relevance_filtering": "Whether to filter changes by relevance to your intent ('cst commit' only)",
+        "relevance_filter_similarity_threshold": "How similar do changes have to be to your intent to be included. Higher means more strict",
         "secret_scanner_aggression": "How aggresively to scan for secrets ('cst commit' only)",
         "fallback_grouping_strategy": "Strategy for grouping changes that were not able to be analyzed",
         "chunking_level": "Which type of changes should be chunked further into smaller pieces",
@@ -137,7 +139,10 @@ class GlobalConfig:
         "api_base": ["--api-base"],
         "temperature": ["--temperature"],
         "max_tokens": ["--max-tokens"],
-        "relevance_filter_level": ["--relevance-filter-level"],
+        "relevance_filtering": ["--relevance-filtering"],
+        "relevance_filter_similarity_threshold": [
+            "--relevance-filter-similarity-threshold"
+        ],
         "secret_scanner_aggression": ["--secret-scanner-aggression"],
         "fallback_grouping_strategy": ["--fallback-grouping-strategy"],
         "chunking_level": ["--chunking-level"],
@@ -156,9 +161,10 @@ class GlobalConfig:
 
     @classmethod
     def get_cli_params(cls):
-        """
-        Generate typer parameter specifications from GlobalConfig metadata.
-        Returns a dict mapping field names to their typer.Option configuration.
+        """Generate typer parameter specifications from GlobalConfig metadata.
+
+        Returns a dict mapping field names to their typer.Option
+        configuration.
         """
         from dataclasses import fields
 
@@ -251,6 +257,15 @@ class GlobalContext:
         self._embedder = Embedder(self.config.custom_embedding_model)
         return self._embedder
 
+    def model_enabled(self) -> bool:
+        return self.config.model != "no-model"
+
+    def filter_secrets(self) -> bool:
+        return self.config.secret_scanner_aggression != "none"
+
+    def filter_relevance(self) -> bool:
+        return self.config.relevance_filtering
+
     @classmethod
     def from_global_config(
         cls, config: GlobalConfig, repo_path: Path, current_branch: str = ""
@@ -260,27 +275,3 @@ class GlobalContext:
         return GlobalContext(
             repo_path, git_interface, git_commands, config, current_branch
         )
-
-
-@dataclass(frozen=True)
-class CommitContext:
-    target: list[str] | None
-    message: str | None = None
-    relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
-    secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "none"
-    relevance_filter_intent: str | None = None
-    fail_on_syntax_errors: bool = False
-
-
-@dataclass(frozen=True)
-class FixContext:
-    end_commit_hash: str
-    start_commit_hash: str | None = None
-
-
-@dataclass(frozen=True)
-class CleanContext:
-    ignore: Sequence[str] | None = None
-    min_size: int | None = None
-    start_from: str | None = None
-    end_at: str | None = None

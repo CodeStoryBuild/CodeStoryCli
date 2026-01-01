@@ -19,9 +19,8 @@ import numpy as np
 
 
 class SklearnLouvainClusterer:
-    """
-    Clusters embeddings using scikit-learn NearestNeighbors + NetworkX Louvain community detection.
-    """
+    """Clusters embeddings using scikit-learn NearestNeighbors + NetworkX Louvain
+    community detection."""
 
     # 1.1. k (Nearest Neighbor Count) Base Constraints
     # These set the hard floor/ceiling regardless of strictness
@@ -44,11 +43,11 @@ class SklearnLouvainClusterer:
         self,
         strictness: float = 0.5,
     ):
-        """
-        Initializes the clusterer by mapping the strictness parameter to
-        the internal k_factor and resolution using LERP.
+        """Initializes the clusterer by mapping the strictness parameter to the internal
+        k_factor and resolution using LERP.
 
-        :param strictness: Float between 0.0 (Loose/Coarse) and 1.0 (Strict/Fine).
+        :param strictness: Float between 0.0 (Loose/Coarse) and 1.0
+            (Strict/Fine).
         """
         from loguru import logger
 

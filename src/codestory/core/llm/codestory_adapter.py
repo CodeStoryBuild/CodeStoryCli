@@ -41,9 +41,10 @@ class ModelConfig:
 
 
 class CodeStoryAdapter:
-    """
-    A unified interface for calling LLM APIs using aisuite.
-    Designed for CLI utility usage with persistent event loop management.
+    """A unified interface for calling LLM APIs using aisuite.
+
+    Designed for CLI utility usage with persistent event loop
+    management.
     """
 
     def __init__(self, config: ModelConfig):
@@ -177,7 +178,10 @@ class CodeStoryAdapter:
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
         num_retries: int = 3,
     ) -> str:
-        """Unified sync invoke method with retry logic. Returns the content string."""
+        """Unified sync invoke method with retry logic.
+
+        Returns the content string.
+        """
         from loguru import logger
 
         logger.debug(f"Invoking {self.model_string} (sync)")
@@ -214,7 +218,10 @@ class CodeStoryAdapter:
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
         num_retries: int = 3,
     ) -> str:
-        """Unified async invoke method with retry logic. Returns the content string."""
+        """Unified async invoke method with retry logic.
+
+        Returns the content string.
+        """
         import asyncio
 
         from loguru import logger
@@ -259,8 +266,8 @@ class CodeStoryAdapter:
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
         num_retries: int = 3,
     ) -> list[str]:
-        """
-        Run a batch of invocations in parallel.
+        """Run a batch of invocations in parallel.
+
         FAILS FAST: If one task raises an exception, the exception is raised immediately
         and all other pending tasks are cancelled.
         """
@@ -274,16 +281,18 @@ class CodeStoryAdapter:
 
         semaphore = asyncio.Semaphore(max_concurrent)
 
-        async def sem_task(item):
+        async def sem_task(item, cb):
             async with semaphore:
                 if sleep_between_tasks > 0:
                     await asyncio.sleep(sleep_between_tasks)
                 return await self.async_invoke(
-                    item, update_callback=update_callback, num_retries=num_retries
+                    item, update_callback=cb, num_retries=num_retries
                 )
 
         # Create tasks. We keep the reference to preserve order of results.
-        tasks = [asyncio.create_task(sem_task(item)) for item in batch]
+        tasks = []
+        for item in batch:
+            tasks.append(asyncio.create_task(sem_task(item, update_callback)))
 
         # Wait for the first exception (FAIL FAST)
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
@@ -317,9 +326,10 @@ class CodeStoryAdapter:
         update_callback: Callable[[Literal["sent", "received"]], None] | None = None,
         num_retries: int = 3,
     ) -> list[str]:
-        """
-        Synchronous wrapper for batched calls reusing a persistent loop.
-        Ideal for CLI usage to prevent overhead of creating/destroying loops per call.
+        """Synchronous wrapper for batched calls reusing a persistent loop.
+
+        Ideal for CLI usage to prevent overhead of creating/destroying
+        loops per call.
         """
         import asyncio
 

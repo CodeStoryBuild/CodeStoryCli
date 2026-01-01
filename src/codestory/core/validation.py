@@ -15,11 +15,11 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""
-Input validation utilities for the codestory CLI application.
+"""Input validation utilities for the codestory CLI application.
 
-This module provides comprehensive input validation with clear error messages
-and type safety for all CLI parameters and configuration values.
+This module provides comprehensive input validation with clear error
+messages and type safety for all CLI parameters and configuration
+values.
 """
 
 import re
@@ -29,7 +29,7 @@ from codestory.core.exceptions import (
     GitError,
     ValidationError,
 )
-from codestory.core.git_commands.git_commands import GitCommands
+from codestory.core.git.git_commands import GitCommands
 
 
 def is_root_commit(git_commands: GitCommands, commit_hash: str) -> bool:

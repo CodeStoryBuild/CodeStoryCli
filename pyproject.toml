@@ -26,7 +26,7 @@ dependencies = [
   "scikit-learn<1.9.0,>=1.8.0",
   "networkx<4.0,>=3.0",
   "python-dotenv>=1.2.1",
-  "aisuite-extendedmodels[anthropic,aws,azure,cerebras,cohere,deepseek,googlegenai,groq,huggingface,mistral,ollama,openai,watsonx,mcp]"
+  "aisuite-extendedmodels[anthropic,aws,azure,cerebras,cohere,deepseek,googlegenai,groq,huggingface,mistral,ollama,openai,watsonx,mcp]>=0.1.15"
 ]
 
 [project.scripts]
@@ -47,7 +47,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-codestory = ["resources/*"]
+codestory = ["resources/**"]
 
 [tool.mypy]
 python_version = "3.13"
