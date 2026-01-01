@@ -15,9 +15,6 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""
-Summarization module for generating commit message summaries from code chunks.
-"""
 
 from codestory.core.diff.data.atomic_container import AtomicContainer
 from codestory.core.logging.utils import describe_container
