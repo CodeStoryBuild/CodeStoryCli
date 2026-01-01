@@ -15,9 +15,7 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""
-Chunk summarizer for generating commit message summaries from code chunks.
-"""
+"""Chunk summarizer for generating commit message summaries from code chunks."""
 
 from __future__ import annotations
 
@@ -30,8 +28,8 @@ from codestory.core.diff.data.atomic_container import AtomicContainer
 from codestory.core.diff.patch.patch_generator import PatchGenerator
 from codestory.core.exceptions import LLMResponseError
 from codestory.core.logging.progress_manager import ProgressBarManager
-from codestory.core.utils.sanitize import sanitize_llm_text
-from codestory.summarization.prompts import (
+from codestory.core.semantic_analysis.annotation.utils import sanitize_llm_text
+from codestory.core.semantic_analysis.summarization.prompts import (
     BATCHED_CLUSTER_SUMMARY_SYSTEM,
     BATCHED_CLUSTER_SUMMARY_USER,
     BATCHED_SUMMARY_SYSTEM,

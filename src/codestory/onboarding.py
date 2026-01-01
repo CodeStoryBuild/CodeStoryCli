@@ -62,8 +62,8 @@ def run_model_setup(scope: str):
     print(f"\n{Fore.CYAN}{Style.BRIGHT}=== Model Setup ==={Style.RESET_ALL}")
 
     # Inform about supported providers
-    local = sorted(list(LOCAL_PROVIDERS))
-    cloud = sorted(list(get_cloud_providers()))
+    local = sorted(LOCAL_PROVIDERS)
+    cloud = sorted(get_cloud_providers())
 
     print(f"{Fore.WHITE}Supported providers:{Style.RESET_ALL}")
 

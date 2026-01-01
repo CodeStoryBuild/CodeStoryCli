@@ -16,9 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-Test script for ContextManager to validate it works correctly.
-"""
+"""Test script for ContextManager to validate it works correctly."""
 
 from codestory.core.diff.data.line_changes import Addition, Removal
 from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk

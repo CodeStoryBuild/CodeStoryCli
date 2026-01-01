@@ -20,8 +20,7 @@
 
 
 def sanitize_llm_text(text: str) -> str:
-    """
-    Sanitizes text output from LLMs by removing problematic characters.
+    """Sanitizes text output from LLMs by removing problematic characters.
 
     LLMs occasionally produce control characters like null bytes (\x00) which
     cause failures in downstream processing, particularly on Windows where

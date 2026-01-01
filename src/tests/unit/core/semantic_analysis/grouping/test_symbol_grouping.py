@@ -16,9 +16,10 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-Tests for symbol-based semantic grouping.
-Tests verify that chunks are grouped based on shared defined symbols that are modified in the diff.
+"""Tests for symbol-based semantic grouping.
+
+Tests verify that chunks are grouped based on shared defined symbols
+that are modified in the diff.
 """
 
 from textwrap import dedent

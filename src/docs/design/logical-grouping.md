@@ -18,7 +18,7 @@ Logical grouping bridges these gaps by analyzing the *intent* and *context* of t
 By focusing on summarization and relationship analysis, the engine achieves high accuracy and consistency.
 
 ## Intent Filtering
-When the `relevance_filter_level` is enabled, the logical grouping engine can also filter changes based on a user-provided `--intent`. This allows you to focus on specific tasks (e.g., "refactor auth") while ignoring unrelated changes (e.g., "fix typos").
+When the relevance filtering is enabled, the logical grouping engine can also filter changes based on a user-provided intent message (`--intent`). This allows you to focus on specific tasks (e.g., "refactor auth") while ignoring unrelated changes (e.g., "fix typos").
 
 ## Supported Providers
 `codestory` supports a wide range of LLM providers via `aisuite`:

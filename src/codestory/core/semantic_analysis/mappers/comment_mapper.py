@@ -18,11 +18,11 @@
 
 """Comment mapping utilities.
 
-Builds a map of which lines (0-indexed) in a source file are pure comment
-lines – meaning the only non-whitespace characters on that line belong to
-one or more comment captures returned by Tree‑sitter. Inline comments that
-follow code on the same line are excluded. Multi-line comment nodes are
-handled by splitting their covered span per line.
+Builds a map of which lines (0-indexed) in a source file are pure
+comment lines meaning the only non-whitespace characters on that line
+belong to one or more comment captures returned by Treesitter. Inline
+comments that follow code on the same line are excluded. Multi-line
+comment nodes are handled by splitting their covered span per line.
 """
 
 import string
