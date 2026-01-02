@@ -113,7 +113,12 @@ class CMDUserFilter(Filter):
                 with tqdm.external_write_mode():
                     print(f"Diff for #{num}:")
                     if diff_text != "(no diff)":
-                        CMDUserFilter.print_patch_cleanly(diff_text, max_lines=120)
+                        if self.use_semantic_diff:
+                            CMDUserFilter.print_patch_cleanly_semantic(
+                                diff_text, max_lines=120
+                            )
+                        else:
+                            CMDUserFilter.print_patch_cleanly(diff_text, max_lines=120)
                     else:
                         print(f"{Fore.YELLOW}(no diff){Style.RESET_ALL}")
 
@@ -242,3 +247,35 @@ class CMDUserFilter(Filter):
         if len(patch_content.splitlines()) > max_lines:
             print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
         print("---  End Patch  ---")
+
+    @staticmethod
+    def print_patch_cleanly_semantic(patch_content: str, max_lines: int = 120):
+        """Displays a semantic patch content cleanly using direct Colorama styling."""
+        styles = {
+            "h": Fore.BLUE,
+            "rem": Fore.RED,
+            "add": Fore.GREEN,
+            "ctx": Fore.WHITE + Style.DIM,
+        }
+
+        print("--- Begin Semantic Patch ---")
+
+        for line in patch_content.splitlines()[:max_lines]:
+            style_key = "ctx"  # default
+
+            # Semantic format is [tag] message
+            if line.startswith("[h]"):
+                style_key = "h"
+            elif line.startswith("[rem]"):
+                style_key = "rem"
+            elif line.startswith("[add]"):
+                style_key = "add"
+            elif line.startswith("[ctx]"):
+                style_key = "ctx"
+
+            # Apply style directly
+            print(f"{styles[style_key]}{line}{Style.RESET_ALL}")
+
+        if len(patch_content.splitlines()) > max_lines:
+            print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
+        print("---  End Semantic Patch  ---")

@@ -27,16 +27,26 @@ from codestory.core.semantic_analysis.annotation.file_manager import FileManager
 
 
 class SemanticPatchGenerator(PatchGenerator):
-    """Generates semantic patches with configurable amount of context lines."""
+    """Generates semantic patches with configurable amount of context lines.
+
+    The output format is tagged per-line to assist LLMs in distinguishing
+    metadata, context, and code changes:
+    [h]   - Header / Metadata
+    [add] - Added lines
+    [rem] - Removed lines
+    [ctx] - Context lines
+    """
 
     def __init__(
         self,
         containers: list[AtomicContainer],
         file_manager: FileManager,
         context_lines: int = 3,
+        skip_whitespace: bool = False,
     ):
         super().__init__(containers, file_manager=file_manager)
         self.context_lines = context_lines
+        self.skip_whitespace = skip_whitespace
 
     def _generate_diff(
         self,
@@ -48,9 +58,9 @@ class SemanticPatchGenerator(PatchGenerator):
         # 1. Binary/Immutable Chunks
         for immutable_chunk in immutable_chunks:
             patches[immutable_chunk.canonical_path()] = (
-                b"### BEGIN BINARY PATCH\n"
+                b"[h] ### BEGIN BINARY PATCH\n"
                 + immutable_chunk.file_patch
-                + b"### END BINARY PATCH\n"
+                + b"[h] ### END BINARY PATCH\n"
             )
 
         sorted_chunks = sorted(standard_diff_chunks, key=lambda c: c.canonical_path())
@@ -91,7 +101,7 @@ class SemanticPatchGenerator(PatchGenerator):
                 file_chunks, file_rename, file_addition, file_deletion
             )
 
-            out_lines = [header]
+            out_lines = [f"[h] {header}"]
 
             # Short-circuit for empty renames
             if "RENAMED" in header and not any(c.has_content for c in file_chunks):
@@ -114,10 +124,7 @@ class SemanticPatchGenerator(PatchGenerator):
                 # Determine where context should start for this chunk
                 ideal_context_start = max(1, curr_start - self.context_lines)
 
-                # Gap Filling Logic:
-                # If the gap between the last emitted line and the ideal context start
-                # is small (<= context_lines), we fill the gap instead of breaking the hunk.
-                # This mimics git diff's behavior of merging close hunks.
+                # Gap Filling Logic
                 if ideal_context_start > last_line_emitted + 1:
                     skipped_lines = ideal_context_start - (last_line_emitted + 1)
                     if skipped_lines <= self.context_lines:
@@ -128,38 +135,38 @@ class SemanticPatchGenerator(PatchGenerator):
                     context_start = max(last_line_emitted + 1, ideal_context_start)
 
                 # --- VISUAL HUNK START ---
-                # A new visual hunk starts if:
-                # 1. It is the first chunk (i==0)
-                # 2. OR there is a gap between the last emitted line and our context start
                 is_gap = context_start > last_line_emitted + 1
                 is_start_of_hunk = (i == 0) or is_gap
 
                 if is_start_of_hunk:
                     if is_gap and last_line_emitted > 0:
-                        out_lines.append("...")
+                        out_lines.append("[h] ...")
 
                     # PRINT HEADER FIRST (Before Context)
-                    # We skip the header for pure new files as it's redundant
                     if not is_pure_addition:
-                        out_lines.append(f"Line {curr_start}:")
+                        out_lines.append(f"[h] Line {curr_start}:")
 
                 # --- LEADING CONTEXT ---
                 if old_file_lines:
                     for ln in range(context_start, curr_start):
                         if 1 <= ln <= len(old_file_lines):
-                            out_lines.append(f"  {old_file_lines[ln - 1]}")
+                            if (
+                                self.skip_whitespace
+                                and old_file_lines[ln - 1].strip() == ""
+                            ):
+                                continue
+                            out_lines.append(f"[ctx] {old_file_lines[ln - 1]}")
 
                 # --- CHUNK CONTENT ---
                 if chunk.parsed_content:
                     for item in chunk.parsed_content:
                         text = item.content.decode("utf-8", errors="replace").rstrip()
-                        prefix = "-" if isinstance(item, Removal) else "+"
-                        out_lines.append(f"{prefix} {text}")
+                        tag = "[rem]" if isinstance(item, Removal) else "[add]"
+                        out_lines.append(f"{tag} {text}")
                         if item.newline_marker:
-                            out_lines.append("\\ No newline at end of file")
+                            out_lines.append("[ctx] \\ No newline at end of file")
 
                 # Update last_line_emitted to include the current chunk's content range
-                # Use max to prevent regression if chunks overlap strangely
                 last_line_emitted = max(last_line_emitted, curr_end)
 
                 # --- TRAILING CONTEXT (With Lookahead) ---
@@ -178,13 +185,16 @@ class SemanticPatchGenerator(PatchGenerator):
                         next_chunk_start - 1,
                     )
 
-                    # START at max(curr_end + 1, last_line_emitted + 1) to prevent duplicating lines
-                    # that might have been emitted by a previous chunk's trailing context
-                    # or if the current chunk is an insertion inside previously emitted context.
+                    # START at max(curr_end + 1, last_line_emitted + 1)
                     start_ln = max(curr_end + 1, last_line_emitted + 1)
 
                     for ln in range(start_ln, int(after_end) + 1):
-                        out_lines.append(f"  {old_file_lines[ln - 1]}")
+                        if (
+                            self.skip_whitespace
+                            and old_file_lines[ln - 1].strip() == ""
+                        ):
+                            continue
+                        out_lines.append(f"[ctx] {old_file_lines[ln - 1]}")
                         last_line_emitted = ln
 
             patches[file_path] = ("\n".join(out_lines) + "\n").encode("utf-8")
