@@ -1,4 +1,5 @@
 import unittest
+
 from codestory.core.diff.creation.diff_creator import DiffCreator
 from codestory.core.diff.creation.hunk_wrapper import HunkWrapper
 
