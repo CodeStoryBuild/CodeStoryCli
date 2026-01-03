@@ -29,7 +29,7 @@ from codestory.core.exceptions import (
     GitError,
     ValidationError,
 )
-from codestory.core.git_commands.git_commands import GitCommands
+from codestory.core.git.git_commands import GitCommands
 
 
 def is_root_commit(git_commands: GitCommands, commit_hash: str) -> bool:

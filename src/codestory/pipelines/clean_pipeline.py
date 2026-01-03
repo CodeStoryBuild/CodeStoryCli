@@ -20,16 +20,14 @@ import os
 import tempfile
 from collections.abc import Sequence
 
-from codestory.context import CleanContext, GlobalContext
+from codestory.context import GlobalContext
 from codestory.core.exceptions import CleanCommandError
-from codestory.pipelines.diff_context import DiffContext
-from codestory.pipelines.grouping_context import GroupingConfig, GroupingContext
-from codestory.pipelines.rewrite_pipeline import RewritePipeline
+from codestory.pipelines.standard_cli_pipeline import StandardCLIPipeline
 
 
 class CleanPipeline:
-    """
-    Rewrites a linear segment of git history atomically and safely for bare repositories.
+    """Rewrites a linear segment of git history atomically and safely for bare
+    repositories.
 
     Mechanics:
     - Uses Git plumbing commands (read-tree, commit-tree, update-ref) exclusively.
@@ -42,10 +40,16 @@ class CleanPipeline:
     def __init__(
         self,
         global_context: GlobalContext,
-        clean_context: CleanContext,
+        start_from: str,
+        end_at: str,
+        ignore: list[str],
+        min_size: int | None,
     ):
         self.global_context = global_context
-        self.clean_context = clean_context
+        self.start_from = start_from
+        self.end_at = end_at
+        self.ignore = ignore
+        self.min_size = min_size
 
     def run(self) -> str | None:
         from loguru import logger
@@ -54,9 +58,7 @@ class CleanPipeline:
         # 1. Determine linear history window candidates
         # ------------------------------------------------------------------
         # Pass end_at from context
-        commits_to_rewrite = self._get_linear_history(
-            self.clean_context.start_from, getattr(self.clean_context, "end_at", None)
-        )
+        commits_to_rewrite = self._get_linear_history(self.start_from, self.end_at)
 
         if not commits_to_rewrite:
             logger.warning("No commits eligible for cleaning.")
@@ -88,6 +90,10 @@ class CleanPipeline:
         skipped_count = 0
         current_idx = 0
 
+        pipeline = StandardCLIPipeline(
+            self.global_context, allow_filtering=False, source="clean"
+        )
+
         try:
             # ------------------------------------------------------------------
             # 3. Iterate through the history
@@ -105,16 +111,16 @@ class CleanPipeline:
                 should_skip_clean = False
 
                 changes = self._count_line_changes(commit_hash)
-                if self._is_ignored(commit_hash, self.clean_context.ignore):
+                if self._is_ignored(commit_hash, self.ignore):
                     should_skip_clean = True
-                elif self.clean_context.min_size is not None:
-                    if changes is not None and changes < self.clean_context.min_size:
+                elif self.min_size is not None:
+                    if changes is not None and changes < self.min_size:
                         should_skip_clean = True
                         logger.debug(
                             "Commit {commit} size {changes} < min {min_size}, skipping clean.",
                             commit=short,
                             changes=changes,
-                            min_size=self.clean_context.min_size,
+                            min_size=self.min_size,
                         )
                 elif changes < 1:
                     # no changes, treat as empty commit and skip
@@ -145,54 +151,10 @@ class CleanPipeline:
                         t=len(commits_to_rewrite),
                     )
 
-                    # Create DiffContext for this commit
-                    diff_context = DiffContext(
-                        self.global_context.git_commands,
-                        current_base_hash,
-                        commit_hash,
-                        target=None,
-                        chunking_level=self.global_context.config.chunking_level,
-                        fail_on_syntax_errors=False,
-                    )
+                    new_commit_hash = pipeline.run(current_base_hash, commit_hash)
 
-                    if not diff_context.has_changes():
-                        logger.debug(
-                            "Commit {commit} has no changes after processing, skipping.",
-                            commit=short,
-                        )
-                        current_idx = window_end_idx + 1
-                        continue
-
-                    # Create GroupingContext with no filtering (clean doesn't filter)
-                    grouping_config = GroupingConfig(
-                        fallback_grouping_strategy=self.global_context.config.fallback_grouping_strategy,
-                        relevance_filter_level="none",
-                        secret_scanner_aggression="none",
-                        batching_strategy=self.global_context.config.batching_strategy,
-                        cluster_strictness=self.global_context.config.cluster_strictness,
-                        relevance_intent=None,
-                        guidance_message=None,
-                        model=self.global_context.get_model(),
-                        embedder=self.global_context.get_embedder(),
-                    )
-
-                    grouping_context = GroupingContext(diff_context, grouping_config)
-
-                    final_groups = grouping_context.final_logical_groups
-
-                    if not final_groups:
-                        logger.warning(
-                            f"Commit {short} resulted in empty change or was dropped."
-                        )
-                        current_idx = window_end_idx + 1
-                        continue
-
-                    # Run rewrite pipeline
-                    pipeline = RewritePipeline(self.global_context.git_commands)
-                    new_tip_hash = pipeline.run(current_base_hash, final_groups)
-
-                    if new_tip_hash:
-                        current_base_hash = new_tip_hash
+                    if new_commit_hash:
+                        current_base_hash = new_commit_hash
                         rewritten_count += 1
                     else:
                         logger.warning(
@@ -241,8 +203,8 @@ class CleanPipeline:
     def _get_linear_history(
         self, start_from: str | None = None, end_at: str | None = None
     ) -> list[str]:
-        """
-        Returns a list of commit hashes to rewrite (Oldest -> Newest).
+        """Returns a list of commit hashes to rewrite (Oldest -> Newest).
+
         Ensures the root commit is excluded (cannot be rewritten).
         """
         # Resolve end

@@ -27,7 +27,10 @@ from codestory.commands.config import describe_callback
 from codestory.constants import APP_NAME
 from codestory.core.config.config_loader import ConfigLoader
 from codestory.core.exceptions import ValidationError, handle_codestory_exception
+from codestory.core.git.git_commands import GitCommands
+from codestory.core.git.git_interface import GitInterface
 from codestory.core.logging.logging import setup_logger
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.validation import (
     validate_branch,
     validate_default_branch,
@@ -83,9 +86,8 @@ def main_commit(
         help="Fail the commit if syntax errors are detected in the changes.",
     ),
 ) -> None:
-    """
-    Commit current changes into small logical commits.
-    (If you wish to modify existing history, use codestory fix or codestory clean)
+    """Commit current changes into small logical commits. (If you wish to modify
+    existing history, use codestory fix or codestory clean)
 
     Examples:
         # Commit all changes interactively
@@ -100,16 +102,19 @@ def main_commit(
     from codestory.commands.commit import run_commit
 
     global_context = ctx.obj
-    with handle_codestory_exception():
-        if global_context.config.relevance_filter_level != "none" and intent is None:
+    description = f"Committing {target}" if target else "Committing all changes"
+    with (
+        handle_codestory_exception(),
+        ProgressBarManager.set_pbar(
+            description=description, silent=global_context.config.silent
+        ),
+    ):
+        if global_context.config.relevance_filtering and intent is None:
             raise ValidationError(
                 "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
             )
 
-        if (
-            intent is not None
-            and global_context.config.relevance_filter_level == "none"
-        ):
+        if intent is not None and global_context.config.relevance_filtering:
             from loguru import logger
 
             logger.warning(
@@ -120,8 +125,6 @@ def main_commit(
             ctx.obj,
             target,
             message,
-            global_context.config.secret_scanner_aggression,
-            global_context.config.relevance_filter_level,
             intent,
             fail_on_syntax_errors,
         ):
@@ -158,7 +161,17 @@ def main_fix(
     """
     from codestory.commands.fix import run_fix
 
-    with handle_codestory_exception():
+    global_context = ctx.obj
+    if start_commit:
+        description = f"Fixing {start_commit[:7]} -> {commit_hash[:7]}"
+    else:
+        description = f"Fixing {commit_hash[:7]}"
+    with (
+        handle_codestory_exception(),
+        ProgressBarManager.set_pbar(
+            description=description, silent=global_context.config.silent
+        ),
+    ):
         if run_fix(ctx.obj, commit_hash, start_commit, message):
             raise typer.Exit(0)
         else:
@@ -204,7 +217,22 @@ def main_clean(
     """
     from codestory.commands.clean import run_clean
 
-    with handle_codestory_exception():
+    global_context = ctx.obj
+    if start_from and end_at:
+        description = f"Cleaning {start_from[:7]} to {end_at[:7]}"
+    elif start_from:
+        description = f"Cleaning {start_from[:7]} to HEAD"
+    elif end_at:
+        description = f"Cleaning up to {end_at[:7]}"
+    else:
+        description = "Cleaning all possible commits"
+
+    with (
+        handle_codestory_exception(),
+        ProgressBarManager.set_pbar(
+            description=description, silent=global_context.config.silent
+        ),
+    ):
         if run_clean(ctx.obj, ignore, min_size, start_from, end_at):
             raise typer.Exit(0)
         else:
@@ -297,9 +325,10 @@ def load_global_config(custom_config_path: str, **input_args):
 
 
 def create_global_callback():
-    """
-    Dynamically creates the main callback function with GlobalConfig parameters.
-    This allows the CLI arguments to be automatically synced with GlobalConfig fields.
+    """Dynamically creates the main callback function with GlobalConfig parameters.
+
+    This allows the CLI arguments to be automatically synced with
+    GlobalConfig fields.
     """
     from codestory.context import GlobalConfig, GlobalContext
 
@@ -354,8 +383,9 @@ def create_global_callback():
         ),
         **kwargs,  # Dynamic GlobalConfig params injected here
     ) -> None:
-        """
-        Global setup callback. Initialize global context/config used by commands
+        """Global setup callback.
+
+        Initialize global context/config used by commands
         """
         with handle_codestory_exception():
             # conditions to not create global context
@@ -392,7 +422,9 @@ def create_global_callback():
 
             # Set custom language config override if provided
             if config.custom_language_config is not None:
-                from codestory.core.semantic_grouper.query_manager import QueryManager
+                from codestory.core.semantic_analysis.mappers.query_manager import (
+                    QueryManager,
+                )
 
                 QueryManager.set_override(config.custom_language_config)
 
@@ -407,14 +439,10 @@ def create_global_callback():
                 from loguru import logger
 
                 logger.warning(
-                    "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
+                    "Logical grouping is disabled as no model has been configured. To set a model please check 'cst config model'."
                 )
 
             # Initialize git interface and commands to resolve branch
-            from codestory.core.git_commands.git_commands import GitCommands
-            from codestory.core.git_interface import (
-                GitInterface,
-            )
 
             resolved_repo_path = Path(repo_path) if repo_path is not None else Path(".")
             git_interface = GitInterface(resolved_repo_path)

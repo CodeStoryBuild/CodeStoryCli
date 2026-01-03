@@ -25,19 +25,20 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
-from codestory.core.data.chunk import Chunk
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
-from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk
-from codestory.core.semantic_grouper.union_find import UnionFind
+from codestory.core.diff.data.composite_container import CompositeContainer
+from codestory.core.logging.progress_manager import ProgressBarManager
+from codestory.core.semantic_analysis.annotation.chunk_lableler import (
+    AnnotatedContainer,
+)
+from codestory.core.semantic_analysis.grouping.union_find import UnionFind
 
 
 def group_by_overlapping_signatures(
-    annotated_chunks: list[AnnotatedChunk],
-) -> list[CompositeDiffChunk]:
-    """
-    Group chunks with overlapping signatures using an efficient
-    inverted index and Union-Find algorithm.
-    Also groups chunks that share the same scope (if scope is not None).
+    annotated_chunks: list[AnnotatedContainer],
+) -> list[CompositeContainer]:
+    """Group chunks with overlapping signatures using an efficient inverted index and
+    Union-Find algorithm. Also groups chunks that share the same scope (if scope is not
+    None).
 
     Args:
         annotated_chunks: List of AnnotatedChunk objects with signatures
@@ -49,18 +50,31 @@ def group_by_overlapping_signatures(
         return []
 
     chunk_ids = list(range(len(annotated_chunks)))
-    signatures = [ac.signature for ac in annotated_chunks]
-    if not chunk_ids:
-        return []
 
     uf = UnionFind(chunk_ids)
+
+    pbar = ProgressBarManager.get_pbar()
+    if pbar is not None:
+        pbar.set_postfix(
+            {"phase": "semantic grouping", "chunks": f"0/{len(annotated_chunks)}"}
+        )
 
     # Create an inverted index from symbol/scope -> list of chunk_ids
     symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
     scope_to_chunks: dict[str, list[int]] = defaultdict(list)
-    for i, sig in enumerate(signatures):
-        if sig is None:
+    for i, ac in enumerate(annotated_chunks):
+        if pbar is not None:
+            pbar.set_postfix(
+                {
+                    "phase": "semantic grouping",
+                    "chunks": f"{i + 1}/{len(annotated_chunks)}",
+                }
+            )
+
+        sig = ac.signature
+        if not sig.has_valid_sig():
             continue
+
         for symbol in (
             sig.total_signature.def_new_symbols | sig.total_signature.def_old_symbols
         ):
@@ -73,28 +87,44 @@ def group_by_overlapping_signatures(
             scope_to_chunks[scope].append(i)
 
     # Union chunks that share common symbols
-    for _, ids in symbol_to_chunks.items():
+    total_symbols = len(symbol_to_chunks)
+    for i, (_, ids) in enumerate(symbol_to_chunks.items()):
+        if pbar is not None:
+            pbar.set_postfix(
+                {
+                    "phase": "union semantic symbols",
+                    "progress": f"{i + 1}/{total_symbols}",
+                }
+            )
         if len(ids) > 1:
             first_chunk_id = ids[0]
             for i in range(1, len(ids)):
                 uf.union(first_chunk_id, ids[i])
 
     # Union chunks that share common scopes
-    for _, ids in scope_to_chunks.items():
+    total_scopes = len(scope_to_chunks)
+    for i, (_, ids) in enumerate(scope_to_chunks.items()):
+        if pbar is not None:
+            pbar.set_postfix(
+                {
+                    "phase": "union semantic scopes",
+                    "progress": f"{i + 1}/{total_scopes}",
+                }
+            )
         if len(ids) > 1:
             first_chunk_id = ids[0]
             for i in range(1, len(ids)):
                 uf.union(first_chunk_id, ids[i])
 
     # Group chunks by their root in the Union-Find structure
-    groups: dict[int, list[Chunk]] = defaultdict(list)
-    for i in range(len(signatures)):
+    groups: dict[int, list[AnnotatedContainer]] = defaultdict(list)
+    for i in range(len(annotated_chunks)):
         root = uf.find(i)
-        original_chunk = annotated_chunks[i].chunk
+        original_chunk = annotated_chunks[i]
         groups[root].append(original_chunk)
 
     # Convert to CompositeDiffChunk objects
-    return [CompositeDiffChunk(chunks=group_chunks) for group_chunks in groups.values()]
+    return [CompositeContainer(containers=containers) for containers in groups.values()]
 
 
 def get_fallback_signature(
@@ -127,7 +157,7 @@ def get_fallback_signature(
 
 
 def group_fallback_chunks(
-    fallback_chunks: list[Chunk],
+    fallback_chunks: list[AnnotatedContainer],
     strategy: Literal[
         "all_together",
         "by_file_path",
@@ -135,15 +165,14 @@ def group_fallback_chunks(
         "by_file_extension",
         "all_alone",
     ],
-) -> list[CompositeDiffChunk]:
-    """
-    Group fallback chunks based on the configured strategy using union-find.
+) -> list[CompositeContainer]:
+    """Group fallback chunks based on the configured strategy using union-find.
 
     Each chunk can contain multiple diff chunks with different paths.
     Chunks are grouped if they share any common signature based on the strategy.
 
     Args:
-        fallback_chunks: Chunks that failed annotation
+        fallback_chunks: Chunks that failed annotation (can include ImmutableDiffChunks)
         strategy: The grouping strategy to use
 
     Returns:
@@ -154,12 +183,25 @@ def group_fallback_chunks(
 
     if strategy == "all_alone":
         # no fallback grouping, just leave each chunk as is
-        return [CompositeDiffChunk(chunks=[chunk]) for chunk in fallback_chunks]
+        return fallback_chunks
 
     # Build signature sets for each chunk
     chunk_signatures: list[set[str]] = []
-    for chunk in fallback_chunks:
-        # Get all canonical paths for this chunk (handles composite chunks)
+    pbar = ProgressBarManager.get_pbar()
+    if pbar is not None:
+        pbar.set_postfix(
+            {"phase": "fallback grouping", "chunks": f"0/{len(fallback_chunks)}"}
+        )
+
+    for i, chunk in enumerate(fallback_chunks):
+        if pbar is not None:
+            pbar.set_postfix(
+                {
+                    "phase": "fallback grouping",
+                    "chunks": f"{i + 1}/{len(fallback_chunks)}",
+                }
+            )
+        # Get all canonical paths for this chunk
         paths = chunk.canonical_paths()
         # Generate signatures for each path
         sigs = {get_fallback_signature(path, strategy) for path in paths}
@@ -176,16 +218,21 @@ def group_fallback_chunks(
             sig_to_chunks[sig].append(i)
 
     # Union chunks that share common signatures
-    for _, chunk_indices in sig_to_chunks.items():
+    total_sigs = len(sig_to_chunks)
+    for i, (_, chunk_indices) in enumerate(sig_to_chunks.items()):
+        if pbar is not None:
+            pbar.set_postfix(
+                {"phase": "union fallback chunks", "progress": f"{i + 1}/{total_sigs}"}
+            )
         if len(chunk_indices) > 1:
             first = chunk_indices[0]
             for i in range(1, len(chunk_indices)):
                 uf.union(first, chunk_indices[i])
 
     # Group chunks by their root in union-find
-    groups: dict[int, list[Chunk]] = defaultdict(list)
+    groups: dict[int, list[AnnotatedContainer]] = defaultdict(list)
     for i in range(len(fallback_chunks)):
         root = uf.find(i)
         groups[root].append(fallback_chunks[i])
 
-    return [CompositeDiffChunk(chunks=group_chunks) for group_chunks in groups.values()]
+    return [CompositeContainer(containers=containers) for containers in groups.values()]

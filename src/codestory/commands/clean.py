@@ -16,10 +16,10 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from codestory.context import CleanContext, GlobalContext
+from codestory.context import GlobalContext
 from codestory.core.exceptions import GitError
+from codestory.core.git.git_sandbox import GitSandbox
 from codestory.core.logging.utils import time_block
-from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.validation import (
     is_root_commit,
     validate_commit_hash,
@@ -112,27 +112,18 @@ def run_clean(
             validated_end_at,
         )
 
-    clean_context = CleanContext(
-        ignore=validated_ignore,
-        min_size=validated_min_size,
-        start_from=validated_start_from,
-        end_at=validated_end_at,
-    )
-
-    logger.debug(
-        "Clean command started",
-        ignore_patterns=validated_ignore,
-        min_size=validated_min_size,
-        start_from=validated_start_from,
-        end_at=validated_end_at,
-    )
-
     # Execute cleaning
     from codestory.pipelines.clean_pipeline import CleanPipeline
 
     with GitSandbox.from_context(global_context) as sandbox:
         with time_block("Clean Runner E2E"):
-            runner = CleanPipeline(global_context, clean_context)
+            runner = CleanPipeline(
+                global_context,
+                validated_start_from,
+                validated_end_at,
+                validated_ignore,
+                validated_min_size,
+            )
             final_head = runner.run()
 
         if final_head:
@@ -143,12 +134,16 @@ def run_clean(
         # If we stopped at end_at, we might need to rebase downstream or update HEAD
         # The pipeline handles downstream rebasing if end_at != HEAD.
         # So we just update the branch pointer to the final result of the pipeline.
+        logger.info(
+            "Finalizing update: {branch} -> {head}",
+            branch=global_context.current_branch,
+            head=final_head,
+        )
 
-        target_ref = global_context.current_branch or "HEAD"
-        global_context.git_commands.update_ref(target_ref, final_head)
-
-        if global_context.current_branch:
-            global_context.git_commands.read_tree(target_ref)
+        global_context.git_commands.update_ref(
+            global_context.current_branch, final_head
+        )
+        global_context.git_commands.read_tree(global_context.current_branch)
 
         logger.success("Clean command completed successfully")
         return True

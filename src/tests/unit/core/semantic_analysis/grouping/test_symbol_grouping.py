@@ -25,10 +25,10 @@ from textwrap import dedent
 
 import pytest
 
-from codestory.core.file_reader.file_parser import FileParser
-from codestory.core.semantic_grouper.query_manager import QueryManager
-from codestory.core.semantic_grouper.symbol_extractor import SymbolExtractor
-from codestory.core.semantic_grouper.symbol_mapper import SymbolMapper
+from codestory.core.file_parser.file_parser import FileParser
+from codestory.core.semantic_analysis.mappers.query_manager import QueryManager
+from codestory.core.semantic_analysis.mappers.symbol_extractor import SymbolExtractor
+from codestory.core.semantic_analysis.mappers.symbol_mapper import SymbolMapper
 
 # -------------------------------------------------------------------------
 # Fixtures
@@ -63,7 +63,7 @@ def tools():
             """
             class Calculator:
                 pass
-            
+
             def use_calc():
                 calc = Calculator()
                 return calc
@@ -81,7 +81,7 @@ def tools():
             def foo():
                 x = 1
                 return x
-            
+
             def bar():
                 y = 2
                 return y
@@ -97,11 +97,11 @@ def tools():
             "test.py",
             """
             x = 10
-            
+
             def modify_x():
                 global x
                 x = 20
-            
+
             def read_x():
                 return x
             """,
@@ -118,7 +118,7 @@ def tools():
             def process(data):
                 result = data * 2
                 return result
-            
+
             def other_func():
                 x = 5
                 return x
@@ -139,7 +139,7 @@ def tools():
                     this.name = name;
                 }
             }
-            
+
             function createUser() {
                 return new User("John");
             }
@@ -157,7 +157,7 @@ def tools():
             function add(a, b) {
                 return a + b;
             }
-            
+
             function multiply(c, d) {
                 return c * d;
             }
@@ -173,11 +173,11 @@ def tools():
             "test.js",
             """
             const API_KEY = "secret";
-            
+
             function useApi() {
                 return API_KEY;
             }
-            
+
             function otherFunc() {
                 return "other";
             }
@@ -197,7 +197,7 @@ def tools():
                 name: string;
                 age: number;
             }
-            
+
             function createUser(): IUser {
                 return { name: "John", age: 30 };
             }
@@ -214,11 +214,11 @@ def tools():
             """
             type UserId = string;
             type ProductId = string;
-            
+
             function getUser(id: UserId) {
                 return id;
             }
-            
+
             function getProduct(id: ProductId) {
                 return id;
             }
@@ -238,7 +238,7 @@ def tools():
                 x: i32,
                 y: i32,
             }
-            
+
             fn create_point() -> Point {
                 Point { x: 0, y: 0 }
             }
@@ -256,7 +256,7 @@ def tools():
             fn process_data(x: i32) -> i32 {
                 x * 2
             }
-            
+
             fn process_string(s: String) -> String {
                 s.to_uppercase()
             }
@@ -276,7 +276,7 @@ def tools():
             class Database {
                 public function connect() {}
             }
-            
+
             function getDb() {
                 return new Database();
             }
@@ -297,7 +297,7 @@ def tools():
                     return a + b;
                 }
             }
-            
+
             class Main {
                 public void test() {
                     Calculator calc = new Calculator();
@@ -316,11 +316,11 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type Calculator struct {
                 value int
             }
-            
+
             func NewCalculator() *Calculator {
                 return &Calculator{value: 0}
             }
@@ -341,7 +341,7 @@ def tools():
                 @value = 0
               end
             end
-            
+
             def create_calc
               Calculator.new
             end
@@ -363,7 +363,7 @@ def tools():
                     self.name = name
                 }
             }
-            
+
             func createPerson() -> Person {
                 return Person(name: "John")
             }
@@ -384,7 +384,7 @@ def tools():
                     return a + b
                 }
             }
-            
+
             fun createCalculator(): Calculator {
                 return Calculator()
             }
@@ -403,7 +403,7 @@ def tools():
             class Calculator {
               def add(a: Int, b: Int): Int = a + b
             }
-            
+
             object Main {
               def createCalc(): Calculator = new Calculator()
             }
@@ -421,11 +421,11 @@ def tools():
             """
             #!/bin/bash
             MY_VAR="config"
-            
+
             function use_config() {
                 echo $MY_VAR
             }
-            
+
             use_config
             """,
             [(1, 1), (3, 5)],  # Modify variable definition and usage
@@ -442,7 +442,7 @@ def tools():
                 local x=1
                 echo $x
             }
-            
+
             function func_two() {
                 local y=2
                 echo $y
@@ -459,11 +459,11 @@ def tools():
             "test.sh",
             """
             CONFIG_FILE="/etc/app.conf"
-            
+
             function load_config() {
                 cat $CONFIG_FILE
             }
-            
+
             function other_func() {
                 echo "other"
             }
@@ -482,7 +482,7 @@ def tools():
                 result="processed"
                 echo $result
             }
-            
+
             function display() {
                 msg="display"
                 echo $msg
@@ -502,7 +502,7 @@ def tools():
                 sum=0
                 return $sum
             }
-            
+
             calculate
             echo $sum
             """,
@@ -518,13 +518,13 @@ def tools():
             "test.c",
             """
             #include <stdio.h>
-            
+
             int global_var = 42;
-            
+
             void use_global() {
                 printf("%d", global_var);
             }
-            
+
             int main() {
                 use_global();
                 return 0;
@@ -544,7 +544,7 @@ def tools():
                 int x = 1;
                 printf("%d", x);
             }
-            
+
             void func_two() {
                 int y = 2;
                 printf("%d", y);
@@ -564,7 +564,7 @@ def tools():
                 int x;
                 int y;
             };
-            
+
             struct Point create_point(int a, int b) {
                 struct Point p;
                 p.x = a;
@@ -586,7 +586,7 @@ def tools():
                 int result = n * 2;
                 return result;
             }
-            
+
             int process(int m) {
                 int value = m + 1;
                 return value;
@@ -606,7 +606,7 @@ def tools():
                 int id;
                 char name[50];
             } User;
-            
+
             User create_user() {
                 User u;
                 u.id = 1;
@@ -627,7 +627,7 @@ def tools():
             [package]
             name = "myapp"
             version = "1.0.0"
-            
+
             [package.metadata]
             authors = ["John Doe"]
             """,
@@ -644,7 +644,7 @@ def tools():
             [server]
             host = "localhost"
             port = 8080
-            
+
             [database]
             user = "admin"
             password = "secret"
@@ -662,7 +662,7 @@ def tools():
             [[products]]
             name = "Widget"
             sku = 12345
-            
+
             [[products]]
             name = "Gadget"
             sku = 67890
@@ -679,7 +679,7 @@ def tools():
             """
             [config]
             debug = true
-            
+
             [settings]
             timeout = 30
             """,
@@ -695,7 +695,7 @@ def tools():
             """
             [build]
             target = "release"
-            
+
             [build.dependencies]
             pkg1 = "1.0"
             """,
@@ -713,7 +713,7 @@ def tools():
             class Database:
                 def connect(self):
                     return "connected"
-            
+
             def init_db():
                 db = Database()
                 return db.connect()
@@ -730,7 +730,7 @@ def tools():
             """
             def validate_data(data):
                 return len(data) > 0
-            
+
             @validate_data
             def process():
                 return [1, 2, 3]
@@ -748,7 +748,7 @@ def tools():
             class Animal:
                 def speak(self):
                     return "sound"
-            
+
             class Dog(Animal):
                 def bark(self):
                     return "woof"
@@ -764,7 +764,7 @@ def tools():
             "test.py",
             """
             multiplier = 5
-            
+
             def apply():
                 result = lambda x: x * multiplier
                 return result(10)
@@ -780,7 +780,7 @@ def tools():
             "test.py",
             """
             numbers = [1, 2, 3, 4, 5]
-            
+
             def process():
                 squared = [x * x for x in numbers]
                 return squared
@@ -797,7 +797,7 @@ def tools():
             "test.js",
             """
             const config = { timeout: 5000 };
-            
+
             const fetchData = () => {
                 return fetch('/api', { timeout: config.timeout });
             };
@@ -817,7 +817,7 @@ def tools():
                     return data.toUpperCase();
                 }
             }
-            
+
             function handleRequest() {
                 const service = new Service();
                 return service.process('test');
@@ -837,7 +837,7 @@ def tools():
                 theme: 'dark',
                 language: 'en'
             };
-            
+
             function configure() {
                 const { theme, language } = settings;
                 return theme + language;
@@ -856,7 +856,7 @@ def tools():
             async function fetchUser() {
                 return { id: 1, name: 'John' };
             }
-            
+
             async function getUser() {
                 const user = await fetchUser();
                 return user;
@@ -876,7 +876,7 @@ def tools():
                 let count = 0;
                 return () => count++;
             }
-            
+
             const counter = createCounter();
             """,
             [(0, 3), (5, 5)],  # Modify factory function and usage
@@ -895,7 +895,7 @@ def tools():
                 Inactive,
                 Pending
             }
-            
+
             function checkStatus(status: Status) {
                 return status === Status.Active;
             }
@@ -913,7 +913,7 @@ def tools():
             class Container<T> {
                 constructor(public value: T) {}
             }
-            
+
             function createContainer(): Container<string> {
                 return new Container('test');
             }
@@ -931,7 +931,7 @@ def tools():
             interface Drawable {
                 draw(): void;
             }
-            
+
             class Circle implements Drawable {
                 draw() {
                     console.log('drawing circle');
@@ -949,7 +949,7 @@ def tools():
             "test.ts",
             """
             type Animal = { name: string };
-            
+
             function isAnimal(obj: any): obj is Animal {
                 return obj && typeof obj.name === 'string';
             }
@@ -965,7 +965,7 @@ def tools():
             "test.ts",
             """
             type Handler = (data: string) => void;
-            
+
             const processHandler: Handler = (data) => {
                 console.log(data);
             };
@@ -982,11 +982,11 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type User struct {
                 Name string
             }
-            
+
             func (u *User) GetName() string {
                 return u.Name
             }
@@ -1002,13 +1002,13 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type Writer interface {
                 Write(data string) error
             }
-            
+
             type FileWriter struct{}
-            
+
             func (f FileWriter) Write(data string) error {
                 return nil
             }
@@ -1024,11 +1024,11 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type Base struct {
                 ID int
             }
-            
+
             type Extended struct {
                 Base
                 Name string
@@ -1045,9 +1045,9 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type Result interface{}
-            
+
             func processResult(r interface{}) {
                 if result, ok := r.(Result); ok {
                     _ = result
@@ -1065,13 +1065,13 @@ def tools():
             "test.go",
             """
             package main
-            
+
             type Config struct {
                 Port int
             }
-            
+
             var defaultConfig = Config{Port: 8080}
-            
+
             func getConfig() *Config {
                 return &defaultConfig
             }
@@ -1090,11 +1090,11 @@ def tools():
             trait Drawable {
                 fn draw(&self);
             }
-            
+
             struct Circle {
                 radius: f64,
             }
-            
+
             impl Drawable for Circle {
                 fn draw(&self) {
                     println!("Drawing circle");
@@ -1115,7 +1115,7 @@ def tools():
                 x: i32,
                 y: i32,
             }
-            
+
             impl Point {
                 fn new(x: i32, y: i32) -> Self {
                     Point { x, y }
@@ -1136,7 +1136,7 @@ def tools():
                 Text(String),
                 Number(i32),
             }
-            
+
             fn process(msg: Message) {
                 match msg {
                     Message::Text(s) => println!("{}", s),
@@ -1159,7 +1159,7 @@ def tools():
                     42
                 }
             }
-            
+
             fn use_utils() -> i32 {
                 utils::helper()
             }
@@ -1175,7 +1175,7 @@ def tools():
             "test.rs",
             """
             type Result<T> = std::result::Result<T, String>;
-            
+
             fn process() -> Result<i32> {
                 Ok(42)
             }
@@ -1194,7 +1194,7 @@ def tools():
             interface Runnable {
                 void run();
             }
-            
+
             class Task implements Runnable {
                 public void run() {
                     System.out.println("Running");
@@ -1216,7 +1216,7 @@ def tools():
                     System.out.println("Some sound");
                 }
             }
-            
+
             class Dog extends Animal {
                 @Override
                 public void makeSound() {
@@ -1237,7 +1237,7 @@ def tools():
             enum Color {
                 RED, GREEN, BLUE
             }
-            
+
             class Painter {
                 public void paint(Color color) {
                     if (color == Color.RED) {
@@ -1258,7 +1258,7 @@ def tools():
             """
             class Outer {
                 private int value = 10;
-                
+
                 class Inner {
                     public int getValue() {
                         return value;
@@ -1278,12 +1278,12 @@ def tools():
             """
             class Container<T> {
                 private T value;
-                
+
                 public T get() {
                     return value;
                 }
             }
-            
+
             class Example {
                 public Container<String> create() {
                     return new Container<>();
@@ -1306,7 +1306,7 @@ def tools():
                 int x, y;
                 void normalize();
             };
-            
+
             void Vector::normalize() {
                 x = y = 0;
             }
@@ -1326,7 +1326,7 @@ def tools():
                     return a + b;
                 }
             }
-            
+
             int calculate() {
                 return math::add(5, 3);
             }
@@ -1346,7 +1346,7 @@ def tools():
             public:
                 T value;
             };
-            
+
             Container<int> create() {
                 return Container<int>();
             }
@@ -1368,7 +1368,7 @@ def tools():
                     return Point{x + other.x, y + other.y};
                 }
             };
-            
+
             Point add_points(Point a, Point b) {
                 return a + b;
             }
@@ -1386,7 +1386,7 @@ def tools():
             struct Data {
                 int value;
             };
-            
+
             void process(Data* data) {
                 data->value = 10;
             }
@@ -1406,7 +1406,7 @@ def tools():
                 public string Name { get; set; }
                 public int Age { get; set; }
             }
-            
+
             class UserService {
                 public void UpdateUser(User user) {
                     user.Name = "Updated";
@@ -1427,7 +1427,7 @@ def tools():
                 public string Name { get; set; }
                 public decimal Price { get; set; }
             }
-            
+
             class Query {
                 public IEnumerable<Product> GetExpensive(List<Product> products) {
                     return products.Where(p => p.Price > 100);
@@ -1449,7 +1449,7 @@ def tools():
                     return new string(str.Reverse().ToArray());
                 }
             }
-            
+
             class Example {
                 public string Process(string input) {
                     return input.Reverse();
@@ -1468,17 +1468,17 @@ def tools():
             """
             class Button {
                 public event EventHandler Clicked;
-                
+
                 public void Click() {
                     Clicked?.Invoke(this, EventArgs.Empty);
                 }
             }
-            
+
             class Form {
                 public void AttachButton(Button btn) {
                     btn.Clicked += OnButtonClick;
                 }
-                
+
                 void OnButtonClick(object sender, EventArgs e) {}
             }
             """,
@@ -1497,7 +1497,7 @@ def tools():
                     public void Save() {}
                 }
             }
-            
+
             class Controller {
                 public void Execute() {
                     var service = new Services.DataService();
@@ -1520,7 +1520,7 @@ def tools():
                 puts message
               end
             end
-            
+
             def process
               logger = Logger.new
               logger.log("Processing")
@@ -1541,7 +1541,7 @@ def tools():
                 text.upcase
               end
             end
-            
+
             def process_text(text)
               Utilities.format(text)
             end
@@ -1561,7 +1561,7 @@ def tools():
                 "sound"
               end
             end
-            
+
             class Dog < Animal
               def bark
                 "woof"
@@ -1579,7 +1579,7 @@ def tools():
             "test.rb",
             """
             CONSTANT_VALUE = 42
-            
+
             def use_constant
               result = CONSTANT_VALUE * 2
               result
@@ -1597,12 +1597,12 @@ def tools():
             """
             class Calculator
               attr_accessor :value
-              
+
               def initialize(val)
                 @value = val
               end
             end
-            
+
             def create_calc
               calc = Calculator.new(10)
               calc.value = 20
@@ -1625,7 +1625,7 @@ def tools():
                     return null;
                 }
             }
-            
+
             function getData($id) {
                 $repo = new Repository();
                 return $repo->find($id);
@@ -1645,7 +1645,7 @@ def tools():
             interface Validator {
                 public function validate($data);
             }
-            
+
             class EmailValidator implements Validator {
                 public function validate($data) {
                     return filter_var($data, FILTER_VALIDATE_EMAIL);
@@ -1668,7 +1668,7 @@ def tools():
                     echo $message;
                 }
             }
-            
+
             class Service {
                 use Loggable;
             }
@@ -1685,11 +1685,11 @@ def tools():
             """
             <?php
             namespace App\\Services;
-            
+
             class DataService {
                 public function process() {}
             }
-            
+
             function createService() {
                 return new \\App\\Services\\DataService();
             }
@@ -1708,7 +1708,7 @@ def tools():
             abstract class Controller {
                 abstract public function execute();
             }
-            
+
             class HomeController extends Controller {
                 public function execute() {
                     return "home";
@@ -1729,7 +1729,7 @@ def tools():
             protocol Drawable {
                 func draw()
             }
-            
+
             class Circle: Drawable {
                 func draw() {
                     print("Drawing circle")
@@ -1750,7 +1750,7 @@ def tools():
                 var x: Int
                 var y: Int
             }
-            
+
             func createPoint() -> Point {
                 return Point(x: 0, y: 0)
             }
@@ -1769,7 +1769,7 @@ def tools():
                 case success(String)
                 case failure(Error)
             }
-            
+
             func processResult(result: Result) {
                 switch result {
                 case .success(let msg):
@@ -1795,7 +1795,7 @@ def tools():
                     self.value = value
                 }
             }
-            
+
             func create() -> Container<Int> {
                 return Container(value: 42)
             }
@@ -1811,7 +1811,7 @@ def tools():
             "test.swift",
             """
             typealias Handler = (String) -> Void
-            
+
             func execute(handler: Handler) {
                 handler("test")
             }
@@ -1830,7 +1830,7 @@ def tools():
             interface Repository {
                 fun save(data: String)
             }
-            
+
             class DatabaseRepository : Repository {
                 override fun save(data: String) {
                     println(data)
@@ -1848,7 +1848,7 @@ def tools():
             "test.kt",
             """
             data class User(val name: String, val age: Int)
-            
+
             fun createUser(): User {
                 return User("John", 30)
             }
@@ -1867,7 +1867,7 @@ def tools():
                 data class Success(val value: String) : Result()
                 data class Error(val message: String) : Result()
             }
-            
+
             fun handle(result: Result) {
                 when (result) {
                     is Result.Success -> println(result.value)
@@ -1888,7 +1888,7 @@ def tools():
             fun <T> identity(value: T): T {
                 return value
             }
-            
+
             fun use() {
                 val result = identity<Int>(42)
             }
@@ -1908,7 +1908,7 @@ def tools():
                     println("processing")
                 }
             }
-            
+
             fun execute() {
                 Singleton.process()
             }
@@ -1927,7 +1927,7 @@ def tools():
             trait Processor {
               def process(data: String): String
             }
-            
+
             class TextProcessor extends Processor {
               def process(data: String): String = data.toUpperCase
             }
@@ -1943,7 +1943,7 @@ def tools():
             "test.scala",
             """
             case class Person(name: String, age: Int)
-            
+
             def createPerson(): Person = {
               Person("John", 30)
             }
@@ -1961,7 +1961,7 @@ def tools():
             sealed trait Result
             case class Success(value: String) extends Result
             case class Failure(error: String) extends Result
-            
+
             def handle(result: Result): String = result match {
               case Success(v) => v
               case Failure(e) => e
@@ -1980,7 +1980,7 @@ def tools():
             object Utils {
               def format(text: String): String = text.toUpperCase
             }
-            
+
             def process(text: String): String = {
               Utils.format(text)
             }
@@ -1998,7 +1998,7 @@ def tools():
             class Container[T](val value: T) {
               def get: T = value
             }
-            
+
             def create(): Container[Int] = {
               new Container(42)
             }
@@ -2017,7 +2017,7 @@ def tools():
             process_data <- function(data) {
               return(data * 2)
             }
-            
+
             result <- process_data(c(1, 2, 3))
             """,
             [(0, 2), (4, 4)],  # Modify function and usage
@@ -2033,7 +2033,7 @@ def tools():
             create_list <- function() {
               list(a = 1, b = 2, c = 3)
             }
-            
+
             my_list <- create_list()
             value <- my_list$a
             """,
@@ -2048,7 +2048,7 @@ def tools():
             "test.r",
             """
             GLOBAL_CONFIG <- list(timeout = 30)
-            
+
             get_timeout <- function() {
               return(GLOBAL_CONFIG$timeout)
             }
@@ -2066,7 +2066,7 @@ def tools():
             apply_transform <- function(data, fn) {
               return(fn(data))
             }
-            
+
             result <- apply_transform(10, function(x) x * 2)
             """,
             [(0, 2), (4, 4)],  # Modify higher-order function and usage
@@ -2084,7 +2084,7 @@ def tools():
                 x + n
               }
             }
-            
+
             add_five <- make_adder(5)
             """,
             [(0, 4), (6, 6)],  # Modify closure factory and usage
@@ -2101,7 +2101,7 @@ def tools():
             function create_object(name)
                 return { name = name }
             end
-            
+
             local obj = create_object("test")
             """,
             [(0, 2), (4, 4)],  # Modify function and usage
@@ -2118,7 +2118,7 @@ def tools():
                 timeout = 30,
                 retries = 3
             }
-            
+
             function get_timeout()
                 return Config.timeout
             end
@@ -2140,7 +2140,7 @@ def tools():
                     return count
                 end
             end
-            
+
             local counter = make_counter()
             """,
             [(0, 6), (8, 8)],  # Modify factory function and usage
@@ -2155,14 +2155,14 @@ def tools():
             """
             Point = {}
             Point.__index = Point
-            
+
             function Point:new(x, y)
                 local pt = setmetatable({}, Point)
                 pt.x = x
                 pt.y = y
                 return pt
             end
-            
+
             local p = Point:new(10, 20)
             """,
             [(0, 8), (10, 10)],  # Modify metatable class and usage
@@ -2176,11 +2176,11 @@ def tools():
             "test.lua",
             """
             local utils = {}
-            
+
             function utils.format(text)
                 return string.upper(text)
             end
-            
+
             local result = utils.format("test")
             """,
             [(0, 4), (6, 6)],  # Modify module table and usage
@@ -2197,7 +2197,7 @@ def tools():
             abstract class Repository {
               Future<void> save(String data);
             }
-            
+
             class DatabaseRepository implements Repository {
               Future<void> save(String data) async {
                 print(data);
@@ -2217,10 +2217,10 @@ def tools():
             class Person {
               final String name;
               final int age;
-              
+
               Person(this.name, this.age);
             }
-            
+
             Person createPerson() {
               return Person("John", 30);
             }
@@ -2240,7 +2240,7 @@ def tools():
               inactive,
               pending
             }
-            
+
             String getStatusText(Status status) {
               switch (status) {
                 case Status.active:
@@ -2265,7 +2265,7 @@ def tools():
                 print(message);
               }
             }
-            
+
             class Service with Loggable {
               void process() {
                 log("Processing");
@@ -2286,7 +2286,7 @@ def tools():
               final T value;
               Container(this.value);
             }
-            
+
             Container<int> create() {
               return Container(42);
             }
@@ -2611,8 +2611,8 @@ def test_symbol_based_grouping(
     should_share_symbols,
     description,
 ):
-    """
-    Test that two code chunks share (or don't share) symbols based on definitions in modified lines.
+    """Test that two code chunks share (or don't share) symbols based on definitions in
+    modified lines.
 
     Args:
         tools: Fixture providing parser, symbol_extractor, and symbol_mapper
@@ -2632,7 +2632,9 @@ def test_symbol_based_grouping(
     total_lines = len(clean_content.splitlines())
 
     # Parse the file
-    parsed = parser.parse_file(filename, clean_content, [(0, total_lines - 1)])
+    parsed = parser.parse_file(
+        filename.encode("utf-8"), clean_content.encode("utf-8"), [(0, total_lines - 1)]
+    )
     assert parsed is not None, f"Failed to parse {language} content"
     assert parsed.detected_language == language
 
@@ -2706,7 +2708,9 @@ def bar():
 """
     content = dedent(content).strip()
 
-    parsed = parser.parse_file("test.py", content, [(0, len(content.splitlines()) - 1)])
+    parsed = parser.parse_file(
+        b"test.py", content.encode("utf-8"), [(0, len(content.splitlines()) - 1)]
+    )
     assert parsed is not None
 
     # Extract symbols from line that doesn't define anything (return statement)
@@ -2742,7 +2746,9 @@ def use_classes():
 """
     content = dedent(content).strip()
 
-    parsed = parser.parse_file("test.py", content, [(0, len(content.splitlines()) - 1)])
+    parsed = parser.parse_file(
+        b"test.py", content.encode("utf-8"), [(0, len(content.splitlines()) - 1)]
+    )
     assert parsed is not None
 
     # Only extract symbols from class A definition
@@ -2810,7 +2816,9 @@ def test_symbol_extraction_count(
     parser, symbol_extractor, _ = tools
 
     parsed = parser.parse_file(
-        f"test.{language}", content, [(0, len(content.splitlines()) - 1)]
+        f"test.{language}".encode(),
+        content.encode("utf-8"),
+        [(0, len(content.splitlines()) - 1)],
     )
 
     defined_symbols = symbol_extractor.extract_defined_symbols(
@@ -2837,7 +2845,9 @@ class B:
 """
     content = dedent(content).strip()
 
-    parsed = parser.parse_file("test.py", content, [(0, len(content.splitlines()) - 1)])
+    parsed = parser.parse_file(
+        b"test.py", content.encode("utf-8"), [(0, len(content.splitlines()) - 1)]
+    )
     assert parsed is not None
 
     # Define both methods

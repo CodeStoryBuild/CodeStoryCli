@@ -57,6 +57,10 @@ class DetachedHeadError(GitError):
     pass
 
 
+class GitRebaseFailed(GitError):
+    """Errors during rebasing of commits."""
+
+
 class ValidationError(CodestoryError):
     """
     Input validation errors.

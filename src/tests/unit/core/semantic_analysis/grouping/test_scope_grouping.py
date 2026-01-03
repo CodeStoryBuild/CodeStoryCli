@@ -25,9 +25,9 @@ from textwrap import dedent
 
 import pytest
 
-from codestory.core.file_reader.file_parser import FileParser
-from codestory.core.semantic_grouper.query_manager import QueryManager
-from codestory.core.semantic_grouper.scope_mapper import ScopeMapper
+from codestory.core.file_parser.file_parser import FileParser
+from codestory.core.semantic_analysis.mappers.query_manager import QueryManager
+from codestory.core.semantic_analysis.mappers.scope_mapper import ScopeMapper
 
 # -------------------------------------------------------------------------
 # Fixtures
@@ -63,7 +63,7 @@ def tools():
                 x = 1
                 y = 2
                 return x + y
-            
+
             def bar():
                 a = 10
                 b = 20
@@ -96,7 +96,7 @@ def tools():
             class Calculator:
                 def add(self, a, b):
                     return a + b
-                
+
                 def subtract(self, a, b):
                     return a - b
             """,
@@ -112,7 +112,7 @@ def tools():
             def outer():
                 def inner1():
                     x = 1
-                
+
                 def inner2():
                     y = 2
             """,
@@ -130,7 +130,7 @@ def tools():
                 const x = 1;
                 const y = 2;
             }
-            
+
             function bar() {
                 const a = 10;
                 const b = 20;
@@ -149,7 +149,7 @@ def tools():
                 add(a, b) {
                     return a + b;
                 }
-                
+
                 subtract(a, b) {
                     return a - b;
                 }
@@ -187,7 +187,7 @@ def tools():
                 name: string;
                 age: number;
             }
-            
+
             interface Product {
                 id: number;
                 price: number;
@@ -208,7 +208,7 @@ def tools():
                     int x = 1;
                     int y = 2;
                 }
-                
+
                 public void method2() {
                     int a = 10;
                     int b = 20;
@@ -229,7 +229,7 @@ def tools():
                 void method1() {
                     int x = 1;
                 }
-                
+
                 void method2() {
                     int y = 2;
                 }
@@ -249,7 +249,7 @@ def tools():
                 x := 1
                 y := 2
             }
-            
+
             func bar() {
                 a := 10
                 b := 20
@@ -269,7 +269,7 @@ def tools():
                 let x = 1;
                 let y = 2;
             }
-            
+
             fn bar() {
                 let a = 10;
                 let b = 20;
@@ -288,7 +288,7 @@ def tools():
                 fn method1(&self) {
                     let x = 1;
                 }
-                
+
                 fn method2(&self) {
                     let y = 2;
                 }
@@ -308,7 +308,7 @@ def tools():
               def add(a, b)
                 a + b
               end
-              
+
               def subtract(a, b)
                 a - b
               end
@@ -329,7 +329,7 @@ def tools():
                 function add($a, $b) {
                     return $a + $b;
                 }
-                
+
                 function subtract($a, $b) {
                     return $a - $b;
                 }
@@ -349,7 +349,7 @@ def tools():
                 func add(a: Int, b: Int) -> Int {
                     return a + b
                 }
-                
+
                 func subtract(a: Int, b: Int) -> Int {
                     return a - b
                 }
@@ -366,7 +366,7 @@ def tools():
             "test.kt",
             """
             class User(val name: String, var age: Int) {
-    
+
                 // A function (method) inside the class
                 fun displayInfo() {
                     println("Name: $name, Age: $age")
@@ -392,7 +392,7 @@ def tools():
                 def add(a: Int, b: Int): Int = {
                     a + b
                 }
-                
+
                 def subtract(a: Int, b: Int): Int = {
                     a - b
                 }
@@ -413,7 +413,7 @@ def tools():
                 y=2
                 echo $((x + y))
             }
-            
+
             function func_two() {
                 a=10
                 b=20
@@ -466,7 +466,7 @@ def tools():
                 sum=$((sum + i))
                 echo $sum
             done
-            
+
             for j in {1..3}; do
                 count=$((count + 1))
             done
@@ -504,7 +504,7 @@ def tools():
                 int y = 2;
                 printf("%d", x + y);
             }
-            
+
             void bar() {
                 int a = 10;
                 int b = 20;
@@ -542,7 +542,7 @@ def tools():
                     value = 10;
                 }
             };
-            
+
             struct Other {
                 int num;
             };
@@ -579,7 +579,7 @@ def tools():
                 for (int i = 0; i < 5; i++) {
                     printf("%d ", i);
                 }
-                
+
                 for (int j = 0; j < 3; j++) {
                     printf("%d ", j);
                 }
@@ -612,7 +612,7 @@ def tools():
             [server]
             host = "localhost"
             port = 8080
-            
+
             [database]
             host = "db.local"
             port = 5432
@@ -629,7 +629,7 @@ def tools():
             [[products]]
             name = "Widget"
             price = 9.99
-            
+
             [[products]]
             name = "Gadget"
             price = 19.99
@@ -752,7 +752,7 @@ def tools():
             "csharp",
             "test2.cs",
             """
-            public void Foo() 
+            public void Foo()
             { int x = 1; int y = 2; }
             """,
             (0, 0),
@@ -950,8 +950,8 @@ def tools():
             "java",
             "Test.java",
             """
-            class Outer { class Inner 
-            { void innerMethod() { int x = 1; } } 
+            class Outer { class Inner
+            { void innerMethod() { int x = 1; } }
             void outerMethod() { int y = 2; } }
             """,
             (0, 1),
@@ -963,7 +963,7 @@ def tools():
             "java",
             "Test.java",
             """
-            if (true) 
+            if (true)
             { int x = 1; int y = 2; }
             """,
             (0, 0),
@@ -988,7 +988,7 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            class MyClass { void m1() { int x = 1; } 
+            class MyClass { void m1() { int x = 1; }
             void m2() { int y = 2; } };
             """,
             (0, 0),
@@ -1000,7 +1000,7 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            namespace ns { 
+            namespace ns {
             void foo() { int x = 1; } }
             """,
             (0, 0),
@@ -1012,7 +1012,7 @@ def tools():
             "cpp",
             "test.cpp",
             """
-            for (int i=0;i<1;++i) 
+            for (int i=0;i<1;++i)
             { int x = 1; int y = 2; }
             """,
             (0, 0),
@@ -1103,7 +1103,7 @@ def tools():
             "rust",
             "test.rs",
             """
-            fn foo() { let x = 1; 
+            fn foo() { let x = 1;
             let y = 2; let z = 3; }
             """,
             (0, 0),
@@ -1268,7 +1268,7 @@ def tools():
             "swift",
             "test.swift",
             """
-            struct S { func add(a:Int,b:Int)->Int { 
+            struct S { func add(a:Int,b:Int)->Int {
             a + b } func sub(a:Int,b:Int)->Int { a - b } }
             """,
             (0, 0),
@@ -1280,7 +1280,7 @@ def tools():
             "swift",
             "test.swift",
             """
-            func foo() { if true { 
+            func foo() { if true {
             let x = 1; let y = 2 } }
             """,
             (0, 0),
@@ -1292,7 +1292,7 @@ def tools():
             "swift",
             "test.swift",
             """
-            func outer() { func inner() 
+            func outer() { func inner()
             { let x = 1 } let y = 2 }
             """,
             (0, 0),
@@ -1317,7 +1317,7 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            class C { fun a() { val x = 1 } 
+            class C { fun a() { val x = 1 }
             fun b() { val y = 2 } }
             """,
             (0, 0),
@@ -1329,7 +1329,7 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            fun foo() { if (true) 
+            fun foo() { if (true)
             { val x = 1; val y = 2 } }
             """,
             (0, 0),
@@ -1341,7 +1341,7 @@ def tools():
             "kotlin",
             "test.kt",
             """
-            fun outer() { fun inner() 
+            fun outer() { fun inner()
             { val x = 1 } val y = 2 }
             """,
             (0, 0),
@@ -1354,7 +1354,7 @@ def tools():
             "scala",
             "test.scala",
             """
-            object X { def a = { val x = 1; val y = 2 }; 
+            object X { def a = { val x = 1; val y = 2 };
             def b = { val z = 3; val t = 4 } }
             """,
             (0, 0),
@@ -1378,7 +1378,7 @@ def tools():
             "scala",
             "test.scala",
             """
-            object Outer { object Inner { def inner() = 
+            object Outer { object Inner { def inner() =
             { val x = 1 } } def outer() = {
               val y = 2 } }
             """,
@@ -1416,7 +1416,7 @@ def tools():
             "dart",
             "test.dart",
             """
-            void foo() { if (true) { 
+            void foo() { if (true) {
             var x = 1; var y = 2; } }
             """,
             (0, 0),
@@ -1539,7 +1539,7 @@ def tools():
             "haskell",
             "test.hs",
             """
-            foo x = case x of 
+            foo x = case x of
             {1 -> 1; _ -> 2}
             """,
             (0, 0),
@@ -1601,7 +1601,7 @@ def tools():
             "ocaml",
             "test.ml",
             """
-            if true then let x = 1 in 
+            if true then let x = 1 in
             x else let y = 2 in y
             """,
             (0, 0),
@@ -1640,7 +1640,7 @@ def tools():
             "erlang",
             "test.erl",
             """
-            case X of 1 -> A 
+            case X of 1 -> A
             = 1; _ -> B = 2 end.
             """,
             (0, 0),
@@ -1652,7 +1652,7 @@ def tools():
             "erlang",
             "test.erl",
             """
-            if true -> A = 1; 
+            if true -> A = 1;
             true -> B = 2 end.
             """,
             (0, 0),
@@ -1689,7 +1689,7 @@ def tools():
             "clojure",
             "test.clj",
             """
-            (def obj {:a (fn [] 1) 
+            (def obj {:a (fn [] 1)
             :b (fn [] 2)})
             """,
             (0, 0),
@@ -1738,7 +1738,7 @@ def tools():
             "solidity",
             "test.sol",
             """
-            contract C { function foo() public { if(true) 
+            contract C { function foo() public { if(true)
             { uint x = 1; uint y = 2; } } }
             """,
             (0, 0),
@@ -1831,7 +1831,7 @@ def tools():
                 class Inner:
                     def method(self):
                         x = 1
-                
+
                 def outer_method(self):
                     y = 2
             """,
@@ -2011,11 +2011,11 @@ def tools():
             "test.md",
             """
             # Main Title
-            
+
             First paragraph under main
-            
+
             # Another Top Level
-            
+
             Second paragraph under another
             """,
             (2, 2),  # First paragraph
@@ -2028,7 +2028,7 @@ def tools():
             "test.md",
             """
             ## Section
-            
+
             First paragraph
             Second paragraph
             """,
@@ -2055,12 +2055,12 @@ def tools():
             "test.md",
             """
             # Heading
-            
+
             ```python
             def foo():
                 pass
             ```
-            
+
             Regular paragraph
             """,
             (2, 4),  # Code block
@@ -2073,11 +2073,11 @@ def tools():
             "test.md",
             """
             ## First Section
-            
+
             Content here
-            
+
             ## Second Section
-            
+
             More content
             """,
             (2, 2),  # Content in first section
@@ -2093,12 +2093,12 @@ def tools():
             =====
             Title
             =====
-            
+
             First paragraph
-            
+
             Another Section
             ===============
-            
+
             Second paragraph
             """,
             (5, 5),  # First paragraph
@@ -2112,7 +2112,7 @@ def tools():
             """
             Section
             =======
-            
+
             First paragraph
             Second paragraph
             """,
@@ -2140,12 +2140,12 @@ def tools():
             """
             Title
             =====
-            
+
             .. code-block:: python
-            
+
                def foo():
                    pass
-            
+
             Regular paragraph
             """,
             (3, 6),  # Code block directive
@@ -2159,12 +2159,12 @@ def tools():
             """
             First Section
             =============
-            
+
             Content here
-            
+
             Second Section
             ==============
-            
+
             More content
             """,
             (3, 3),  # Content in first section
@@ -2262,8 +2262,7 @@ def test_scope_based_grouping(
     should_share_scope,
     scope_description,
 ):
-    """
-    Test that two code chunks share (or don't share) scopes as expected.
+    """Test that two code chunks share (or don't share) scopes as expected.
 
     Args:
         tools: Fixture providing parser and scope_mapper
@@ -2282,7 +2281,9 @@ def test_scope_based_grouping(
     total_lines = len(clean_content.splitlines())
 
     # Parse the file
-    parsed = parser.parse_file(filename, clean_content, [(0, total_lines - 1)])
+    parsed = parser.parse_file(
+        filename.encode("utf-8"), clean_content.encode("utf-8"), [(0, total_lines - 1)]
+    )
     assert parsed.detected_language == language
 
     # Build scope map
@@ -2339,7 +2340,7 @@ def test_scope_map_empty_file(tools):
     parser, scope_mapper = tools
 
     content = ""
-    parsed = parser.parse_file("test.py", content, [(0, 0)])
+    parsed = parser.parse_file(b"test.py", content.encode("utf-8"), [(0, 0)])
 
     scope_map = scope_mapper.build_scope_map(
         parsed.detected_language,
@@ -2357,7 +2358,7 @@ def test_scope_map_single_line(tools):
     parser, scope_mapper = tools
 
     content = "x = 1"
-    parsed = parser.parse_file("test.py", content, [(0, 0)])
+    parsed = parser.parse_file(b"test.py", content.encode("utf-8"), [(0, 0)])
 
     scope_map = scope_mapper.build_scope_map(
         parsed.detected_language,
@@ -2388,7 +2389,11 @@ def test_scope_consistency(tools, language, filename, content):
     """
     parser, scope_mapper = tools
 
-    parsed = parser.parse_file(filename, content, [(0, len(content.splitlines()) - 1)])
+    parsed = parser.parse_file(
+        filename.encode("utf-8"),
+        content.encode("utf-8"),
+        [(0, len(content.splitlines()) - 1)],
+    )
     assert parsed is not None
 
     scope_map = scope_mapper.build_scope_map(
