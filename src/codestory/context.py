@@ -49,7 +49,7 @@ class GlobalConfig:
     api_key: str | None = None
     api_base: str | None = None
     temperature: float = 0
-    max_tokens: int | None = 4096
+    max_tokens: int | None = 32000
     relevance_filtering: bool = False
     relevance_filter_similarity_threshold: float = 0.75
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"

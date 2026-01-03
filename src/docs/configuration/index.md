@@ -58,7 +58,7 @@ Below are the key configuration options available in Codestory CLI:
 | `api_key` | API key for the LLM provider | `None` |
 | `api_base` | Custom API base URL for the LLM provider (optional) | `None` |
 | `temperature` | Temperature for LLM responses (0.0-1.0) | `0` |
-| `max_tokens` | Maximum tokens to send per llm request | `4096` |
+| `max_tokens` | Maximum tokens to send per llm request | `32000` |
 | `relevance_filtering` | Whether to filter changes by relevance to your intent (`cst commit` only) | `false` |
 | `relevance_filter_similarity_threshold` | How similar do changes have to be to your intent to be included | `0.75` |
 | `secret_scanner_aggression` | How aggressively to scan for secrets (`safe`, `standard`, `strict`, `none`) | `safe` |

@@ -40,7 +40,6 @@ from codestory.core.semantic_analysis.summarization.prompts import (
     INITIAL_SUMMARY_USER,
 )
 from codestory.core.semantic_analysis.summarization.summarizer_utils import (
-    DEFAULT_PATCH_CUTOFF_CHARS,
     generate_annotated_patch,
 )
 
@@ -86,8 +85,7 @@ class ContainerSummarizer:
         context_manager: ContextManager,
         patch_generator: PatchGenerator,
         batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
-        max_tokens: int = 4096,
-        patch_cutoff_chars: int = DEFAULT_PATCH_CUTOFF_CHARS,
+        max_tokens: int = 32000,
     ):
         """Initialize the ChunkSummarizer.
 
@@ -95,14 +93,12 @@ class ContainerSummarizer:
             codestory_adapter: The CodeStoryAdapter for LLM invocation
             batching_strategy: Strategy for batching LLM requests
             max_tokens: Maximum tokens per request
-            patch_cutoff_chars: Maximum characters per patch before truncation
         """
         self.model = codestory_adapter
         self.context_manager = context_manager
         self.patch_generator = patch_generator
         self.batching_strategy = batching_strategy
         self.max_tokens = max_tokens
-        self.patch_cutoff_chars = patch_cutoff_chars
 
     def summarize_containers(
         self,
@@ -130,7 +126,7 @@ class ContainerSummarizer:
                 container=container,
                 context_manager=self.context_manager,
                 patch_generator=self.patch_generator,
-                patch_cutoff_chars=self.patch_cutoff_chars,
+                max_tokens=self.max_tokens,
             )
             annotated_patches.append(patch)
 
