@@ -4,6 +4,7 @@ import tempfile
 from typing import Optional, Callable
 
 from rich.console import Console
+from loguru import logger
 
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.context.expand_init import create_expand_pipeline
@@ -48,7 +49,7 @@ class ExpandService:
     ) -> bool:
         # Ensure we're in a git repo
         if not _run_git(self.git, ["rev-parse", "--is-inside-work-tree"]):
-            console.print("[red]Not a git repository.[/red]")
+            logger.error("Not a git repository")
             return False
 
         # Resolve current branch and head
@@ -58,27 +59,26 @@ class ExpandService:
         head_hash = (_run_git(self.git, ["rev-parse", "HEAD"]) or "").strip()
 
         if not current_branch:
-            console.print("[red]Detached HEAD is not supported for expand.[/red]")
+            logger.error("Detached HEAD is not supported for expand")
             return False
 
         # Verify commit exists and is on current branch history
         resolved = (_run_git(self.git, ["rev-parse", commit_hash]) or "").strip()
         if not resolved:
-            console.print(f"[red]Commit '{commit_hash}' not found.[/red]")
+            logger.error("Commit not found: {commit}", commit=commit_hash)
             return False
 
         if not _is_ancestor(self.git, resolved, head_hash):
-            console.print(
-                f"[red]Commit {_short(resolved)} is not an ancestor of the current branch HEAD; only linear expansions are supported.[/red]"
+            logger.error(
+                "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported",
+                commit=_short(resolved), head=_short(head_hash)
             )
             return False
 
         # Determine parent commit (base)
         parent = _run_git(self.git, ["rev-parse", f"{resolved}^"])
         if parent is None:
-            console.print(
-                "[red]Expanding the root commit is not yet supported in this version.[/red]"
-            )
+            logger.error("Expanding the root commit is not yet supported")
             return False
         parent = parent.strip()
 
@@ -86,9 +86,7 @@ class ExpandService:
         wt1_dir = tempfile.mkdtemp(prefix="vibe-expand-wt1-")
         rewrite_branch: Optional[str] = None
         try:
-            console.print(
-                f"[green]Creating temporary worktree at { _short(parent) }...[/green]"
-            )
+            logger.info("Creating temporary worktree at {parent}", parent=_short(parent))
             _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
             wt1_git = SubprocessGitInterface(wt1_dir)
 
@@ -96,7 +94,7 @@ class ExpandService:
             _run_git(wt1_git, ["checkout", "-b", temp_branch])
 
             # Run expand pipeline on diff(parent, resolved)
-            console.print("[green]Analyzing and proposing groups...[/green]")
+            logger.info("Analyzing and proposing groups for commit {commit}", commit=_short(resolved))
             pipeline = create_expand_pipeline(
                 wt1_dir,
                 base_commit_hash=parent,
@@ -105,19 +103,17 @@ class ExpandService:
             )
             plan = pipeline.run(target=".", auto_yes=auto_yes)
             if not plan:
-                console.print(
-                    "[yellow]Expansion cancelled; no changes applied.[/yellow]"
-                )
+                logger.warning("Expansion cancelled; no changes applied")
                 return False
 
             new_base = (_run_git(wt1_git, ["rev-parse", "HEAD"]) or "").strip()
-            console.print(f"[green]Created new base at {_short(new_base)}.[/green]")
+            logger.info("Created new base at {base}", base=_short(new_base))
 
             # Prepare rebase of upstream commits onto the new base in a separate worktree
             wt2_dir = tempfile.mkdtemp(prefix="vibe-expand-wt2-")
             try:
                 rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
-                console.print("[green]Preparing rebase in isolated worktree...[/green]")
+                logger.info("Preparing rebase in isolated worktree")
                 _run_git(
                     self.git,
                     ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash],
@@ -136,9 +132,7 @@ class ExpandService:
                 if not rebase_ok:
                     # Try to abort if needed
                     _run_git(wt2_git, ["rebase", "--abort"])
-                    console.print(
-                        "[red]Rebase failed; repository left untouched.[/red]"
-                    )
+                    logger.error("Rebase failed during expansion")
                     return False
 
                 new_head = (
@@ -153,12 +147,12 @@ class ExpandService:
                     )
                     is None
                 ):
-                    console.print("[red]Failed to update branch ref; aborting.[/red]")
+                    logger.error("Failed to update branch ref for {branch}", branch=current_branch)
                     return False
 
                 # If on that branch, sync working tree
                 _run_git(self.git, ["reset", "--hard", new_head])
-                console.print("[green]Commit expansion successful![/green]")
+                logger.info("Commit expansion successful for {commit}", commit=_short(resolved))
                 return True
 
             finally:

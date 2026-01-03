@@ -97,7 +97,7 @@ class AIGitPipeline:
         logger.info("Timing: raw_diff_generation_ms={ms}", ms=int((t1 - t0) * 1000))
 
         if not raw_diff:
-            self.console.print("[gray] No changes to process, exiting. [/gray]")
+            logger.info("No changes to process, exiting")
             return
 
         # start tracking progress
@@ -172,18 +172,18 @@ class AIGitPipeline:
 
         # Show a compact, rich-formatted preview of all proposed groups
         if not ai_groups:
-            self.console.print("[yellow]No proposed commits to apply.[/yellow]")
+            logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
             return False
 
-        self.console.rule("[bold cyan]Proposed commits")
+        logger.info("Proposed commits preview")
         # Prepare pretty diffs for each proposed group
         patch_map = get_patches(ai_groups)
         for idx, group in enumerate(ai_groups):
             num = idx + 1
-            self.console.print(f"[bold]#{num} {group.commit_message}[/bold]")
+            logger.debug("Proposed commit #{num}: {message}", num=num, message=group.commit_message)
             if group.extended_message:
-                self.console.print(f"[dim]{group.extended_message}[/dim]")
+                logger.debug("Extended message: {message}", message=group.extended_message)
 
             affected_files = set()
             for chunk in group.chunks:
@@ -199,14 +199,11 @@ class AIGitPipeline:
             files_preview = ", ".join(sorted(affected_files))
             if len(files_preview) > 120:
                 files_preview = files_preview[:117] + "..."
-            self.console.print(f"[italic]Files:[/italic] {files_preview}\n")
+            logger.debug("Files: {files}", files=files_preview)
 
-            # Pretty-print the diff for this group
+            # Log the diff for this group at debug level
             diff_text = patch_map.get(idx, "") or "(no diff)"
-            syntax = Syntax(diff_text, "diff", theme="ansi_dark", word_wrap=False)
-            self.console.print(
-                Panel(syntax, title=f"Diff for #{num}", border_style="cyan")
-            )
+            logger.debug("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
 
             logger.info(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
@@ -218,9 +215,7 @@ class AIGitPipeline:
         # Single confirmation for all groups (unified for commit and expand)
         if auto_yes:
             apply_all = True
-            self.console.print(
-                "[yellow]Auto-confirm:[/yellow] Applying all proposed commits."
-            )
+            logger.info("Auto-confirm: Applying all proposed commits")
         else:
             apply_all = inquirer.confirm(
                 "Apply all proposed commits?",
@@ -228,7 +223,7 @@ class AIGitPipeline:
             )
 
         if not apply_all:
-            self.console.print("[yellow]No changes applied.[/yellow]")
+            logger.info("No changes applied")
             logger.info("User declined applying commits")
             return False
 
