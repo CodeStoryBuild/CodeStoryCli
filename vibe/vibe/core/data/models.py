@@ -7,6 +7,7 @@ class Addition:
     content: str
     line_number: int
 
+
 @dataclass
 class Removal:
     """Represents a single removed line of code."""
