@@ -89,11 +89,11 @@ def validate_target_path(value: str | None) -> Path:
             list(path.iterdir())
         else:
             path.read_text()
-    except PermissionError:
+    except PermissionError as e:
         raise FileSystemError(
             f"Permission denied accessing: {value}",
             "Please check file/directory permissions",
-        )
+        ) from e
     except UnicodeDecodeError:
         # Binary files are OK, we just can't read them as text
         pass

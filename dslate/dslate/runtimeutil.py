@@ -3,7 +3,6 @@ import signal
 import sys
 
 import typer
-
 from loguru import logger
 
 

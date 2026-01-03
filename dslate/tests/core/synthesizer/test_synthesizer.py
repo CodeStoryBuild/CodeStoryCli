@@ -3,9 +3,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from dslate.core.data.commit_group import CommitGroup
 from dslate.core.data.diff_chunk import DiffChunk
 from dslate.core.data.hunk_wrapper import HunkWrapper
-from dslate.core.data.commit_group import CommitGroup
 from dslate.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )

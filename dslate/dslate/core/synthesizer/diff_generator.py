@@ -318,16 +318,7 @@ class DiffGenerator:
         # 2. Touching: Merge only if types are compatible (Same Type)
         if last_old_end == current_old_start:
             # Pure Add + Pure Add (at same line) -> Merge
-            if last_chunk.pure_addition() and current_chunk.pure_addition():
-                return True
-            # Pure Del + Pure Del (adjacent lines) -> Merge
-            if last_chunk.pure_deletion() and current_chunk.pure_deletion():
-                return True
-
-            # Mixed types (Del then Add) touching -> Do NOT merge.
-            # Keeping them separate ensures the Addition is anchored
-            # correctly after the Deletion is applied.
-            return False
+            return (last_chunk.pure_addition() and current_chunk.pure_addition()) or (last_chunk.pure_deletion() and current_chunk.pure_deletion())
 
         # Disjoint
         return False

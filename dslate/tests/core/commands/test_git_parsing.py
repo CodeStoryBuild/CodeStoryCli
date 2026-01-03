@@ -1,7 +1,8 @@
 import os
 import subprocess
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Assume the classes are in a package named 'git_parsing'
 from dslate.core.commands.git_commands import GitCommands

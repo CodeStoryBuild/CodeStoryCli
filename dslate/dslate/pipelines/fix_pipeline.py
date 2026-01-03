@@ -60,8 +60,8 @@ class FixPipeline:
                 ]
             )
             original_chain = rev_list_out.splitlines() if rev_list_out else []
-        except RuntimeError:
-            raise FixCommitError("Failed to read commit history.")
+        except RuntimeError as e:
+            raise FixCommitError("Failed to read commit history.") from e
 
         if not original_chain:
             # Edge case: The base was HEAD (or detached), nothing to replay.

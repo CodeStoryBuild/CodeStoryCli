@@ -108,7 +108,7 @@ class CleanPipeline:
             )
             or ""
         )
-        return [l.strip() for l in out.splitlines() if l.strip()]
+        return [line.strip() for line in out.splitlines() if line.strip()]
 
     def _is_merge(self, commit: str) -> bool:
         line = (
