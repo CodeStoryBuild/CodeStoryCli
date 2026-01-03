@@ -40,6 +40,8 @@ from codestory.summarization.chunk_summarizer import ChunkSummarizer
 
 @dataclass
 class Cluster:
+    """A cluster of related chunks and their summaries."""
+
     chunks: list[Chunk | ImmutableChunk]
     summaries: list[str]
 

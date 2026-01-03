@@ -24,3 +24,9 @@ from codestory.summarization.summarizer_utils import (
     generate_annotated_patch,
     generate_annotated_patches,
 )
+
+__all__ = [
+    "ChunkSummarizer",
+    "generate_annotated_patch",
+    "generate_annotated_patches",
+]
