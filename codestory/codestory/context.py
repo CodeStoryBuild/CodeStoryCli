@@ -109,7 +109,8 @@ class CommitContext:
 
 @dataclass(frozen=True)
 class FixContext:
-    commit_hash: str
+    end_commit_hash: str
+    start_commit_hash: str | None = None
 
 
 @dataclass(frozen=True)

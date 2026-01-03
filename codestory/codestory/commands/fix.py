@@ -51,28 +51,50 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
     if not current_branch:
         raise DetachedHeadError("Detached HEAD is not supported for codestory fix")
 
-    # Verify commit exists and is on current branch history
-    resolved = (
-        git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]) or ""
+    # Verify end commit exists and is on current branch history
+    end_resolved = (
+        git_interface.run_git_text_out(["rev-parse", fix_context.end_commit_hash]) or ""
     ).strip()
-    if not resolved:
-        raise GitError(f"Commit not found: {fix_context.commit_hash}")
+    if not end_resolved:
+        raise GitError(f"Commit not found: {fix_context.end_commit_hash}")
 
     is_ancestor = git_interface.run_git_text(
-        ["merge-base", "--is-ancestor", resolved, head_hash]
+        ["merge-base", "--is-ancestor", end_resolved, head_hash]
     )
     if is_ancestor is None or is_ancestor.returncode != 0:
-        raise GitError("The commit must be an ancestor of HEAD (linear history only).")
+        raise GitError("The end commit must be an ancestor of HEAD (linear history only).")
 
-    # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
-    parent = (
-        git_interface.run_git_text_out(["rev-parse", f"{resolved}^"]) or ""
-    ).strip()
+    # Determine base commit (start)
+    if fix_context.start_commit_hash:
+        # User provided explicit start commit
+        start_resolved = (
+            git_interface.run_git_text_out(["rev-parse", fix_context.start_commit_hash]) or ""
+        ).strip()
+        if not start_resolved:
+            raise GitError(f"Start commit not found: {fix_context.start_commit_hash}")
+        
+        # Validate that start < end (start is ancestor of end)
+        is_start_before_end = git_interface.run_git_text(
+            ["merge-base", "--is-ancestor", start_resolved, end_resolved]
+        )
+        if is_start_before_end is None or is_start_before_end.returncode != 0:
+            raise GitError("Start commit must be an ancestor of end commit (start < end).")
+        
+        # Ensure start != end
+        if start_resolved == end_resolved:
+            raise GitError("Start and end commits cannot be the same.")
+        
+        base_hash = start_resolved
+    else:
+        # Default: use end's parent as start (original behavior)
+        base_hash = (
+            git_interface.run_git_text_out(["rev-parse", f"{end_resolved}^"]) or ""
+        ).strip()
 
-    if not parent:
-        raise GitError("Fixing the root commit is not supported yet!")
+        if not base_hash:
+            raise GitError("Fixing the root commit is not supported yet!")
 
-    return parent, resolved, current_branch
+    return base_hash, end_resolved, current_branch
 
 
 @handle_codestory_exception
@@ -85,20 +107,29 @@ def main(
         is_eager=True,
         help="Show this message and exit.",
     ),
-    commit_hash: str = typer.Argument(..., help="Hash of the commit to split or fix"),
+    commit_hash: str = typer.Argument(..., help="Hash of the end commit to split or fix"),
+    start_commit: str = typer.Option(
+        None,
+        "--start",
+        help="Hash of the start commit, non inclusive (optional). If not provided, uses end commit's parent.",
+    ),
 ) -> None:
-    """Fix a past commit by splitting into smaller logical commits safely, then updating the history with the new commits
+    """Fix a past commit or range of commits by splitting into smaller logical commits safely, then updating the history with the new commits
 
     Examples:
-        # Fix a specific commit
-        codestory fix abc123
+        # Fix a specific commit (--start will be parent of def456)
+        codestory fix def456 
+        
+        # Fix a range of commits from start to end
+        codestory fix def456 --start abc123
     """
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
 
-    validated_hash = validate_commit_hash(commit_hash)
+    validated_end_hash = validate_commit_hash(commit_hash)
+    validated_start_hash = validate_commit_hash(start_commit) if start_commit else None
 
-    fix_context = FixContext(validated_hash)
+    fix_context = FixContext(end_commit_hash=validated_end_hash, start_commit_hash=validated_start_hash)
 
     logger.debug("Fix command started", fix_context=fix_context)
 
@@ -108,11 +139,13 @@ def main(
 
     commit_context = CommitContext(
         target=None,
+        # TODO add custom fix message
         message=None,
-        relevance_filter_level="none",
-        relevance_filter_intent=None,
+        # no filters because we cannot selectively edit changes in a fix
+        relevance_filter_level="none", 
+        relevance_filter_intent=None, 
         secret_scanner_aggression="none",
-    )  # TODO add custom fix message
+    )  
 
     from codestory.pipelines.commit_init import create_commit_pipeline
     from codestory.pipelines.fix_pipeline import FixPipeline
