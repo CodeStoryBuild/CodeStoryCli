@@ -1,3 +1,4 @@
+import pytest
 from dslate.core.semantic_grouper.union_find import UnionFind
 
 # -----------------------------------------------------------------------------

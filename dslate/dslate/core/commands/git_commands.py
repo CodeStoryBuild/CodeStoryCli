@@ -41,7 +41,7 @@ class GitCommands:
     _MODE_RE = re.compile(
         rb"^(?:new file mode|deleted file mode|old mode|new mode) (\d{6})$"
     )
-    _INDEX_RE = re.compile(rb"^index [0-9a-f]{7,}\.\..[0-9a-f]{7,}(?: (\d{6}))?$")
+    _INDEX_RE = re.compile(rb"^index [0-9a-f]{7,}\.\.[0-9a-f]{7,}(?: (\d{6}))?$")
     _RENAME_FROM_RE = re.compile(rb"^rename from (.+)$")
     _RENAME_TO_RE = re.compile(rb"^rename to (.+)$")
     _OLD_PATH_RE = re.compile(rb"^--- (?:(?:a/)?(.+)|/dev/null)$")

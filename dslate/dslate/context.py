@@ -70,7 +70,7 @@ class GlobalContext:
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
-        model = try_create_model(config.model, config.api_key)
+        model = try_create_model(config.model, config.api_key, config.model_temperature)
 
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
