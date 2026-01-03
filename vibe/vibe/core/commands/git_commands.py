@@ -88,13 +88,14 @@ class GitCommands:
 
             # Parse file operation metadata
             old_path, new_path, file_mode = self._parse_file_metadata(lines)
+
             if old_path is None and new_path is None:
                 raise ValueError(
                     "Both old and new file paths are None! Invalid /dev/null parsing!"
                 )
             elif not old_path and not new_path:
                 raise ValueError("Could not parse file paths from diff block!")
-
+        
             # Parse hunks within the block
             hunk_start_indices = [
                 i for i, line in enumerate(lines) if line.startswith("@@ ")

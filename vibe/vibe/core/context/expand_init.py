@@ -10,6 +10,7 @@ from vibe.core.semantic_grouper.query_manager import QueryManager
 from vibe.core.pipeline.runner import AIGitPipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.chunker.atomic_chunker import AtomicChunker
+from vibe.core.grouper.langchain_grouper import LangChainGrouper
 from vibe.core.grouper.single_grouper import SingleGrouper
 from vibe.core.file_reader.git_file_reader import GitFileReader
 

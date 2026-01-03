@@ -16,6 +16,6 @@ class GitFileReader:
         commit = self.base_commit if old_content else self.patched_commit
         # Use git cat-file to get file content
         # rel_path should be in posix format for git
-        rel_path_git = path.replace("\\", "/")
+        rel_path_git = path.replace("\\", "/").strip()
         obj = f"{commit}:{rel_path_git}"
         return self.git.run_git_text(["cat-file", "-p", obj])

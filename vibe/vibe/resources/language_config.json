@@ -20,7 +20,11 @@
         },
         "scope_queries": [
                 "((function_definition) @placeholder)",
+                "((decorated_definition) @placeholder)",
                 "((while_statement) @placeholder)",
+                "((list) @placeholder)",
+                "((call) @placeholder)",
+                "((dictionary) @placeholder)",
                 "((class_definition) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
