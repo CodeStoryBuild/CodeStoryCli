@@ -30,7 +30,6 @@ from codestory.context import GlobalConfig, GlobalContext
 from codestory.core.config.config_loader import ConfigLoader
 from codestory.core.exceptions import handle_codestory_exception
 from codestory.core.logging.logging import setup_logger
-from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.validation import validate_git_repository
 from codestory.onboarding import check_run_onboarding
 from codestory.runtimeutil import (
@@ -163,6 +162,8 @@ def create_global_callback():
 
             # Set custom language config override if provided
             if config.custom_language_config is not None:
+                from codestory.core.semantic_grouper.query_manager import QueryManager
+
                 QueryManager.set_override(config.custom_language_config)
 
             setup_logger(

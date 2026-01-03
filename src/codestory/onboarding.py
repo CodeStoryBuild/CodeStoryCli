@@ -22,7 +22,7 @@ import typer
 from colorama import Fore, Style
 
 from codestory.commands.config import set_config
-from codestory.constants import CLOUD_PROVIDERS, LOCAL_PROVIDERS, ONBOARDING_FLAG
+from codestory.constants import LOCAL_PROVIDERS, ONBOARDING_FLAG, get_cloud_providers
 
 CODESTORY_ASCII = r"""
   ___  __  ____  ____    ____  ____  __  ____  _  _ 
@@ -63,7 +63,7 @@ def run_model_setup(scope: str):
 
     # Inform about supported providers
     local = sorted(list(LOCAL_PROVIDERS))
-    cloud = sorted(list(CLOUD_PROVIDERS))
+    cloud = sorted(list(get_cloud_providers()))
 
     print(f"{Fore.WHITE}Supported providers:{Style.RESET_ALL}")
 
@@ -95,7 +95,7 @@ def run_model_setup(scope: str):
     set_config(key="model", value=model_string, scope=scope)
 
     provider = model_string.split(":")[0].lower()
-    need_api_key = provider in CLOUD_PROVIDERS
+    need_api_key = provider in get_cloud_providers()
 
     if need_api_key:
         # If provider is not local, ask for an optional API key and explain env var options

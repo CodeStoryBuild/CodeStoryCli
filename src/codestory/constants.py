@@ -18,7 +18,6 @@
 
 from pathlib import Path
 
-from aisuite.provider import ProviderFactory
 from platformdirs import user_config_dir, user_log_path
 
 APP_NAME = "codestory"
@@ -71,11 +70,17 @@ LOCAL_PROVIDERS = {"ollama"}
 
 UNSUPPORTED_PROVIDERS = {"deepgram"}
 
-CLOUD_PROVIDERS = {
-    provider
-    for provider in ProviderFactory.get_supported_providers()
-    if provider not in LOCAL_PROVIDERS and provider not in UNSUPPORTED_PROVIDERS
-}
+
+def get_cloud_providers() -> set[str]:
+    """Get supported cloud providers. Lazy-loaded to avoid expensive imports at startup."""
+    from aisuite.provider import ProviderFactory
+
+    return {
+        provider
+        for provider in ProviderFactory.get_supported_providers()
+        if provider not in LOCAL_PROVIDERS and provider not in UNSUPPORTED_PROVIDERS
+    }
+
 
 # Embedding model constants
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
