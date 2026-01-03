@@ -100,9 +100,9 @@ class FileParser:
         # Get Tree-sitter parser for the detected language
         try:
             parser = get_parser(detected_language)
-        except Exception:
+        except Exception as e:
             # If we can't get a parser for this language, return None
-            logger.debug(f"Failed to get parser for {detected_language}")
+            logger.debug(f"Failed to get parser for {detected_language} error: {e}")
             return None
 
         # Parse the content
