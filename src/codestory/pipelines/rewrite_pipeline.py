@@ -469,9 +469,7 @@ class RewritePipeline:
                     accepted_groups.append(group)
                 else:
                     if self.can_reject_changes:
-                        keep = typer.confirm(
-                            "Do you want to commit this change?"
-                        )
+                        keep = typer.confirm("Do you want to commit this change?")
                         if keep:
                             accepted_groups.append(group)
                         else:
