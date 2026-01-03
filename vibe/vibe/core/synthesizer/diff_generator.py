@@ -7,7 +7,9 @@ from vibe.core.data.line_changes import Addition, Removal
 
 class DiffGenerator:
     def __init__(self, all_chunks_flattened: list[DiffChunk | ImmutableChunk]):
-        diff_chunks = [chunk for chunk in all_chunks_flattened if isinstance(chunk, DiffChunk)]
+        diff_chunks = [
+            chunk for chunk in all_chunks_flattened if isinstance(chunk, DiffChunk)
+        ]
         self.total_chunks_per_file = self.__get_total_chunks_per_file(diff_chunks)
 
     def __get_total_chunks_per_file(self, chunks: list[DiffChunk]):
@@ -21,7 +23,8 @@ class DiffGenerator:
         return total_chunks_per_file
 
     def generate_unified_diff(
-        self, chunks: list[DiffChunk | ImmutableChunk],
+        self,
+        chunks: list[DiffChunk | ImmutableChunk],
     ) -> dict[bytes, bytes]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
@@ -160,13 +163,11 @@ class DiffGenerator:
                     is_pure_addition = old_len == 0
 
                     # Use the helper function to calculate hunk starts
-                    hunk_old_start, hunk_new_start = (
-                        self.__calculate_hunk_starts(
-                            file_change_type=file_change_type,
-                            old_start=chunk.old_start,
-                            is_pure_addition=is_pure_addition,
-                            cumulative_offset=cumulative_offset,
-                        )
+                    hunk_old_start, hunk_new_start = self.__calculate_hunk_starts(
+                        file_change_type=file_change_type,
+                        old_start=chunk.old_start,
+                        is_pure_addition=is_pure_addition,
+                        cumulative_offset=cumulative_offset,
                     )
 
                     hunk_header = f"@@ -{hunk_old_start},{old_len} +{hunk_new_start},{new_len} @@".encode()
@@ -193,8 +194,7 @@ class DiffGenerator:
             patches[file_path] = file_patch
 
         return patches
-        
-    
+
     def __sanitize_filename(self, filename: bytes) -> bytes:
         """
         Sanitize a filename for use in git patch headers.
@@ -205,7 +205,6 @@ class DiffGenerator:
         """
         return filename.rstrip(b"\t").strip()  # remove trailing tabs
 
-    
     def __validate_chunks_are_disjoint(self, chunks: list[DiffChunk]) -> bool:
         """Validate that all chunks are pairwise disjoint in old file coordinates.
 
@@ -286,8 +285,9 @@ class DiffGenerator:
 
         return (hunk_old_start, hunk_new_start)
 
-    
-    def __is_contiguous(self, last_chunk: "DiffChunk", current_chunk: "DiffChunk") -> bool:
+    def __is_contiguous(
+        self, last_chunk: "DiffChunk", current_chunk: "DiffChunk"
+    ) -> bool:
         """
         Determines if two DiffChunks are contiguous and can be merged.
 
@@ -302,7 +302,6 @@ class DiffGenerator:
 
         return last_old_end >= current_old_start
 
-    
     def __merge_chunks(self, sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
         """
         Merges a list of sorted, atomic DiffChunks into the smallest possible

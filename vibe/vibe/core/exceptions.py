@@ -41,6 +41,7 @@ class GitError(VibeError):
 
 class DetachedHeadError(GitError):
     """Raised when on a detached HEAD."""
+
     pass
 
 

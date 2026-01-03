@@ -4,6 +4,7 @@ from ..data.diff_chunk import DiffChunk
 from ..data.commit_group import CommitGroup
 from .diff_generator import DiffGenerator
 
+
 def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
     flattened_chunks = []
     for chunk in chunks:

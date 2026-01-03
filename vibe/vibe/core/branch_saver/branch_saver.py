@@ -5,9 +5,6 @@ from loguru import logger
 from ..git_interface.interface import GitInterface
 
 
-
-
-
 class BranchSaver:
     """Save working directory changes into a branch-specific backup branch and restore them."""
 
