@@ -136,7 +136,7 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
         with time_block("Fix Pipeline E2E"):
             service = FixPipeline(global_context, fix_context, rewrite_pipeline)
             final_head = service.run()
-        
+
         if final_head:
             sandbox.sync(final_head)
 

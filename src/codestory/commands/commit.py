@@ -107,7 +107,7 @@ def run_commit(
             )
 
             new_commit_hash = runner.run()
-        
+
         # Only sync if we actually have a result
         if new_commit_hash and new_commit_hash != base_commit_hash:
             sandbox.sync(new_commit_hash)
