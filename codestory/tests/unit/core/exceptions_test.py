@@ -62,8 +62,8 @@ def test_git_not_found():
 def test_not_git_repository():
     exc = not_git_repository("/some/path")
     assert isinstance(exc, GitError)
-    assert "Not a git repository: /some/path" in exc.message
-    assert "Run 'git init'" in exc.details
+    assert "Not a git repository: /some/path" in str(exc)
+    assert "Run 'git init'" in str(exc)
 
 
 def test_invalid_commit_hash():
@@ -75,16 +75,16 @@ def test_invalid_commit_hash():
 def test_path_not_found():
     exc = path_not_found("/missing/path")
     assert isinstance(exc, ValidationError)
-    assert "Path not found: /missing/path" in exc.message
+    assert "Path not found: /missing/path" in str(exc)
 
 
 def test_api_key_missing():
     exc = api_key_missing("openai")
     assert isinstance(exc, ConfigurationError)
-    assert "Missing API key for openai" in exc.message
+    assert "Missing API key for openai" in str(exc)
 
 
 def test_ai_service_timeout():
     exc = ai_service_timeout("gpt-4", 30)
     assert isinstance(exc, AIServiceError)
-    assert "AI service 'gpt-4' timed out after 30 seconds" in exc.message
+    assert "AI service 'gpt-4' timed out after 30 seconds" in str(exc)

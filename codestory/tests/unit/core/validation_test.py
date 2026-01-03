@@ -97,7 +97,13 @@ def test_validate_git_repository_success(mock_git_interface):
 def test_validate_git_repository_not_installed(mock_git_interface):
     mock_git_interface.run_git_text_out.side_effect = Exception("Git not found")
 
-    with pytest.raises(GitError, match="Git is not working properly"):
+    with pytest.raises(GitError, match="Git version check failed: Git not found"):
+        validate_git_repository(mock_git_interface)
+
+def test_validate_git_repository_not_a_directory(mock_git_interface):
+    mock_git_interface.run_git_text_out.side_effect = NotADirectoryError()
+
+    with pytest.raises(GitError, match="Current directory is not a git repository"):
         validate_git_repository(mock_git_interface)
 
 
