@@ -72,19 +72,7 @@ def main():
         "--include-package=codestory",
         "--include-package-data=codestory",
         
-        # --- LANGCHAIN ---
-        "--include-package=langchain",
-        # LANGSMITH HAS A PYTEST IMPORT WE DONT WANT (idk why all caps lol)
-        "--nofollow-import-to=pytest",
-        "--include-package=langchain_core",
-        "--include-package=langchain_openai",
-        "--include-package=langchain_anthropic",
-        "--include-package=langchain_google_genai",
-        "--include-package=langchain_ollama",
-
         # --- UTILS ---
-        "--include-package=pygments",
-        "--include-package=inquirer",
         "--include-package=readchar",
         
         "--include-package=tree_sitter",

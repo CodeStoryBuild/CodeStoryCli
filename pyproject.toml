@@ -67,11 +67,7 @@ pretty = true
 [[tool.mypy.overrides]]
 module = [
     "tree_sitter.*",
-    "inquirer.*",
-    "langchain.*",
-    "langchain_google_genai.*",
     "git.*",
-    "pygments.*",
     "importlib.*"
 ]
 ignore_missing_imports = true
