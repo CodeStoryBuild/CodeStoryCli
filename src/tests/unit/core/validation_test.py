@@ -166,28 +166,29 @@ def test_validate_commit_hash_type_error():
 def test_validate_target_path_valid_file(tmp_path):
     f = tmp_path / "test.txt"
     f.write_text("content")
-    assert validate_target_path(str(f)) == f.resolve()
+    assert validate_target_path(str(f)) == [str(f)]
 
 
 def test_validate_target_path_valid_dir(tmp_path):
     d = tmp_path / "subdir"
     d.mkdir()
-    assert validate_target_path(str(d)) == d.resolve()
+    assert validate_target_path(str(d)) == [str(d)]
 
 
 def test_validate_target_path_none():
     assert validate_target_path(None) is None
 
 
-def test_validate_target_path_not_exists():
-    with pytest.raises(ValidationError, match="does not exist"):
-        validate_target_path("non/existent/path")
+def test_validate_target_path_list():
+    assert validate_target_path(["path1", "path2"]) == ["path1", "path2"]
 
 
 def test_validate_target_path_type_error():
     with pytest.raises(ValidationError, match="Target path cannot be empty"):
         validate_target_path("")
-    with pytest.raises(ValidationError, match="Target path cannot be empty"):
+    with pytest.raises(
+        ValidationError, match="Target path must be a string or a list of strings"
+    ):
         validate_target_path(123)
 
 

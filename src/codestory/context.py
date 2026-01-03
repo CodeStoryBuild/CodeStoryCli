@@ -263,7 +263,7 @@ class GlobalContext:
 
 @dataclass(frozen=True)
 class CommitContext:
-    target: Path
+    target: list[str] | None
     message: str | None = None
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "none"

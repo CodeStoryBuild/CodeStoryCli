@@ -23,11 +23,9 @@ and type safety for all CLI parameters and configuration values.
 """
 
 import re
-from pathlib import Path
 
 from codestory.core.exceptions import (
     DetachedHeadError,
-    FileSystemError,
     GitError,
     ValidationError,
 )
@@ -97,60 +95,39 @@ def validate_commit_hash(
     return value.lower()
 
 
-def validate_target_path(value: str | None) -> Path:
+def validate_target_path(value: str | list[str] | None) -> list[str] | None:
     """
-    Validate that a target path exists and is accessible.
+    Validate that target paths are valid strings.
+    Git pathspecs are flexible, so we primarily ensure they are non-empty strings.
 
     Args:
-        value: The path string to validate
+        value: The path string or list of path strings to validate
 
     Returns:
-        The validated Path object
+        A list of validated path strings or None
 
     Raises:
-        ValidationError: If the path doesn't exist or isn't accessible
-        FileSystemError: If there are permission issues
+        ValidationError: If any path is invalid
     """
     if value is None:
         # using no target
         return None
 
-    if not value or not isinstance(value, str):
-        raise ValidationError("Target path cannot be empty")
+    if isinstance(value, str):
+        values = [value]
+    elif isinstance(value, list):
+        values = value
+    else:
+        raise ValidationError("Target path must be a string or a list of strings")
 
-    try:
-        path = Path(value).resolve()
-    except (OSError, ValueError) as e:
-        raise ValidationError(f"Invalid path format: {value}") from e
+    if not values:
+        return None
 
-    if not path.exists():
-        raise ValidationError(
-            f"The specified path does not exist: {value}",
-            "Please check that the path is correct and accessible",
-        )
+    for v in values:
+        if not v or not isinstance(v, str):
+            raise ValidationError("Target path cannot be empty")
 
-    if not (path.is_dir() or path.is_file()):
-        raise ValidationError(
-            f"Path is not a valid file or directory: {value}",
-            "Please specify a valid file or directory path",
-        )
-
-    # Check if we have read access
-    try:
-        if path.is_dir():
-            list(path.iterdir())
-        else:
-            path.read_text()
-    except PermissionError as e:
-        raise FileSystemError(
-            f"Permission denied accessing: {value}",
-            "Please check file/directory permissions",
-        ) from e
-    except UnicodeDecodeError:
-        # Binary files are OK, we just can't read them as text
-        pass
-
-    return path
+    return values
 
 
 def validate_message_length(value: str | None) -> str | None:
