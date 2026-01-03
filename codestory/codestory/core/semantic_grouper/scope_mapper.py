@@ -1,21 +1,39 @@
 """
+
 -----------------------------------------------------------------------------
+
 /*
+
  * Copyright (C) 2025 CodeStory
+
  *
+
  * This program is free software; you can redistribute it and/or modify
+
  * it under the terms of the GNU General Public License as published by
+
  * the Free Software Foundation; Version 2.
+
  *
+
  * This program is distributed in the hope that it will be useful,
+
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+
  * GNU General Public License for more details.
+
  *
+
  * You should have received a copy of the GNU General Public License
+
  * along with this program; if not, you can contact us at support@codestory.build
+
  */
+
 -----------------------------------------------------------------------------
+
 """
 
 from dataclasses import dataclass
@@ -27,11 +45,16 @@ from tree_sitter import Node
 from .query_manager import QueryManager
 
 
+
 @dataclass(frozen=True)
+
 class ScopeMap:
+
     """Maps each line number to scope inside it."""
 
+
     scope_lines: dict[int, set[str]]
+
 
 
 class ScopeMapper:
