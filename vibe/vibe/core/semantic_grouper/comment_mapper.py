@@ -57,7 +57,9 @@ class CommentMapper:
             line_ranges=line_ranges,
         )
 
-        lines = content_bytes.decode("utf8", errors="replace").splitlines(keepends=False)
+        lines = content_bytes.decode("utf8", errors="replace").splitlines(
+            keepends=False
+        )
         num_lines = len(lines)
 
         # line_index -> total number of characters covered by comments.
@@ -74,29 +76,37 @@ class CommentMapper:
                 if start_line == end_line:
                     # Single-line comment: just add its length.
                     length = end_col - start_col
-                    coverage_counts[start_line] = coverage_counts.get(start_line, 0) + length
+                    coverage_counts[start_line] = (
+                        coverage_counts.get(start_line, 0) + length
+                    )
                 else:
                     # Multi-line comment: calculate length for each line spanned.
                     # Start line: from start_col to the end of the line.
                     line_len = len(lines[start_line])
                     length = max(0, line_len - start_col)
-                    coverage_counts[start_line] = coverage_counts.get(start_line, 0) + length
+                    coverage_counts[start_line] = (
+                        coverage_counts.get(start_line, 0) + length
+                    )
 
                     # Middle lines: the entire line is part of the comment.
                     for line_idx in range(start_line + 1, end_line):
                         if line_idx < num_lines:
-                            coverage_counts[line_idx] = coverage_counts.get(line_idx, 0) + len(lines[line_idx])
+                            coverage_counts[line_idx] = coverage_counts.get(
+                                line_idx, 0
+                            ) + len(lines[line_idx])
 
                     # End line: from column 0 to the end_col.
                     if end_line < num_lines:
-                        coverage_counts[end_line] = coverage_counts.get(end_line, 0) + end_col
+                        coverage_counts[end_line] = (
+                            coverage_counts.get(end_line, 0) + end_col
+                        )
 
         pure_comment_lines: set[int] = set()
         for line_idx, comment_length in coverage_counts.items():
             # The line must have some comment coverage to be considered.
             if comment_length == 0:
                 continue
-            
+
             # Defensive check against out-of-bounds access
             if line_idx >= num_lines:
                 continue
