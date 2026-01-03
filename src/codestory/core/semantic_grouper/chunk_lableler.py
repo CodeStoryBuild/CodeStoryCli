@@ -137,7 +137,7 @@ class ChunkLabeler:
                 logger.debug(
                     f"No analysis for a diff chunk in {diff_chunk.canonical_path().decode('utf-8', errors='replace')}!"
                 )
-                continue
+                return None
 
             (
                 def_new_symbols,
