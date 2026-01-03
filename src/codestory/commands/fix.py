@@ -115,7 +115,7 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
 
     commit_context = CommitContext(
         target=None,
-        # TODO add custom fix message
+        # no message because we dont rely on commit messages. Later we will rely on our own internal understanding of the repo
         message=None,
         # no filters because we cannot selectively edit changes in a fix
         relevance_filter_level="none",
