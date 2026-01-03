@@ -52,6 +52,9 @@ app.command(name="fix")(fix.main)
 app.command(name="clean")(clean.main)
 app.command(name="config")(config.main)
 
+# which commands require a global context
+dependent_commands = ["commit", "fix", "clean"]
+
 
 def setup_config_args(**kwargs):
     config_args = {}
@@ -110,39 +113,43 @@ def main(
     Global setup callback. Initialize shared objects here.
     """
     # skip --help in subcommands
-    if ctx.help_option_names:
+    if any(arg in ctx.help_option_names for arg in ctx.args):
         return
 
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
         raise typer.Exit()
-    else:
-        setup_logger(ctx.invoked_subcommand, debug=verbose)
 
-        config_args = setup_config_args(
-            model=model,
-            api_key=api_key,
-            model_temperature=model_temperature,
-            verbose=verbose,
-            auto_accept=auto_accept,
-        )
+    setup_logger(ctx.invoked_subcommand, debug=verbose)
 
-        local_config_path = Path("dslateconfig.toml")
-        env_prefix = "dslate_"
-        global_config_path = Path(user_config_dir("dslate")) / "dslateconfig.toml"
-        custom_config_path = Path(custom_config) if custom_config else None
+    if ctx.invoked_subcommand not in dependent_commands:
+        return
 
-        config, used_configs = ConfigLoader.get_full_config(
-            GlobalConfig,
-            config_args,
-            local_config_path,
-            env_prefix,
-            global_config_path,
-            custom_config_path,
-        )
-        logger.debug(f"Used {used_configs} to build global context.")
-        global_context = GlobalContext.from_global_config(config, Path(repo_path))
-        ctx.obj = global_context
+
+    config_args = setup_config_args(
+        model=model,
+        api_key=api_key,
+        model_temperature=model_temperature,
+        verbose=verbose,
+        auto_accept=auto_accept,
+    )
+
+    local_config_path = Path("dslateconfig.toml")
+    env_prefix = "dslate_"
+    global_config_path = Path(user_config_dir("dslate")) / "dslateconfig.toml"
+    custom_config_path = Path(custom_config) if custom_config else None
+
+    config, used_configs = ConfigLoader.get_full_config(
+        GlobalConfig,
+        config_args,
+        local_config_path,
+        env_prefix,
+        global_config_path,
+        custom_config_path,
+    )
+    logger.debug(f"Used {used_configs} to build global context.")
+    global_context = GlobalContext.from_global_config(config, Path(repo_path))
+    ctx.obj = global_context
 
 
 def run_app():
