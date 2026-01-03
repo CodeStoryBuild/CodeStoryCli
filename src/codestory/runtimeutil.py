@@ -16,7 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import importlib
 import signal
 import sys
 
@@ -53,11 +52,12 @@ def setup_signal_handlers(global_context=None):
 
 def version_callback(value: bool):
     """Show version and exit."""
+    from importlib.metadata import version, PackageNotFoundError
     if value:
         try:
-            version = importlib.metadata.version("codestory")
+            version = version("codestory")
             typer.echo(f"codestory version {version}")
-        except importlib.metadata.PackageNotFoundError:
+        except PackageNotFoundError:
             typer.echo("codestory version: development")
         raise typer.Exit()
 
