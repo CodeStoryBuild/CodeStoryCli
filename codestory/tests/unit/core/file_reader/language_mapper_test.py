@@ -5,36 +5,38 @@ from codestory.core.file_reader.language_mapper import detect_tree_sitter_langua
 # 1. Simple Extension & Filename Tests
 # -----------------------------------------------------------------------------
 
-@pytest.mark.parametrize("filename, expected_lang", [
-    # Common Extensions
-    ("test.py", "python"),
-    ("script.js", "javascript"),
-    ("styles.css", "css"),
-    ("index.html", "html"),
-    ("main.rs", "rust"),
-    ("main.go", "go"),
-    ("App.tsx", "tsx"),
-    ("types.ts", "typescript"),
-    ("script.php", "php"),
-    ("config.yaml", "yaml"),
-    ("data.json", "json"),
-    
-    # Specific Filenames
-    ("Dockerfile", "dockerfile"),
-    ("Makefile", "make"),
-    ("makefile", "make"), # Case insensitivity check
-    ("CMakeLists.txt", "cmake"),
-    ("go.mod", "gomod"),
-    ("go.sum", "gosum"),
-    ("Jenkinsfile", "groovy"),
-    (".gitignore", "gitignore"),
-    ("package.json", "json"),
-    (".bashrc", "bash"),
-    
-    # Case Insensitivity on Extensions
-    ("SCRIPT.PY", "python"),
-    ("Index.HTML", "html"),
-])
+
+@pytest.mark.parametrize(
+    "filename, expected_lang",
+    [
+        # Common Extensions
+        ("test.py", "python"),
+        ("script.js", "javascript"),
+        ("styles.css", "css"),
+        ("index.html", "html"),
+        ("main.rs", "rust"),
+        ("main.go", "go"),
+        ("App.tsx", "tsx"),
+        ("types.ts", "typescript"),
+        ("script.php", "php"),
+        ("config.yaml", "yaml"),
+        ("data.json", "json"),
+        # Specific Filenames
+        ("Dockerfile", "dockerfile"),
+        ("Makefile", "make"),
+        ("makefile", "make"),  # Case insensitivity check
+        ("CMakeLists.txt", "cmake"),
+        ("go.mod", "gomod"),
+        ("go.sum", "gosum"),
+        ("Jenkinsfile", "groovy"),
+        (".gitignore", "gitignore"),
+        ("package.json", "json"),
+        (".bashrc", "bash"),
+        # Case Insensitivity on Extensions
+        ("SCRIPT.PY", "python"),
+        ("Index.HTML", "html"),
+    ],
+)
 def test_simple_detections(filename, expected_lang):
     """Test standard extensions and specific filenames."""
     assert detect_tree_sitter_language(filename, "") == expected_lang
@@ -76,18 +78,22 @@ def test_ambiguous_v_file():
 # 3. Shebang Tests
 # -----------------------------------------------------------------------------
 
-@pytest.mark.parametrize("shebang, expected_lang", [
-    ("#!/bin/bash", "bash"),
-    ("#!/bin/sh", "bash"),
-    ("#!/usr/bin/env python3", "python"),
-    ("#!/usr/bin/env python", "python"),
-    ("#!/usr/bin/python3.9", "python"),
-    ("#!/usr/bin/env node", "javascript"),
-    ("#!/usr/bin/node", "javascript"),
-    ("#!/usr/bin/perl", "perl"),
-    ("#!/usr/bin/env ruby", "ruby"),
-    ("#!/usr/bin/make -f", "make"),
-])
+
+@pytest.mark.parametrize(
+    "shebang, expected_lang",
+    [
+        ("#!/bin/bash", "bash"),
+        ("#!/bin/sh", "bash"),
+        ("#!/usr/bin/env python3", "python"),
+        ("#!/usr/bin/env python", "python"),
+        ("#!/usr/bin/python3.9", "python"),
+        ("#!/usr/bin/env node", "javascript"),
+        ("#!/usr/bin/node", "javascript"),
+        ("#!/usr/bin/perl", "perl"),
+        ("#!/usr/bin/env ruby", "ruby"),
+        ("#!/usr/bin/make -f", "make"),
+    ],
+)
 def test_shebang_detection(shebang, expected_lang):
     """Test language detection via shebang line when extension is missing."""
     content = f"{shebang}\n# Some code here"
@@ -107,11 +113,14 @@ def test_paths_with_directories():
 def test_unknown_extension():
     """Ensure unknown extensions return None."""
     assert detect_tree_sitter_language("file.xyz123") is None
-    assert detect_tree_sitter_language("README.txt") is None # assuming txt isn't mapped
+    assert (
+        detect_tree_sitter_language("README.txt") is None
+    )  # assuming txt isn't mapped
+
 
 def test_mixed_ambiguity_signals():
     """Test priority: filename > extension > content."""
     # Even if content looks like C++, if the extension is .c, it should be C
     # (The function strictly checks .h for ambiguity, but .c is hardmapped to c)
-    content = "class MyClass { };" 
+    content = "class MyClass { };"
     assert detect_tree_sitter_language("file.c", content) == "c"

@@ -43,65 +43,90 @@ FILENAME_MAP = {
 # Note: Ambiguous extensions (keys mapping to multiple languages) are handled separately.
 EXTENSION_MAP = {
     # Common
-    ".py": "python", ".pyw": "python",
-    ".js": "javascript", ".cjs": "javascript", ".mjs": "javascript",
+    ".py": "python",
+    ".pyw": "python",
+    ".js": "javascript",
+    ".cjs": "javascript",
+    ".mjs": "javascript",
     ".ts": "typescript",
     ".tsx": "tsx",
     ".c": "c",
-    ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".hxx": "cpp",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hxx": "cpp",
     ".cs": "csharp",
     ".go": "go",
     ".rs": "rust",
     ".java": "java",
-    ".kt": "kotlin", ".kts": "kotlin",
+    ".kt": "kotlin",
+    ".kts": "kotlin",
     ".rb": "ruby",
-    ".php": "php", ".phtml": "php",
-    ".sh": "bash", ".bash": "bash", ".zsh": "bash",
-    ".html": "html", ".htm": "html",
+    ".php": "php",
+    ".phtml": "php",
+    ".sh": "bash",
+    ".bash": "bash",
+    ".zsh": "bash",
+    ".html": "html",
+    ".htm": "html",
     ".css": "css",
     ".scss": "scss",
     ".json": "json",
-    ".yaml": "yaml", ".yml": "yaml",
-    ".xml": "xml", ".xaml": "xml",
+    ".yaml": "yaml",
+    ".yml": "yaml",
+    ".xml": "xml",
+    ".xaml": "xml",
     ".md": "markdown",
     ".sql": "sql",
     ".toml": "toml",
-    
     # Specific / Less Common
     ".as": "actionscript",
-    ".ada": "ada", ".adb": "ada", ".ads": "ada",
+    ".ada": "ada",
+    ".adb": "ada",
+    ".ads": "ada",
     ".agda": "agda",
     ".cls": "apex",
     ".ino": "arduino",
-    ".asm": "asm", ".s": "asm",
+    ".asm": "asm",
+    ".s": "asm",
     ".astro": "astro",
     ".bib": "bibtex",
-    ".clj": "clojure", ".cljs": "clojure", ".edn": "clojure",
+    ".clj": "clojure",
+    ".cljs": "clojure",
+    ".edn": "clojure",
     ".cbl": "cobol",
-    ".lisp": "commonlisp", ".cl": "commonlisp",
+    ".lisp": "commonlisp",
+    ".cl": "commonlisp",
     ".dart": "dart",
     ".dockerfile": "dockerfile",
-    ".ex": "elixir", ".exs": "elixir",
+    ".ex": "elixir",
+    ".exs": "elixir",
     ".elm": "elm",
     ".erl": "erlang",
     ".fs": "fsharp",
     ".gd": "gdscript",
-    ".graphql": "graphql", ".gql": "graphql",
-    ".groovy": "groovy", ".gradle": "groovy",
+    ".graphql": "graphql",
+    ".gql": "graphql",
+    ".groovy": "groovy",
+    ".gradle": "groovy",
     ".hs": "haskell",
     ".jl": "julia",
     ".lua": "lua",
-    ".m": "ambiguous_m", # Objective-C vs Matlab
-    ".h": "ambiguous_h", # C vs C++
-    ".v": "ambiguous_v", # Verilog vs V
-    ".pl": "perl", ".pm": "perl", # Assuming Prolog isn't in supported list
+    ".m": "ambiguous_m",  # Objective-C vs Matlab
+    ".h": "ambiguous_h",  # C vs C++
+    ".v": "ambiguous_v",  # Verilog vs V
+    ".pl": "perl",
+    ".pm": "perl",  # Assuming Prolog isn't in supported list
     ".ps1": "powershell",
     ".r": "r",
-    ".scala": "scala", ".sc": "scala",
+    ".scala": "scala",
+    ".sc": "scala",
     ".sol": "solidity",
     ".swift": "swift",
     ".tf": "terraform",
-    ".vhd": "vhdl", ".vhdl": "vhdl",
+    ".vhd": "vhdl",
+    ".vhdl": "vhdl",
     ".vim": "vim",
     ".vue": "vue",
     ".zig": "zig",
@@ -131,19 +156,21 @@ def _resolve_h_file(content: str) -> str:
     """Disambiguate .h files (C vs C++)."""
     # Look for C++ specific keywords or syntax
     cpp_indicators = [
-        r'\bclass\s+\w+',          # Class definition
-        r'\btemplate\s*<',         # Templates
-        r'\bnamespace\s+\w+',      # Namespaces
-        r'\busing\s+namespace\b',  # using namespace
-        r'\bpublic:', r'\bprivate:', r'\bprotected:', # Access specifiers
-        r'#include\s+<iostream>',  # C++ standard lib
-        r'std::'                   # std namespace usage
+        r"\bclass\s+\w+",  # Class definition
+        r"\btemplate\s*<",  # Templates
+        r"\bnamespace\s+\w+",  # Namespaces
+        r"\busing\s+namespace\b",  # using namespace
+        r"\bpublic:",
+        r"\bprivate:",
+        r"\bprotected:",  # Access specifiers
+        r"#include\s+<iostream>",  # C++ standard lib
+        r"std::",  # std namespace usage
     ]
-    
+
     for indicator in cpp_indicators:
         if re.search(indicator, content):
             return "cpp"
-            
+
     # Default to C if no strong C++ signals are found
     return "c"
 
@@ -151,21 +178,21 @@ def _resolve_m_file(content: str) -> str:
     """Disambiguate .m files (Objective-C vs Matlab/Octave)."""
     # Objective-C indicators
     objc_indicators = [
-        r'#import\s+',
-        r'@interface',
-        r'@implementation',
-        r'@end',
-        r'\[\s*\w+\s+\w+\s*\]', # Message passing syntax [Obj method]
-        r'@"',                  # NSString literal
-        r'NSLog'
+        r"#import\s+",
+        r"@interface",
+        r"@implementation",
+        r"@end",
+        r"\[\s*\w+\s+\w+\s*\]",  # Message passing syntax [Obj method]
+        r'@"',  # NSString literal
+        r"NSLog",
     ]
-    
+
     # Matlab indicators
     # Comments start with % in Matlab, // in ObjC (usually)
     matlab_indicators = [
-        r'^\s*%',              # Comment at start of line
-        r'function\s+\w+',     # Function definition
-        r'end\s*$'             # Block end
+        r"^\s*%",  # Comment at start of line
+        r"function\s+\w+",  # Function definition
+        r"end\s*$",  # Block end
     ]
 
     for ind in objc_indicators:
@@ -173,9 +200,9 @@ def _resolve_m_file(content: str) -> str:
             return "objc"
 
     # Check for Matlab comments specifically
-    if re.search(r'^\s*%', content, re.MULTILINE):
+    if re.search(r"^\s*%", content, re.MULTILINE):
         return "matlab"
-        
+
     # Default to Objective-C as it's more common in tree-sitter contexts
     return "objc"
 
@@ -183,25 +210,25 @@ def _resolve_v_file(content: str) -> str:
     """Disambiguate .v files (Verilog vs V)."""
     # Verilog indicators
     verilog_indicators = [
-        r'\bmodule\s+\w+',
-        r'\bendmodule\b',
-        r'\balways\s*@',
-        r'\bassign\s+',
-        r'\breg\b',
-        r'\bwire\b'
+        r"\bmodule\s+\w+",
+        r"\bendmodule\b",
+        r"\balways\s*@",
+        r"\bassign\s+",
+        r"\breg\b",
+        r"\bwire\b",
     ]
-    
+
     for ind in verilog_indicators:
         if re.search(ind, content):
             return "verilog"
-            
+
     # V Language indicators (looks like Go/Rust)
     v_indicators = [
-        r'\bfn\s+main',
-        r'\bpub\s+fn',
-        r'\bstruct\s+\w+',
+        r"\bfn\s+main",
+        r"\bpub\s+fn",
+        r"\bstruct\s+\w+",
     ]
-    
+
     for ind in v_indicators:
         if re.search(ind, content):
             return "v"
@@ -213,21 +240,24 @@ def _resolve_v_file(content: str) -> str:
 # 3. Main Detection Function
 # -----------------------------------------------------------------------------
 
-def detect_tree_sitter_language(file_path: str, file_content: str = "") -> Optional[str]:
+
+def detect_tree_sitter_language(
+    file_path: str, file_content: str = ""
+) -> Optional[str]:
     """
     Detects the language compatible with tree-sitter-language-pack.
     """
     path_obj = Path(file_path)
     filename = path_obj.name.lower()
-    
+
     # 1. Check Exact Filenames (Highest Priority)
     if filename in FILENAME_MAP:
         return FILENAME_MAP[filename]
-        
+
     # 2. Check Extension
     extension = path_obj.suffix.lower()
     lang_candidate = EXTENSION_MAP.get(extension)
-    
+
     # 3. Handle Ambiguous Extensions
     if lang_candidate == "ambiguous_h":
         return _resolve_h_file(file_content)
@@ -250,17 +280,17 @@ def detect_tree_sitter_language(file_path: str, file_content: str = "") -> Optio
             # Remove '#!' and strip whitespace
             # e.g. "#!/usr/bin/python3.9" -> "/usr/bin/python3.9"
             shebang_cmd = first_line[2:].strip()
-            
+
             # Split command from arguments
             # e.g. "/usr/bin/env node" -> ["/usr/bin/env", "node"]
             parts = shebang_cmd.split()
-            
+
             if not parts:
                 return None
-                
+
             interpreter_path = parts[0]
             interpreter = None
-            
+
             # Logic to extract interpreter name
             if interpreter_path.endswith("env"):
                 # Case: #!/usr/bin/env python
@@ -269,16 +299,16 @@ def detect_tree_sitter_language(file_path: str, file_content: str = "") -> Optio
             else:
                 # Case: #!/usr/bin/python3 or #!/bin/bash
                 interpreter = Path(interpreter_path).name
-            
+
             if interpreter:
                 # Normalize: remove trailing version numbers/dots
                 # e.g. 'python3.9' -> 'python', 'python3' -> 'python'
-                interpreter_clean = re.sub(r'[\d.]+$', '', interpreter)
-                
+                interpreter_clean = re.sub(r"[\d.]+$", "", interpreter)
+
                 # Check exact match (e.g. 'node')
                 if interpreter in SHEBANG_MAP:
                     return SHEBANG_MAP[interpreter]
-                
+
                 # Check cleaned match (e.g. 'python' from 'python3')
                 if interpreter_clean in SHEBANG_MAP:
                     return SHEBANG_MAP[interpreter_clean]
@@ -287,6 +317,6 @@ def detect_tree_sitter_language(file_path: str, file_content: str = "") -> Optio
     if filename.startswith(".bash"):
         return "bash"
     if filename.startswith(".zsh"):
-        return "bash" 
-        
+        return "bash"
+
     return None

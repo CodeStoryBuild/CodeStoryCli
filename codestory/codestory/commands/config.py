@@ -115,29 +115,35 @@ def _check_key_exists(key: str) -> dict:
 
     if key not in schema:
         print(f"{Fore.RED}Error:{Style.RESET_ALL} Unknown configuration key '{key}'\n")
-        print(f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n")
+        print(
+            f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n"
+        )
 
         table_data = []
         for config_key, info in sorted(schema.items()):
-            default_str = str(info["default"]) if info["default"] is not None else "None"
+            default_str = (
+                str(info["default"]) if info["default"] is not None else "None"
+            )
             description = _truncate_text(info["description"], 60)
-            table_data.append({
-                "Key": config_key,
-                "Description": description,
-                "Value": default_str,
-                "Source": "Default"
-            })
+            table_data.append(
+                {
+                    "Key": config_key,
+                    "Description": description,
+                    "Value": default_str,
+                    "Source": "Default",
+                }
+            )
 
         display_config(
-            table_data, 
-            description_field="Description", 
-            key_field="Key", 
-            value_field="Value", 
-            source_field="Source", 
-            max_value_length=80
+            table_data,
+            description_field="Description",
+            key_field="Key",
+            value_field="Value",
+            source_field="Source",
+            max_value_length=80,
         )
         raise typer.Exit(1)
-    
+
     return schema[key]
 
 
@@ -259,7 +265,11 @@ def _get_config(key: str | None, scope: str | None) -> None:
 
     # Env
     if scope is None or scope == "env":
-        env_config = {k[10:]: v for k, v in os.environ.items() if k.lower().startswith("codestory_")}
+        env_config = {
+            k[10:]: v
+            for k, v in os.environ.items()
+            if k.lower().startswith("codestory_")
+        }
         if env_config:
             sources.append(("Environment", None, env_config))
 
@@ -281,64 +291,72 @@ def _get_config(key: str | None, scope: str | None) -> None:
         # User requested a specific key
         found = False
         description = schema[key]["description"]
-        
+
         # Check explicit sources
         for source_name, _, config_data in sources:
             if key in config_data:
                 found = True
                 val = _truncate_text(str(config_data[key]), 60)
-                table_data.append({
-                    "Key": key, 
-                    "Description": description, 
-                    "Value": val, 
-                    "Source": source_name
-                })
-        
+                table_data.append(
+                    {
+                        "Key": key,
+                        "Description": description,
+                        "Value": val,
+                        "Source": source_name,
+                    }
+                )
+
         # If not found in any active source, show the system default
         if not found:
             default_val = schema[key]["default"]
             val_str = str(default_val) if default_val is not None else "None"
-            table_data.append({
-                "Key": key,
-                "Description": description,
-                "Value": val_str,
-                "Source": "System Default (Not Set)"
-            })
-        
+            table_data.append(
+                {
+                    "Key": key,
+                    "Description": description,
+                    "Value": val_str,
+                    "Source": "System Default (Not Set)",
+                }
+            )
+
         display_config(table_data)
 
     else:
         # List all keys
         for k in sorted(schema.keys()):
             description = schema[k]["description"]
-            
+
             # Find the active value (first match in priority: Local -> Env -> Global)
             active_val = None
             active_source = None
-            
+
             for source_name, _, config_data in sources:
                 if k in config_data:
                     active_val = config_data[k]
                     active_source = source_name
                     break
-            
+
             if active_val is not None:
-                table_data.append({
-                    "Key": k, 
-                    "Description": description, 
-                    "Value": str(active_val), 
-                    "Source": active_source
-                })
+                table_data.append(
+                    {
+                        "Key": k,
+                        "Description": description,
+                        "Value": str(active_val),
+                        "Source": active_source,
+                    }
+                )
             else:
                 # Fallback to default
                 default_val = schema[k]["default"]
                 val_str = str(default_val) if default_val is not None else "None"
-                table_data.append({
-                    "Key": k, 
-                    "Description": description, 
-                    "Value": val_str, 
-                    "Source": f"Default"
-                })
+                table_data.append(
+                    {
+                        "Key": k,
+                        "Description": description,
+                        "Value": val_str,
+                        "Source": f"Default",
+                    }
+                )
 
         display_config(table_data)
 
@@ -380,14 +398,16 @@ def main(
         # Show all configuration
         codestory config
     """
-    
+
     # Determine operation
     if value is not None:
         # SET operation
         if key is None:
-            print(f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value")
+            print(
+                f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value"
+            )
             raise typer.Exit(1)
-        
+
         # Default to local if setting and no scope provided
         target_scope = scope if scope is not None else "local"
         _set_config(key, value, target_scope)
