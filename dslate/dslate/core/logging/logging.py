@@ -63,31 +63,7 @@ class StructuredLogger:
 
         # Console sink with Rich formatting
         def console_sink(message):
-            # Parse loguru message
-            record = message.record
-            level = record["level"].name
-            msg = record["message"]
-
-            # Format with Rich colors
-            if level == "DEBUG":
-                style = "dim"
-            elif level == "INFO":
-                style = "blue"
-            elif level == "WARNING":
-                style = "yellow"
-            elif level == "ERROR":
-                style = "red bold"
-            elif level == "CRITICAL":
-                style = "red bold reverse"
-            else:
-                style = "white"
-
-            # Only show structured fields in debug mode
-            if log_level == "DEBUG" and record.get("extra"):
-                extra_info = " ".join(f"{k}={v}" for k, v in record["extra"].items())
-                msg = f"{msg} ({extra_info})"
-
-            text = Text(f"[{level}] {msg}", style=style)
+            text = message.record["message"].rstrip("\n")
             self.console.print(text)
 
         # Add console sink with appropriate level
