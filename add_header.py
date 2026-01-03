@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import re
-import argparse
 
 # --- Configuration ---
 
@@ -107,11 +107,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "root_dir",
-        nargs='?',
+        nargs="?",
         default="./codestory",
-        help="Path to the directory to start the search (defaults to ./codestory)"
+        help="Path to the directory to start the search (defaults to ./codestory)",
     )
-    
+
     args = parser.parse_args()
-    
+
     add_license_header(args.root_dir)
