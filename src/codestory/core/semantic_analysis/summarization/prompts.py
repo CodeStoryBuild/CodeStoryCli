@@ -15,11 +15,6 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""Prompts for chunk summarization.
-
-All prompts use markdown format for both input and output for improved
-token efficiency and LLM comprehension.
-"""
 
 # -----------------------------------------------------------------------------
 # Single Chunk Summary Prompts

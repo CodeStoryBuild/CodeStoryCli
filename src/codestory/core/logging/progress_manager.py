@@ -90,7 +90,7 @@ class ProgressBarManager:
                 desc=description,
                 unit="step",
                 leave=False,
-                bar_format="{desc} [{elapsed}] {postfix}",
+                bar_format="{desc}{postfix}",
             )
             should_close = True
 
