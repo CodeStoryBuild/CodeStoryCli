@@ -141,9 +141,7 @@ class SklearnLouvainClusterer:
 
 
 class Clusterer:
-    """
-    Wrapper class for clustering embeddings.
-    """
+    """Wrapper class for clustering embeddings."""
 
     def __init__(self, strictness: float = 0.5):
         self.clusterer = SklearnLouvainClusterer(strictness=strictness)

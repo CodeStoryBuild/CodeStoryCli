@@ -128,8 +128,7 @@ def validate_target_path(value: str | list[str] | None) -> list[str] | None:
 
 
 def validate_message_length(value: str | None) -> str | None:
-    """
-    Validate commit message length and content.
+    """Validate commit message length and content.
 
     Args:
         value: The commit message to validate (can be None)
@@ -321,8 +320,7 @@ def validate_no_merge_commits_in_range(
 
 
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
-    """
-    Sanitize user input to prevent security issues.
+    """Sanitize user input to prevent security issues.
 
     Args:
         user_input: The input string to sanitize
