@@ -2212,7 +2212,9 @@ def use_classes():
                 class_b_found = True
 
     assert class_a_found, "Class A should be in symbol map"
-    assert not class_b_found, "Class B should NOT be in symbol map (not in modified lines)"
+    assert not class_b_found, (
+        "Class B should NOT be in symbol map (not in modified lines)"
+    )
 
 
 @pytest.mark.parametrize(
@@ -2258,9 +2260,9 @@ def test_symbol_extraction_count(
         parsed.detected_language, parsed.root_node, modified_lines
     )
 
-    assert (
-        len(defined_symbols) == expected_symbol_count
-    ), f"Expected {expected_symbol_count} symbols, got {len(defined_symbols)}: {defined_symbols}"
+    assert len(defined_symbols) == expected_symbol_count, (
+        f"Expected {expected_symbol_count} symbols, got {len(defined_symbols)}: {defined_symbols}"
+    )
 
 
 def test_symbol_namespace_separation(tools):

@@ -14,12 +14,10 @@ from ..data.line_changes import Addition
 # Configuration & Constants
 # -----------------------------------------------------------------------------
 
-AggressionLevel = Literal["safe", "balanced", "paranoid"]
-
 
 @dataclass
 class ScannerConfig:
-    aggression: AggressionLevel = "balanced"
+    aggression: Literal["safe", "balanced", "paranoid"] = "balanced"
 
     # Entropy threshold (0-8). Standard random base64 keys usually sit > 4.5
     entropy_threshold: float = 4.5
@@ -168,10 +166,7 @@ class SecretScanner:
                 return True
 
         # 2. Entropy check (only if NOT safe mode)
-        if self.config.aggression != "safe":
-            if self.contains_high_entropy(text):
-                return True
-        return False
+        return self.config.aggression != "safe" and self.contains_high_entropy(text)
 
     def check_diff_chunk(self, chunk: DiffChunk) -> bool:
         canonical = chunk.canonical_path()

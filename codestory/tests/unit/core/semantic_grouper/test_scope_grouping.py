@@ -1725,6 +1725,6 @@ def test_scope_consistency(tools, language, filename, content):
     for scope, lines in scope_occurrences.items():
         assert len(lines) >= 1, f"Scope {scope} has no lines"
         # Verify lines are contiguous or properly nested
-        assert max(lines) - min(lines) + 1 >= len(
-            lines
-        ), f"Scope {scope} has non-contiguous lines: {lines}"
+        assert max(lines) - min(lines) + 1 >= len(lines), (
+            f"Scope {scope} has non-contiguous lines: {lines}"
+        )

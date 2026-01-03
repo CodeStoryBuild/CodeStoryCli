@@ -238,7 +238,7 @@ class TestGitDiffParsing:
             assert isinstance(hunk, ImmutableHunkWrapper)
             assert hunk.file_patch.startswith(b"diff --git")
 
-    # TODO fix failing test (git identity issue) 
+    # TODO fix failing test (git identity issue)
     # def test_parse_submodule_update(self, git_repo: Path):
     #     """Test that submodule updates are captured as ImmutableHunkWrapper."""
     #     # Create a library repo to be used as a submodule
