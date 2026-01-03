@@ -22,7 +22,6 @@ import typer
 from colorama import Fore, Style
 from loguru import logger
 
-from codestory.commands.utils import help_callback
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.branch_saver.branch_saver import BranchSaver
 from codestory.core.exceptions import ValidationError, handle_codestory_exception
@@ -154,13 +153,6 @@ def run_commit(
 
 def main(
     ctx: typer.Context,
-    help: bool = typer.Option(
-        False,
-        "--help",
-        callback=help_callback,
-        is_eager=True,
-        help="Show this message and exit.",
-    ),
     target: str | None = typer.Argument(
         None, help="Path to file or directory to commit."
     ),

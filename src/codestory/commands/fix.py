@@ -20,7 +20,6 @@ import typer
 from colorama import Fore, Style
 from loguru import logger
 
-from codestory.commands.utils import help_callback
 from codestory.context import CommitContext, FixContext, GlobalContext
 from codestory.core.exceptions import (
     DetachedHeadError,
@@ -156,13 +155,6 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
 
 def main(
     ctx: typer.Context,
-    help: bool = typer.Option(
-        False,
-        "--help",
-        callback=help_callback,
-        is_eager=True,
-        help="Show this message and exit.",
-    ),
     commit_hash: str = typer.Argument(
         None, help="Hash of the end commit to split or fix"
     ),

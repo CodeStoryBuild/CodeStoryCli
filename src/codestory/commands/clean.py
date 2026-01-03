@@ -19,7 +19,6 @@ import typer
 from loguru import logger
 
 from codestory.commands.fix import run_fix
-from codestory.commands.utils import help_callback
 from codestory.context import CleanContext, GlobalContext
 from codestory.core.exceptions import handle_codestory_exception
 from codestory.core.logging.utils import time_block
@@ -78,13 +77,6 @@ def run_clean(
 
 def main(
     ctx: typer.Context,
-    help: bool = typer.Option(
-        False,
-        "--help",
-        callback=help_callback,
-        is_eager=True,
-        help="Show this message and exit.",
-    ),
     ignore: list[str] | None = typer.Option(
         None,
         "--ignore",
