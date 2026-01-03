@@ -26,17 +26,17 @@ from pathlib import Path
 from typing import Literal
 
 from codestory.core.commands.git_commands import GitCommands
+from codestory.core.config.type_constraints import (
+    BoolConstraint,
+    LiteralTypeConstraint,
+    RangeTypeConstraint,
+    StringConstraint,
+)
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 from codestory.core.llm import CodeStoryAdapter, ModelConfig
-from codestory.core.config.type_constraints import (
-    RangeTypeConstraint,
-    LiteralTypeConstraint,
-    BoolConstraint,
-    StringConstraint,
-)
 
 
 @dataclass
@@ -53,7 +53,9 @@ class GlobalConfig:
         "model": StringConstraint(),
         "api_key": StringConstraint(),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
-        "aggresiveness": LiteralTypeConstraint(allowed=("Conservative", "Regular", "Extra")),
+        "aggresiveness": LiteralTypeConstraint(
+            allowed=("Conservative", "Regular", "Extra")
+        ),
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
