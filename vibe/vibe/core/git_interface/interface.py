@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from ..data.models import DiffChunk, ChunkGroup, CommitResult
+from ..data.models import DiffChunk, CommitGroup, CommitResult
 
 class GitInterface(ABC):
     """
@@ -22,7 +22,7 @@ class GitInterface(ABC):
         """Return the working diff as a list of DiffChunks for the given target."""
 
     @abstractmethod
-    def commit(self, group: ChunkGroup, message: Optional[str] = None) -> CommitResult:
+    def commit(self, group: CommitGroup, message: Optional[str] = None) -> CommitResult:
         """Apply the ChunkGroup patch to the index and commit it."""
 
     @abstractmethod
@@ -32,3 +32,12 @@ class GitInterface(ABC):
     @abstractmethod
     def track_untracked(self, target: Optional[str] = None) -> None:
         """Make untracked files tracked (git add) without staging any other changes."""
+
+    @abstractmethod
+    def need_reset(self) -> bool:
+        """Checks if there are staged changes that need to be reset"""
+
+    @abstractmethod
+    def need_track_untracked(self, target: Optional[str] = None) -> bool:
+        """Checks if there are any untracked files within a target that need to be tracked."""
+

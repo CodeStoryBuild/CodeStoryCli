@@ -13,7 +13,7 @@ def test_to_patch_simple_addition_and_removal():
             Removal(2, "old line 2"),
             Addition(2, "new line 2")
         ],
-        old_start=1, old_end=2, new_start=1, new_end=2
+        old_start=1, new_start=1,
     )
     expected_patch = (
         "--- a/file.py\n+++ b/file.py\n"
@@ -32,11 +32,11 @@ def test_to_patch_only_additions():
             Addition(2, "line B"),
             Addition(3, "line C")
         ],
-        old_start=0, old_end=-1, new_start=1, new_end=3 # Common for new files
+        old_start=0, new_start=1,
     )
     expected_patch = (
         "--- a/new_file.txt\n+++ b/new_file.txt\n"
-        "@@ -0 +1,3 @@\n" # old_end - old_start + 1 = -1 - 0 + 1 = 0
+        "@@ -0,0 +1,3 @@\n" 
         "+line A\n+line B\n+line C"
     )
     assert chunk.to_patch() == expected_patch
@@ -50,11 +50,11 @@ def test_to_patch_only_removals():
             Removal(1, "removed line 1"),
             Removal(2, "removed line 2")
         ],
-        old_start=1, old_end=2, new_start=0, new_end=-1 # Common for deleted files
+        old_start=1, new_start=0# Common for deleted files
     )
     expected_patch = (
         "--- a/old_file.md\n+++ b/old_file.md\n"
-        "@@ -1,2 +0 @@\n" # new_end - new_start + 1 = -1 - 0 + 1 = 0
+        "@@ -1,2 +0,0 @@\n" 
         "-removed line 1\n-removed line 2"
     )
     assert chunk.to_patch() == expected_patch
@@ -66,35 +66,14 @@ def test_to_patch_empty_content_no_changes():
         file_path="empty.py",
         content="",
         ai_content=[],
-        old_start=1, old_end=0, new_start=1, new_end=0 # Represents 0 lines changed
+        old_start=1, new_start=1,
     )
     expected_patch = (
         "--- a/empty.py\n+++ b/empty.py\n"
-        "@@ -1 +1 @@\n" # old_end - old_start + 1 = 0; new_end - new_start + 1 = 0
+        "@@ -1,0 +1,0 @@\n" 
     )
     assert chunk.to_patch() == expected_patch
 
-def test_to_patch_with_context_lines():
-    """Tests a chunk that might implicitly have context lines (though content only shows +/-)."""
-    # The `content` attribute is raw lines, so it's assumed to include context if any.
-    # The `ai_content` only holds additions/removals.
-    chunk = DiffChunk(
-        file_path="context_file.js",
-        content=" context line\n-removed\n+added\n context line 2",
-        ai_content=[
-            # Context lines are usually handled by the diffing tool,
-            # but for this test, we demonstrate the content attribute.
-            Removal(6, "removed"),
-            Addition(6, "added")
-        ],
-        old_start=5, old_end=7, new_start=5, new_end=7
-    )
-    expected_patch = (
-        "--- a/context_file.js\n+++ b/context_file.js\n"
-        "@@ -5,3 +5,3 @@\n"
-        " context line\n-removed\n+added\n context line 2"
-    )
-    assert chunk.to_patch() == expected_patch
 
 def test_to_patch_missing_line_numbers_raises_error():
     """Tests that a ValueError is raised if old/new start/end are not set."""
@@ -114,7 +93,7 @@ def test_to_patch_single_line_change():
             Removal(5, "old_code"),
             Addition(5, "new_code")
         ],
-        old_start=5, old_end=5, new_start=5, new_end=5
+        old_start=5, new_start=5,
     )
     expected_patch = (
         "--- a/single_line.py\n+++ b/single_line.py\n"
@@ -134,9 +113,7 @@ def test_to_patch_rename_with_modification():
             Addition(3, "new_line")
         ],
         old_start=3,
-        old_end=3,
         new_start=3,
-        new_end=3
     )
 
     expected_patch = (

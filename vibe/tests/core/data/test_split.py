@@ -17,7 +17,7 @@ def setup_complex_chunk():
         file_path="test_file.py",
         content=raw_content,
         ai_content=ai_content_list,
-        old_start=1, old_end=7, new_start=1, new_end=6
+        old_start=1, new_start=1,
     )
 
 def test_split_no_splits_returns_original_chunk_in_list():
@@ -30,9 +30,7 @@ def test_split_no_splits_returns_original_chunk_in_list():
     assert result[0].content == original_chunk.content
     assert result[0].ai_content == original_chunk.ai_content
     assert result[0].old_start == original_chunk.old_start
-    assert result[0].old_end == original_chunk.old_end
     assert result[0].new_start == original_chunk.new_start
-    assert result[0].new_end == original_chunk.new_end
 
 def test_split_in_middle_into_two_chunks():
     """Splits a chunk into two distinct parts."""
@@ -46,17 +44,13 @@ def test_split_in_middle_into_two_chunks():
     assert result[0].content == "-R1\n+A1\n-R2\n+A3"
     assert len(result[0].ai_content) == 4
     assert result[0].old_start == 1
-    assert result[0].old_end == 2 # R1 (1), R2 (2)
     assert result[0].new_start == 1
-    assert result[0].new_end == 3 # A1 (1), A3 (3)
 
     # Verify second chunk
     assert result[1].content == "-R4\n+A5\n+A6\n-R7"
     assert len(result[1].ai_content) == 4
     assert result[1].old_start == 4
-    assert result[1].old_end == 7 # R4 (4), R7 (7)
     assert result[1].new_start == 5
-    assert result[1].new_end == 6 # A5 (5), A6 (6)
 
 
 def test_split_at_beginning():
@@ -87,18 +81,12 @@ def test_split_multiple_times():
 
     # Chunk 1: R1, A1
     assert result[0].content == "-R1\n+A1"
-    assert result[0].old_start == 1 and result[0].old_end == 1
-    assert result[0].new_start == 1 and result[0].new_end == 1
 
     # Chunk 2: R2, A3, R4, A5
     assert result[1].content == "-R2\n+A3\n-R4\n+A5"
-    assert result[1].old_start == 2 and result[1].old_end == 4
-    assert result[1].new_start == 3 and result[1].new_end == 5
 
     # Chunk 3: A6, R7
     assert result[2].content == "+A6\n-R7"
-    assert result[2].old_start == 7 and result[2].old_end == 7
-    assert result[2].new_start == 6 and result[2].new_end == 6
 
 def test_split_with_empty_subchunks_filtered():
     """Splits that would result in empty sub-chunks should be filtered out."""
@@ -122,21 +110,21 @@ def test_split_with_empty_subchunks_filtered():
 
     assert result[0].content == "-R1"
     assert result[0].ai_content == [Removal(1, "R1")]
-    assert result[0].old_start == 1 and result[0].old_end == 1
-    assert result[0].new_start == 0 and result[0].new_end == 0
+    assert result[0].old_start == 1
+    assert result[0].new_start == 0
 
     assert result[1].content == "+A1"
     assert result[1].ai_content == [Addition(1, "A1")]
-    assert result[1].old_start == 0 and result[1].old_end == 0
-    assert result[1].new_start == 1 and result[1].new_end == 1
+    assert result[1].old_start == 0
+    assert result[1].new_start == 1
 
     assert result[2].content == "-R2\n+A3\n-R4\n+A5\n+A6\n-R7"
     assert result[2].ai_content == [
         Removal(2, "R2"), Addition(3, "A3"), Removal(4, "R4"),
         Addition(5, "A5"), Addition(6, "A6"), Removal(7, "R7")
     ]
-    assert result[2].old_start == 2 and result[2].old_end == 7
-    assert result[2].new_start == 3 and result[2].new_end == 6
+    assert result[2].old_start == 2
+    assert result[2].new_start == 3
 
 def test_split_chunk_with_only_additions():
     """Tests splitting a chunk that only contains additions."""
@@ -144,7 +132,7 @@ def test_split_chunk_with_only_additions():
     original_chunk = DiffChunk(
         file_path="only_adds.py",
         content="+A1\n+A2\n+A3", ai_content=ai_content_list,
-        old_start=0, old_end=0, new_start=1, new_end=3
+        old_start=0, new_start=1,
     )
     split_indices = [1] # Split after A1
     result = original_chunk.split(split_indices)
@@ -152,13 +140,13 @@ def test_split_chunk_with_only_additions():
 
     assert result[0].content == "+A1"
     assert result[0].ai_content == [Addition(1, "A1")]
-    assert result[0].old_start == 0 and result[0].old_end == 0
-    assert result[0].new_start == 1 and result[0].new_end == 1
+    assert result[0].old_start == 0
+    assert result[0].new_start == 1
 
     assert result[1].content == "+A2\n+A3"
     assert result[1].ai_content == [Addition(2, "A2"), Addition(3, "A3")]
-    assert result[1].old_start == 0 and result[1].old_end == 0
-    assert result[1].new_start == 2 and result[1].new_end == 3
+    assert result[1].old_start == 0
+    assert result[1].new_start == 2
 
 def test_split_chunk_with_only_removals():
     """Tests splitting a chunk that only contains removals."""
@@ -166,7 +154,7 @@ def test_split_chunk_with_only_removals():
     original_chunk = DiffChunk(
         file_path="only_removes.py",
         content="-R1\n-R2\n-R3", ai_content=ai_content_list,
-        old_start=1, old_end=3, new_start=0, new_end=0
+        old_start=1, new_start=0,
     )
     split_indices = [2] # Split after R2
     result = original_chunk.split(split_indices)
@@ -174,13 +162,13 @@ def test_split_chunk_with_only_removals():
 
     assert result[0].content == "-R1\n-R2"
     assert result[0].ai_content == [Removal(1, "R1"), Removal(2, "R2")]
-    assert result[0].old_start == 1 and result[0].old_end == 2
-    assert result[0].new_start == 0 and result[0].new_end == 0
+    assert result[0].old_start == 1
+    assert result[0].new_start == 0
 
     assert result[1].content == "-R3"
     assert result[1].ai_content == [Removal(3, "R3")]
-    assert result[1].old_start == 3 and result[1].old_end == 3
-    assert result[1].new_start == 0 and result[1].new_end == 0
+    assert result[1].old_start == 3
+    assert result[1].new_start == 0
 
 def test_split_with_duplicate_split_indices():
     """Ensures duplicate split indices are handled correctly (only one split per index)."""

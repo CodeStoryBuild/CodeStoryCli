@@ -1,7 +1,7 @@
 import subprocess
 import re
 from typing import List, Optional, Union
-from ..data.models import DiffChunk, ChunkGroup, CommitResult, Addition, Removal
+from ..data.models import DiffChunk, CommitGroup, CommitResult, Addition, Removal
 from .interface import GitInterface
 
 class LocalGitInterface(GitInterface):
@@ -30,7 +30,7 @@ class LocalGitInterface(GitInterface):
         diff_output = self.run_git(["diff", "HEAD", "--unified=0"] + path_args)
         return self._parse_diff(diff_output)
 
-    def commit(self, group: ChunkGroup, message: Optional[str] = None) -> CommitResult:
+    def commit(self, group: CommitGroup) -> CommitResult:
         """
         Apply patch to index and create commit.
         """
@@ -44,8 +44,16 @@ class LocalGitInterface(GitInterface):
         )
 
         # Commit
-        commit_message = message or group.description or f"Commit group {group.group_id}"
-        commit_hash = self.run_git(["commit", "-m", commit_message]).strip()
+        commit_message = group.commmit_message
+        if group.extended_message is not None:
+            commit_message += f"\n{group.extended_message}" 
+
+        # Run git commit and extract the commit hash from the output
+        commit_output = self.run_git(["commit", "-m", commit_message])
+        # Extract commit hash using regex from output like: "[master abcdef1] message"
+        import re
+        match = re.search(r"\[.* ([a-f0-9]+)\]", commit_output)
+        commit_hash = match.group(1) if match else ""
         return CommitResult(commit_hash=commit_hash, group=group)
 
     def reset(self) -> None:
@@ -70,6 +78,21 @@ class LocalGitInterface(GitInterface):
                 ["git", "-C", self.repo_path, "add", "-N"] + untracked,
                 check=True
             )
+
+    def need_reset(self) -> bool:
+        """Checks if there are staged changes that need to be reset"""
+        # 'git diff --cached --quiet' exits with 1 if there are staged changes, 0 otherwise
+        result = subprocess.run(
+            ["git", "-C", self.repo_path, "diff", "--cached", "--quiet"],
+            capture_output=True
+        )
+        return result.returncode != 0
+
+    def need_track_untracked(self, target: Optional[str] = None) -> bool:
+        """Checks if there are any untracked files within a target that need to be tracked."""
+        path_args = [target] if target else []
+        untracked_files = self.run_git(["ls-files", "--others", "--exclude-standard"] + path_args)
+        return bool(untracked_files.strip())
 
     # -------------------------------
     # Internal parsing
@@ -113,19 +136,18 @@ class LocalGitInterface(GitInterface):
         Build a DiffChunk from hunk lines.
         Preserves patch, line numbers, and content for to_patch().
         """
-        patch = "\n".join(hunk_lines)
         header_line = hunk_lines[0]
-        # Extract old/new line numbers from hunk header
-        match = re.match(r"@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@", header_line)
+        
+        # Use a robust regex to capture optional line counts.
+        match = re.search(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line)
+
         if match:
             old_start = int(match.group(1))
-            old_count = int(match.group(2) or "1")
+            # Default to 1 if the line count is omitted, otherwise use the captured value.
             new_start = int(match.group(3))
-            new_count = int(match.group(4) or "1")
-            old_end = old_start + old_count - 1
-            new_end = new_start + new_count - 1
+
         else:
-            old_start = old_end = new_start = new_end = 0
+            old_start = new_start = 0
 
         # Parse AI-legible content
         ai_content: List[Union[Addition, Removal]] = []
@@ -153,7 +175,5 @@ class LocalGitInterface(GitInterface):
             content=raw_content,
             ai_content=ai_content,
             old_start=old_start,
-            old_end=old_end,
             new_start=new_start,
-            new_end=new_end
         )

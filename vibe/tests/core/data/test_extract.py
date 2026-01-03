@@ -18,7 +18,7 @@ def setup_extract_chunk():
         file_path="extract_file.py",
         content=raw_content,
         ai_content=ai_content_list,
-        old_start=1, old_end=7, new_start=1, new_end=6
+        old_start=1, new_start=1
     )
 
 def test_extract_middle_subchunk():
@@ -35,9 +35,7 @@ def test_extract_middle_subchunk():
 
     # Verify calculated line numbers for the extracted patch
     assert extracted_chunk.old_start == 2
-    assert extracted_chunk.old_end == 4
     assert extracted_chunk.new_start == 3
-    assert extracted_chunk.new_end == 3
 
 
 def test_extract_from_beginning_to_middle():
@@ -53,9 +51,7 @@ def test_extract_from_beginning_to_middle():
     assert extracted_chunk.ai_content[2].content == "R2"
 
     assert extracted_chunk.old_start == 1
-    assert extracted_chunk.old_end == 2
     assert extracted_chunk.new_start == 1
-    assert extracted_chunk.new_end == 1
 
 def test_extract_from_middle_to_end():
     """Extracts a sub-chunk ending with the last element."""
@@ -71,9 +67,7 @@ def test_extract_from_middle_to_end():
     assert extracted_chunk.ai_content[3].content == "R7"
 
     assert extracted_chunk.old_start == 4
-    assert extracted_chunk.old_end == 7
     assert extracted_chunk.new_start == 5
-    assert extracted_chunk.new_end == 6
 
 def test_extract_entire_chunk():
     """Extracting the whole chunk should yield a new chunk identical to the original."""
@@ -84,9 +78,7 @@ def test_extract_entire_chunk():
     assert extracted_chunk.content == original_chunk.content
     assert extracted_chunk.ai_content == original_chunk.ai_content # List equality for content
     assert extracted_chunk.old_start == original_chunk.old_start
-    assert extracted_chunk.old_end == original_chunk.old_end
     assert extracted_chunk.new_start == original_chunk.new_start
-    assert extracted_chunk.new_end == original_chunk.new_end
 
 def test_extract_empty_range_returns_none():
     """If start == end, an empty list is sliced, so None should be returned."""
@@ -119,13 +111,13 @@ def test_extract_chunk_with_only_additions():
     original_chunk = DiffChunk(
         file_path="only_adds.py",
         content="+A1\n+A2\n+A3", ai_content=ai_content_list,
-        old_start=0, old_end=-1, new_start=1, new_end=3
+        old_start=0, new_start=1
     )
     extracted_chunk = original_chunk.extract(1, 3) # A2, A3
     assert extracted_chunk is not None
     assert extracted_chunk.content == "+A2\n+A3"
-    assert extracted_chunk.old_start == 0 and extracted_chunk.old_end == 0 # No old lines, so defaults
-    assert extracted_chunk.new_start == 2 and extracted_chunk.new_end == 3
+    assert extracted_chunk.old_start == 0 
+    assert extracted_chunk.new_start == 2
 
 def test_extract_chunk_with_only_removals():
     """Extracts from a chunk containing only removals."""
@@ -133,13 +125,13 @@ def test_extract_chunk_with_only_removals():
     original_chunk = DiffChunk(
         file_path="only_removes.py",
         content="-R1\n-R2\n-R3", ai_content=ai_content_list,
-        old_start=1, old_end=3, new_start=0, new_end=-1
+        old_start=1, new_start=0,
     )
     extracted_chunk = original_chunk.extract(0, 2) # R1, R2
     assert extracted_chunk is not None
     assert extracted_chunk.content == "-R1\n-R2"
-    assert extracted_chunk.old_start == 1 and extracted_chunk.old_end == 2
-    assert extracted_chunk.new_start == 0 and extracted_chunk.new_end == 0 # No new lines, so defaults
+    assert extracted_chunk.old_start == 1 
+    assert extracted_chunk.new_start == 0
 
 def test_extract_resulting_in_no_old_lines_but_new_lines():
     """Tests a scenario where the extracted chunk has additions but no removals."""
@@ -148,9 +140,8 @@ def test_extract_resulting_in_no_old_lines_but_new_lines():
     assert extracted_chunk is not None
     assert extracted_chunk.content == "+A5\n+A6"
     assert extracted_chunk.old_start == original_chunk.old_start # Should default to parent or 0 if no old_lines
-    assert extracted_chunk.old_end == original_chunk.old_start - 1 # Should default to parent's start - 1 or -1
     assert extracted_chunk.new_start == 5
-    assert extracted_chunk.new_end == 6
+    
 
 def test_extract_resulting_in_no_new_lines_but_old_lines():
     """Tests a scenario where the extracted chunk has removals but no additions."""
@@ -159,6 +150,5 @@ def test_extract_resulting_in_no_new_lines_but_old_lines():
     assert extracted_chunk is not None
     assert extracted_chunk.content == "-R1"
     assert extracted_chunk.old_start == 1
-    assert extracted_chunk.old_end == 1
     assert extracted_chunk.new_start == original_chunk.new_start # Should default to parent or 0
-    assert extracted_chunk.new_end == original_chunk.new_start - 1 # Should default to parent's start - 1 or -1
+    
