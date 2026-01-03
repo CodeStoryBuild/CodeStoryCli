@@ -1,6 +1,7 @@
 from vibe.core.data.models import Removal, Addition, DiffChunk
 from vibe.core.data.s_diff_chunk import StandardDiffChunk
 
+
 def setup_complex_chunk():
     """Helper to create a common complex DiffChunk for testing splits."""
     parsed_content_list = [
@@ -22,6 +23,7 @@ def setup_complex_chunk():
         new_start=1,
     )
 
+
 def test_split_no_splits_returns_original_chunk_in_list():
     """If no split indices are provided, the original chunk (as a list) should be returned."""
     original_chunk = setup_complex_chunk()
@@ -33,6 +35,7 @@ def test_split_no_splits_returns_original_chunk_in_list():
     assert result[0].parsed_content == original_chunk.parsed_content
     assert result[0].old_start == original_chunk.old_start
     assert result[0].new_start == original_chunk.new_start
+
 
 def test_split_in_middle_into_two_chunks():
     """Splits a chunk into two distinct parts."""
@@ -66,6 +69,7 @@ def test_split_at_beginning():
     assert result[0].content == original_chunk.content
     assert result[0].parsed_content == original_chunk.parsed_content
 
+
 def test_split_at_end():
     """Splits at the very end, resulting in the original chunk and an empty last chunk (skipped)."""
     original_chunk = setup_complex_chunk()
@@ -74,6 +78,7 @@ def test_split_at_end():
     assert len(result) == 1
     assert result[0].content == original_chunk.content
     assert result[0].parsed_content == original_chunk.parsed_content
+
 
 def test_split_multiple_times():
     """Splits a chunk into three or more parts."""
@@ -91,6 +96,7 @@ def test_split_multiple_times():
 
     # Chunk 3: A4, R4
     assert result[2].content == "+A4\n-R4"
+
 
 def test_split_with_empty_subchunks_filtered():
     """Splits that would result in empty sub-chunks should be filtered out."""
@@ -140,6 +146,7 @@ def test_split_with_empty_subchunks_filtered():
     assert result[2].old_start == 2
     assert result[2].new_start == 2
 
+
 def test_split_chunk_with_only_additions():
     """Tests splitting a chunk that only contains additions."""
     parsed_content_list = [Addition(1, "A1"), Addition(2, "A2"), Addition(3, "A3")]
@@ -163,6 +170,7 @@ def test_split_chunk_with_only_additions():
     assert result[1].parsed_content == [Addition(2, "A2"), Addition(3, "A3")]
     assert result[1].old_start == 1  # Line before first addition (A2 at line 2)
     assert result[1].new_start == 2
+
 
 def test_split_chunk_with_only_removals():
     """Tests splitting a chunk that only contains removals."""
@@ -188,6 +196,7 @@ def test_split_chunk_with_only_removals():
     assert result[1].old_start == 3
     assert result[1].new_start == 2  # Line before first removal (R3 at line 3)
 
+
 def test_split_with_duplicate_split_indices():
     """Ensures duplicate split indices are handled correctly (only one split per index)."""
     original_chunk = setup_complex_chunk()
@@ -199,6 +208,7 @@ def test_split_with_duplicate_split_indices():
 
     assert result[0].content == "-R1\n+A1\n-R2\n+A2"
     assert result[1].content == "-R3\n+A3\n+A4\n-R4"
+
 
 def test_split_with_out_of_order_split_indices():
     """Ensures out-of-order split indices are sorted and handled correctly."""

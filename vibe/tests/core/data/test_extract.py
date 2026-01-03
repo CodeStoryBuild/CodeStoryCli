@@ -2,6 +2,7 @@ import pytest
 from vibe.core.data.models import Removal, Addition, DiffChunk
 from vibe.core.data.s_diff_chunk import StandardDiffChunk
 
+
 def setup_extract_chunk():
     """Helper to create a common complex DiffChunk for testing extractions."""
     parsed_content_list = [
@@ -22,6 +23,7 @@ def setup_extract_chunk():
         old_start=1,
         new_start=1,
     )
+
 
 def test_extract_middle_subchunk():
     """Extracts a sub-chunk from the middle of the original chunk."""
@@ -55,6 +57,7 @@ def test_extract_from_beginning_to_middle():
     assert extracted_chunk.old_start == 1
     assert extracted_chunk.new_start == 1
 
+
 def test_extract_from_middle_to_end():
     """Extracts a sub-chunk ending with the last element."""
     original_chunk = setup_extract_chunk()
@@ -71,6 +74,7 @@ def test_extract_from_middle_to_end():
     assert extracted_chunk.old_start == 3
     assert extracted_chunk.new_start == 3
 
+
 def test_extract_entire_chunk():
     """Extracting the whole chunk should yield a new chunk identical to the original."""
     original_chunk = setup_extract_chunk()
@@ -84,17 +88,20 @@ def test_extract_entire_chunk():
     assert extracted_chunk.old_start == original_chunk.old_start
     assert extracted_chunk.new_start == original_chunk.new_start
 
+
 def test_extract_empty_range_returns_none():
     """If start == end, an empty list is sliced, so ValueError should be raised."""
     original_chunk = setup_extract_chunk()
     with pytest.raises(ValueError):
         original_chunk.extract(2, 2)
 
+
 def test_extract_invalid_range_start_greater_than_end_returns_none():
     """If start > end, an empty list is sliced, so ValueError should be raised."""
     original_chunk = setup_extract_chunk()
     with pytest.raises(ValueError):
         original_chunk.extract(5, 2)
+
 
 def test_extract_out_of_bounds_indices():
     """Tests handling of indices that are out of bounds (Python slicing handles this)."""
@@ -124,6 +131,7 @@ def test_extract_chunk_with_only_additions():
     assert extracted_chunk.old_start == 1  # Line before first addition (A2 at line 2)
     assert extracted_chunk.new_start == 2
 
+
 def test_extract_chunk_with_only_removals():
     """Extracts from a chunk containing only removals."""
     parsed_content_list = [Removal(1, "R1"), Removal(2, "R2"), Removal(3, "R3")]
@@ -140,6 +148,7 @@ def test_extract_chunk_with_only_removals():
     assert extracted_chunk.old_start == 1
     assert extracted_chunk.new_start == 0
 
+
 def test_extract_resulting_in_no_old_lines_but_new_lines():
     """Tests a scenario where the extracted chunk has additions but no removals."""
     original_chunk = setup_extract_chunk()  # Has R and A
@@ -148,7 +157,7 @@ def test_extract_resulting_in_no_old_lines_but_new_lines():
     assert extracted_chunk.content == "+A3\n+A4"
     assert extracted_chunk.old_start == 2  # Should be line before first addition
     assert extracted_chunk.new_start == 3
-    
+
 
 def test_extract_resulting_in_no_new_lines_but_old_lines():
     """Tests a scenario where the extracted chunk has removals but no additions."""

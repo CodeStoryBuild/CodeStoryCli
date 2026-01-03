@@ -23,7 +23,7 @@ class ChangeGroup(BaseModel):
     description: Optional[str]  # Brief description of why these changes are grouped
 
 
-SYSTEM_PROMPT = '''You are an expert code reviewer analyzing code changes.
+SYSTEM_PROMPT = """You are an expert code reviewer analyzing code changes.
 Analyze the provided changes and group them by intention and purpose.
 Your response must be valid JSON matching this structure:
 
@@ -46,15 +46,16 @@ Guidelines:
 4. Include extended_message only for complex changes
 5. Each change must be assigned to exactly one group
 6. Provide brief description of grouping rationale
-'''
+"""
 
-ANALYSIS_PROMPT = '''Analyze these code changes and group them by intention:
+ANALYSIS_PROMPT = """Analyze these code changes and group them by intention:
 
 {changes_json}
 
 Return a JSON response that strictly follows the schema.
 Ensure every chunk_id is assigned to exactly one group.
-'''
+"""
+
 
 class GeminiGrouper(GrouperInterface):
     def __init__(self, api_key: str):
