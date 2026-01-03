@@ -113,7 +113,7 @@ class ConfigLoader:
         final_sources = {}
 
         # 2. Iterate in order of highest-lowest preference
-        for i, (source, name) in enumerate(zip(sources, source_names)):
+        for source, name in zip(sources, source_names, strict=True):
             # Optimization: Stop if we have everything
             if not remaining_keys:
                 break

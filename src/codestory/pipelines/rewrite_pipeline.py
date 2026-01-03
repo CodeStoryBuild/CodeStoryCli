@@ -61,7 +61,7 @@ def transient_step(description: str, silent: bool):
             yield pbar
 
 
-def print_patch_cleanly(patch_content: str, max_length: int = 120):
+def print_patch_cleanly(patch_content: str, max_lines: int = 120):
     """
     Displays a patch/diff content cleanly using direct Colorama styling.
     """
@@ -80,7 +80,7 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
     # Iterate through the patch content line by line
     between_diff_and_hunk = False
 
-    for line in patch_content.splitlines()[:max_length]:
+    for line in patch_content.splitlines()[:max_lines]:
         style_key = "context"  # default
 
         # Check up to the first ten characters (optimizes for large lines)
@@ -110,7 +110,7 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
         # Apply style directly
         print(f"{styles[style_key]}{line}{Style.RESET_ALL}")
 
-    if len(patch_content.splitlines()) > max_length:
+    if len(patch_content.splitlines()) > max_lines:
         print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
 
 
@@ -411,7 +411,7 @@ class RewritePipeline:
             ):
                 print(f"Diff for #{num}:")
                 if diff_text != "(no diff)":
-                    print_patch_cleanly(diff_text, max_length=120)
+                    print_patch_cleanly(diff_text, max_lines=120)
                 else:
                     print(f"{Fore.YELLOW}(no diff){Style.RESET_ALL}")
 
