@@ -146,6 +146,8 @@ class SemanticDiffGenerator(DiffGenerator):
                         text = item.content.decode("utf-8", errors="replace").rstrip()
                         prefix = "-" if isinstance(item, Removal) else "+"
                         out_lines.append(f"{prefix} {text}")
+                        if item.newline_marker:
+                            out_lines.append("\\ No newline at end of file")
 
                 # Update last_line_emitted to include the current chunk's content range
                 # Use max to prevent regression if chunks overlap strangely
