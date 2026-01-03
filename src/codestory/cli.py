@@ -21,9 +21,9 @@ import sys
 from pathlib import Path
 
 import typer
+from dotenv import load_dotenv
 from colorama import init
 from loguru import logger
-
 from codestory.commands import clean, commit, config, fix
 from codestory.constants import APP_NAME
 from codestory.context import GlobalConfig, GlobalContext
@@ -209,25 +209,12 @@ main = create_global_callback()
 app.callback(invoke_without_command=True)(main)
 
 
-def load_env(path=".env"):
-    try:
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                key, _, value = line.partition("=")
-            os.environ[key] = value
-    except FileNotFoundError:
-        pass
-
-
 def run_app():
     """Run the application with global exception handling."""
     # force stdout to be utf8
     ensure_utf8_output()
     # load any .env files (config values possibly set through env)
-    load_env()
+    load_dotenv()
     # launch cli
     app(prog_name="cst")
 
