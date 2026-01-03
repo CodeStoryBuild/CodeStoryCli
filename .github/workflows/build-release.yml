@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Switched to Nuitka and Zstandard (for compression)
-          pip install nuitka zstandard pytest
+          pip install nuitka zstandard
           # Install the project so Nuitka can find dependencies in the environment
           pip install -e .
 

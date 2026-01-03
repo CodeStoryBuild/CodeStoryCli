@@ -32,7 +32,6 @@ from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.scope_mapper import ScopeMapper
 
-
 # -------------------------------------------------------------------------
 # Fixtures
 # -------------------------------------------------------------------------

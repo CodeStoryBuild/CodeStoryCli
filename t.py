@@ -2,8 +2,7 @@ from tree_sitter_language_pack import get_parser
 
 parser = get_parser("dart")
 
-code = \
-"""
+code = """
 typedef IntList = List<int>;
 extension NumberParsing on String {
   int parseInt() {
@@ -13,6 +12,7 @@ extension NumberParsing on String {
 """
 
 tree = parser.parse(bytes(code, "utf8"))
+
 
 def traverse(node, code_lines, indent=0):
     indent_str = "  " * indent
@@ -27,5 +27,6 @@ def traverse(node, code_lines, indent=0):
     print(f"{indent_str}{node.type}: '{node_text}'")
     for child in node.children:
         traverse(child, code_lines, indent + 1)
+
 
 traverse(tree.root_node, code.splitlines())
