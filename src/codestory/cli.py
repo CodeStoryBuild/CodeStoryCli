@@ -20,9 +20,10 @@ import sys
 from pathlib import Path
 
 import typer
-from dotenv import load_dotenv
 from colorama import init
+from dotenv import load_dotenv
 from loguru import logger
+
 from codestory.commands import clean, commit, config, fix
 from codestory.constants import APP_NAME
 from codestory.context import GlobalConfig, GlobalContext

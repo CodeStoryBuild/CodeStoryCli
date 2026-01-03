@@ -109,7 +109,7 @@ def _truncate_text(text: str, max_length: int = 50) -> str:
 
 def _write_toml_config(config_path: Path, config_data: dict) -> None:
     """Write configuration data to a TOML file.
-    
+
     Args:
         config_path: Path to the config file
         config_data: Dictionary of configuration values
@@ -126,19 +126,19 @@ def _write_toml_config(config_path: Path, config_data: dict) -> None:
 
 def _load_toml_config(config_path: Path) -> dict:
     """Load configuration from a TOML file.
-    
+
     Args:
         config_path: Path to the config file
-        
+
     Returns:
         Dictionary of configuration values, or empty dict if file doesn't exist
-        
+
     Raises:
         ConfigurationError: If the TOML file is malformed
     """
     if not config_path.exists():
         return {}
-    
+
     try:
         with open(config_path, "rb") as f:
             return tomllib.load(f)
@@ -148,10 +148,10 @@ def _load_toml_config(config_path: Path) -> dict:
 
 def _format_value_for_display(value: Any) -> str:
     """Format a configuration value for display.
-    
+
     Args:
         value: The value to format
-        
+
     Returns:
         Formatted string representation of the value
     """
@@ -310,7 +310,7 @@ def _add_to_gitignore(config_filename: str) -> None:
 
 def set_config(key: str, value: str, scope: str) -> None:
     """Set a configuration value in the specified scope.
-    
+
     Args:
         key: Configuration key to set
         value: Value to set (as string from CLI)
@@ -358,7 +358,7 @@ def set_config(key: str, value: str, scope: str) -> None:
 
 def get_config(key: str | None, scope: str | None) -> None:
     """Get configuration value(s) from the specified scope or all scopes.
-    
+
     Args:
         key: Specific key to get, or None to get all keys
         scope: Scope to search (local, global, env), or None to search all
