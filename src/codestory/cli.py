@@ -397,7 +397,10 @@ def create_global_callback():
                 QueryManager.set_override(config.custom_language_config)
 
             setup_logger(
-                ctx.invoked_subcommand, debug=config.verbose, silent=config.silent
+                ctx.invoked_subcommand,
+                debug=config.verbose,
+                silent=config.silent,
+                no_log_files=config.no_log_files,
             )
 
             if config.model == "no-model":

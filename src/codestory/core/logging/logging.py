@@ -35,10 +35,17 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
 
-    def __init__(self, command_name: str, debug: bool = False, silent: bool = False):
+    def __init__(
+        self,
+        command_name: str,
+        debug: bool = False,
+        silent: bool = False,
+        no_log_files: bool = False,
+    ):
         self.command_name = command_name
         self.debug = debug
         self.silent = silent
+        self.no_log_files = no_log_files
         self._setup_logger()
 
     def _setup_logger(self) -> None:
@@ -78,6 +85,11 @@ class StructuredLogger:
         # Add console sink with appropriate level
         logger.add(console_sink, level=console_level, format="{message}", catch=True)
 
+        if self.no_log_files:
+            self.logfile = None
+            logger.debug("File logging disabled")
+            return
+
         # File sink with detailed formatting
         logger.add(
             logfile,
@@ -103,12 +115,17 @@ class StructuredLogger:
 
         self.logfile = logfile
 
-    def get_logfile(self) -> Path:
+    def get_logfile(self) -> Path | None:
         """Get the current log file path."""
         return self.logfile
 
 
-def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -> Path:
+def setup_logger(
+    command_name: str,
+    debug: bool = False,
+    silent: bool = False,
+    no_log_files: bool = False,
+) -> Path | None:
     """
     Set up enhanced logging for a command.
 
@@ -116,11 +133,14 @@ def setup_logger(command_name: str, debug: bool = False, silent: bool = False) -
         command_name: Name of the command being executed
         debug: Enable debug logging
         silent: Suppress most console output (only errors)
+        no_log_files: Disable logging to files
 
     Returns:
-        Path to the log file
+        Path to the log file, or None if file logging is disabled
     """
-    structured_logger = StructuredLogger(command_name, debug=debug, silent=silent)
+    structured_logger = StructuredLogger(
+        command_name, debug=debug, silent=silent, no_log_files=no_log_files
+    )
     return structured_logger.get_logfile()
 
 
