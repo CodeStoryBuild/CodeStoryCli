@@ -324,27 +324,27 @@ class GitCommands:
         if not chunks:
             return []
 
-        # Sort once globally by canonical path, then by old/new start lines
+        # Sort once globally by canonical path, then by sort key (old_start, abs_new_line)
         chunks_sorted = sorted(
             chunks,
             key=lambda c: (
                 c.canonical_path(),
-                c.old_start if c.old_start is not None else -1,
-                c.new_start if c.new_start is not None else -1,
+                c.get_sort_key(),
             ),
         )
 
         merged_results: List[Union[DiffChunk, "CompositeDiffChunk"]] = []
 
         # Helper for overlap/touch logic
+        # Chunks are disjoint if they don't overlap in old file coordinates
         def overlaps_or_touches(a: DiffChunk, b: DiffChunk) -> bool:
-            a_old_end = (a.old_start or 0) + a.old_len()
+            a_old_start = a.old_start or 0
+            a_old_end = a_old_start + a.old_len()
             b_old_start = b.old_start or 0
-
-            a_new_end = (a.new_start or 0) + a.new_len()
-            b_new_start = b.new_start or 0
-
-            return (a_old_end >= b_old_start) or (a_new_end >= b_new_start)
+            
+            # Chunks overlap if a's end is >= b's start
+            # This handles touching chunks (end == start) as overlapping for merging
+            return a_old_end >= b_old_start
 
         # Group by canonical path (so merges only happen within same file)
         for path, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):

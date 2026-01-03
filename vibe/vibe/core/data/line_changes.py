@@ -1,9 +1,25 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class LineNumbered:
-    line_number: int
+    """Base class for line-numbered changes.
+    
+    CRITICAL COORDINATE SYSTEM:
+    - old_line: Line number in the ORIGINAL/OLD file (before any changes)
+      * For Removal: The line being removed from the old file
+      * For Addition: The corresponding position in old file coordinates
+        (where this addition "lands" relative to the old file)
+    
+    - abs_new_line: Absolute line number in the NEW file from the original diff
+      * This is ONLY used for semantic grouping to find function signatures
+      * This represents where the line appears in the new file IF the entire
+        original diff was applied as-is
+      * DO NOT use this for patch generation! It's only for semantic analysis.
+    """
+    old_line: int
+    abs_new_line: int  # Only for semantic grouping!
     content: bytes
 
 
@@ -16,33 +32,10 @@ class Addition(LineNumbered):
 
 @dataclass
 class Removal(LineNumbered):
-    """Represents a single removed line of code."""
+    """Represents a single removed line of code.
+    
+    old_line: The line being removed from the old file
+    abs_new_line: Position in new file where this removal "lands" (for semantic grouping only)
+    """
 
     ...
-
-
-@dataclass(init=False)
-class Move(LineNumbered):
-    from_line: int
-    to_line: int
-
-    def __init__(self, content: bytes, from_line: int, to_line: int):
-        self.content = content
-        self.from_line = from_line
-        self.to_line = to_line
-        # line number will be the to_line in this case
-        self.line_number = to_line
-
-
-@dataclass(init=False)
-class Replacement(LineNumbered):
-    """Represents a line of code replaced with another, on the same line"""
-
-    old_content: bytes
-    new_content: bytes
-
-    def __init__(self, old_content: bytes, new_content: bytes, line_number: int):
-        self.old_content = old_content
-        self.new_content = new_content
-        self.content = new_content  # you can think of it as the final content state
-        self.line_number = line_number

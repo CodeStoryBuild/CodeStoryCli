@@ -52,7 +52,7 @@ class AtomicChunker(MechanicalChunker):
 
         comment_lines = file_ctx.comment_map.pure_comment_lines
         # Diff line numbers are 1-indexed; comment map uses 0-indexed
-        line_idx = change.line_number - 1
+        line_idx = (change.old_line if is_old else change.abs_new_line) - 1
         return line_idx in comment_lines
 
     def _chunk_is_context(
