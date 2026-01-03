@@ -18,15 +18,18 @@
                 ]
             }
         },
-        "scope_queries": [
+        "scope_queries": {
+            "named_scope": [
                 "((function_definition) @placeholder)",
                 "((decorated_definition) @placeholder)",
+                "((class_definition) @placeholder)"
+            ],
+            "structural_scope": [
                 "((while_statement) @placeholder)",
                 "((list) @placeholder)",
                 "((expression_statement) @placeholder)",
                 "((call) @placeholder)",
                 "((dictionary) @placeholder)",
-                "((class_definition) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((try_statement) @placeholder)",
@@ -36,6 +39,7 @@
                 "((set_comprehension) @placeholder)",
                 "((dictionary_comprehension) @placeholder)"
             ]
+        }
         ,
         "comment_queries": ["((comment) @placeholder)", "(expression_statement (string) @placeholder)"],
         "share_tokens_between_files": "True"
@@ -56,18 +60,22 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((arrow_function) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((for_in_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((arrow_function) @placeholder)",
+                "((class_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((for_in_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -93,20 +101,24 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((arrow_function) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((for_in_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)",
-            "((interface_declaration) @placeholder)",
-            "((enum_declaration) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((arrow_function) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((interface_declaration) @placeholder)",
+                "((enum_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((for_in_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -130,18 +142,22 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((method_declaration) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((interface_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_expression) @placeholder)",
-            "((constructor_declaration) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((method_declaration) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((interface_declaration) @placeholder)",
+                "((constructor_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_expression) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"
@@ -168,17 +184,21 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((class_specifier) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)",
-            "((namespace_definition) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)",
+                "((class_specifier) @placeholder)",
+                "((namespace_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -202,20 +222,24 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((method_declaration) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((foreach_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)",
-            "((namespace_declaration) @placeholder)",
-            "((constructor_declaration) @placeholder)",
-            "((global_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((method_declaration) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((namespace_declaration) @placeholder)",
+                "((constructor_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((foreach_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)",
+                "((global_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -248,14 +272,18 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((method_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((expression_switch_statement) @placeholder)",
-            "((type_switch_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((method_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((expression_switch_statement) @placeholder)",
+                "((type_switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -281,18 +309,22 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_item) @placeholder)",
-            "((impl_item) @placeholder)",
-            "((struct_item) @placeholder)",
-            "((enum_item) @placeholder)",
-            "((if_expression) @placeholder)",
-            "((for_expression) @placeholder)",
-            "((while_expression) @placeholder)",
-            "((loop_expression) @placeholder)",
-            "((match_expression) @placeholder)",
-            "((mod_item) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_item) @placeholder)",
+                "((impl_item) @placeholder)",
+                "((struct_item) @placeholder)",
+                "((enum_item) @placeholder)",
+                "((mod_item) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_expression) @placeholder)",
+                "((for_expression) @placeholder)",
+                "((while_expression) @placeholder)",
+                "((loop_expression) @placeholder)",
+                "((match_expression) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"
@@ -317,21 +349,25 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((method) @placeholder)",
-            "((singleton_method) @placeholder)",
-            "((class) @placeholder)",
-            "((module) @placeholder)",
-            "((if) @placeholder)",
-            "((unless) @placeholder)",
-            "((while) @placeholder)",
-            "((until) @placeholder)",
-            "((for) @placeholder)",
-            "((case) @placeholder)",
-            "((begin) @placeholder)",
-            "((do_block) @placeholder)",
-            "((lambda) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((method) @placeholder)",
+                "((singleton_method) @placeholder)",
+                "((class) @placeholder)",
+                "((module) @placeholder)",
+                "((lambda) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if) @placeholder)",
+                "((unless) @placeholder)",
+                "((while) @placeholder)",
+                "((until) @placeholder)",
+                "((for) @placeholder)",
+                "((case) @placeholder)",
+                "((begin) @placeholder)",
+                "((do_block) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -356,19 +392,23 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((method_declaration) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((foreach_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)",
-            "((namespace_definition) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)",
+                "((method_declaration) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((namespace_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((foreach_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -390,17 +430,21 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((protocol_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((guard_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((switch_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((protocol_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((guard_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)",
             "((multiline_comment) @placeholder)"
@@ -422,19 +466,23 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((class_declaration) @placeholder)",
-            "((object_declaration) @placeholder)",
-            "((anonymous_initializer) @placeholder)",
-            "((if_expression) @placeholder)",
-            "((when_expression) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_while_statement) @placeholder)",
-            "((try_expression) @placeholder)",
-            "((lambda_literal) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((class_declaration) @placeholder)",
+                "((object_declaration) @placeholder)",
+                "((anonymous_initializer) @placeholder)",
+                "((lambda_literal) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_expression) @placeholder)",
+                "((when_expression) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_while_statement) @placeholder)",
+                "((try_expression) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((line_comment) @placeholder)",
             "((multiline_comment) @placeholder)"
@@ -458,18 +506,22 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((class_definition) @placeholder)",
-            "((object_definition) @placeholder)",
-            "((trait_definition) @placeholder)",
-            "((if_expression) @placeholder)",
-            "((for_expression) @placeholder)",
-            "((while_expression) @placeholder)",
-            "((try_expression) @placeholder)",
-            "((match_expression) @placeholder)",
-            "((block) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)",
+                "((class_definition) @placeholder)",
+                "((object_definition) @placeholder)",
+                "((trait_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_expression) @placeholder)",
+                "((for_expression) @placeholder)",
+                "((while_expression) @placeholder)",
+                "((try_expression) @placeholder)",
+                "((match_expression) @placeholder)",
+                "((block) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)",
             "((block_comment) @placeholder)"
@@ -488,13 +540,17 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((repeat_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((repeat_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -516,16 +572,20 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_declaration) @placeholder)",
-            "((function_definition) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((repeat_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((table_constructor) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_declaration) @placeholder)",
+                "((function_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((repeat_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((table_constructor) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -550,17 +610,21 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_body) @placeholder)",
-            "((class_definition) @placeholder)",
-            "((enum_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((switch_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_body) @placeholder)",
+                "((class_definition) @placeholder)",
+                "((enum_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((switch_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)",
             "((documentation_comment) @placeholder)"
@@ -581,11 +645,15 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((call) @placeholder)",
-            "((anonymous_function) @placeholder)",
-            "((do_block) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((anonymous_function) @placeholder)"
+            ],
+            "structural_scope": [
+                "((call) @placeholder)",
+                "((do_block) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -609,14 +677,18 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function) @placeholder)",
-            "((local_binds) @placeholder)",
-            "((let) @placeholder)",
-            "((case) @placeholder)",
-            "((do) @placeholder)",
-            "((lambda) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function) @placeholder)",
+                "((lambda) @placeholder)"
+            ],
+            "structural_scope": [
+                "((local_binds) @placeholder)",
+                "((let) @placeholder)",
+                "((case) @placeholder)",
+                "((do) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)",
             "((pragma) @placeholder)"
@@ -639,15 +711,19 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((value_definition) @placeholder)",
-            "((function_expression) @placeholder)",
-            "((if_expression) @placeholder)",
-            "((match_expression) @placeholder)",
-            "((try_expression) @placeholder)",
-            "((let_expression) @placeholder)",
-            "((module_definition) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((value_definition) @placeholder)",
+                "((function_expression) @placeholder)",
+                "((module_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_expression) @placeholder)",
+                "((match_expression) @placeholder)",
+                "((try_expression) @placeholder)",
+                "((let_expression) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -669,14 +745,17 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_clause) @placeholder)",
-            "((case_expr) @placeholder)",
-            "((if_expr) @placeholder)",
-            "((receive_expr) @placeholder)",
-            "((try_expr) @placeholder)",
-            "((function_clause) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_clause) @placeholder)"
+            ],
+            "structural_scope": [
+                "((case_expr) @placeholder)",
+                "((if_expr) @placeholder)",
+                "((receive_expr) @placeholder)",
+                "((try_expr) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -694,13 +773,17 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((list_lit) @placeholder)",
-            "((vec_lit) @placeholder)",
-            "((map_lit) @placeholder)",
-            "((set_lit) @placeholder)",
-            "((anon_fn_lit) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((anon_fn_lit) @placeholder)"
+            ],
+            "structural_scope": [
+                "((list_lit) @placeholder)",
+                "((vec_lit) @placeholder)",
+                "((map_lit) @placeholder)",
+                "((set_lit) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)",
             "((dis_expr) @placeholder)"
@@ -726,16 +809,20 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((modifier_definition) @placeholder)",
-            "((contract_declaration) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((do_while_statement) @placeholder)",
-            "((try_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)",
+                "((modifier_definition) @placeholder)",
+                "((contract_declaration) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((do_while_statement) @placeholder)",
+                "((try_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((comment) @placeholder)"
         ],
@@ -760,18 +847,22 @@
                 ]
             }
         },
-        "scope_queries": [
-            "((function_definition) @placeholder)",
-            "((macro_definition) @placeholder)",
-            "((struct_definition) @placeholder)",
-            "((module_definition) @placeholder)",
-            "((if_statement) @placeholder)",
-            "((for_statement) @placeholder)",
-            "((while_statement) @placeholder)",
-            "((try_statement) @placeholder)",
-            "((let_statement) @placeholder)",
-            "((quote_statement) @placeholder)"
-        ],
+        "scope_queries": {
+            "named_scope": [
+                "((function_definition) @placeholder)",
+                "((macro_definition) @placeholder)",
+                "((struct_definition) @placeholder)",
+                "((module_definition) @placeholder)"
+            ],
+            "structural_scope": [
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((while_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((let_statement) @placeholder)",
+                "((quote_statement) @placeholder)"
+            ]
+        },
         "comment_queries": [
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"

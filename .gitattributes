@@ -1,0 +1,2 @@
+src/codestory/resources/embedding_models/**/*.onnx filter=lfs diff=lfs merge=lfs -text
+src/codestory/resources/embedding_models/**/*.json filter=lfs diff=lfs merge=lfs -text

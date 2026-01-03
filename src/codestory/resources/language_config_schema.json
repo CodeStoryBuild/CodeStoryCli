@@ -39,12 +39,27 @@
                     "additionalProperties": false
                 },
                 "scope_queries": {
-                    "type": "array",
-                    "description": "Tree-sitter queries that match entire scope blocks (e.g., functions, classes, if-statements). This is used to determine which lines of code belong to which scope.",
-                    "items": {
-                        "type": "string",
-                        "description": "A tree-sitter query with a '@placeholder' capture."
-                    }
+                    "type": "object",
+                    "description": "Tree-sitter queries that match entire scope blocks. Contains two categories: named scopes (with identifiable names) and structural scopes (control flow/expressions).",
+                    "properties": {
+                        "named_scope": {
+                            "type": "array",
+                            "description": "Tree-sitter queries for scopes with names (e.g., functions, classes, methods) that can be used for fully qualified names.",
+                            "items": {
+                                "type": "string",
+                                "description": "A tree-sitter query with a '@placeholder' capture."
+                            }
+                        },
+                        "structural_scope": {
+                            "type": "array",
+                            "description": "Tree-sitter queries for structural scopes without meaningful names (e.g., if-statements, loops, expressions).",
+                            "items": {
+                                "type": "string",
+                                "description": "A tree-sitter query with a '@placeholder' capture."
+                            }
+                        }
+                    },
+                    "required": ["named_scope", "structural_scope"]
                 },
                 "comment_queries": {
                     "type": "array",
