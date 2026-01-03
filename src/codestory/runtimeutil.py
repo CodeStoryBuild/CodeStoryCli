@@ -33,12 +33,27 @@ def ensure_utf8_output():
         sys.stderr.reconfigure(encoding="utf-8")
 
 
-def setup_signal_handlers():
-    """Set up graceful shutdown on Ctrl+C."""
+def setup_signal_handlers(global_context=None):
+    """Set up graceful shutdown on Ctrl+C.
+
+    Args:
+        global_context: Optional GlobalContext to cleanup on signal
+    """
 
     def signal_handler(sig, frame):
         logger.info(f"\n{Fore.YELLOW}Operation cancelled by user{Style.RESET_ALL}")
-        raise typer.Exit(130)  # Standard exit code for Ctrl+C
+        # Clean up model if available
+        if global_context is not None:
+            model = global_context.get_model()
+            if model is not None:
+                try:
+                    model.close()
+                except Exception as e:
+                    logger.debug(f"Error closing model: {e}")
+        # Force exit immediately
+        import os
+
+        os._exit(130)  # Hard exit without cleanup
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

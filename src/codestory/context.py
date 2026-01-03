@@ -56,6 +56,7 @@ class GlobalConfig:
     custom_language_config: str | None = None
     batching_strategy: Literal["auto", "requests", "prompt"] = "auto"
     custom_embedding_model: str | None = None
+    cluster_strictness: float = 0.5
 
     constraints = {
         "model": StringConstraint(),
@@ -89,6 +90,7 @@ class GlobalConfig:
             allowed=["auto", "requests", "prompt"]
         ),
         "custom_embedding_model": StringConstraint(),
+        "cluster_strictness": RangeTypeConstraint(min_value=0.0, max_value=1.0),
     }
 
     descriptions = {
@@ -109,6 +111,7 @@ class GlobalConfig:
         "custom_language_config": "Path to custom language configuration JSON file to override built-in language configs",
         "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
         "custom_embedding_model": "FastEmbed supported text embedding model (will download on first run if not cached)",
+        "cluster_strictness": "Strictness of clustering logical groups together. Higher value = higher threshold of similarity required to group together.",
     }
 
     arg_options = {
@@ -129,6 +132,7 @@ class GlobalConfig:
         "custom_language_config": ["--custom-language-config"],
         "batching_strategy": ["--batching-strategy"],
         "custom_embedding_model": ["--custom-embedding-model"],
+        "cluster_strictness": ["--cluster-strictness"],
     }
 
     @classmethod

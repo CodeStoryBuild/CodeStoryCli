@@ -175,6 +175,10 @@ def create_global_callback():
             validate_git_repository(
                 global_context.git_interface
             )  # fail immediately if we arent in a valid git repo as we expect one
+
+            # Set up signal handlers with context for proper cleanup
+            setup_signal_handlers(global_context)
+
             ctx.obj = global_context
 
     # Dynamically add GlobalConfig parameters to function signature
@@ -222,8 +226,6 @@ def run_app():
     """Run the application with global exception handling."""
     # force stdout to be utf8
     ensure_utf8_output()
-    # Set up signal handlers for graceful shutdown
-    setup_signal_handlers()
     # load any .env files (config values possibly set through env)
     load_env()
     # launch cli

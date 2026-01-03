@@ -26,7 +26,12 @@ import tomllib
 import typer
 from colorama import Fore, Style, init
 
-from codestory.constants import CONFIG_FILENAME, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE, ENV_APP_PREFIX
+from codestory.constants import (
+    CONFIG_FILENAME,
+    ENV_APP_PREFIX,
+    GLOBAL_CONFIG_FILE,
+    LOCAL_CONFIG_FILE,
+)
 from codestory.context import GlobalConfig
 from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
 
@@ -258,7 +263,7 @@ def get_config(key: str | None, scope: str | None) -> None:
     # Env
     if scope is None or scope == "env":
         env_config = {
-            k[len(ENV_APP_PREFIX):]: v
+            k[len(ENV_APP_PREFIX) :]: v
             for k, v in os.environ.items()
             if k.lower().startswith(ENV_APP_PREFIX.lower())
         }
@@ -380,11 +385,7 @@ def delete_config(key: str | None, scope: str) -> None:
             )
         return
 
-    # Determine config file path based on scope
-    if scope == "global":
-        config_path = GLOBAL_CONFIG_FILE
-    else:  # local
-        config_path = LOCAL_CONFIG_FILE
+    config_path = GLOBAL_CONFIG_FILE if scope == "global" else LOCAL_CONFIG_FILE
 
     if not config_path.exists():
         print(

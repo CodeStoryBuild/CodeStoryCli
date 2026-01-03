@@ -124,11 +124,9 @@ def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
             path = diff_c.canonical_path().decode("utf-8", errors="replace")
             files[path] = files.get(path, 0) + 1
 
-        return "\n".join([f"{num} chunks in {path}" for path, num in files.items()])
+        return "\n".join([f"{num} changes in {path}" for path, num in files.items()])
     else:
-        return "A chunk for " + ImmutableChunk.canonical_path.decode(
-            "utf-8", errors="replace"
-        )
+        return "A change for " + data.canonical_path.decode("utf-8", errors="replace")
 
 
 class RewritePipeline:
