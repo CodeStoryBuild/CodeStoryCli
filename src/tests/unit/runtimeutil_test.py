@@ -17,7 +17,6 @@
 # -----------------------------------------------------------------------------
 
 import importlib.metadata
-import signal
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,7 +24,6 @@ import typer
 
 from codestory.runtimeutil import (
     ensure_utf8_output,
-    setup_signal_handlers,
     version_callback,
 )
 

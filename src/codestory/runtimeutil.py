@@ -43,6 +43,7 @@ def setup_signal_handlers(global_context=None):
     def signal_handler(sig, frame):
         logger.info(f"\n{Fore.YELLOW}Operation cancelled by user{Style.RESET_ALL}")
         import os
+
         os._exit(130)  # Hard exit
 
     signal.signal(signal.SIGINT, signal_handler)
