@@ -34,7 +34,7 @@ init(autoreset=True)
 from codestory.commands import clean, commit, config, fix
 from codestory.context import GlobalConfig, GlobalContext
 from codestory.core.config.config_loader import ConfigLoader
-from codestory.core.exceptions import CodestoryError
+from codestory.core.exceptions import handle_codestory_exception
 from codestory.core.logging.logging import setup_logger
 from codestory.runtimeutil import (
     ensure_utf8_output,
@@ -47,6 +47,7 @@ from codestory.runtimeutil import (
 app = typer.Typer(
     help="codestory: an AI-powered abstraction layer above Git",
     pretty_exceptions_show_locals=False,
+    pretty_exceptions_enable=False,
     add_completion=False,
 )
 
@@ -113,6 +114,7 @@ def check_run_onboarding(ctx: typer.Context):
 
 
 @app.callback(invoke_without_command=True)
+@handle_codestory_exception
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -236,23 +238,14 @@ def load_env(path=".env"):
 
 def run_app():
     """Run the application with global exception handling."""
-    try:
-        # force stdout to be utf8 as it can be weird with typers console.print sometimes
-        ensure_utf8_output()
-        # Set up signal handlers for graceful shutdown
-        setup_signal_handlers()
-        # load any .env files
-        load_env()
-        # launch cli
-        app(prog_name="cst")
-
-    except CodestoryError as e:
-        logger.error(e)
-
-    except KeyboardInterrupt:
-        logger.info("\n[yellow]Operation cancelled by user[/yellow]")
-        raise typer.Exit(130) from None
-
+    # force stdout to be utf8 as it can be weird with typers console.print sometimes
+    ensure_utf8_output()
+    # Set up signal handlers for graceful shutdown
+    setup_signal_handlers()
+    # load any .env files
+    load_env()
+    # launch cli
+    app(prog_name="cst")
 
 if __name__ == "__main__":
     run_app()

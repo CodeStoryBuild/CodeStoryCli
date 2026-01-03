@@ -19,6 +19,8 @@
 # By using this file, you agree to the terms of one of the two licenses above.
 # -----------------------------------------------------------------------------
 
+from functools import wraps, partial
+from loguru import logger
 
 """
 Custom exception hierarchy for the codestory CLI application.
@@ -155,6 +157,28 @@ class LogicalGroupingError(CodestoryError):
     """
 
     pass
+
+class CleanCommandError(CodestoryError):
+    """
+    Errors specific to running the cst clean command
+    """
+
+
+# codestory exception handler
+def handle_codestory_exception(func=None):
+    if not func:
+        return partial(handle_codestory_exception)
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except CodestoryError as e:
+            logger.exception(e)
+
+    return wrapper
+
+
 
 
 # Convenience functions for creating common errors

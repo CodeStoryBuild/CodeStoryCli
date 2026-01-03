@@ -30,6 +30,7 @@ from codestory.core.logging.utils import time_block
 from codestory.core.validation import validate_commit_hash, validate_git_repository
 from codestory.pipelines.commit_init import create_commit_pipeline
 from codestory.pipelines.fix_pipeline import FixPipeline
+from codestory.core.exceptions import handle_codestory_exception
 
 
 def _help_callback(ctx: typer.Context, param, value: bool):
@@ -73,7 +74,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
     return parent, resolved, current_branch
 
-
+@handle_codestory_exception
 def main(
     ctx: typer.Context,
     help: bool = typer.Option(

@@ -31,6 +31,7 @@ from colorama import Fore, Style, init
 from platformdirs import user_config_dir
 
 from ..context import GlobalConfig
+from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
 
 # Initialize colorama
 init(autoreset=True)
@@ -360,7 +361,7 @@ def _get_config(key: str | None, scope: str | None) -> None:
 
         display_config(table_data)
 
-
+@handle_codestory_exception
 def main(
     ctx: typer.Context,
     help: bool = typer.Option(
@@ -403,10 +404,9 @@ def main(
     if value is not None:
         # SET operation
         if key is None:
-            print(
+            raise ConfigurationError(
                 f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value"
             )
-            raise typer.Exit(1)
 
         # Default to local if setting and no scope provided
         target_scope = scope if scope is not None else "local"

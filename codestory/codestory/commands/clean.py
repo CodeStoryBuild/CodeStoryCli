@@ -22,6 +22,7 @@
 
 from functools import partial
 
+from codestory.core.exceptions import handle_codestory_exception
 import typer
 from loguru import logger
 
@@ -44,7 +45,7 @@ def _help_callback(ctx: typer.Context, param, value: bool):
     typer.echo(ctx.get_help())
     raise typer.Exit()
 
-
+@handle_codestory_exception
 def main(
     ctx: typer.Context,
     help: bool = typer.Option(
@@ -114,9 +115,8 @@ def main(
     with time_block("Clean Runner E2E"):
         runner = CleanPipeline(global_context, clean_context, fix_command)
         success = runner.run()
-
+    
     if success:
         logger.info("Clean command completed successfully")
     else:
         logger.error("Clean operation failed")
-        raise typer.Exit(1)

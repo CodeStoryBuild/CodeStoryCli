@@ -25,6 +25,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from codestory.context import CleanContext, GlobalContext
+from codestory.core.exceptions import CleanCommandError
 from loguru import logger
 
 
@@ -123,7 +124,7 @@ class CleanPipeline:
                 ["rev-parse", start_from]
             )
             if resolved is None:
-                raise ValueError(f"Could not resolve commit: {start_from}")
+                raise CleanCommandError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
 
         out = (

@@ -27,6 +27,7 @@ from typing import Any, Literal, Union, get_args, get_origin
 
 import tomllib
 from loguru import logger
+from ..exceptions import ConfigurationError
 
 
 class ConfigLoader:
@@ -161,17 +162,17 @@ class ConfigLoader:
                 if type(None) in args:
                     return None
                 else:
-                    raise ValueError(f"None not allowed for type {typ}")
+                    raise ConfigurationError(f"None not allowed for type {typ}")
             for subtyp in non_none_types:
                 try:
                     return ConfigLoader.coerce_value(value, subtyp)
                 except ValueError:
                     continue
-            raise ValueError(f"Cannot coerce {value} to {typ}")
+            raise ConfigurationError(f"Cannot coerce {value} to {typ}")
         elif origin is Literal:
             if value in args:
                 return value
-            raise ValueError(f"{value} not in allowed values {args} for {typ}")
+            raise ConfigurationError(f"{value} not in allowed values {args} for {typ}")
         elif typ is str:
             return str(value)
         elif typ is int:

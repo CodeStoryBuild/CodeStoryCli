@@ -26,7 +26,7 @@ from loguru import logger
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.branch_saver.branch_saver import BranchSaver
 from codestory.core.commands.git_commands import GitCommands
-from codestory.core.exceptions import ValidationError
+from codestory.core.exceptions import ValidationError, handle_codestory_exception
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     sanitize_user_input,
@@ -82,7 +82,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 
     return True
 
-
+@handle_codestory_exception
 def main(
     ctx: typer.Context,
     help: bool = typer.Option(
