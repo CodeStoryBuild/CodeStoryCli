@@ -61,8 +61,9 @@ class CMDUserFilter:
 
         all_affected_files = set()
         if self.context_manager is not None:
+            # Use the cached old_file_content_map from context_manager
             display_patch_map = SemanticDiffGenerator(
-                groups, context_manager=self.context_manager
+                groups, old_file_content_map=self.context_manager.old_file_content_map
             ).get_patches(groups)
         else:
             display_patch_map = GitDiffGenerator(groups).get_patches(groups)

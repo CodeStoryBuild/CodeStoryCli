@@ -76,6 +76,24 @@ class ContextManager:
     )
     base_commit: str = ""
     patched_commit: str = ""
+    _old_file_content_map: dict[bytes, bytes] | None = field(default=None, repr=False)
+
+    @property
+    def old_file_content_map(self) -> dict[bytes, bytes]:
+        """
+        Get a map of file_path -> old file content bytes.
+
+        This is lazily built from the context cache and cached for reuse.
+        Used by SemanticDiffGenerator and JsonDiffGenerator.
+        """
+        if self._old_file_content_map is None:
+            content_map: dict[bytes, bytes] = {}
+            for (file_path, is_old_version), ctx in self._context_cache.items():
+                if is_old_version and ctx.content_bytes:
+                    content_map[file_path] = ctx.content_bytes
+            # Store in the private field (dataclass allows mutation)
+            object.__setattr__(self, "_old_file_content_map", content_map)
+        return self._old_file_content_map
 
     def get_context(
         self, file_path: bytes, is_old_version: bool
