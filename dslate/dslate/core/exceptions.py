@@ -1,5 +1,5 @@
 """
-Custom exception hierarchy for the vibe CLI application.
+Custom exception hierarchy for the dslate CLI application.
 
 This module defines a comprehensive exception hierarchy that provides
 clear error messages and proper error categorization for better

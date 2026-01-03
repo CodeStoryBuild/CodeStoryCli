@@ -1,4 +1,4 @@
-"""CLI commands for the vibe application."""
+"""CLI commands for the dslate application."""
 
 __all__ = [
     "commit",

@@ -1,8 +1,8 @@
 import typer
 from loguru import logger
 
-from vibe.pipelines.clean_pipeline import CleanPipeline
-from vibe.core.validation import (
+from dslate.pipelines.clean_pipeline import CleanPipeline
+from dslate.core.validation import (
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
@@ -36,17 +36,17 @@ def main(
         help="Should the clean command skip cleaning merge commits?",
     ),
 ) -> None:
-    """Run 'vibe expand' iteratively from HEAD (or start_from) to the second commit with filtering.
+    """Run 'dslate expand' iteratively from HEAD (or start_from) to the second commit with filtering.
 
     Examples:
         # Clean all commits with auto-confirmation
-        vibe clean --yes
+        dslate clean --yes
 
         # Clean starting from a specific commit
-        vibe clean abc123 --min-size 5
+        dslate clean abc123 --min-size 5
 
         # Clean while ignoring certain commits
-        vibe clean --ignore def456 --ignore ghi789
+        dslate clean --ignore def456 --ignore ghi789
     """
     expand_command = partial(expand_main, ctx)
 

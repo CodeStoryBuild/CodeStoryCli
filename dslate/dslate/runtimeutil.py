@@ -30,8 +30,8 @@ def version_callback(value: bool):
     """Show version and exit."""
     if value:
         try:
-            version = importlib.metadata.version("vibe")
-            typer.echo(f"vibe version {version}")
+            version = importlib.metadata.version("dslate")
+            typer.echo(f"dslate version {version}")
         except importlib.metadata.PackageNotFoundError:
-            typer.echo("vibe version: development")
+            typer.echo("dslate version: development")
         raise typer.Exit()

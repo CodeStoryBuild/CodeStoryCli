@@ -26,7 +26,7 @@ from vibe.context import GlobalConfig, GlobalContext
 
 # create app
 app = typer.Typer(
-    help="✨ vibe: an AI-powered abstraction layer above Git",
+    help="✨ dslate: an AI-powered abstraction layer above Git",
     pretty_exceptions_show_locals=False,
     add_completion=False,
 )

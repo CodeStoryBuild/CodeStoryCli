@@ -6,7 +6,7 @@ from typing import Callable
 
 from loguru import logger
 from rich.console import Console
-from vibe.core.git_interface.SubprocessGitInterface import (
+from dslate.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 from vibe.context import GlobalContext, CleanContext
@@ -44,7 +44,7 @@ class CleanPipeline:
 
         total = len(commits)
 
-        logger.info("Starting vibe clean operation on {total} commits", total=total)
+        logger.info("Starting dslate clean operation on {total} commits", total=total)
 
         expanded = 0
         skipped = 0

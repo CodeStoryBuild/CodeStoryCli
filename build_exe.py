@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Build script to create executable for vibe CLI tool.
+Build script to create executable for dslate CLI tool.
 """
 
 import os

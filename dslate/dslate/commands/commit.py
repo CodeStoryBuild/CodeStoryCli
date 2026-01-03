@@ -66,10 +66,10 @@ def main(
 
     Examples:
         # Commit all changes interactively
-        vibe commit
+        dslate commit
 
         # Commit specific directory with message
-        vibe commit src/ "Refactor user authentication"
+        dslate commit src/ "Refactor user authentication"
     """
 
     # Validate inputs

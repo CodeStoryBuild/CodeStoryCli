@@ -65,7 +65,7 @@ class GitSynthesizer:
         # 1. Create a temp file to serve as the isolated Git Index
         # We use delete=False and close it immediately so we can pass the path to Git
         # (Windows prevents opening a file twice if strictly locked, this avoids that)
-        temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="vibe_index_")
+        temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="dslate_index_")
         os.close(temp_index_fd)
 
         # 2. Create an environment that forces Git to use this specific index file

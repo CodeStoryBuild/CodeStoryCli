@@ -1,5 +1,5 @@
 """
-Input validation utilities for the vibe CLI application.
+Input validation utilities for the dslate CLI application.
 
 This module provides comprehensive input validation with clear error messages
 and type safety for all CLI parameters and configuration values.

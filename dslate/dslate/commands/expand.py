@@ -66,13 +66,13 @@ def main(
 
     Examples:
         # Expand a specific commit
-        vibe expand abc123
+        dslate expand abc123
 
         # Expand with auto-confirmation
-        vibe expand abc123 --yes
+        dslate expand abc123 --yes
 
         # Use specific model
-        vibe --model anthropic:claude-3-5-sonnet-20241022 expand abc123
+        dslate --model anthropic:claude-3-5-sonnet-20241022 expand abc123
     """
     validated_hash = validate_commit_hash(commit_hash)
 

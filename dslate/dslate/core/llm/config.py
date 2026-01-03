@@ -10,11 +10,11 @@ def try_create_model(
     model_arg: Optional[str], api_key_arg: Optional[str]
 ) -> Optional[BaseChatModel]:
     """
-    Configure the LLM model based on command-line arguments, .vibeconfig, or defaults.
+    Configure the LLM model based on command-line arguments, .dslateconfig, or defaults.
 
     Priority:
     1. Command-line arguments (--model, --api-key)
-    2. .vibeconfig file
+    2. .dslateconfig file
     3. Environment variables (via factory defaults)
     4. Fallback to gemini-2.0-flash-exp
 
@@ -51,7 +51,7 @@ def try_create_model(
                     f"Please use format: provider:model-name (e.g., openai:gpt-4)"
                 )
 
-    # If not provided via CLI, check .vibeconfig
+    # If not provided via CLI, check .dslateconfig
     if not provider or not model_name:
         config = load_config()
         if config:

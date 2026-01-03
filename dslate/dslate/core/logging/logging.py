@@ -1,5 +1,5 @@
 """
-Enhanced logging configuration for the vibe CLI application.
+Enhanced logging configuration for the dslate CLI application.
 
 This module provides structured logging with proper formatting,
 log levels, and file management for better observability and debugging.

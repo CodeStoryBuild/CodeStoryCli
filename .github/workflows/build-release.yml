@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - '*release*'  # Triggers on any branch containing 'release' in its name
+    tags:
+      - 'v*'         # e.g. v1.2.3
+      - 'release*'   # e.g. release-1.2.3 or release1.2.3
+      - 'release/*'  # e.g. release/1.2.3
 
 jobs:
   build:
@@ -37,26 +41,26 @@ jobs:
         run: |
           $os_name = "${{ matrix.os }}"
           if ($os_name -eq "windows-latest") {
-            mv dist/vibe.exe dist/vibe-windows.exe
+            mv dist/dslate.exe dist/dslate-windows.exe
           } elseif ($os_name -eq "ubuntu-latest") {
-            mv dist/vibe dist/vibe-linux
+            mv dist/dslate dist/dslate-linux
           } elseif ($os_name -eq "macos-latest") {
-            mv dist/vibe dist/vibe-macos
+            mv dist/dslate dist/dslate-macos
           }
         shell: pwsh
 
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vibe-${{ matrix.os }}
+          name: dslate-${{ matrix.os }}
           path: |
-            dist/vibe-*
+            dist/dslate-*
 
   release:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/') && contains(github.ref, 'release')
+    if: startsWith(github.ref, 'refs/heads/') && contains(github.ref, 'release') || startsWith(github.ref, 'refs/tags/')
     
     steps:
       - name: Download all artifacts
@@ -68,12 +72,13 @@ jobs:
         run: ls -R artifacts/
         shell: bash
 
-      - name: Extract version from branch name
+      - name: Extract version from ref name (branch or tag)
         id: get_version
         run: |
-          branch_name="${{ github.ref_name }}"
-          if [[ $branch_name =~ release[-/]?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            version="${BASH_REMATCH[1]}"
+          ref_name="${{ github.ref_name }}"
+          # Match: v1.2.3, 1.2.3, release-1.2.3, release/1.2.3
+          if [[ $ref_name =~ ^(v|release[-/]?)?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            version="${BASH_REMATCH[2]}"
           else
             version="$(date +'%Y%m%d%H%M')"
           fi
@@ -89,8 +94,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/vibe-windows-latest/vibe-windows.exe
-            artifacts/vibe-ubuntu-latest/vibe-linux
-            artifacts/vibe-macos-latest/vibe-macos
+            artifacts/dslate-windows-latest/dslate-windows.exe
+            artifacts/dslate-ubuntu-latest/dslate-linux
+            artifacts/dslate-macos-latest/dslate-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

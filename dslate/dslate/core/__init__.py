@@ -1,4 +1,4 @@
-"""Core functionality for the vibe CLI application."""
+"""Core functionality for the dslate CLI application."""
 
 __all__ = [
     "exceptions",

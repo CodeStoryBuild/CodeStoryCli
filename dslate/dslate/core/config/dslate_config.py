@@ -1,4 +1,4 @@
-"""Configuration file handling for vibe."""
+"""Configuration file handling for dslate."""
 
 import json
 import os
@@ -114,7 +114,7 @@ def save_config(config: VibeConfig, path: str = ".vibeconfig") -> bool:
 
 def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     """
-    Get a specific configuration value, checking .vibeconfig then environment variables.
+    Get a specific configuration value, checking .dslateconfig then environment variables.
 
     Args:
         key: Configuration key to retrieve
@@ -123,15 +123,15 @@ def get_config_value(key: str, default: Optional[str] = None) -> Optional[str]:
     Returns:
         Configuration value or default
     """
-    # First check .vibeconfig
+    # First check .dslateconfig
     config = load_config()
     if config:
         value = getattr(config, key, None)
         if value is not None:
             return value
 
-    # Then check environment variables (uppercase with VIBE_ prefix)
-    env_key = f"VIBE_{key.upper()}"
+    # Then check environment variables (uppercase with dslate_ prefix)
+    env_key = f"dslate_{key.upper()}"
     env_value = os.getenv(env_key)
     if env_value:
         return env_value

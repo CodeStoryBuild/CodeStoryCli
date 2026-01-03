@@ -1,4 +1,4 @@
-"""LLM integration module for vibe."""
+"""LLM integration module for dslate."""
 
 from .factory import create_llm_model, ModelConfig
 
