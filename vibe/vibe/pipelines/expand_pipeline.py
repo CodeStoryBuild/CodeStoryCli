@@ -134,13 +134,11 @@ class ExpandPipeline:
 
                     # git commit-tree <tree> -p <new_parent>
                     # Input is the commit message
-                    current_parent = (
-                        self.global_context.git_interface.run_git_text_out(
-                            ["commit-tree", tree_hash, "-p", current_parent],
-                            input_text=message,
-                            env=env,
-                        ).strip()
-                    )  # git commit tree add trailing newline
+                    current_parent = self.global_context.git_interface.run_git_text_out(
+                        ["commit-tree", tree_hash, "-p", current_parent],
+                        input_text=message,
+                        env=env,
+                    ).strip()  # git commit tree add trailing newline
 
                 final_head = current_parent
 

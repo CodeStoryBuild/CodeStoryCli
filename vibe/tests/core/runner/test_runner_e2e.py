@@ -1191,9 +1191,7 @@ bcrypt==3.2.0
     )
 
     # Verify middleware/auth.py content
-    actual_middleware = (
-        repo_path / "src" / "middleware" / "auth.py"
-    ).read_text()
+    actual_middleware = (repo_path / "src" / "middleware" / "auth.py").read_text()
     assert actual_middleware == middleware_new, (
         f"File src/middleware/auth.py content mismatch:\nExpected:\n{middleware_new}\n\nActual:\n{actual_middleware}"
     )
