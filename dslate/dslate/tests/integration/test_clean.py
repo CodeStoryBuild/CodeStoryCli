@@ -12,7 +12,7 @@ class TestClean:
             repo.commit(f"commit{i}")
             
         # Run clean command (dry run or help to verify it starts)
-        result = run_cli(cli_exe, ["clean", "--help"], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "clean"], cwd=repo.path)
         assert result.returncode == 0
         
         # Verify repo state is preserved

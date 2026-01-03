@@ -47,7 +47,7 @@ class TestCommitScenarios:
         
         # Run commit command
         # We expect it to fail due to missing API key, but we verify it doesn't corrupt the repo.
-        result = run_cli(cli_exe, ["commit", "--help"], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
         
         # If we use --help, it should succeed (return 0) and NOT modify the repo.
         # This confirms the command parsing works and it doesn't crash on these file states.
