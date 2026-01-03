@@ -67,7 +67,9 @@ def test_basic_modification(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Modify line 3")
+    group = CommitGroup(
+        chunks=[chunk], group_id="g1", commit_message="Modify line 3"
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
 
@@ -75,15 +77,21 @@ def test_basic_modification(git_repo):
     lines = content.split("\n")
 
     # Verify exact position and content of the modification
-    assert lines[2] == "line three"  # Line 3 should be modified (0-indexed position 2)
-    assert "line 3" not in lines  # Original line 3 should be completely replaced
+    assert (
+        lines[2] == "line three"
+    )  # Line 3 should be modified (0-indexed position 2)
+    assert (
+        "line 3" not in lines
+    )  # Original line 3 should be completely replaced
 
     # Verify other lines remain unchanged and in correct positions
     assert lines[0] == "line 1"
     assert lines[1] == "line 2"
     assert lines[3] == "line 4"
     assert lines[4] == "line 5"
-    assert len(lines) == 6  # Should have 5 lines + 1 empty line from trailing newline
+    assert (
+        len(lines) == 6
+    )  # Should have 5 lines + 1 empty line from trailing newline
 
     log = subprocess.run(
         ["git", "log", "-1", "--pretty=%s"],
@@ -111,7 +119,9 @@ def test_file_deletion(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Delete app.js")
+    group = CommitGroup(
+        chunks=[chunk], group_id="g1", commit_message="Delete app.js"
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
 
@@ -134,7 +144,9 @@ def test_rename_file(git_repo):
     )
     chunk = DiffChunk.from_hunk(hunk)
     group = CommitGroup(
-        chunks=[chunk], group_id="g1", commit_message="Rename app.js to server.js"
+        chunks=[chunk],
+        group_id="g1",
+        commit_message="Rename app.js to server.js",
     )
 
     synthesizer.execute_plan([group], base_hash, "main")
@@ -166,7 +178,9 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk1 = DiffChunk.from_hunk(hunk1)
-    group1 = CommitGroup(chunks=[chunk1], group_id="g1", commit_message="Add header")
+    group1 = CommitGroup(
+        chunks=[chunk1], group_id="g1", commit_message="Add header"
+    )
 
     hunk2 = HunkWrapper(
         new_file_path="app.js",
@@ -179,7 +193,9 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Update footer")
+    group2 = CommitGroup(
+        chunks=[chunk2], group_id="g2", commit_message="Update footer"
+    )
 
     # Execute: commit group2, then group1
     synthesizer.execute_plan([group2, group1], base_hash, "main")
@@ -385,7 +401,9 @@ def test_pure_addition_multiple_groups(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Add README")
+    group2 = CommitGroup(
+        chunks=[chunk2], group_id="g2", commit_message="Add README"
+    )
 
     synthesizer.execute_plan([group1, group2], base_hash, "main")
 
@@ -432,7 +450,9 @@ def test_pure_deletion_partial_content(git_repo):
     chunk2 = DiffChunk.from_hunk(hunk2)
 
     group = CommitGroup(
-        chunks=[chunk1, chunk2], group_id="g1", commit_message="Remove lines 2 and 4"
+        chunks=[chunk1, chunk2],
+        group_id="g1",
+        commit_message="Remove lines 2 and 4",
     )
 
     synthesizer.execute_plan([group], base_hash, "main")
@@ -441,7 +461,9 @@ def test_pure_deletion_partial_content(git_repo):
     lines = content.strip().split("\n")
 
     # Verify line count and positions after deletions
-    assert len(lines) == 3  # Should have 3 lines remaining (5 original - 2 deleted)
+    assert (
+        len(lines) == 3
+    )  # Should have 3 lines remaining (5 original - 2 deleted)
 
     # Verify content and positions of remaining lines
     assert lines[0] == "line 1"  # First remaining line
@@ -785,7 +807,10 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     )
 
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Frontend changes
@@ -809,7 +834,10 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             HunkWrapper(
                 new_file_path="frontend/styles.css",
                 old_file_path=None,
-                hunk_lines=["+body { margin: 0; }", "+.container { width: 100%; }"],
+                hunk_lines=[
+                    "+body { margin: 0; }",
+                    "+.container { width: 100%; }",
+                ],
                 old_start=1,
                 new_start=1,
                 old_len=0,
@@ -819,7 +847,9 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         ),
     ]
     group1 = CommitGroup(
-        chunks=group1_chunks, group_id="frontend", commit_message="Update frontend"
+        chunks=group1_chunks,
+        group_id="frontend",
+        commit_message="Update frontend",
     )
 
     # Backend changes
@@ -864,7 +894,9 @@ def test_large_mixed_changes_multiple_groups(git_repo):
         ),
     ]
     group2 = CommitGroup(
-        chunks=group2_chunks, group_id="backend", commit_message="Update backend"
+        chunks=group2_chunks,
+        group_id="backend",
+        commit_message="Update backend",
     )
 
     # Cleanup and restructure
@@ -1288,7 +1320,9 @@ def test_conflicting_simultaneous_changes(git_repo):
     ]
 
     group = CommitGroup(
-        chunks=chunks, group_id="overlapping", commit_message="Overlapping changes"
+        chunks=chunks,
+        group_id="overlapping",
+        commit_message="Overlapping changes",
     )
     synthesizer.execute_plan([group], base_hash, "main")
 
