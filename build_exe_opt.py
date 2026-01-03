@@ -72,7 +72,6 @@ def main():
         # --- LANGCHAIN ---
         "--include-package=langchain",
         "--include-package=langchain_core",
-        "--include-package=langchain_community",
         "--include-package=langchain_openai",
         "--include-package=langchain_anthropic",
         "--include-package=langchain_google_genai",
