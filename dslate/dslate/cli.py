@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import typer
 from dotenv import load_dotenv
@@ -8,19 +7,16 @@ from platformdirs import user_config_dir
 from rich.traceback import install
 
 from dslate.commands import clean, commit, fix
-from dslate.core.exceptions import GitError, ValidationError, dslateError
-from dslate.core.validation import validate_git_repository
-from dslate.core.logging.logging import setup_logger
-
-
+from dslate.context import GlobalConfig, GlobalContext
 from dslate.core.config.config_loader import ConfigLoader
+from dslate.core.exceptions import GitError, ValidationError, dslateError
+from dslate.core.logging.logging import setup_logger
+from dslate.core.validation import validate_git_repository
 from dslate.runtimeutil import (
     ensure_utf8_output,
     setup_signal_handlers,
     version_callback,
 )
-from dslate.context import GlobalConfig, GlobalContext
-
 
 # create app
 app = typer.Typer(
@@ -60,17 +56,17 @@ def main(
         "--repo",
         help="Where should operations be made?",
     ),
-    custom_config: Optional[str] = typer.Option(
+    custom_config: str | None = typer.Option(
         None,
         "--custom-config",
         help="Path to a custom config file",
     ),
-    model: Optional[str] = typer.Option(
+    model: str | None = typer.Option(
         None,
         "--model",
         help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.5-flash)",
     ),
-    api_key: Optional[str] = typer.Option(
+    api_key: str | None = typer.Option(
         None, "--api-key", help="API key for the model provider"
     ),
     model_temperature: float = typer.Option(
@@ -78,13 +74,13 @@ def main(
         "--temperature",
         help="What temperature to use when creating the AI model",
     ),
-    verbose: Optional[bool] = typer.Option(
+    verbose: bool | None = typer.Option(
         False,
         "--verbose",
         "-v",
         help="Be extra verbose",
     ),
-    auto_accept: Optional[bool] = typer.Option(
+    auto_accept: bool | None = typer.Option(
         False, "--yes", "-y", help="Automatically accept and commit all changes"
     ),
 ) -> None:
@@ -145,25 +141,25 @@ def run_app():
         logger.error(f"[red]Validation Error:[/red] {e.message}")
         if e.details:
             logger.error(f"[dim]Details: {e.details}[/dim]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     except GitError as e:
         logger.error(f"[red]Git Error:[/red] {e.message}")
         if e.details:
             logger.error(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Git operation failed: {e.message}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     except dslateError as e:
         logger.error(f"[red]Error:[/red] {e.message}")
         if e.details:
             logger.error(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"dslate operation failed: {e.message}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     except KeyboardInterrupt:
         logger.info("\n[yellow]Operation cancelled by user[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None
 
 
 if __name__ == "__main__":

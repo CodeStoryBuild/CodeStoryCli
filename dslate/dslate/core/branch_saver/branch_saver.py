@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from loguru import logger
 from dslate.core.exceptions import DetachedHeadError
+from loguru import logger
 
 from ..git_interface.interface import GitInterface
 

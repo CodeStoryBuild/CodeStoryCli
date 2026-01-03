@@ -1,13 +1,13 @@
 import typer
 from loguru import logger
 
-from dslate.pipelines.fix_pipeline import FixPipeline
-from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.context import CommitContext, FixContext, GlobalContext
+from dslate.core.exceptions import DetachedHeadError, GitError
 from dslate.core.git_interface.interface import GitInterface
-from dslate.core.validation import validate_commit_hash
-from dslate.core.exceptions import GitError, DetachedHeadError
 from dslate.core.logging.utils import time_block
-from dslate.context import GlobalContext, FixContext, CommitContext
+from dslate.core.validation import validate_commit_hash
+from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.pipelines.fix_pipeline import FixPipeline
 
 
 def get_info(git_interface: GitInterface, fix_context: FixContext):

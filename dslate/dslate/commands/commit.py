@@ -1,19 +1,19 @@
-from typing import Optional
-import typer
+
 import inquirer
+import typer
 from loguru import logger
 
-from dslate.context import GlobalContext, CommitContext
-from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.context import CommitContext, GlobalContext
+from dslate.core.branch_saver.branch_saver import BranchSaver
+from dslate.core.commands.git_commands import GitCommands
+from dslate.core.exceptions import ValidationError
+from dslate.core.logging.utils import time_block
 from dslate.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
 )
-from dslate.core.exceptions import ValidationError
-from dslate.core.logging.utils import time_block
-from dslate.core.branch_saver.branch_saver import BranchSaver
-from dslate.core.commands.git_commands import GitCommands
+from dslate.pipelines.commit_init import create_commit_pipeline
 
 
 def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:
@@ -56,7 +56,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 
 def main(
     ctx: typer.Context,
-    target: Optional[str] = typer.Argument(
+    target: str | None = typer.Argument(
         None, help="The target path to check for changes."
     ),
     message: str | None = typer.Argument(None, help="Message to the AI model"),

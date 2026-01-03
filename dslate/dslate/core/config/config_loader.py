@@ -1,9 +1,9 @@
 import os
-import tomli
 from pathlib import Path
-from typing import Optional
-from pydantic import BaseModel, TypeAdapter
+
+import tomli
 from loguru import logger
+from pydantic import BaseModel, TypeAdapter
 
 
 class ConfigLoader:
@@ -16,7 +16,7 @@ class ConfigLoader:
         local_config_path: Path,
         env_app_prefix: str,
         global_config_path: Path,
-        custom_config_path: Optional[Path] = None,
+        custom_config_path: Path | None = None,
     ):
         """Merges configuration from multiple sources with priority: input args, custom config, local config, environment variables, global config."""
 
@@ -40,7 +40,7 @@ class ConfigLoader:
             sources.insert(1, custom_config)
             source_names.insert(1, "Custom Config")
 
-        for name, source in zip(source_names, sources):
+        for name, source in zip(source_names, sources, strict=True):
             logger.debug(f"{name=} {source=}")
 
         type_adapter = TypeAdapter(config_model)

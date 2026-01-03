@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Callable
+from collections.abc import Callable, Sequence
 
+from dslate.context import CleanContext, GlobalContext
 from loguru import logger
-from dslate.context import GlobalContext, CleanContext
 
 
 class CleanPipeline:

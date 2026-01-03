@@ -1,23 +1,23 @@
-from pathlib import Path
-from typing import Literal, Optional, Sequence
-from pydantic import BaseModel
-
+from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from pydantic import BaseModel
 
 from dslate.core.commands.git_commands import GitCommands
+from dslate.core.git_interface.interface import GitInterface
 from dslate.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
-from dslate.core.git_interface.interface import GitInterface
 from dslate.core.llm.config import try_create_model
 
 
 class GlobalConfig(BaseModel):
     # (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.5-flash)
-    model: Optional[str] = None
-    api_key: Optional[str] = None
+    model: str | None = None
+    api_key: str | None = None
     model_temperature: float = 0.7
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
     verbose: bool = False
@@ -57,7 +57,7 @@ class GlobalContext:
 @dataclass(frozen=True)
 class CommitContext:
     target: Path = "."
-    message: Optional[str] = None
+    message: str | None = None
 
 
 @dataclass(frozen=True)

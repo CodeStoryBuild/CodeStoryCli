@@ -1,5 +1,6 @@
 import contextlib
 from time import perf_counter
+
 from loguru import logger
 
 from ..data.chunk import Chunk

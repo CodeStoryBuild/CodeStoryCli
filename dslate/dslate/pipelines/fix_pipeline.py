@@ -1,7 +1,8 @@
-from loguru import logger
-from dslate.context import GlobalContext, FixContext
-from dslate.pipelines.commit_pipeline import CommitPipeline
+from dslate.context import FixContext, GlobalContext
 from dslate.core.exceptions import FixCommitError
+from dslate.pipelines.commit_pipeline import CommitPipeline
+from loguru import logger
+
 
 def _short(hash_: str) -> str:
     return (hash_ or "")[:7]

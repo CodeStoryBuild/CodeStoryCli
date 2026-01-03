@@ -1,11 +1,11 @@
 import subprocess
 
 import pytest
-from dslate.core.data.diff_chunk import DiffChunk
-from dslate.core.data.line_changes import Addition, Removal
 
 # Assuming your models are importable like this
 from dslate.core.data.commit_group import CommitGroup
+from dslate.core.data.diff_chunk import DiffChunk
+from dslate.core.data.line_changes import Addition, Removal
 from dslate.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )

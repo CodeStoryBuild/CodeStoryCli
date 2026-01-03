@@ -2,8 +2,8 @@ from itertools import groupby
 
 from dslate.core.commands.git_const import DEVNULLBYTES
 from dslate.core.data.chunk import Chunk
-from dslate.core.data.diff_chunk import DiffChunk
 from dslate.core.data.commit_group import CommitGroup
+from dslate.core.data.diff_chunk import DiffChunk
 from dslate.core.data.immutable_chunk import ImmutableChunk
 from dslate.core.data.line_changes import Addition, Removal
 from loguru import logger

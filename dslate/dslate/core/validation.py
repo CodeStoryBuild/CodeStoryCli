@@ -8,13 +8,13 @@ and type safety for all CLI parameters and configuration values.
 import re
 from pathlib import Path
 
-from .git_interface.interface import GitInterface
 from .exceptions import (
+    DetachedHeadError,
     FileSystemError,
     GitError,
     ValidationError,
-    DetachedHeadError,
 )
+from .git_interface.interface import GitInterface
 
 
 def validate_commit_hash(value: str) -> str:
@@ -237,7 +237,7 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         raise GitError(
             "Git is not working properly",
             f"Git version check failed: {e}",
-        )
+        ) from e
     # Check if we're in a git repository
     is_in_repo = git_interface.run_git_text_out(
         ["rev-parse", "--is-inside-work-tree"],
@@ -255,7 +255,7 @@ def validate_git_repository(git_interface: GitInterface) -> None:
             msg = "Cannot backup: currently on a detached HEAD."
             raise DetachedHeadError(msg)
     except Exception as e:
-        raise GitError(f"Failed to check git branch status: {e}")
+        raise GitError(f"Failed to check git branch status: {e}") from e
 
 
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:

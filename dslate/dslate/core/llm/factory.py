@@ -2,10 +2,11 @@
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
+
+from ..exceptions import ConfigurationError
 
 
 @dataclass
@@ -14,9 +15,9 @@ class ModelConfig:
 
     provider: str  # e.g., "openai", "gemini", "anthropic"
     model_name: str  # e.g., "gpt-4", "gemini-2.5-flash", "claude-3-5-sonnet"
-    api_key: Optional[str] = None
+    api_key: str | None = None
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
+    max_tokens: int | None = None
 
 
 def create_llm_model(config: ModelConfig) -> BaseChatModel:
@@ -42,16 +43,16 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     if provider == "openai":
         try:
             from langchain_openai import ChatOpenAI
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "langchain-openai is not installed. Install it with: pip install langchain-openai"
-            )
+            ) from e
 
         # Use provided API key or fall back to environment variable
         if not api_key:
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                raise ValueError(
+                raise ConfigurationError(
                     "OpenAI API key not provided and OPENAI_API_KEY environment variable not set"
                 )
 
@@ -66,17 +67,17 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     elif provider == "gemini" or provider == "google":
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "langchain-google-genai is not installed. "
                 "Install it with: pip install langchain-google-genai"
-            )
+            ) from e
 
         # Use provided API key or fall back to environment variable
         if not api_key:
             api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key:
-                raise ValueError(
+                raise ConfigurationError(
                     "Google API key not provided and GOOGLE_API_KEY environment variable not set"
                 )
 
@@ -91,17 +92,17 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     elif provider == "anthropic" or provider == "claude":
         try:
             from langchain_anthropic import ChatAnthropic
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "langchain-anthropic is not installed. "
                 "Install it with: pip install langchain-anthropic"
-            )
+            ) from e
 
         # Use provided API key or fall back to environment variable
         if not api_key:
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError(
+                raise ConfigurationError(
                     "Anthropic API key not provided and ANTHROPIC_API_KEY environment variable not set"
                 )
 
@@ -116,20 +117,20 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     elif provider == "azure" or provider == "azure-openai":
         try:
             from langchain_openai import AzureChatOpenAI
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "langchain-openai is not installed. Install it with: pip install langchain-openai"
-            )
+            ) from e
 
         # Azure requires additional environment variables
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         if not azure_endpoint:
-            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable not set")
+            raise ConfigurationError("AZURE_OPENAI_ENDPOINT environment variable not set")
 
         if not api_key:
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
             if not api_key:
-                raise ValueError(
+                raise ConfigurationError(
                     "Azure OpenAI API key not provided and AZURE_OPENAI_API_KEY environment variable not set"
                 )
 
@@ -145,10 +146,10 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     elif provider == "ollama":
         try:
             from langchain_ollama import ChatOllama
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "langchain-ollama is not installed. Install it with: pip install langchain-ollama"
-            )
+            ) from e
 
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
@@ -159,7 +160,7 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
         )
 
     else:
-        raise ValueError(
+        raise ConfigurationError(
             f"Unsupported LLM provider: {provider}. "
             f"Supported providers: openai, gemini, anthropic, azure, ollama"
         )
