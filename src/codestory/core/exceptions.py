@@ -62,11 +62,10 @@ class GitRebaseFailed(GitError):
 
 
 class ValidationError(CodestoryError):
-    """
-    Input validation errors.
+    """Input validation errors.
 
-    Raised when user input fails validation checks,
-    such as invalid file paths, malformed commit hashes, etc.
+    Raised when user input fails validation checks, such as invalid file
+    paths, malformed commit hashes, etc.
     """
 
     pass
@@ -84,33 +83,29 @@ class ConfigurationError(CodestoryError):
 
 
 class AIServiceError(CodestoryError):
-    """
-    AI service related errors.
+    """AI service related errors.
 
-    Raised when AI API calls fail, timeout, or return
-    invalid responses.
+    Raised when AI API calls fail, timeout, or return invalid responses.
     """
 
     pass
 
 
 class EmbeddingModelError(CodestoryError):
-    """
-    Custom embedding model errors.
+    """Custom embedding model errors.
 
-    Raised when custom embedding model fails to download,
-    is invalid, or encounters errors during initialization.
+    Raised when custom embedding model fails to download, is invalid, or
+    encounters errors during initialization.
     """
 
     pass
 
 
 class ModelRetryExhausted(CodestoryError):
-    """
-    Model retry exhausted errors.
+    """Model retry exhausted errors.
 
-    Raised when an LLM model fails to return a valid response
-    after all retry attempts have been exhausted.
+    Raised when an LLM model fails to return a valid response after all
+    retry attempts have been exhausted.
     """
 
     pass
@@ -128,11 +123,10 @@ class FileSystemError(CodestoryError):
 
 
 class ChunkingError(CodestoryError):
-    """
-    Errors during diff chunking operations.
+    """Errors during diff chunking operations.
 
-    Raised when the chunking process encounters
-    invalid diffs or fails to parse changes.
+    Raised when the chunking process encounters invalid diffs or fails
+    to parse changes.
     """
 
     pass
@@ -191,9 +185,7 @@ class CleanCommandError(CodestoryError):
 
 
 class SyntaxErrorDetected(CodestoryError):
-    """
-    Raised when syntax errors are detected in code files.
-    """
+    """Raised when syntax errors are detected in code files."""
 
     pass
 
