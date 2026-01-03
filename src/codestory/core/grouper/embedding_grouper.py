@@ -24,6 +24,7 @@
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
+
 from loguru import logger
 
 from codestory.core.data.chunk import Chunk
@@ -238,6 +239,8 @@ class EmbeddingGrouper(LogicalGrouper):
                 )
                 groups.append(group)
 
-        logger.info(f"Created {len(groups)} commit groups from {len(chunks) + len(immut_chunks)} semantic groups using embeddings.")
+        logger.info(
+            f"Created {len(groups)} commit groups from {len(chunks) + len(immut_chunks)} semantic groups using embeddings."
+        )
 
         return groups
