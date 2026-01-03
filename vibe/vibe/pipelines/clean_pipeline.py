@@ -30,12 +30,16 @@ class CleanPipeline:
         self.expand_command = expand_command
 
     def run(self) -> bool:
-        commits = self._get_first_parent_commits(self.clean_context.start_from)[:-1] # we skip root commit
+        commits = self._get_first_parent_commits(self.clean_context.start_from)[
+            :-1
+        ]  # we skip root commit
 
         if not commits:
-            logger.warning("No candidate commits to clean, please note cleaning root commit is not supported!")
+            logger.warning(
+                "No candidate commits to clean, please note cleaning root commit is not supported!"
+            )
             return False
-        
+
         total = len(commits)
 
         logger.info("Starting vibe clean operation on {total} commits", total=total)
@@ -90,22 +94,30 @@ class CleanPipeline:
         )
         return True
 
-
     def _get_first_parent_commits(self, start_from: str | None = None) -> list[str]:
         start_ref = start_from or "HEAD"
         if start_from:
             # Resolve the commit hash first to ensure it exists
-            resolved = self.global_context.git_interface.run_git_text_out(["rev-parse", start_from])
+            resolved = self.global_context.git_interface.run_git_text_out(
+                ["rev-parse", start_from]
+            )
             if resolved is None:
                 raise ValueError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
 
-        out = self.global_context.git_interface.run_git_text_out(["rev-list", "--first-parent", start_ref]) or ""
+        out = (
+            self.global_context.git_interface.run_git_text_out(
+                ["rev-list", "--first-parent", start_ref]
+            )
+            or ""
+        )
         return [l.strip() for l in out.splitlines() if l.strip()]
 
     def _is_merge(self, commit: str) -> bool:
         line = (
-            self.global_context.git_interface.run_git_text_out(["rev-list", "--parents", "-n", "1", commit])
+            self.global_context.git_interface.run_git_text_out(
+                ["rev-list", "--parents", "-n", "1", commit]
+            )
             or ""
         )
         parts = line.strip().split()
@@ -120,7 +132,9 @@ class CleanPipeline:
     def _count_line_changes(self, commit: str) -> int | None:
         # Sum additions + deletions between parent and commit.
         # Use numstat for robust parsing; binary files show '-' which we treat as 0.
-        out = self.global_context.git_interface.run_git_text_out(["diff", "--numstat", f"{commit}^", commit])
+        out = self.global_context.git_interface.run_git_text_out(
+            ["diff", "--numstat", f"{commit}^", commit]
+        )
         if out is None:
             return None
         total = 0

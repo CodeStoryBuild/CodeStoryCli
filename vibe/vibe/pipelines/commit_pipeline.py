@@ -244,8 +244,7 @@ class CommitPipeline:
 
         with time_block("Executing Synthesizer Pipeline"):
             new_commit_hash = self.synthesizer.execute_plan(
-                ai_groups,
-                self.base_commit_hash
+                ai_groups, self.base_commit_hash
             )
 
         # Final pipeline summary
@@ -262,4 +261,4 @@ class CommitPipeline:
             files=len(all_affected_files),
         )
 
-        return new_commit_hash or self.new_commit_hash # fallback to the current commit
+        return new_commit_hash or self.new_commit_hash  # fallback to the current commit
