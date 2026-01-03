@@ -32,13 +32,15 @@ class TestFix:
         repo.apply_changes({"file1.txt": "content1"})
         repo.stage_all()
         repo.commit("commit to fix")
-        
+
         # Get commit hash
-        commit_hash = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo.path, capture_output=True, text=True).stdout.strip()
-        
+        commit_hash = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=repo.path, capture_output=True, text=True
+        ).stdout.strip()
+
         # Run fix command (it will likely fail due to no AI key, but should validate hash)
         result = run_cli(cli_exe, ["-y", "fix", commit_hash], cwd=repo.path)
-        
+
         # It might fail due to missing API key, but that means it passed validation
         # We check that it didn't fail due to invalid hash or repo state
         if result.returncode != 0:
@@ -49,9 +51,17 @@ class TestFix:
         """Test fixing root commit."""
         repo = repo_factory("fix_root")
         # Get root commit hash
-        root_hash = subprocess.run(["git", "rev-list", "--max-parents=0", "HEAD"], cwd=repo.path, capture_output=True, text=True).stdout.strip()
-        
+        root_hash = subprocess.run(
+            ["git", "rev-list", "--max-parents=0", "HEAD"],
+            cwd=repo.path,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
         result = run_cli(cli_exe, ["-y", "fix", root_hash], cwd=repo.path)
         assert result.returncode != 0
         # Check for the specific error message
-        assert "root commit" in result.stderr.lower() or "root commit" in result.stdout.lower()
+        assert (
+            "root commit" in result.stderr.lower()
+            or "root commit" in result.stdout.lower()
+        )

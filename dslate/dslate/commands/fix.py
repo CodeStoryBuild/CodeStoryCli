@@ -98,7 +98,7 @@ def main(
     """
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
-    
+
     validated_hash = validate_commit_hash(commit_hash)
 
     fix_context = FixContext(validated_hash)

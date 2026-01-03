@@ -31,7 +31,7 @@ from dslate.core.validation import (
     validate_commit_hash,
     validate_ignore_patterns,
     validate_min_size,
-    validate_git_repository
+    validate_git_repository,
 )
 from dslate.pipelines.clean_pipeline import CleanPipeline
 
