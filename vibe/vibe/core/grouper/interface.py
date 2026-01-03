@@ -34,5 +34,3 @@ class LogicalGrouper(ABC):
         on_progress: Optional[ProgressCallback] = None,
     ) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""
-
-    

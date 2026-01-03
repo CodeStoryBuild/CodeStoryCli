@@ -49,5 +49,3 @@ def get_patches(groups: list[CommitGroup]) -> dict[int, str]:
          patch_map[i] = get_descriptive_patch(group_chunks, total_chunks_per_file)
 
     return patch_map
-         
-
