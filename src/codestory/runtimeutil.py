@@ -63,7 +63,6 @@ def version_callback(value: bool):
 
 
 def get_log_dir_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.core.logging.logging import LOG_DIR
 
@@ -72,7 +71,6 @@ def get_log_dir_callback(value: bool):
 
 
 def get_supported_languages_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.constants import SUPPORTED_LANGUAGES
 
@@ -81,7 +79,6 @@ def get_supported_languages_callback(value: bool):
 
 
 def get_supported_providers_callback(value: bool):
-    """Show version and exit."""
     if value:
         from codestory.constants import LOCAL_PROVIDERS, get_cloud_providers
 
