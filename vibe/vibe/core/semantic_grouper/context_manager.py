@@ -82,7 +82,7 @@ class ContextManager:
     def _log_context_summary(self) -> None:
         total_required = len(self._required_contexts.keys())
         total_built = len(self._context_cache)
-        files_with_context = {fp for fp, _ in self._context_cache.keys()}
+        files_with_context = {fp for fp, _ in self._context_cache}
         languages: dict[str, int] = {}
         for ctx in self._context_cache.values():
             lang = ctx.parsed_file.detected_language or "unknown"
@@ -387,4 +387,4 @@ class ContextManager:
         Returns:
             Set of file paths that have at least one context (old or new)
         """
-        return {file_path for file_path, _ in self._context_cache.keys()}
+        return {file_path for file_path, _ in self._context_cache}

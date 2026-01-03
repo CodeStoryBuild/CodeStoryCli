@@ -347,7 +347,7 @@ class GitCommands:
             return a_old_end >= b_old_start
 
         # Group by canonical path (so merges only happen within same file)
-        for path, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):
+        for _, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):
             file_chunks = list(group)
             if not file_chunks:
                 continue
