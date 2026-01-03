@@ -47,10 +47,10 @@ def chunks_reconstruct_input(chunks, original):
 
 CHUNKERS = [
     (
-        "vibe.core.chunker.predicate_chunker.PredicateChunker",
+        "dslate.core.chunker.predicate_chunker.PredicateChunker",
         {"split_predicate": lambda x: x.strip() == ""},
     ),
-    ("vibe.core.chunker.max_line_chunker.MaxLineChunker", {"max_chunks": 3}),
+    ("dslate.core.chunker.max_line_chunker.MaxLineChunker", {"max_chunks": 3}),
 ]
 
 
