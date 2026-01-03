@@ -42,34 +42,3 @@ python build_exe.py
 ```
 
 The executable will be available in the `dist` directory.
-
-## 📦 CI/CD with GitHub Actions
-
-This repository is configured with GitHub Actions to automatically build executables for Windows, macOS, and Linux whenever code is pushed to a branch containing "release" in its name.
-
-### Release Process:
-1. Create and push a branch with "release" in its name (e.g., `release/1.0.0`, `feature-release`)
-2. The GitHub Action will automatically build executables for all platforms
-3. A new release will be created with the executables attached
-
-### Version Naming:
-- If your branch name follows the pattern `release[-/]X.Y.Z` (e.g., `release/1.2.3`), the version will be extracted from the branch name
-- Otherwise, a timestamp will be used as the version
-
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-AA
-
----
