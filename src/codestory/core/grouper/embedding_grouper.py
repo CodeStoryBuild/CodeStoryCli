@@ -294,6 +294,9 @@ class EmbeddingGrouper(LogicalGrouper):
                     logger.error("Batch summary response is not a list.")
                     raise LLMResponseError("Response is not a list")
 
+                # TODO add more and nicer robustness for model outputs
+                batch_summaries = [str(s) for s in batch_summaries if s.strip()]
+
                 if len(batch_summaries) != len(task.indices):
                     logger.error(
                         f"Summary count mismatch: Expected {len(task.indices)}, got {len(batch_summaries)}."
