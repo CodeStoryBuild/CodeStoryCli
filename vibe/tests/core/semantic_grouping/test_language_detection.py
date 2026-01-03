@@ -2,7 +2,6 @@ from vibe.core.file_reader.file_parser import FileParser
 
 
 def test_language_detection():
-
     print("\n--- Testing language detection for various extensions ---")
     # Test language detection with different file extensions
     test_cases = [

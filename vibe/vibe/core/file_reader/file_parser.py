@@ -7,6 +7,7 @@ from tree_sitter_language_pack import get_parser
 
 from loguru import logger
 
+
 @dataclass(frozen=True)
 class ParsedFile:
     """Contains the parsed AST root and detected language for a file."""

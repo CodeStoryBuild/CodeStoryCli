@@ -137,7 +137,6 @@ def test_rename_file(git_repo):
     ).read_text() == "line 1\nline 2\nline 3\nline 4\nline 5\n"
 
 
-
 # ... (imports and other setup)
 
 

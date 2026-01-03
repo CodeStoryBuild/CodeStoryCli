@@ -26,7 +26,7 @@ class LineNumbered:
 @dataclass
 class Addition(LineNumbered):
     """Represents a single added line of code.
-    
+
     old_line: Position in old file where this addition occurs (the line after which we insert)
     abs_new_line: Absolute position in new file (from original diff, for semantic grouping only)
     """
@@ -37,7 +37,7 @@ class Addition(LineNumbered):
 @dataclass
 class Removal(LineNumbered):
     """Represents a single removed line of code.
-    
+
     old_line: The line being removed from the old file
     abs_new_line: Position in new file where this removal "lands" (for semantic grouping only)
     """

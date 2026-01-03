@@ -1,4 +1,3 @@
-
 from ..git_interface.interface import GitInterface
 
 

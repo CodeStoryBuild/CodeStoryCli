@@ -2,7 +2,6 @@
 Test script for ContextManager to validate it works correctly.
 """
 
-
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
 from vibe.core.file_reader.file_parser import FileParser

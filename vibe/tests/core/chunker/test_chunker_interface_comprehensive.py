@@ -337,5 +337,3 @@ class TestChunkerPerformance:
             f"{name} took too long: {end_time - start_time}s"
         )
         assert isinstance(result, list)
-
-
