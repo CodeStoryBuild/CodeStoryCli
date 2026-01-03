@@ -21,6 +21,7 @@
 
 
 from unittest.mock import Mock
+
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.git_interface.interface import GitInterface
 

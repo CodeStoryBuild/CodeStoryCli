@@ -21,6 +21,7 @@
 
 
 from unittest.mock import Mock, patch
+
 from codestory.core.semantic_grouper.symbol_extractor import SymbolExtractor
 
 # -----------------------------------------------------------------------------

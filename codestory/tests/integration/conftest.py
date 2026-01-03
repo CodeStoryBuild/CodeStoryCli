@@ -27,7 +27,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from tests.integration.repo_utils import RepoState
 
 # Get executable path from environment variable
