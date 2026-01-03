@@ -83,20 +83,38 @@ CLUSTER_SUMMARY_USER = """**Commit Summaries:**
 
 BATCHED_SUMMARY_SYSTEM = """You are a specialized function that converts structured code change data into concise Git commit messages.
 
-**Input:**
-- A list of `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.)
-- Focus only on *visible code changes*.
+**Input Format:**
+A JSON array where each element represents one change:
+[
+  [/* change 1 data */],
+  [/* change 2 data */],
+  ...
+]
 
-**Rules:**
-1. Output a JSON list of strings.
-2. Each string must be a single-line commit message, max 72 characters.
-3. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor".
-4. Describe what changed and where (file/module/class/function) using the data.
-5. Do NOT include inferred goals, benefits, or context.
-6. The order of the output list must match the order of the input list."""
+Each change contains `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.).
+Focus only on *visible code changes*.
 
-BATCHED_SUMMARY_USER = """**Changes:**
+**Output Requirements:**
+1. MUST output a valid JSON array of strings: ["message1", "message2", ...]
+2. The output array MUST contain EXACTLY the same number of messages as input changes
+3. Each message must be a single-line commit message, max 72 characters
+4. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor"
+5. Describe what changed and where (file/module/class/function) using the data
+6. Do NOT include inferred goals, benefits, or context
+7. The order of messages MUST match the order of input array elements
+
+**Example:**
+Input: 3 changes in array → Output: exactly 3 messages ["msg1", "msg2", "msg3"]"""
+
+BATCHED_SUMMARY_USER = """**Number of Changes:** {count}
+
+**Changes (JSON Array):**
+```json
 {changes}
+```
+
+**Required Output:**
+A JSON array with exactly {count} commit messages, one for each change in the input array.
 
 **Output:**"""
 
@@ -196,7 +214,8 @@ class EmbeddingGrouper(LogicalGrouper):
 
             if len(group) == 1:
                 # Single Request Task
-                prompt = INITIAL_SUMMARY_USER.format(changes=patches[0])
+                changes_json = json.dumps(patches[0], indent=2)
+                prompt = INITIAL_SUMMARY_USER.format(changes=changes_json)
                 tasks.append(
                     SummaryTask(
                         prompt=prompt,
@@ -206,14 +225,14 @@ class EmbeddingGrouper(LogicalGrouper):
                     )
                 )
             else:
-                # Batched Request Task
-                formatted_changes = []
-                for i, patch in enumerate(patches):
-                    # We use 1-based indexing for the prompt presentation
-                    formatted_changes.append(f"--- Change {i + 1} ---\n{patch}")
+                # Batched Request Task - build a JSON array of changes
+                changes_array = patches
 
-                combined_changes = "\n\n".join(formatted_changes)
-                prompt = BATCHED_SUMMARY_USER.format(changes=combined_changes)
+                # Create a clean JSON array representation for the prompt
+                changes_json = json.dumps(changes_array, indent=2)
+                prompt = BATCHED_SUMMARY_USER.format(
+                    count=len(patches), changes=changes_json
+                )
                 tasks.append(
                     SummaryTask(
                         prompt=prompt,
@@ -224,7 +243,9 @@ class EmbeddingGrouper(LogicalGrouper):
                 )
         return tasks
 
-    def generate_summaries(self, annotated_chunk_patches: list[str]) -> list[str]:
+    def generate_summaries(
+        self, annotated_chunk_patches: list[list[dict]]
+    ) -> list[str]:
         if not annotated_chunk_patches:
             return []
 
@@ -311,7 +332,7 @@ class EmbeddingGrouper(LogicalGrouper):
 
     def generate_annotated_patches(
         self, annotated_chunks: list[AnnotatedChunk], diff_generator: DiffGenerator
-    ) -> list[str]:
+    ) -> list[list[dict]]:
         patches = []
         for annotated_chunk in annotated_chunks:
             patch = self.generate_annotated_patch(annotated_chunk, diff_generator)
@@ -320,7 +341,7 @@ class EmbeddingGrouper(LogicalGrouper):
 
     def generate_annotated_patch(
         self, annotated_chunk: AnnotatedChunk, diff_generator: DiffGenerator
-    ) -> str:
+    ) -> list[dict]:
         annotated_patch = []
         chunks = annotated_chunk.chunk.get_chunks()
         signatures = (
@@ -371,7 +392,7 @@ class EmbeddingGrouper(LogicalGrouper):
 
             annotated_patch.append(patch_json)
 
-        return json.dumps(annotated_patch, indent=2)
+        return annotated_patch
 
     def group_chunks(
         self,
