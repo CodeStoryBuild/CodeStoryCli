@@ -21,9 +21,9 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
 
-    def __init__(self, command_name: str, console: Console):
+    def __init__(self, command_name: str):
         self.command_name = command_name
-        self.console = console
+        self.console = Console()
         self._setup_logger()
 
     def _setup_logger(self) -> None:
@@ -101,7 +101,7 @@ class StructuredLogger:
         return self.logfile
 
 
-def setup_logger(command_name: str, console: Console, debug: bool = False) -> Path:
+def setup_logger(command_name: str, debug: bool = False) -> Path:
     """
     Set up enhanced logging for a command.
 
@@ -118,7 +118,7 @@ def setup_logger(command_name: str, console: Console, debug: bool = False) -> Pa
         os.environ["VIBE_LOG_LEVEL"] = "DEBUG"
         os.environ["VIBE_CONSOLE_LOG_LEVEL"] = "DEBUG"
 
-    structured_logger = StructuredLogger(command_name, console)
+    structured_logger = StructuredLogger(command_name)
     return structured_logger.get_logfile()
 
 

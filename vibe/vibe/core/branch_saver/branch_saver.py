@@ -5,10 +5,7 @@ from loguru import logger
 from ..git_interface.interface import GitInterface
 
 
-class DetachedHeadError(Exception):
-    """Raised when trying to backup a detached HEAD."""
 
-    pass
 
 
 class BranchSaver:
@@ -81,10 +78,9 @@ class BranchSaver:
             self.restore_from_backup()
 
         return (
-            original_branch,
             old_commit_hash,
-            backup_branch,
             new_commit_hash,
+            original_branch,
         )
 
     def restore_from_backup(self, exclude_path: str | None = None) -> bool:

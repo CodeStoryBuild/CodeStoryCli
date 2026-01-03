@@ -1,17 +1,22 @@
-def calculate():
-    return 42
+from pathlib import Path
+from pydantic import BaseModel, TypeAdapter
+import tomli
+import os
+from vibe.core.config.config_loader import ConfigLoader
+from loguru import logger
+
+logger.remove()
+logger.add(lambda message: print(message), level="DEBUG")
+
+class Test(BaseModel):
+    a: int = 2
+    b: int
+    c: int
+    d: int = 4
 
 
-print(calculate())
+os.environ["TEST_c"] = "2"
 
 
-class Greeter:
-    def say_hello(self):
-        self.aa = 1
-
-    def say_bye(self):
-        print(20)
-
-
-def farewell():
-    print("Goodbye")
+config, used_sources = ConfigLoader.get_full_config(Test, {"a": 99}, Path(".vibeconfig.toml"), "TEST_", Path(".vibeconfig2.toml"), Path(".vibeconfig3.toml"))
+print(f"{config=}\n{used_sources=}")

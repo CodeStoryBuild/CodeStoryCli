@@ -1,26 +1,28 @@
 import contextlib
+from typing import Optional
 
 import inquirer
 from loguru import logger
 from rich.console import Console
 from rich.progress import Progress
 
-from ..branch_saver.branch_saver import BranchSaver
-from ..chunker.interface import MechanicalChunker
-from ..commands.git_commands import GitCommands
-from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
-from ..data.commit_group import CommitGroup
-from ..file_reader.file_parser import FileParser
-from ..file_reader.protocol import FileReader
-from ..git_interface.interface import GitInterface
-from ..grouper.interface import LogicalGrouper
-from ..semantic_grouper.context_manager import ContextManager
-from ..semantic_grouper.query_manager import QueryManager
-from ..semantic_grouper.semantic_grouper import SemanticGrouper
-from ..synthesizer.git_synthesizer import GitSynthesizer
-from ..synthesizer.utils import get_patches
-from ..logging.utils import time_block, log_chunks
+from ..core.branch_saver.branch_saver import BranchSaver
+from ..core.chunker.interface import MechanicalChunker
+from ..core.commands.git_commands import GitCommands
+from ..core.data.chunk import Chunk
+from ..core.data.immutable_chunk import ImmutableChunk
+from ..core.data.commit_group import CommitGroup
+from ..core.file_reader.file_parser import FileParser
+from ..core.file_reader.protocol import FileReader
+from ..core.git_interface.interface import GitInterface
+from ..core.grouper.interface import LogicalGrouper
+from ..core.semantic_grouper.context_manager import ContextManager
+from ..core.semantic_grouper.query_manager import QueryManager
+from ..core.semantic_grouper.semantic_grouper import SemanticGrouper
+from ..core.synthesizer.git_synthesizer import GitSynthesizer
+from ..core.synthesizer.utils import get_patches
+from ..core.logging.utils import time_block, log_chunks
+from ..context import GlobalContext, CommitContext
 
 
 @contextlib.contextmanager
@@ -33,28 +35,30 @@ def progress_bar(p: Progress, step_name: str):
         p.advance(ck, 1)
 
 
-class AIGitPipeline:
+class CommitPipeline:
     def __init__(
         self,
+        global_context : GlobalContext,
+        commit_context : CommitContext,
         git: GitInterface,
-        console: Console,
         commands: GitCommands,
         mechanical_chunker: MechanicalChunker,
         semantic_grouper: SemanticGrouper,
         logical_grouper: LogicalGrouper,
         synthesizer: GitSynthesizer,
-        branch_saver: BranchSaver | None,
         file_reader: FileReader,
         file_parser: FileParser,
         query_manager: QueryManager,
-        original_branch: str,
-        new_branch: str,
         base_commit_hash: str,
         new_commit_hash: str,
+        branch_to_update: Optional[str],
+        branch_saver: Optional[BranchSaver],
     ):
+        self.global_context = global_context
+        self.commit_context = commit_context
+        
         self.git = git
         self.commands = commands
-        self.console = console
 
         self.mechanical_chunker = mechanical_chunker
         self.semantic_grouper = semantic_grouper
@@ -66,25 +70,24 @@ class AIGitPipeline:
         self.file_parser = file_parser
         self.query_manager = query_manager
 
-        self.original_branch = original_branch
-        self.new_branch = new_branch
+        self.branch_to_update = branch_to_update
 
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
 
-    def run(self, target: str = None, message: str = None, auto_yes: bool = False):
+    def run(self):
         # Initial invocation summary
         logger.info(
             "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
-            target=target,
-            msg_present=message is not None,
+            target=self.commit_context.target,
+            msg_present=self.commit_context.message is not None,
             base=self.base_commit_hash,
             new=self.new_commit_hash,
         )
         # Diff between the base commit and the backup branch commit - all working directory changes
         with time_block("raw_diff_generation_ms"):
             raw_chunks, immmutable_chunks = self.commands.get_processed_working_diff(
-                self.base_commit_hash, self.new_commit_hash, target
+                self.base_commit_hash, self.new_commit_hash, str(self.commit_context.target)
             )
 
         log_chunks(
@@ -144,7 +147,7 @@ class AIGitPipeline:
             # take these semantically valid chunks, and now group them into logical commits
             with time_block("semantic_grouping"):
                 ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
-                    semantic_chunks, immmutable_chunks, message, on_progress=on_progress
+                    semantic_chunks, immmutable_chunks, self.commit_context.target, on_progress=on_progress
                 )
 
         if not ai_groups:
@@ -221,7 +224,7 @@ class AIGitPipeline:
             )
 
         # Single confirmation for all groups
-        if auto_yes:
+        if self.global_context.auto_accept:
             apply_all = True
             logger.info("Auto-confirm: Applying all proposed commits")
         else:
@@ -244,7 +247,7 @@ class AIGitPipeline:
             plan_success = self.synthesizer.execute_plan(
                 ai_groups,
                 self.commands.get_current_base_commit_hash(),
-                self.original_branch,
+                self.branch_to_update,
             )
 
         # Final pipeline summary
@@ -263,9 +266,10 @@ class AIGitPipeline:
             files=len(all_affected_files),
         )
 
-        if plan_success and target != "." and self.branch_saver is not None:
+        # TODO, this is flaky and can break in many ways, one being if the target is still an entire repo but just not "."
+        if plan_success and self.commit_context.target != "." and self.branch_saver is not None:
             # we have overriden main branch with plan changes
             # if the target is not the whole repo (eg "."), then we want to bring back the other changes
-            self.branch_saver.restore_from_backup(exclude_path=target)
+            self.branch_saver.restore_from_backup(exclude_path=self.commit_context.target)
 
         return plan_success

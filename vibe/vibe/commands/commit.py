@@ -1,28 +1,64 @@
 import typer
+import inquirer
 from loguru import logger
-from rich.console import Console
 
-from vibe.core.context.commit_init import create_commit_pipeline
-from vibe.core.exceptions import GitError, ValidationError, VibeError
-from vibe.core.logging.logging import setup_logger
+from vibe.context import GlobalContext, CommitContext
+from vibe.pipelines.commit_init import create_commit_pipeline
 from vibe.core.validation import (
     sanitize_user_input,
-    validate_git_repository,
     validate_message_length,
     validate_target_path,
 )
+from vibe.core.exceptions import ValidationError
+from vibe.core.logging.utils import time_block
+from vibe.core.branch_saver.branch_saver import BranchSaver
+from vibe.core.commands.git_commands import GitCommands
 
+
+
+def verify_repo(
+    commands: GitCommands, target: str, auto_yes: bool = False
+) -> bool:
+    # Step -1: ensure we're inside a git repository
+    if not commands.is_git_repo():
+        raise RuntimeError(
+            "Not a git repository (or any of the parent directories). Please run this command inside a Git repo."
+        )
+
+    # Step 0: clean working area
+    if commands.need_reset():
+        if auto_yes:
+            unstage = True
+            logger.info(
+                "[yellow]Auto-confirm:[/yellow] Unstaging all changes to proceed."
+            )
+        else:
+            unstage = inquirer.confirm(
+                "Staged changes detected, you must unstage all changes. Do you accept?",
+                default=False,
+            )
+
+        if unstage:
+            commands.reset()
+        else:
+            logger.info(
+                "[yellow]Cannot proceed without unstaging changes, exiting.[/yellow]"
+            )
+            return False
+
+    if commands.need_track_untracked(target):
+        logger.info(
+            f'Untracked files detected within "{target}", temporarily staging changes',
+        )
+
+        commands.track_untracked(target)
+
+    return True
 
 def main(
     ctx: typer.Context,
     target: str = typer.Argument(".", help="The target path to check for changes."),
     message: str | None = typer.Argument(None, help="Message to the AI model"),
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Automatically accept all prompts (non-interactive).",
-    ),
 ) -> None:
     """
     Commits changes with AI-powered messages.
@@ -40,64 +76,42 @@ def main(
         # Use specific model
         vibe --model openai:gpt-4 commit
     """
-    console = Console()
 
-    try:
-        # Validate inputs
-        validate_git_repository(".")
-        validated_target = validate_target_path(target)
-        validated_message = validate_message_length(message)
+    # Validate inputs
+    validated_target = validate_target_path(target)
+    validated_message = validate_message_length(message)
 
-        # Sanitize message if provided
-        if validated_message:
-            validated_message = sanitize_user_input(validated_message)
+    # Sanitize message if provided
+    if validated_message:
+        validated_message = sanitize_user_input(validated_message)
 
-        # Setup logging
-        setup_logger("commit", console)
 
-        logger.info(
-            "Commit command started",
-            target=str(validated_target),
-            has_message=validated_message is not None,
-            auto_yes=yes,
-        )
+    global_context : GlobalContext = ctx.obj
+    commit_context = CommitContext(validated_target, validated_message)
 
-        # Get model from context (set in CLI callback)
-        model = ctx.obj.get("model") if ctx.obj else None
+    logger.debug("[green] Verifying Repo State... [/green]")
+    # verify repo state specifically for commit command
+    if not verify_repo(global_context.git_commands, str(commit_context.target), global_context.auto_accept):
+        raise ValidationError("Cannot proceed without unstaging changes, exiting.")
+    
+    # next we create our base/new commits + backup branch for later
+    branch_saver = BranchSaver(global_context.git_interface)
 
-        # Create and run pipeline
-        repo_path = "."
+    logger.debug("[green] Creating backup of working state... [/green]")
+    base_commit_hash, new_commit_hash, base_branch = (
+        branch_saver.save_working_state()
+    )
+
+    with time_block("Commit Command E2E"):
         runner = create_commit_pipeline(
-            repo_path, str(validated_target), console, auto_yes=yes, model=model
+            global_context, commit_context, base_commit_hash, new_commit_hash, base_branch, branch_saver 
         )
 
-        result = runner.run(str(validated_target), validated_message, auto_yes=yes)
+        result = runner.run()
 
-        if not result:
-            console.print("[yellow]No commits were created[/yellow]")
-            raise typer.Exit(0)
-
+    if not result:
+        logger.info("[yellow]No commits were created[/yellow]")
+    else:
         logger.info(
             "Commit command completed successfully",
-            commits_created=len(result) if isinstance(result, list) else 0,
         )
-
-    except ValidationError as e:
-        console.print(f"[red]Validation Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
-        raise typer.Exit(1)
-
-    except GitError as e:
-        console.print(f"[red]Git Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Git operation failed: {e.message}")
-        raise typer.Exit(1)
-
-    except VibeError as e:
-        console.print(f"[red]Error:[/red] {e.message}")
-        if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Vibe operation failed: {e.message}")
-        raise typer.Exit(1)

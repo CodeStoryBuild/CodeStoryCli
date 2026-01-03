@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-from vibe.core.pipeline.runner import AIGitPipeline
+from vibe.pipelines.commmit_pipeline import CommitPipeline
 
 from .test_helpers import DeterministicGrouper
 
@@ -96,7 +96,7 @@ def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_a
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=2)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -147,7 +147,7 @@ def test_runner_multiple_files_complex_changes(
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=2)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -207,7 +207,7 @@ def test_runner_with_file_deletion_and_addition(
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=3)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -258,7 +258,7 @@ def test_runner_with_file_deletion(complex_git_repo, mock_inquirer_accept_all):
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -313,7 +313,7 @@ def test_runner_with_file_rename(complex_git_repo):
     with patch("inquirer.confirm") as mock_confirm:
         mock_confirm.return_value = True
 
-        pipeline = AIGitPipeline(git_interface, chunker, grouper)
+        pipeline = CommitPipeline(git_interface, chunker, grouper)
         results = pipeline.run()
 
     # Verify results
@@ -352,7 +352,7 @@ def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_al
         group_by_file=False, max_chunks_per_group=2
     )  # Content-based grouping
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -395,7 +395,7 @@ def test_runner_handles_no_changes(complex_git_repo):
     chunker = SimpleChunker()
     grouper = DeterministicGrouper()
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Mock inquirer in case it gets called
     with patch("inquirer.confirm") as mock_confirm:
@@ -432,7 +432,7 @@ def test_runner_with_staged_changes_reset(complex_git_repo):
     with patch("inquirer.confirm") as mock_confirm:
         mock_confirm.return_value = True
 
-        pipeline = AIGitPipeline(git_interface, chunker, grouper)
+        pipeline = CommitPipeline(git_interface, chunker, grouper)
         pipeline.run()
 
     # Verify that pipeline handled the situation
@@ -481,7 +481,7 @@ if __name__ == '__main__':
         group_by_file=True, max_chunks_per_group=1
     )  # One chunk per group
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
 
     # Run the pipeline
     results = pipeline.run()
@@ -819,7 +819,7 @@ settings = Settings()
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=3)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
     results = pipeline.run()
 
     # Verify results
@@ -1155,7 +1155,7 @@ bcrypt==3.2.0
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=2)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
     results = pipeline.run()
 
     # Verify results
@@ -1798,7 +1798,7 @@ with Database('sqlite:///app.db') as db:
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=2)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
     results = pipeline.run()
 
     # Verify results
@@ -2275,7 +2275,7 @@ python -m pytest tests/
     chunker = SimpleChunker()
     grouper = DeterministicGrouper(group_by_file=True, max_chunks_per_group=2)
 
-    pipeline = AIGitPipeline(git_interface, chunker, grouper)
+    pipeline = CommitPipeline(git_interface, chunker, grouper)
     results = pipeline.run()
 
     # Verify results

@@ -6,10 +6,10 @@ and type safety for all CLI parameters and configuration values.
 """
 
 import re
-import subprocess
 from pathlib import Path
 
-from .exceptions import FileSystemError, GitError, ValidationError
+from .git_interface.interface import GitInterface
+from .exceptions import FileSystemError, GitError, ValidationError, DetachedHeadError
 
 
 def validate_commit_hash(value: str) -> str:
@@ -208,7 +208,7 @@ def validate_min_size(value: int | None) -> int | None:
     return value
 
 
-def validate_git_repository(path: str = ".") -> None:
+def validate_git_repository(git_interface : GitInterface) -> None:
     """
     Validate that we're in a git repository.
 
@@ -220,40 +220,31 @@ def validate_git_repository(path: str = ".") -> None:
     """
     # Check if git is available
     try:
-        result = subprocess.run(
-            ["git", "--version"], capture_output=True, text=True, timeout=5, cwd=path
+        git_interface.run_git_text(
+            ["--version"],
         )
-        if result.returncode != 0:
-            raise GitError(
-                "Git is not working properly",
-                f"Git version check failed: {result.stderr}",
-            )
-    except FileNotFoundError:
-        raise GitError(
-            "Git is not installed or not in PATH",
-            "Please install git and ensure it's available in your PATH",
+    
+    except Exception as e:
+        raise GitError( 
+            "Git is not working properly",
+            f"Git version check failed: {e}",
         )
-    except subprocess.TimeoutExpired:
-        raise GitError("Git command timed out")
-    except subprocess.SubprocessError as e:
-        raise GitError(f"Git subprocess error: {e}")
-
     # Check if we're in a git repository
+    is_in_repo = git_interface.run_git_text(
+        ["rev-parse", "--is-inside-work-tree"],
+    )
+    if is_in_repo is None or "fatal: not a git repository" in is_in_repo:
+        raise GitError("Not in a git repository!")
+    
+    # validate that we are on a branch
     try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--git-dir"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            cwd=path,
-        )
-        if result.returncode != 0:
-            raise GitError(
-                f"Not a git repository: {path}",
-                "Run 'git init' to initialize a repository or navigate to an existing one",
-            )
-    except subprocess.SubprocessError as e:
-        raise GitError(f"Failed to check git repository status: {e}")
+        original_branch = git_interface.run_git_text(["branch", "--show-current"]) or ""
+        # check that not a detached branch
+        if not original_branch.strip():
+            msg = "Cannot backup: currently on a detached HEAD."
+            raise DetachedHeadError(msg)
+    except Exception as e:
+        raise GitError(f"Failed to check git branch status: {e}")
 
 
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
