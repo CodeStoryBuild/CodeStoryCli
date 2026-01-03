@@ -19,15 +19,12 @@ jobs:
           - os: windows-latest
             platform: windows
             exe_name: dslate.exe
-            installer_ext: .exe
           - os: ubuntu-latest
             platform: linux
             exe_name: dslate
-            installer_ext: .deb
           - os: macos-latest
             platform: macos
             exe_name: dslate
-            installer_ext: .pkg
 
     steps:
       - name: Checkout code
@@ -45,29 +42,45 @@ jobs:
           pip install pyinstaller pytest
           pip install -e .
 
-      # --- BUILD STEP ---
-      - name: Build Binary (Folder Mode)
-        run: python build_exe.py
+      # --- BUILD STEPS ---
+      
+      - name: Build Folder Mode (For Installer)
+        run: python build_exe.py --mode folder
 
-      # --- TEST STEP (Run immediately to save time) ---
-      - name: Run Integration Tests
+      - name: Build OneFile Mode (For Standalone)
+        run: python build_exe.py --mode file
+
+      # --- TEST STEPS ---
+
+      - name: Test Folder Build
         shell: bash
         run: |
-          # Locate the binary
+          echo ">>> Testing Folder Build"
           if [ "${{ matrix.platform }}" == "windows" ]; then
-            EXE_PATH="dist/dslate/${{ matrix.exe_name }}"
+            EXE_PATH="dist/folder/dslate/${{ matrix.exe_name }}"
           else
-            EXE_PATH="dist/dslate/${{ matrix.exe_name }}"
+            EXE_PATH="dist/folder/dslate/${{ matrix.exe_name }}"
             chmod +x "$EXE_PATH"
           fi
           
-          echo "Testing binary at: $EXE_PATH"
-          
-          # Run pytest using the built binary
           export CLI_ARTIFACT_PATH="$EXE_PATH"
-          pytest -vv dslate/dslate/tests/integration
+          pytest -vv dslate/tests/integration
 
-      # --- PACKAGING STEPS ---
+      - name: Test OneFile Build
+        shell: bash
+        run: |
+          echo ">>> Testing OneFile Build"
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            EXE_PATH="dist/file/${{ matrix.exe_name }}"
+          else
+            EXE_PATH="dist/file/${{ matrix.exe_name }}"
+            chmod +x "$EXE_PATH"
+          fi
+          
+          export CLI_ARTIFACT_PATH="$EXE_PATH"
+          pytest -vv dslate/tests/integration
+
+      # --- PACKAGING STEPS (Installers use Folder build) ---
 
       # 1. WINDOWS: Inno Setup
       - name: Install Inno Setup
@@ -75,14 +88,12 @@ jobs:
         shell: pwsh
         run: |
           choco install innosetup --no-progress
-          # Add Inno Setup to the PATH so we can use ISCC.exe in the next step
           echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Create & Compile Windows Installer
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # 1. Define the Inno Setup Script (setup.iss) dynamically
           $issContent = @"
           [Setup]
           AppName=dslate
@@ -97,11 +108,10 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          ; Ensure we grab the entire folder created by PyInstaller (onedir mode)
-          Source: "dist\dslate\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          ; Note: Using dist\folder path here
+          Source: "dist\folder\dslate\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
           [Registry]
-          ; Add to PATH variable so users can type 'dslate' in terminal
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
             ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; \
             Check: NeedsAddPath('{app}')
@@ -122,13 +132,8 @@ jobs:
           end;
           "@
 
-          # 2. Write the script to a file
           $issContent | Out-File -FilePath "setup.iss" -Encoding ASCII
-
-          # 3. Create output directory
           New-Item -ItemType Directory -Force -Path "dist\installers"
-
-          # 4. Run the Inno Setup Compiler (ISCC)
           ISCC.exe setup.iss
           
       # 2. LINUX: Build .deb
@@ -136,22 +141,17 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           VERSION="${{ github.ref_name }}"
-          # Clean version string (remove 'v' or 'release')
           VERSION=$(echo "$VERSION" | sed -E 's/^(v|release[-/]?)//')
-          # Fallback if not a version tag
           if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then VERSION="0.0.1"; fi
           
           mkdir -p dist/package/usr/lib/dslate
           mkdir -p dist/package/usr/bin
           mkdir -p dist/installers
           
-          # Copy files to /usr/lib/dslate
-          cp -r dist/dslate/* dist/package/usr/lib/dslate/
-          
-          # Create symlink in /usr/bin
+          # Note: Using dist/folder path here
+          cp -r dist/folder/dslate/* dist/package/usr/lib/dslate/
           ln -s /usr/lib/dslate/dslate dist/package/usr/bin/dslate
           
-          # Create DEBIAN control file
           mkdir -p dist/package/DEBIAN
           cat > dist/package/DEBIAN/control <<EOF
           Package: dslate
@@ -163,8 +163,7 @@ jobs:
           Description: dslate CLI tool
           EOF
           
-          # Build .deb
-          dpkg-deb --build dist/package dist/installers/dslate-installer-linux.deb
+          dpkg-deb --build dist/package dist/installers/dslate-linux-installer.deb
 
       # 3. MACOS: Build .pkg
       - name: Create macOS Installer (.pkg)
@@ -176,24 +175,35 @@ jobs:
           
           mkdir -p dist/installers
           
-          # pkgbuild builds a component package
-          # We install to /usr/local/dslate and rely on user adding path, 
-          # OR strictly install to /usr/local/bin (Apple prefers /usr/local for 3rd party)
-          
-          # Simple approach: Payload-free package that moves the files
-          # Or Standard approach:
-          
-          pkgbuild --root dist/dslate \
+          # Note: Using dist/folder path here
+          pkgbuild --root dist/folder/dslate \
                    --identifier com.dslate.cli \
                    --version "$VERSION" \
                    --install-location /usr/local/bin \
-                   dist/installers/dslate-installer-macos.pkg
+                   dist/installers/dslate-macos-installer.pkg
 
-      - name: Upload Installer Artifacts
+      # --- PREPARE ARTIFACTS ---
+
+      - name: Rename Standalone Executable
+        shell: bash
+        run: |
+          # Rename the onefile exe to be descriptive (e.g., dslate-windows-standalone.exe)
+          mkdir -p dist/ready_for_upload
+          
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            cp dist/file/dslate.exe dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone.exe
+          else
+            cp dist/file/dslate dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone
+          fi
+          
+          # Copy installers to same upload folder
+          cp dist/installers/* dist/ready_for_upload/
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: installers-${{ matrix.platform }}
-          path: dist/installers/*
+          name: release-assets-${{ matrix.platform }}
+          path: dist/ready_for_upload/*
 
   release:
     permissions:
@@ -222,8 +232,8 @@ jobs:
         with:
           name: Release ${{ steps.get_version.outputs.version }}
           files: |
-            artifacts/installers-windows/*.exe
-            artifacts/installers-linux/*.deb
-            artifacts/installers-macos/*.pkg
+            artifacts/release-assets-windows/*
+            artifacts/release-assets-linux/*
+            artifacts/release-assets-macos/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
