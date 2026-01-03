@@ -4,6 +4,7 @@ language_detector.py
 A lightweight, drop-in language detector for tree-sitter-language-pack.
 Detects language based on filename, extension, shebang, and content heuristics.
 """
+
 import os
 import re
 from pathlib import Path
@@ -151,6 +152,7 @@ SHEBANG_MAP = {
 # -----------------------------------------------------------------------------
 # 2. Ambiguity Resolvers
 # -----------------------------------------------------------------------------
+
 
 def _resolve_h_file(content: str) -> str:
     """Disambiguate .h files (C vs C++)."""

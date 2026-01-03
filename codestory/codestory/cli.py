@@ -221,6 +221,7 @@ def main(
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context
 
+
 def load_env(path=".env"):
     try:
         for line in open(path):
@@ -231,6 +232,7 @@ def load_env(path=".env"):
             os.environ[key] = value
     except FileNotFoundError:
         pass
+
 
 def run_app():
     """Run the application with global exception handling."""
