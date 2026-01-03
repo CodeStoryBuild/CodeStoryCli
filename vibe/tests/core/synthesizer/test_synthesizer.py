@@ -457,9 +457,7 @@ def test_pure_deletion_partial_content(git_repo):
     lines = content.strip().split("\n")
 
     # Verify line count and positions after deletions
-    assert (
-        len(lines) == 3
-    )  # Should have 3 lines remaining (5 original - 2 deleted)
+    assert len(lines) == 3  # Should have 3 lines remaining (5 original - 2 deleted)
 
     # Verify content and positions of remaining lines
     assert lines[0] == "line 1"  # First remaining line

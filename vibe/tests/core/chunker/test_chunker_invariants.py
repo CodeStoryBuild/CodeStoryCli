@@ -59,9 +59,7 @@ def run_chunker_invariants(chunker, orig):
     assert chunks_reconstruct_input(out_chunks, orig), (
         "Output chunks do not reconstruct input"
     )
-    assert chunks_disjoint(out_chunks), (
-        "Output chunks are not pairwise disjoint"
-    )
+    assert chunks_disjoint(out_chunks), "Output chunks are not pairwise disjoint"
 
 
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)

@@ -497,9 +497,7 @@ if __name__ == '__main__':
 
     # Verify results
     assert results is not None
-    assert (
-        len(results) > 1
-    )  # Should have multiple commits due to chunking and grouping
+    assert len(results) > 1  # Should have multiple commits due to chunking and grouping
 
     # Each commit should be small due to chunking and grouping limits
     for result in results:
@@ -1855,9 +1853,7 @@ with Database('sqlite:///app.db') as db:
     )
 
 
-def test_runner_mixed_operations_chaos(
-    large_codebase_repo, mock_inquirer_accept_all
-):
+def test_runner_mixed_operations_chaos(large_codebase_repo, mock_inquirer_accept_all):
     """Test chaotic real-world scenario with adds, deletes, renames, and modifications."""
     repo_path = large_codebase_repo
 
@@ -2327,16 +2323,14 @@ python -m pytest tests/
         )
 
     # Verify renamed/modified file contents match exactly
-    actual_formatters = (
-        repo_path / "src" / "utils" / "formatters.py"
-    ).read_text(encoding="utf-8")
+    actual_formatters = (repo_path / "src" / "utils" / "formatters.py").read_text(
+        encoding="utf-8"
+    )
     assert actual_formatters == expected_formatters, (
         f"File src/utils/formatters.py content mismatch:\nExpected:\n{expected_formatters}\n\nActual:\n{actual_formatters}"
     )
 
-    actual_user = (repo_path / "src" / "models" / "user.py").read_text(
-        encoding="utf-8"
-    )
+    actual_user = (repo_path / "src" / "models" / "user.py").read_text(encoding="utf-8")
     assert actual_user == expected_user_py, (
         f"File src/models/user.py content mismatch:\nExpected:\n{expected_user_py}\n\nActual:\n{actual_user}"
     )

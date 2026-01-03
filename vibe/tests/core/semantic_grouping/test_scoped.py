@@ -30,9 +30,7 @@ scope_mapper = ScopeMapper(query_manager)
 symbol_mapper = SymbolMapper(query_manager)
 
 # --- PASS 1: Build Scope Map ---
-scope_map = scope_mapper.build_scope_map(
-    parsed_file.detected_language, root, FILE_PATH
-)
+scope_map = scope_mapper.build_scope_map(parsed_file.detected_language, root, FILE_PATH)
 
 print("--- Generated Scope Map ---")
 for line, scope in scope_map.scope_lines.items():
@@ -40,9 +38,7 @@ for line, scope in scope_map.scope_lines.items():
 print("-" * 25)
 
 # --- PASS 2: Build Symbol Map ---
-sym_map = symbol_mapper.build_symbol_map(
-    parsed_file.detected_language, root, scope_map
-)
+sym_map = symbol_mapper.build_symbol_map(parsed_file.detected_language, root, scope_map)
 
 print("\n--- Found Symbols (with Scope Tagging) ---")
 for line, symbols in sorted(sym_map.line_symbols.items()):

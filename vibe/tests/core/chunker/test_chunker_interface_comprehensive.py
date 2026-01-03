@@ -277,9 +277,7 @@ class TestChunkerIntegration:
         # If both have same length, compare their canonical paths
         if len(result1) > 0 and len(result2) > 0:
             for r1, r2 in zip(result1, result2, strict=False):
-                if hasattr(r1, "canonical_path") and hasattr(
-                    r2, "canonical_path"
-                ):
+                if hasattr(r1, "canonical_path") and hasattr(r2, "canonical_path"):
                     assert r1.canonical_path() == r2.canonical_path()
 
 
