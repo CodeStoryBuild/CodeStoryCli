@@ -59,7 +59,7 @@ PATTERNS_SAFE = [
 PATTERNS_BALANCED = [
     # Looks for specific sensitive variable names assigned to string literals
     r"(?i)(api_?key|auth_?token|client_?secret|db_?pass|private_?key|aws_?secret)\s*[:=]\s*['\"][^'\"]+['\"]",
-    r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@"
+    r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@",
 ]
 
 PATTERNS_PARANOID = [

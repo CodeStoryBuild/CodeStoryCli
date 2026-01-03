@@ -6,6 +6,7 @@ from codestory.core.secret_scanner.secret_scanner import ScannerConfig, filter_h
 # For the sake of this test file execution, we assume the classes 
 # behave as defined in your previous prompt.
 
+
 class TestScannerPatterns:
     """
     Tests specific Regex logic across different aggression levels.

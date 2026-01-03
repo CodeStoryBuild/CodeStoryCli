@@ -247,5 +247,6 @@ def run_app():
     # launch cli
     app(prog_name="cst")
 
+
 if __name__ == "__main__":
     run_app()

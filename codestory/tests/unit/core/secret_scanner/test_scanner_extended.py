@@ -3,6 +3,7 @@ from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition, Removal
 from codestory.core.secret_scanner.secret_scanner import ScannerConfig, filter_hunks
 
+
 class TestFileLifecycle:
     """
     Tests specific git operations: Additions, Deletions, Renames.

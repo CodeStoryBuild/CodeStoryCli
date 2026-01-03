@@ -115,7 +115,7 @@ def main(
     with time_block("Clean Runner E2E"):
         runner = CleanPipeline(global_context, clean_context, fix_command)
         success = runner.run()
-    
+
     if success:
         logger.info("Clean command completed successfully")
     else:

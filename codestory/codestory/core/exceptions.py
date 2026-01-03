@@ -41,6 +41,7 @@ class CodestoryError(Exception):
 
     pass
 
+
 class GitError(CodestoryError):
     """
     Errors related to git operations.
@@ -147,6 +148,7 @@ class LogicalGroupingError(CodestoryError):
 
     pass
 
+
 class CleanCommandError(CodestoryError):
     """
     Errors specific to running the cst clean command
@@ -166,8 +168,6 @@ def handle_codestory_exception(func=None):
             logger.exception(e)
 
     return wrapper
-
-
 
 
 # Convenience functions for creating common errors
