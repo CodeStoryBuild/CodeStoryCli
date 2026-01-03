@@ -1688,7 +1688,7 @@ def test_scope_consistency(tools, language, filename, content):
     scope_map = scope_mapper.build_scope_map(
         parsed.detected_language,
         parsed.root_node,
-        filename.encode('utf-8'),
+        filename.encode("utf-8"),
         parsed.content_bytes,
         [(0, len(content.splitlines()) - 1)],
     )
