@@ -14,13 +14,14 @@ class StandardDiffChunk(DiffChunk):
     - Must contain enough information to reconstruct a patch for Git
     - Preserves file path, line numbers, and content
     - Can be serialized into a unified diff format
+    - GUARANTEES that ai_content represents a contiguous block of changes
 
     Attributes:
         file_path: Path of the file this chunk belongs to
         start_line: Start line number in the original file
         end_line: End line number in the original file
         content: The raw, human-readable lines of code in this chunk (with +/- prefixes)
-        ai_content: A structured, AI-legible list of Addition and Removal objects
+        ai_content: A structured, AI-legible list of Addition and Removal objects (MUST be contiguous)
         old_start: Optional start line in original version (for patch)
         new_start: Optional start line in new version
     """
@@ -29,6 +30,47 @@ class StandardDiffChunk(DiffChunk):
     ai_content: List[Union[Addition, Removal]]
     old_start: int
     new_start: int
+
+    def __post_init__(self):
+        """Validate that this chunk represents a contiguous block of changes."""
+        self._validate_contiguity()
+
+    def _validate_contiguity(self):
+        """
+        Validates that ai_content represents a contiguous block of changes.
+        
+        Rules for git patch contiguity:
+        1. All removals must be on consecutive line numbers starting from old_start
+        2. All additions must be on consecutive line numbers starting from new_start
+        3. old_start and new_start can be different (this is normal for git patches)
+        
+        Raises:
+            ValueError: If the chunk is not contiguous within its removal/addition blocks
+        """
+        if not self.ai_content:
+            return
+            
+        # Separate removals and additions
+        removals = [item for item in self.ai_content if isinstance(item, Removal)]
+        additions = [item for item in self.ai_content if isinstance(item, Addition)]
+        
+        # Check that removals are contiguous starting from old_start
+        if removals:
+            removal_lines = sorted([r.line_number for r in removals])
+            expected_line = self.old_start
+            for actual_line in removal_lines:
+                if actual_line != expected_line:
+                    raise ValueError(f"Non-contiguous removals: expected line {expected_line}, got {actual_line}")
+                expected_line += 1
+        
+        # Check that additions are contiguous starting from new_start  
+        if additions:
+            addition_lines = sorted([a.line_number for a in additions])
+            expected_line = self.new_start
+            for actual_line in addition_lines:
+                if actual_line != expected_line:
+                    raise ValueError(f"Non-contiguous additions: expected line {expected_line}, got {actual_line}")
+                expected_line += 1
 
     # override
     def to_patch(self) -> str:
@@ -258,10 +300,6 @@ class StandardDiffChunk(DiffChunk):
                 "file_path": self.file_path,
                 "changes": structured_changes
             }
-        
-        if self.new_name is not None:
-            output_data["new_file_path"] = self.new_name
-        
         
         # Return the JSON string, using indentation for human readability 
         # (though LLMs can handle non-indented JSON equally well).

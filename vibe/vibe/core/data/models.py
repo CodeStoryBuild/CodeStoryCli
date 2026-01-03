@@ -5,17 +5,18 @@ from typing import List, Optional, Union
 @dataclass
 class LineNumbered:
     line_number: int
+    content: str
 
 
 @dataclass
 class Addition(LineNumbered):
     """ Represents a single added line of code."""
-    content: str
+    ...
 
 @dataclass
 class Removal(LineNumbered):
     """ Represents a single removed line of code."""
-    content: str
+    ...
 
 @dataclass(init=False)
 class Move(LineNumbered):
@@ -403,7 +404,7 @@ class CommitGroup:
     """
     chunks: List[DiffChunk]
     group_id: str
-    branch_name: str
+    # branch_name: str
     commmit_message: str
     extended_message: Optional[str] = None
     

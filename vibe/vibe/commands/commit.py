@@ -4,17 +4,26 @@ import inquirer
 from rich.console import Console
 from dotenv import load_dotenv
 from vibe.core.chunker.max_line_chunker import MaxLineChunker
+from vibe.core.chunker.predicate_chunker import PredicateChunker
 from vibe.core.grouper.gemini_grouper import GeminiGrouper
-from vibe.core.git_interface.LocalGitInterface import LocalGitInterface
+from vibe.core.grouper.single_grouper import SingleGrouper
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.pipeline.runner import AIGitPipeline
 
 load_dotenv()
 
 console = Console()
 app = typer.Typer(help="Commit changes with AI-powered messages")
-git = LocalGitInterface(".")
-chk = MaxLineChunker(2)
-grp = GeminiGrouper(os.getenv("GEMINIAPIKEY"))
+git = SubprocessGitInterface(".")
+
+def is_whitespace_line(line: str) -> bool:
+    return line.strip() == ""
+
+chk = PredicateChunker(is_whitespace_line)
+# chk = MaxLineChunker(2)
+
+grp = SingleGrouper()
+# grp = GeminiGrouper(os.getenv("GEMINIAPIKEY"))
 
 runner = AIGitPipeline(git, chk, grp)
 

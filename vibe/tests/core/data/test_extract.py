@@ -1,5 +1,6 @@
 import pytest
 from vibe.core.data.models import Removal, Addition, DiffChunk
+from vibe.core.data.s_diff_chunk import StandardDiffChunk
 
 def setup_extract_chunk():
     """Helper to create a common complex DiffChunk for testing extractions."""
@@ -14,7 +15,7 @@ def setup_extract_chunk():
         Removal(7, "R7"), # Index 7
     ]
     raw_content = "-R1\n+A1\n-R2\n+A3\n-R4\n+A5\n+A6\n-R7"
-    return DiffChunk(
+    return StandardDiffChunk(
         file_path="extract_file.py",
         content=raw_content,
         ai_content=ai_content_list,
