@@ -1,12 +1,13 @@
 # Supported Providers & Languages
 
-`codestory` leverages `aisuite` for model connectivity and `tree-sitter` for code analysis.
+Codestory CLI leverages `aisuite` for model connectivity and `tree-sitter` for code analysis.
 
 ## Model Providers
 
 The following providers are supported via `aisuite`. Configure them using `cst config model "<provider>:<model>"`.
 
 For the most up to date list, you can run:
+
 ``` bash
 cst -SP
 ```
@@ -38,6 +39,7 @@ cst -SP
 | **xAI** | `xai` | [x.ai](https://x.ai/) |
 
 ### Configuration Example
+
 ```bash
 # Set your model
 cst config model "openai:gpt-4o"
@@ -49,16 +51,22 @@ cst config api_key "sk-..."
 
 ## Supported Languages
 
-`codestory` provides deep semantic analysis for the many languages out of the box. Here are some common ones:
+Codestory CLI provides deep semantic analysis for the many languages out of the box. Here are some common ones:
+
 - **C-Family**: `cpp`, `csharp`,
+
 - **Web**: `javascript`, `typescript`, `php`
+
 - **Systems**: `rust`, `go`, `swift`
+
 - **Scripting**: `python`, `ruby`, `lua`
+
 - **Functional**: `elixir`, `haskell`, `ocaml`, `erlang`, `clojure`
+
 - **Mobile/Other**: `kotlin`, `java`, `scala`, `dart`, `r`
 
 For the most up to date list, you can run:
+
 ``` bash
 cst -SL
 ```
-
