@@ -1,4 +1,4 @@
-site_name: CodeStory CLI Documentation
+site_name: Codestory CLI Documentation
 site_url: https://cli.codestory.build/docs
 plugins:
   - search
@@ -8,12 +8,38 @@ theme:
     name: material
     features:
       - navigation.sections
+      - content.code.copy
+    palette:
+      - media: "(prefers-color-scheme: light)"
+        scheme: default
+        primary: indigo
+        accent: indigo
+        toggle:
+          icon: material/brightness-7
+          name: Switch to dark mode
+      - media: "(prefers-color-scheme: dark)"
+        scheme: slate
+        primary: indigo
+        accent: indigo
+        toggle:
+          icon: material/brightness-4
+          name: Switch to light mode
 
 nav:
   - Introduction: index.md
+  - Why Codestory CLI?: philosophy/index.md
+  - Getting Started: getting-started/index.md
   - Usage Guide: usage/index.md
+  - Troubleshooting: troubleshooting/index.md
+  - Configuration: configuration/index.md
+  - Architecture:
+      - Overview: design/index.md
+      - How It Works: design/how-it-works.md
+      - Mechanical Chunking: design/mechanical-chunking.md
+      - Semantic Grouping: design/semantic-grouping.md
+      - Logical Grouping: design/logical-grouping.md
+      - Commit Strategy: design/commit-strategy.md
   - Extensibility: extensibility/index.md
-  - Architecture: design/index.md
   - Reference:
       - CLI Commands: reference/root.md
       - Providers & Languages: reference/supported.md
