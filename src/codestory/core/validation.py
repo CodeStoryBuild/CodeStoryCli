@@ -47,6 +47,9 @@ def validate_commit_hash(value: str) -> str:
     Raises:
         ValidationError: If the commit hash format is invalid
     """
+    if value == "HEAD":
+        return value
+
     if not value or not isinstance(value, str):
         raise ValidationError("Commit hash cannot be empty")
 
