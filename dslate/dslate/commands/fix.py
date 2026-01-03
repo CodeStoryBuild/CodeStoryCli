@@ -5,9 +5,16 @@ from dslate.context import CommitContext, FixContext, GlobalContext
 from dslate.core.exceptions import DetachedHeadError, GitError
 from dslate.core.git_interface.interface import GitInterface
 from dslate.core.logging.utils import time_block
-from dslate.core.validation import validate_commit_hash
+from dslate.core.validation import validate_commit_hash, validate_git_repository
 from dslate.pipelines.commit_init import create_commit_pipeline
 from dslate.pipelines.fix_pipeline import FixPipeline
+
+
+def _help_callback(ctx: typer.Context, param, value: bool):
+    if not value or ctx.resilient_parsing:
+        return
+    typer.echo(ctx.get_help())
+    raise typer.Exit()
 
 
 def get_info(git_interface: GitInterface, fix_context: FixContext):
@@ -52,6 +59,13 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
 def main(
     ctx: typer.Context,
+    help: bool = typer.Option(
+        False,
+        "--help",
+        callback=_help_callback,
+        is_eager=True,
+        help="Show this message and exit.",
+    ),
     commit_hash: str = typer.Argument(..., help="Hash of the commit to split or fix"),
 ) -> None:
     """Fix a past commit by splitting into smaller logical commits safely.
@@ -60,9 +74,11 @@ def main(
         # Fix a specific commit
         dslate fix abc123
     """
+    global_context: GlobalContext = ctx.obj
+    validate_git_repository(global_context.git_interface)
+    
     validated_hash = validate_commit_hash(commit_hash)
 
-    global_context: GlobalContext = ctx.obj
     fix_context = FixContext(validated_hash)
 
     logger.info("Fix command started", fix_context=fix_context)

@@ -11,8 +11,17 @@ from dslate.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
+    validate_git_repository
 )
 from dslate.pipelines.commit_init import create_commit_pipeline
+
+
+def _help_callback(ctx: typer.Context, param, value: bool):
+    # Typer/Click help callback: show help and exit when --help is provided
+    if not value or ctx.resilient_parsing:
+        return
+    typer.echo(ctx.get_help())
+    raise typer.Exit()
 
 
 def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:
@@ -55,6 +64,13 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 
 def main(
     ctx: typer.Context,
+    help: bool = typer.Option(
+        False,
+        "--help",
+        callback=_help_callback,
+        is_eager=True,
+        help="Show this message and exit.",
+    ),
     target: str | None = typer.Argument(
         None, help="Path to file or directory to commit."
     ),
@@ -70,6 +86,8 @@ def main(
         # Commit specific directory with message
         dslate commit src/ "Refactor user authentication"
     """
+    global_context: GlobalContext = ctx.obj
+    validate_git_repository(global_context.git_interface)
 
     # Validate inputs
     validated_target = validate_target_path(target)
@@ -79,7 +97,6 @@ def main(
     if validated_message:
         validated_message = sanitize_user_input(validated_message)
 
-    global_context: GlobalContext = ctx.obj
     commit_context = CommitContext(validated_target, validated_message)
 
     logger.debug("[green] Checking repository status... [/green]")

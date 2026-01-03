@@ -77,7 +77,7 @@ class ConfigLoader:
 
         data = {}
         for k, v in os.environ.items():
-            if k.startswith(app_prefix):
+            if k.lower().startswith(app_prefix.lower()):
                 key_clean = k[len(app_prefix) :]
                 data[key_clean] = v
 

@@ -28,6 +28,10 @@ def try_create_model(
     model_name = None
     api_key = api_key_arg
 
+    if model_arg == "no-model":
+        # explicit no model usage (will default to single grouper)
+        return None
+
     # Parse --model argument (format: provider:model-name)
     if model_arg:
         if ":" in model_arg:
@@ -62,5 +66,4 @@ def try_create_model(
     try:
         return create_llm_model(model_config)
     except Exception as e:
-        logger.error(f"Failed to create model: {e}")
-        return None
+        raise ConfigurationError("Invalid model provided! Please provide a model!") from e
