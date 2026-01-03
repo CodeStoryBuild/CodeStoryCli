@@ -29,7 +29,7 @@ from codestory.core.file_reader.file_parser import FileParser, ParsedFile
 # -----------------------------------------------------------------------------
 
 
-@patch("dslate.core.file_reader.file_parser.get_lexer_for_filename")
+@patch("codestory.core.file_reader.file_parser.get_lexer_for_filename")
 def test_detect_language_success(mock_get_lexer):
     mock_lexer = Mock()
     mock_lexer.name = "Python"
@@ -39,7 +39,7 @@ def test_detect_language_success(mock_get_lexer):
     assert lang == "python"
 
 
-@patch("dslate.core.file_reader.file_parser.get_lexer_for_filename")
+@patch("codestory.core.file_reader.file_parser.get_lexer_for_filename")
 def test_detect_language_unknown(mock_get_lexer):
     # Simulate ClassNotFound from pygments
     from pygments.util import ClassNotFound
@@ -70,7 +70,7 @@ def test_parse_file_success(mock_detect, mock_get_parser):
     assert result.content_bytes == b"print('hello')"
 
 
-@patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
+@patch("codestory.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_no_language(mock_detect):
     mock_detect.return_value = None
 
@@ -88,8 +88,8 @@ def test_parse_file_parser_error(mock_detect, mock_get_parser):
     assert result is None
 
 
-@patch("dslate.core.file_reader.file_parser.get_parser")
-@patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
+@patch("codestory.core.file_reader.file_parser.get_parser")
+@patch("codestory.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_parsing_exception(mock_detect, mock_get_parser):
     mock_detect.return_value = "python"
     mock_parser = Mock()

@@ -6,7 +6,7 @@
 
 #
 
-# This file is part of DSLATE.
+# This file is part of codestory.
 
 #
 

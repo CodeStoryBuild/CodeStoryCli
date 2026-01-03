@@ -2,7 +2,7 @@
 # dslate - Dual Licensed Software
 # Copyright (c) 2025 Adem Can
 #
-# This file is part of DSLATE.
+# This file is part of codestory.
 #
 # codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
@@ -51,7 +51,7 @@ class TestConfigCommand:
         assert result.returncode == 0
 
         # Verify config file was created
-        config_file = temp_dir / "dslateconfig.toml"
+        config_file = temp_dir / "codestoryconfig.toml"
         assert config_file.exists()
 
         # Verify content
@@ -61,7 +61,7 @@ class TestConfigCommand:
 
         # Verify .gitignore was updated
         gitignore_content = gitignore.read_text()
-        assert "dslateconfig.toml" in gitignore_content
+        assert "codestoryconfig.toml" in gitignore_content
 
     def test_config_set_local_no_gitignore(self, cli_exe, temp_dir):
         """Test setting local config when .gitignore doesn't exist."""
@@ -69,7 +69,7 @@ class TestConfigCommand:
         assert result.returncode == 0
 
         # Verify config file was created
-        config_file = temp_dir / "dslateconfig.toml"
+        config_file = temp_dir / "codestoryconfig.toml"
         assert config_file.exists()
 
         # Verify warning was printed
@@ -94,7 +94,7 @@ class TestConfigCommand:
         assert (
             "environment" in result.stdout.lower() or "export" in result.stdout.lower()
         )
-        assert "dslate_api_key" in result.stdout.lower()
+        assert "codestory_api_key" in result.stdout.lower()
 
     def test_config_get_local(self, cli_exe, temp_dir):
         """Test getting a local configuration value."""
@@ -128,7 +128,7 @@ class TestConfigCommand:
         assert result.returncode == 0
 
         # Verify update
-        config_file = temp_dir / "dslateconfig.toml"
+        config_file = temp_dir / "codestoryconfig.toml"
         content = config_file.read_text()
         assert "updated-model" in content
         assert "initial-model" not in content
@@ -139,7 +139,7 @@ class TestConfigCommand:
         run_cli(cli_exe, ["config", "temperature", "0.7"], cwd=temp_dir)
         run_cli(cli_exe, ["config", "verbose", "true"], cwd=temp_dir)
 
-        config_file = temp_dir / "dslateconfig.toml"
+        config_file = temp_dir / "codestoryconfig.toml"
         content = config_file.read_text()
 
         assert "model" in content
@@ -150,13 +150,13 @@ class TestConfigCommand:
         """Test that we don't duplicate .gitignore entries."""
         # Create .gitignore with config file already in it
         gitignore = temp_dir / ".gitignore"
-        gitignore.write_text("dslateconfig.toml\n*.pyc\n")
+        gitignore.write_text("codestoryconfig.toml\n*.pyc\n")
 
         run_cli(cli_exe, ["config", "model", "test"], cwd=temp_dir)
 
         # Verify no duplication
         gitignore_content = gitignore.read_text()
-        assert gitignore_content.count("dslateconfig.toml") == 1
+        assert gitignore_content.count("codestoryconfig.toml") == 1
 
     def test_config_get_nonexistent(self, cli_exe, temp_dir):
         """Test getting a non-existent configuration key."""
@@ -175,7 +175,7 @@ class TestConfigCommand:
         run_cli(cli_exe, ["config", "model", "model2"], cwd=temp_dir)
 
         # Verify both values exist and temperature is unchanged
-        config_file = temp_dir / "dslateconfig.toml"
+        config_file = temp_dir / "codestoryconfig.toml"
         content = config_file.read_text()
         assert "model2" in content
         assert "0.5" in content and "temperature" in content
