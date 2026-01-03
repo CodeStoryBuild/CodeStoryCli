@@ -42,7 +42,7 @@ def tools():
     Initializes the heavy components once per module.
     Returns a tuple of (FileParser, SymbolExtractor, SymbolMapper).
     """
-    qm = QueryManager()
+    qm = QueryManager.get_instance()
     symbol_extractor = SymbolExtractor(qm)
     symbol_mapper = SymbolMapper(qm)
     parser = FileParser()
@@ -2095,12 +2095,12 @@ def test_symbol_based_grouping(
     # Get symbols for each chunk's lines
     chunk1_symbols = set()
     for line_num in range(chunk1_lines[0], chunk1_lines[1] + 1):
-        symbols = symbol_map.line_symbols.get(line_num, set())
+        symbols = symbol_map.modified_line_symbols.get(line_num, set())
         chunk1_symbols.update(symbols)
 
     chunk2_symbols = set()
     for line_num in range(chunk2_lines[0], chunk2_lines[1] + 1):
-        symbols = symbol_map.line_symbols.get(line_num, set())
+        symbols = symbol_map.modified_line_symbols.get(line_num, set())
         chunk2_symbols.update(symbols)
 
     # Check if they share any symbols
@@ -2163,7 +2163,7 @@ def bar():
     )
 
     # No symbols should be in the map since we only modified a usage
-    assert len(symbol_map.line_symbols) == 0
+    assert len(symbol_map.modified_line_symbols) == 0
 
 
 def test_symbol_definition_only_in_modified_lines(tools):
@@ -2202,7 +2202,7 @@ def use_classes():
     class_a_found = False
     class_b_found = False
 
-    for line_symbols in symbol_map.line_symbols.values():
+    for line_symbols in symbol_map.modified_line_symbols.values():
         for symbol in line_symbols:
             if "A" in symbol:
                 class_a_found = True

@@ -23,11 +23,9 @@ from typing import Literal
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.exceptions import GitError
-from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.grouper.llm_grouper import LLMGrouper
 from codestory.core.grouper.single_grouper import SingleGrouper
-from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
 from codestory.pipelines.commit_pipeline import CommitPipeline
@@ -55,9 +53,6 @@ def create_commit_pipeline(
     file_reader = GitFileReader(
         global_ctx.git_interface, base_commit_hash, new_commit_hash
     )
-    file_parser = FileParser()
-
-    query_manager = QueryManager()
 
     semantic_grouper = SemanticGrouper()
 
@@ -73,8 +68,6 @@ def create_commit_pipeline(
         logical_grouper,
         synthesizer,
         file_reader,
-        file_parser,
-        query_manager,
         base_commit_hash,
         new_commit_hash,
         source,

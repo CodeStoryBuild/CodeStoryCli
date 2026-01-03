@@ -29,7 +29,8 @@ from .query_manager import QueryManager
 class SymbolMap:
     """Maps line number to a set of fully-qualified symbols on that line."""
 
-    line_symbols: dict[int, set[str]]
+    modified_line_symbols: dict[int, set[str]] # symbols explicitly defined in the code (we can say more about these, eg we know they are modified)
+    extern_line_symbols: dict[int, set[str]] # symbols where we find usages, but cant say that the source has been modified
 
 
 class SymbolMapper:
@@ -65,7 +66,8 @@ class SymbolMapper:
             line_ranges=line_ranges,
         )
 
-        line_symbols_mut: dict[int, set[str]] = {}
+        modified_line_symbols_mut: dict[int, set[str]] = {}
+        extern_line_symbols_mut: dict[int, set[str]] = {}
 
         # Process each captured symbol
         for match_class, nodes in symbol_captures.items():
@@ -77,13 +79,19 @@ class SymbolMapper:
                 )
 
                 if qualified_symbol in defined_symbols:
-                    start_line = node.start_point[0]
-                    end_line = node.end_point[0]
+                    line_symbols = modified_line_symbols_mut
+                else:
+                    line_symbols = extern_line_symbols_mut
+                
 
-                    for i in range(start_line, end_line + 1):
-                        # we can group on this symbol
+                start_line = node.start_point[0]
+                end_line = node.end_point[0]
 
-                        # Add the qualified symbol to the line's symbol set
-                        line_symbols_mut.setdefault(i, set()).add(qualified_symbol)
+                for i in range(start_line, end_line + 1):
+                    # we can group on this symbol
 
-        return SymbolMap(line_symbols=line_symbols_mut)
+                    # Add the qualified symbol to the line's symbol set
+                    line_symbols.setdefault(i, set()).add(qualified_symbol)
+
+
+        return SymbolMap(modified_line_symbols=modified_line_symbols_mut, extern_line_symbols=extern_line_symbols_mut)

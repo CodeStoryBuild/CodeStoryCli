@@ -62,7 +62,8 @@ def context_manager():
     # Helper to configure context for a specific file/version
     def configure_context(path, is_old, symbols=None, scopes=None):
         ctx = Mock()
-        ctx.symbol_map.line_symbols = symbols or {}
+        ctx.symbol_map.modified_line_symbols = symbols or {}
+        ctx.symbol_map.extern_line_symbols = {}
         ctx.scope_map.scope_lines = scopes or {}
 
         contexts[(path, is_old)] = ctx

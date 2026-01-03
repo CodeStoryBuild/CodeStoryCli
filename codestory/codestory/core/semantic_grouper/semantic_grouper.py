@@ -127,8 +127,8 @@ class SemanticGrouper:
         symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
         scope_to_chunks: dict[str, list[int]] = defaultdict(list)
         for i, sig in enumerate(signatures):
-            # Only consider chunks with symbols for grouping
-            for symbol in sig.total_symbols:
+            # TODO, should we splt into two merge classes?
+            for symbol in (sig.def_new_symbols | sig.def_old_symbols):
                 symbol_to_chunks[symbol].append(i)
             for scope in sig.scopes:
                 scope_to_chunks[scope].append(i)

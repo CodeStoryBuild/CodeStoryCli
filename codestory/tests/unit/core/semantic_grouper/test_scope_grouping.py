@@ -41,7 +41,7 @@ def tools():
     Initializes the heavy components once per module.
     Returns a tuple of (FileParser, ScopeMapper).
     """
-    qm = QueryManager()
+    qm = QueryManager.get_instance()
     scope_mapper = ScopeMapper(qm)
     parser = FileParser()
     return parser, scope_mapper
@@ -1594,7 +1594,8 @@ def test_scope_based_grouping(
     scope_map = scope_mapper.build_scope_map(
         parsed.detected_language,
         parsed.root_node,
-        filename,
+        filename.encode('utf-8'),
+        parsed.content_bytes,
         [(0, total_lines - 1)],
     )
 
@@ -1645,7 +1646,7 @@ def test_scope_map_empty_file(tools):
     parsed = parser.parse_file("test.py", content, [(0, 0)])
 
     scope_map = scope_mapper.build_scope_map(
-        parsed.detected_language, parsed.root_node, "test.py", [(0, 0)]
+        parsed.detected_language, parsed.root_node, "test.py".encode('utf-8'), parsed.content_bytes, [(0, 0)]
     )
 
     assert len(scope_map.scope_lines) == 0
@@ -1689,7 +1690,8 @@ def test_scope_consistency(tools, language, filename, content):
     scope_map = scope_mapper.build_scope_map(
         parsed.detected_language,
         parsed.root_node,
-        filename,
+        filename.encode('utf-8'),
+        parsed.content_bytes,
         [(0, len(content.splitlines()) - 1)],
     )
 

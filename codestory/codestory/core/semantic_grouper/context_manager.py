@@ -61,29 +61,24 @@ class ContextManager:
     Creates scope and symbol maps for old and new versions of files that appear
     in diff chunks, enabling semantic analysis across file changes.
     """
-
     def __init__(
         self,
         chunks: list[Chunk],
-        file_parser: FileParser,
         file_reader: FileReader,
-        query_manager: QueryManager,
         fail_on_syntax_errors: bool = False,
     ):
-        self.file_parser = file_parser
         self.file_reader = file_reader
-        self.query_manager = query_manager
         self.diff_chunks = [
                 diff_chunk for chunk in chunks for diff_chunk in chunk.get_chunks()
         ]
         self.fail_on_syntax_errors = fail_on_syntax_errors
 
         # Initialize mappers
-        self.scope_mapper = ScopeMapper(query_manager)
-        self.symbol_mapper = SymbolMapper(query_manager)
-        self.symbol_extractor = SymbolExtractor(query_manager)
-        self.comment_mapper = CommentMapper(query_manager)
-
+        self.query_manager = QueryManager.get_instance()
+        self.scope_mapper = ScopeMapper(self.query_manager)
+        self.symbol_mapper = SymbolMapper(self.query_manager)
+        self.symbol_extractor = SymbolExtractor(self.query_manager)
+        self.comment_mapper = CommentMapper(self.query_manager)
         # Context storage: (file_type (language name)) -> SharedContext
         self._shared_context_cache: dict[tuple[str, bool], SharedContext] = {}
         # Context storage: (file_path, is_old_version) -> AnalysisContext
@@ -217,7 +212,7 @@ class ContextManager:
                 continue
 
             # Parse the file (file_parser expects string path)
-            parsed_file = self.file_parser.parse_file(
+            parsed_file = FileParser.parse_file(
                 path_str, content, self.simplify_overlapping_ranges(line_ranges)
             )
             if parsed_file is None:
@@ -343,6 +338,7 @@ class ContextManager:
                 parsed_file.detected_language,
                 parsed_file.root_node,
                 file_path,
+                parsed_file.content_bytes,
                 parsed_file.line_ranges,
             )
 
