@@ -15,16 +15,16 @@ class DiffChunk:
     - Must contain enough information to reconstruct a patch for Git
     - Preserves file path, line numbers, and content
     - Can be serialized into a unified diff format
-    
+
     CRITICAL COORDINATE SYSTEM:
     - old_start: ALWAYS in ORIGINAL/OLD file coordinates. This is the anchor.
     - new_start: DOES NOT EXIST as a stored field! It's calculated on-the-fly
       during patch generation based on old_start + cumulative_offset.
     - Addition.old_line: Position in old file where addition occurs
     - Addition.abs_new_line: Absolute new file position (ONLY for semantic grouping)
-    - Removal.old_line: Line being removed from old file  
+    - Removal.old_line: Line being removed from old file
     - Removal.abs_new_line: Absolute new file position (ONLY for semantic grouping)
-    
+
     This design ensures chunks can be split, recombined, and applied in ANY order
     while maintaining 100% correctness. The new_start values are calculated ONLY
     when generating patches, based on the cumulative effect of all prior chunks.
@@ -105,7 +105,7 @@ class DiffChunk:
 
     def get_abs_new_line_start(self) -> int | None:
         """Get the absolute new file line start (for semantic grouping ONLY!).
-        
+
         This finds the abs_new_line value from the first Addition in the chunk.
         Returns None if there are no additions.
         """
@@ -118,7 +118,7 @@ class DiffChunk:
 
     def get_abs_new_line_end(self) -> int | None:
         """Get the absolute new file line end (for semantic grouping ONLY!).
-        
+
         This finds the abs_new_line value from the last Addition in the chunk.
         Returns None if there are no additions.
         """
@@ -131,7 +131,7 @@ class DiffChunk:
 
     def get_min_abs_line(self) -> int:
         """Get the minimum absolute line number for sorting chunks.
-        
+
         This returns the minimum of all abs_new_line values in the chunk.
         Used for determining relative positioning of chunks.
         Falls back to old_start if no abs_new_line values exist.
@@ -144,7 +144,7 @@ class DiffChunk:
 
     def get_old_line_range(self) -> tuple[int, int]:
         """Get the range of old file lines this chunk covers.
-        
+
         Returns (start, end) inclusive range in old file coordinates.
         """
         if not self.old_start:
@@ -153,7 +153,7 @@ class DiffChunk:
 
     def get_abs_new_line_range(self) -> tuple[int | None, int | None]:
         """Get the range of absolute new file lines this chunk covers.
-        
+
         Returns (start, end) inclusive range in absolute new file coordinates.
         Returns (None, None) if no additions exist.
         """
@@ -165,7 +165,7 @@ class DiffChunk:
 
     def get_sort_key(self) -> tuple[int, int]:
         """Get a sort key for maintaining correct chunk order.
-        
+
         Returns (old_start, min_abs_new_line) tuple.
         This ensures chunks are sorted by old file position first,
         then by new file position for chunks at the same old position.
@@ -174,7 +174,7 @@ class DiffChunk:
 
     def is_disjoint_from(self, other: "DiffChunk") -> bool:
         """Check if this chunk is disjoint from another chunk (in old file coordinates).
-        
+
         Two chunks are disjoint if their old file ranges don't overlap.
         This is the key property that allows chunks to be applied in any order.
         """
@@ -243,7 +243,7 @@ class DiffChunk:
         """
         Construct a DiffChunk from a single, parsed HunkWrapper.
         This is the standard factory for this class.
-        
+
         CRITICAL: We store BOTH coordinate systems:
         - old_line: Position in old file (used for patch generation)
         - abs_new_line: Absolute position in new file from original diff
@@ -266,7 +266,7 @@ class DiffChunk:
                     Addition(
                         old_line=current_old_line,
                         abs_new_line=current_new_line,
-                        content=sanitized_content
+                        content=sanitized_content,
                     )
                 )
                 current_new_line += 1
@@ -278,7 +278,7 @@ class DiffChunk:
                     Removal(
                         old_line=current_old_line,
                         abs_new_line=current_new_line,
-                        content=sanitized_content
+                        content=sanitized_content,
                     )
                 )
                 current_old_line += 1
@@ -312,7 +312,7 @@ class DiffChunk:
         parsed_slice: list[Addition | Removal],
     ) -> "DiffChunk":
         """Create a DiffChunk from a slice of parsed content.
-        
+
         CRITICAL: We ONLY calculate old_start here. new_start does NOT exist!
         The old_start is derived from the old_line values in the parsed content.
         """

@@ -10,7 +10,7 @@ error handling and user experience.
 class VibeError(Exception):
     """
     Base exception for all vibe-related errors.
-    
+
     All vibe-specific exceptions should inherit from this class
     to enable consistent error handling throughout the application.
     """
@@ -18,7 +18,7 @@ class VibeError(Exception):
     def __init__(self, message: str, details: str = None):
         """
         Initialize a VibeError.
-        
+
         Args:
             message: Main error message for the user
             details: Additional technical details for logging
@@ -31,70 +31,77 @@ class VibeError(Exception):
 class GitError(VibeError):
     """
     Errors related to git operations.
-    
+
     Raised when git commands fail or when git repository
     state is invalid for the requested operation.
     """
+
     pass
 
 
 class ValidationError(VibeError):
     """
     Input validation errors.
-    
+
     Raised when user input fails validation checks,
     such as invalid file paths, malformed commit hashes, etc.
     """
+
     pass
 
 
 class ConfigurationError(VibeError):
     """
     Configuration-related errors.
-    
+
     Raised when configuration files are invalid, missing,
     or contain incompatible settings.
     """
+
     pass
 
 
 class AIServiceError(VibeError):
     """
     AI service related errors.
-    
+
     Raised when AI API calls fail, timeout, or return
     invalid responses.
     """
+
     pass
 
 
 class FileSystemError(VibeError):
     """
     File system operation errors.
-    
+
     Raised when file or directory operations fail,
     such as permission issues or missing files.
     """
+
     pass
 
 
 class ChunkingError(VibeError):
     """
     Errors during diff chunking operations.
-    
+
     Raised when the chunking process encounters
     invalid diffs or fails to parse changes.
     """
+
     pass
 
 
 class SynthesizerError(VibeError):
     """
     Errors during commit synthesis.
-    
+
     Raised when the commit synthesis process fails
     to create valid commits from chunks.
     """
+
     pass
 
 
