@@ -22,28 +22,34 @@ from .interface import LogicalGrouper
 # Prompts
 # -----------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an expert code reviewer analyzing code changes.
-Your primary task is to analyze the provided code diffs and group them into logical commits based on their intention.
+SYSTEM_PROMPT = """You are an experienced committer preparing commit messages for a set of code changes.
+Your primary task is to analyze the provided code diffs and group them into logical commits, and produce commit messages written from the committer's perspective (first-person where appropriate).
 
 You must output a VALID JSON object. Do not output markdown text, just the JSON.
 
 JSON Schema:
 {
-  "groups": [
-    {
-      "group_id": "string (unique id)",
-      "commit_message": "string (Conventional Commits format)",
-      "extended_message": "string or null",
-      "changes": [int, int, ...],
-      "description": "string (rationale)"
-    }
-  ]
+    "groups": [
+        {
+            "group_id": "string (unique id)",
+            "commit_message": "string (Conventional Commits format)",
+            "extended_message": "string or null",
+            "changes": [int, int, ...],
+            "description": "string (rationale)"
+        }
+    ]
 }
 
+Commit Message Guidance (committer-perspective):
+- Write the `commit_message` as a Conventional Commits style header (e.g., `feat:`, `fix:`, `refactor:`) but authored from the committer's voice. Use short declarative action plus a brief reason in the message body or `extended_message`.
+- Prefer first-person rationale when it clarifies intent: e.g., "feat: add X to Y" and in `extended_message` or description explain "I added X because Y" or "I changed A to B to fix Y".
+- Keep the header concise and use `extended_message` for additional context, motivation, and any tradeoffs or known limitations.
+
 Guidelines:
-1. Semantic Grouping: Group changes based on intention (e.g., refactoring vs feature).
-2. Completeness: Every 'chunk_id' from the input MUST be assigned to exactly one group.
-3. Atomicity: Do not create massive "catch-all" groups unless the changes are truly related.
+1. Semantic Grouping: Group changes based on the committer's intention (feature, fix, refactor, docs, chore). Each group should represent a single logical change the committer would make.
+2. Completeness: Every `chunk_id` from the input MUST be assigned to exactly one group.
+3. Atomicity: Avoid catch-all groups; favor smaller, focused commits unless changes are genuinely related.
+4. Tone: Use the committer's voice for `commit_message` and `extended_message` — explain what you did and why (e.g., "I removed redundant code because it caused X" or "I implemented caching to improve Y").
 """
 
 ANALYSIS_PROMPT_TEMPLATE = """Analyze these code changes and group them:
