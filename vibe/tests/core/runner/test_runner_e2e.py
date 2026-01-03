@@ -86,9 +86,7 @@ def mock_inquirer_accept_all():
 # --- Test Cases ---
 
 
-def test_runner_basic_file_modification(
-    complex_git_repo, mock_inquirer_accept_all
-):
+def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_all):
     """Test basic file modification through the complete pipeline."""
     repo_path = complex_git_repo
 
@@ -121,9 +119,7 @@ def test_runner_basic_file_modification(
 
     assert log_output  # Should have new commits
     assert (
-        "src/main.py" in log_output
-        or "Modify" in log_output
-        or "Update" in log_output
+        "src/main.py" in log_output or "Modify" in log_output or "Update" in log_output
     )
 
     # Verify file content matches exactly line-by-line
@@ -344,9 +340,7 @@ def test_runner_with_file_rename(complex_git_repo):
     )
 
 
-def test_runner_content_based_grouping(
-    complex_git_repo, mock_inquirer_accept_all
-):
+def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_all):
     """Test pipeline with content-based grouping strategy."""
     repo_path = complex_git_repo
 
@@ -1444,9 +1438,7 @@ class ProductController:
     )
 
     # Add integration test for database connection handling
-    (
-        repo_path / "tests" / "integration" / "test_database_connections.py"
-    ).write_text(
+    (repo_path / "tests" / "integration" / "test_database_connections.py").write_text(
         """import unittest
 from src.utils.database import Database
 from src.utils.connection_pool import ConnectionPool
@@ -1855,9 +1847,7 @@ with Database('sqlite:///app.db') as db:
     actual_test_db_connections = (
         repo_path / "tests" / "integration" / "test_database_connections.py"
     ).read_text()
-    assert (
-        actual_test_db_connections == expected_test_database_connections_py
-    ), (
+    assert actual_test_db_connections == expected_test_database_connections_py, (
         f"File tests/integration/test_database_connections.py content mismatch:\nExpected:\n{expected_test_database_connections_py}\n\nActual:\n{actual_test_db_connections}"
     )
 

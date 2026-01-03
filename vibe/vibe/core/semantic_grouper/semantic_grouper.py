@@ -49,9 +49,7 @@ class SemanticGrouper:
             return []
 
         # Step 2: Generate signatures for each chunk
-        chunk_signatures = self._generate_chunk_signatures(
-            chunks, context_manager
-        )
+        chunk_signatures = self._generate_chunk_signatures(chunks, context_manager)
 
         # Step 3: Separate chunks that can be analyzed from those that cannot
         analyzable_chunks = []
@@ -161,10 +159,8 @@ class SemanticGrouper:
                 if not self._has_analysis_context(diff_chunk, context_manager):
                     # If any diff chunk lacks context, the entire chunk fails analysis
                     return None  # Signal failure explicitly
-                chunk_signature, diff_chunk_scope = (
-                    self._get_signature_for_diff_chunk(
-                        diff_chunk, context_manager
-                    )
+                chunk_signature, diff_chunk_scope = self._get_signature_for_diff_chunk(
+                    diff_chunk, context_manager
                 )
                 total_signature.update(chunk_signature)
                 total_scope.update(diff_chunk_scope)
@@ -259,9 +255,7 @@ class SemanticGrouper:
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
-            new_context = context_manager.get_context(
-                diff_chunk.new_file_path, False
-            )
+            new_context = context_manager.get_context(diff_chunk.new_file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
                 abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
@@ -271,9 +265,7 @@ class SemanticGrouper:
 
         elif diff_chunk.is_file_deletion:
             # For deletions, analyze old version only
-            old_context = context_manager.get_context(
-                diff_chunk.old_file_path, True
-            )
+            old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
                 signature, chunk_scope = self._get_signature_for_line_range(
@@ -282,12 +274,8 @@ class SemanticGrouper:
 
         elif diff_chunk.is_file_rename:
             # For renames, analyze both versions with their respective paths
-            old_context = context_manager.get_context(
-                diff_chunk.old_file_path, True
-            )
-            new_context = context_manager.get_context(
-                diff_chunk.new_file_path, False
-            )
+            old_context = context_manager.get_context(diff_chunk.old_file_path, True)
+            new_context = context_manager.get_context(diff_chunk.new_file_path, False)
 
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
@@ -402,6 +390,5 @@ class SemanticGrouper:
 
         # Convert to SemanticGroup objects
         return [
-            CompositeDiffChunk(chunks=group_chunks)
-            for group_chunks in groups.values()
+            CompositeDiffChunk(chunks=group_chunks) for group_chunks in groups.values()
         ]

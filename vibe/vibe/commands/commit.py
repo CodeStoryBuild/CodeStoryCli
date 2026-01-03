@@ -92,9 +92,7 @@ def main(
         str(commit_context.target),
         global_context.auto_accept,
     ):
-        raise ValidationError(
-            "Cannot proceed without unstaging changes, exiting."
-        )
+        raise ValidationError("Cannot proceed without unstaging changes, exiting.")
 
     # next we create our base/new commits + backup branch for later
     branch_saver = BranchSaver(global_context.git_interface)

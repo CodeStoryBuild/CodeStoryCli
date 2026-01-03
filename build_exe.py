@@ -2,6 +2,7 @@
 """
 Build script to create executable for vibe CLI tool.
 """
+
 import os
 import sys
 import platform

@@ -204,12 +204,8 @@ class TestAtomicChunker:
 class TestChunkerErrorHandling:
     """Test error handling in chunker implementations."""
 
-    @pytest.mark.parametrize(
-        "name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST
-    )
-    def test_chunker_handles_invalid_input(
-        self, name, chunker_class, chunker_kwargs
-    ):
+    @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
+    def test_chunker_handles_invalid_input(self, name, chunker_class, chunker_kwargs):
         """Test that chunkers handle invalid input gracefully."""
         chunker = chunker_class(**chunker_kwargs)
 
@@ -220,9 +216,7 @@ class TestChunkerErrorHandling:
         with pytest.raises((TypeError, AttributeError)):
             chunker.chunk([1, 2, 3])  # Not chunk objects
 
-    @pytest.mark.parametrize(
-        "name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST
-    )
+    @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
     def test_chunker_handles_malformed_chunks(
         self, name, chunker_class, chunker_kwargs
     ):
@@ -231,9 +225,7 @@ class TestChunkerErrorHandling:
 
         # Create a mock object that looks like a chunk but is missing methods
         malformed_chunk = Mock()
-        malformed_chunk.canonical_path = Mock(
-            side_effect=Exception("Malformed chunk")
-        )
+        malformed_chunk.canonical_path = Mock(side_effect=Exception("Malformed chunk"))
 
         # Should either handle gracefully or raise appropriate exception
         try:
@@ -299,12 +291,8 @@ class TestChunkerIntegration:
 class TestChunkerPerformance:
     """Basic performance tests for chunkers."""
 
-    @pytest.mark.parametrize(
-        "name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST
-    )
-    def test_chunker_performance_many_chunks(
-        self, name, chunker_class, chunker_kwargs
-    ):
+    @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
+    def test_chunker_performance_many_chunks(self, name, chunker_class, chunker_kwargs):
         """Test chunker performance with many input chunks."""
         chunker = chunker_class(**chunker_kwargs)
 
@@ -328,9 +316,7 @@ class TestChunkerPerformance:
         )
         assert isinstance(result, list)
 
-    @pytest.mark.parametrize(
-        "name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST
-    )
+    @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
     def test_chunker_performance_large_chunks(
         self, name, chunker_class, chunker_kwargs
     ):

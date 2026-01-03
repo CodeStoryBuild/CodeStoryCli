@@ -36,11 +36,7 @@ def try_create_model(
         else:
             # If no provider specified, try to infer from model name
             model_lower = model_arg.lower()
-            if (
-                "gpt" in model_lower
-                or "o1" in model_lower
-                or "chatgpt" in model_lower
-            ):
+            if "gpt" in model_lower or "o1" in model_lower or "chatgpt" in model_lower:
                 provider = "openai"
                 model_name = model_arg
             elif "gemini" in model_lower:
@@ -65,9 +61,7 @@ def try_create_model(
 
     # If still not configured, use default
     if not provider or not model_name:
-        logger.info(
-            "No model specified, using default: gemini:gemini-2.0-flash-exp"
-        )
+        logger.info("No model specified, using default: gemini:gemini-2.0-flash-exp")
         provider = "gemini"
         model_name = "gemini-2.0-flash-exp"
 

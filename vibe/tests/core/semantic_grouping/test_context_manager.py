@@ -103,18 +103,14 @@ def test_context_manager():
     new_context = context_manager.get_context("test.py", False)
 
     if old_context:
-        print(
-            f"✓ Old version of test.py: {old_context.parsed_file.detected_language}"
-        )
+        print(f"✓ Old version of test.py: {old_context.parsed_file.detected_language}")
         print(f"  Scope map lines: {len(old_context.scope_map.scope_lines)}")
         print(f"  Symbol map lines: {len(old_context.symbol_map.line_symbols)}")
     else:
         print("✗ Failed to get old version context for test.py")
 
     if new_context:
-        print(
-            f"✓ New version of test.py: {new_context.parsed_file.detected_language}"
-        )
+        print(f"✓ New version of test.py: {new_context.parsed_file.detected_language}")
         print(f"  Scope map lines: {len(new_context.scope_map.scope_lines)}")
         print(f"  Symbol map lines: {len(new_context.symbol_map.line_symbols)}")
     else:
@@ -137,12 +133,8 @@ def test_context_manager():
         print("✗ Unexpectedly found old version for new_file.py")
 
     # Test summary methods
-    print(
-        f"\nRequired contexts: {len(context_manager.get_required_contexts())}"
-    )
-    print(
-        f"Available contexts: {len(context_manager.get_available_contexts())}"
-    )
+    print(f"\nRequired contexts: {len(context_manager.get_required_contexts())}")
+    print(f"Available contexts: {len(context_manager.get_available_contexts())}")
     print(f"File paths: {context_manager.get_file_paths()}")
 
     print("\n=== Test Complete ===")

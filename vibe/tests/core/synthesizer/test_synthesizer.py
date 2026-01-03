@@ -27,13 +27,9 @@ def git_repo() -> tuple[Path, str]:
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"], cwd=repo_path
         )
-        subprocess.run(
-            ["git", "config", "user.name", "Test User"], cwd=repo_path
-        )
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path)
 
-        (repo_path / "app.js").write_text(
-            "line 1\nline 2\nline 3\nline 4\nline 5\n"
-        )
+        (repo_path / "app.js").write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(
             ["git", "commit", "-m", "Initial commit"], cwd=repo_path, check=True
@@ -749,9 +745,7 @@ def test_large_mixed_changes_single_group(git_repo):
     app_content = (repo_path / "app.js").read_text()
     app_lines = app_content.split("\n")
     assert app_lines[0] == "modified line 1"  # First line should be modified
-    assert (
-        app_lines[1] == "new line after 1"
-    )  # Second line should be the addition
+    assert app_lines[1] == "new line after 1"  # Second line should be the addition
     # Original "line 1" should be completely replaced, not just modified
     assert "line 1" not in app_lines
 
@@ -961,9 +955,7 @@ def test_complex_interdependent_changes(git_repo):
     (repo_path / "main.py").write_text(
         "from utils import old_function\nold_function()\n"
     )
-    (repo_path / "utils.py").write_text(
-        "def old_function():\n    return 'old'\n"
-    )
+    (repo_path / "utils.py").write_text("def old_function():\n    return 'old'\n")
     (repo_path / "config.py").write_text("OLD_CONFIG = True\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(
