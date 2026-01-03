@@ -104,14 +104,14 @@ def format_content_json(parsed_content) -> str:
             change_dict = {
                 "type": "Addition",
                 "line_number": change.line_number,
-                "content": change.content,
+                "content": change.content.decode('utf-8', errors='replace') if isinstance(change.content, bytes) else change.content,
             }
 
         elif isinstance(change, Removal):
             change_dict = {
                 "type": "Removal",
                 "line_number": change.line_number,  # Line number in the old file state
-                "content": change.content,
+                "content": change.content.decode('utf-8', errors='replace') if isinstance(change.content, bytes) else change.content,
             }
 
         elif isinstance(change, Move):
@@ -119,15 +119,15 @@ def format_content_json(parsed_content) -> str:
                 "type": "Move",
                 "from_line": change.from_line,
                 "to_line": change.to_line,
-                "content": change.content,
+                "content": change.content.decode('utf-8', errors='replace') if isinstance(change.content, bytes) else change.content,
             }
 
         elif isinstance(change, Replacement):
             change_dict = {
                 "type": "Replacement",
                 "line_number": change.line_number,
-                "old_content": change.old_content,
-                "new_content": change.new_content,
+                "old_content": change.old_content.decode('utf-8', errors='replace') if isinstance(change.old_content, bytes) else change.old_content,
+                "new_content": change.new_content.decode('utf-8', errors='replace') if isinstance(change.new_content, bytes) else change.new_content,
             }
 
         else:

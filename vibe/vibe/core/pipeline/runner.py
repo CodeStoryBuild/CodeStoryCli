@@ -51,7 +51,6 @@ class AIGitPipeline:
         new_branch: str,
         base_commit_hash: str,
         new_commit_hash: str,
-        enforce_all_accept: bool = False,
     ):
         self.git = git
         self.commands = commands
@@ -72,9 +71,8 @@ class AIGitPipeline:
 
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
-        self.enforce_all_accept = enforce_all_accept
 
-    def run(self, target: str = None, message: str = None) -> List[CommitResult]:
+    def run(self, target: str = None, message: str = None, auto_yes : bool = False) -> List[CommitResult]:
         _t_start = perf_counter()
         # Initial invocation summary
         logger.info(
@@ -94,7 +92,7 @@ class AIGitPipeline:
         logger.info(
             "Raw diff summary: chunks={count} files={files}",
             count=len(raw_diff),
-            files=len({path for c in raw_diff for path in c.canonical_paths()}),
+            files=len({path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path for c in raw_diff for path in c.canonical_paths()}),
         )
         logger.info("Timing: raw_diff_generation_ms={ms}", ms=int((t1 - t0) * 1000))
 
@@ -191,11 +189,12 @@ class AIGitPipeline:
             for chunk in group.chunks:
                 for diff_chunk in chunk.get_chunks():
                     if diff_chunk.is_file_rename:
-                        affected_files.add(
-                            f"{diff_chunk.old_file_path} -> {diff_chunk.new_file_path}"
-                        )
+                        old_path = diff_chunk.old_file_path.decode('utf-8', errors='replace') if isinstance(diff_chunk.old_file_path, bytes) else diff_chunk.old_file_path
+                        new_path = diff_chunk.new_file_path.decode('utf-8', errors='replace') if isinstance(diff_chunk.new_file_path, bytes) else diff_chunk.new_file_path
+                        affected_files.add(f"{old_path} -> {new_path}")
                     else:
-                        affected_files.add(diff_chunk.canonical_path())
+                        path = diff_chunk.canonical_path()
+                        affected_files.add(path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path)
 
             files_preview = ", ".join(sorted(affected_files))
             if len(files_preview) > 120:
@@ -217,7 +216,7 @@ class AIGitPipeline:
             )
 
         # Single confirmation for all groups (unified for commit and expand)
-        if self.enforce_all_accept:
+        if auto_yes:
             apply_all = True
             self.console.print(
                 "[yellow]Auto-confirm:[/yellow] Applying all proposed commits."
@@ -251,11 +250,12 @@ class AIGitPipeline:
             for ch in group.chunks:
                 for dc in ch.get_chunks():
                     if dc.is_file_rename:
-                        affected_files_summary.add(
-                            f"{dc.old_file_path} -> {dc.new_file_path}"
-                        )
+                        old_path = dc.old_file_path.decode('utf-8', errors='replace') if isinstance(dc.old_file_path, bytes) else dc.old_file_path
+                        new_path = dc.new_file_path.decode('utf-8', errors='replace') if isinstance(dc.new_file_path, bytes) else dc.new_file_path
+                        affected_files_summary.add(f"{old_path} -> {new_path}")
                     else:
-                        affected_files_summary.add(dc.canonical_path())
+                        path = dc.canonical_path()
+                        affected_files_summary.add(path.decode('utf-8', errors='replace') if isinstance(path, bytes) else path)
         commit_count = len(plan_success) if isinstance(plan_success, list) else 0
         logger.info(
             "Pipeline summary: raw_chunks={raw} mechanical={mech} semantic_groups={sem} proposed_groups={prop} accepted_groups={acc} commits_created={commits} files_changed={files} total_ms={total}",

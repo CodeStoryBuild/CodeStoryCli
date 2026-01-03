@@ -25,8 +25,8 @@ class DiffChunk:
     # if old path (!None) != new path (!None), this is a rename operation
     # if old path is None and new path is not None, this is a new file addition
     # if old path is not None and new path is None, this is a file deletion
-    old_file_path: Optional[str] = None
-    new_file_path: Optional[str] = None
+    old_file_path: Optional[bytes] = None
+    new_file_path: Optional[bytes] = None
 
     def canonical_path(self):
         """
@@ -62,8 +62,8 @@ class DiffChunk:
     def is_file_deletion(self) -> bool:
         return self.old_file_path is not None and self.new_file_path is None
 
-    # the file mode from git diff (e.g., '100644', '100755')
-    file_mode: Optional[str] = None
+    # the file mode from git diff (e.g., b'100644', b'100755')
+    file_mode: Optional[bytes] = None
     # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
     contains_newline_fallback: bool = False
     contains_newline_marker_rem: bool = False
@@ -120,18 +120,18 @@ class DiffChunk:
         elif self.is_file_rename:
             changes = {
                 "type": "Rename",
-                "old_file_path": self.old_file_path,
-                "new_file_path": self.new_file_path,
+                "old_file_path": self.old_file_path.decode('utf-8', errors='replace') if isinstance(self.old_file_path, bytes) else self.old_file_path,
+                "new_file_path": self.new_file_path.decode('utf-8', errors='replace') if isinstance(self.new_file_path, bytes) else self.new_file_path,
             }
         elif self.is_file_addition:
             changes = {
                 "type": "FileAddition",
-                "new_file_path": self.new_file_path,
+                "new_file_path": self.new_file_path.decode('utf-8', errors='replace') if isinstance(self.new_file_path, bytes) else self.new_file_path,
             }
         elif self.is_file_deletion:
             changes = {
                 "type": "FileDeletion",
-                "old_file_path": self.old_file_path,
+                "old_file_path": self.old_file_path.decode('utf-8', errors='replace') if isinstance(self.old_file_path, bytes) else self.old_file_path,
             }
         else:
             logger.warning(
@@ -228,15 +228,15 @@ class DiffChunk:
         return final_chunks
 
     @staticmethod
-    def _sanitize_patch_content(content: str) -> str:
+    def _sanitize_patch_content(content: bytes) -> bytes:
         """
         Sanitize text for use in a Git patch.
         """
         # Replace non-breaking space with a regular space
-        content = content.replace('\xa0', ' ')
+        content = content.replace(b'\xa0', b' ')
 
         # TODO add more sanitization filters
-        return content
+        return content.rstrip()
 
     @classmethod
     def from_hunk(cls, hunk: HunkWrapper) -> "DiffChunk":
@@ -253,20 +253,20 @@ class DiffChunk:
 
         for line in hunk.hunk_lines:
             sanitized_content = DiffChunk._sanitize_patch_content(line[1:])
-            if line.startswith("+"):
+            if line.startswith(b"+"):
                 parsed_content.append(
                     Addition(content=sanitized_content, line_number=current_new_line)
                 )
                 current_new_line += 1
-            elif line.startswith("-"):
+            elif line.startswith(b"-"):
                 parsed_content.append(
                     Removal(content=sanitized_content, line_number=current_old_line)
                 )
                 current_old_line += 1
-            elif line.strip() == "\\ No newline at end of file":
+            elif line.strip() == b"\\ No newline at end of file":
                 if parsed_content:
                     parsed_content[-1].content = (
-                        parsed_content[-1].content + "\n\\ No newline at end of file"
+                        parsed_content[-1].content + b"\n\\ No newline at end of file"
                     )
                 else:
                     contains_newline_fallback = True
@@ -285,9 +285,9 @@ class DiffChunk:
     @classmethod
     def from_parsed_content_slice(
         cls,
-        old_file_path: str,
-        new_file_path: str,
-        file_mode: str,
+        old_file_path: Optional[bytes],
+        new_file_path: Optional[bytes],
+        file_mode: Optional[bytes],
         contains_newline_fallback: bool,
         contains_newline_marker_rem: bool,
         parsed_slice: List[Union[Addition, Removal]],

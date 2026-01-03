@@ -57,7 +57,7 @@ class GitSynthesizer:
         return output_bytes.decode("utf-8", errors="replace").strip()
 
     @staticmethod
-    def sanitize_filename(filename: str) -> str:
+    def sanitize_filename(filename: bytes) -> bytes:
         """
         Sanitize a filename for use in git patch headers.
 
@@ -65,16 +65,16 @@ class GitSynthesizer:
         - Removes any trailing tabs.
         - Leaves other characters unchanged.
         """
-        return filename.rstrip("\t").strip()  # remove trailing tabs
+        return filename.rstrip(b"\t").strip()  # remove trailing tabs
 
     @staticmethod
     def _generate_unified_diff(
-        chunks: List[DiffChunk], total_chunks_per_file: Dict[str, int]
-    ) -> Dict[str, str]:
+        chunks: List[DiffChunk], total_chunks_per_file: Dict[bytes, int]
+    ) -> Dict[bytes, bytes]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file
         """
-        patches: Dict[str, str] = {}
+        patches: Dict[bytes, bytes] = {}
 
         # group chunks by file
         sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
@@ -139,69 +139,53 @@ class GitSynthesizer:
 
             if single_chunk.is_standard_modification:
                 patch_lines.append(
-                    "diff --git a/{file_path} b/{file_path}".format(
-                        file_path=new_file_path,
-                    )
+                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
                 )
             elif single_chunk.is_file_rename:
                 patch_lines.append(
-                    "diff --git a/{old_path} b/{new_path}".format(
-                        old_path=old_file_path, new_path=new_file_path
-                    )
+                    b"diff --git a/" + old_file_path + b" b/" + new_file_path
                 )
                 patch_lines.append(
-                    "rename from {old_path}".format(old_path=old_file_path)
+                    b"rename from " + old_file_path
                 )
                 patch_lines.append(
-                    "rename to {new_path}".format(new_path=new_file_path)
+                    b"rename to " + new_file_path
                 )
             elif single_chunk.is_file_deletion:
                 # possible edge case: file deletion with multiple chunks
                 if current_count < total_expected:
                     # in this case, we treat it as a standard modification
                     patch_lines.append(
-                        "diff --git a/{file_path} b/{file_path}".format(
-                            file_path=old_file_path,
-                        )
+                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
                     )
                 else:
                     # we have all deletion chunks, so we can treat it as a deletion
                     patch_lines.append(
-                        "diff --git a/{file_path} b/{file_path}".format(
-                            file_path=old_file_path,
-                        )
+                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
                     )
                     patch_lines.append(
-                        "deleted file mode {mode}".format(
-                            mode=single_chunk.file_mode or "100644"
-                        )
+                        b"deleted file mode " + (single_chunk.file_mode or b"100644")
                     )
             elif single_chunk.is_file_addition:
                 patch_lines.append(
-                    "diff --git a/{file_path} b/{file_path}".format(
-                        file_path=new_file_path,
-                    )
+                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
                 )
                 patch_lines.append(
-                    "new file mode {mode}".format(
-                        mode=single_chunk.file_mode or "100644"
-                    )
+                    b"new file mode " + (single_chunk.file_mode or b"100644")
                 )
             elif single_chunk.is_standard_modification:
                 patch_lines.append(
-                    "diff --git a/{file_path} b/{file_path}".format(
-                        file_path=new_file_path,
-                    )
+                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
                 )
 
             old_file_header = (
-                GitSynthesizer.sanitize_filename(f"a/{old_file_path}")
+                GitSynthesizer.sanitize_filename(b"a/" + old_file_path)
                 if old_file_path is not None
                 else DEVNULL
             )
 
             new_file_header = (
-                GitSynthesizer.sanitize_filename(f"b/{new_file_path}")
+                GitSynthesizer.sanitize_filename(b"b/" + new_file_path)
                 if new_file_path is not None
                 else DEVNULL
             )
@@ -213,14 +197,14 @@ class GitSynthesizer:
                 new_file_header = old_file_header
 
             patch_lines.append(
-                "--- {old_file_header}".format(old_file_header=old_file_header)
+                b"--- " + old_file_header
             )
             patch_lines.append(
-                "+++ {new_file_header}".format(new_file_header=new_file_header)
+                b"+++ " + new_file_header
             )
 
             if not multiple_chunks and not single_chunk.has_content:
-                patch_lines.append("@@ -0,0 +0,0 @@")
+                patch_lines.append(b"@@ -0,0 +0,0 @@")
             else:
                 # Sort chunks by their old_start line to ensure correct order in the patch
                 sorted_file_chunks = sorted(
@@ -266,21 +250,21 @@ class GitSynthesizer:
                     old_len = len(removals)
                     new_len = len(additions)
 
-                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@"
+                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@".encode('utf-8')
                     patch_lines.append(hunk_header)
 
                     for removal in removals:
-                        patch_lines.append(f"-{removal.content}")
+                        patch_lines.append(b"-" + removal.content)
 
                     for addition in additions:
-                        patch_lines.append(f"+{addition.content}")
+                        patch_lines.append(b"+" + addition.content)
 
                     has_newline_fallback |= sorted_chunk.contains_newline_fallback
 
                 if has_newline_fallback:
-                    patch_lines.append("\\ No newline at end of file")
+                    patch_lines.append(b"\\ No newline at end of file")
 
-            patches[file_path] = "\n".join(patch_lines) + "\n"
+            patches[file_path] = b"\n".join(patch_lines) + b"\n"
 
             logger.debug(
                 "Patch generation progress: cumulative_patches={count}",
@@ -358,7 +342,7 @@ class GitSynthesizer:
         self,
         base_commit_hash: str,
         chunks_for_commit: List[DiffChunk],
-        total_chunks_per_file: Dict[str, int],
+        total_chunks_per_file: Dict[bytes, int],
     ) -> str:
         """
         Creates a new Git tree object by applying a specific set of changes
@@ -385,7 +369,7 @@ class GitSynthesizer:
             if patches:
                 # Keep ordering deterministic by sorting file paths
                 ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
-                combined_patch = "".join(patch for _, patch in ordered_items)
+                combined_patch = b"".join(patch for _, patch in ordered_items)
 
                 try:
                     logger.debug(
@@ -404,7 +388,7 @@ class GitSynthesizer:
                     raise RuntimeError(
                         "FATAL: Git apply failed for combined patch stream.\n"
                         f"--- ERROR DETAILS ---\n{e}\n"
-                        f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
+                        # f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
                     )
 
             # 1. Define a path for a temporary index file INSIDE the worktree.

@@ -14,16 +14,16 @@ class GitCommands:
     def __init__(self, git: GitInterface):
         self.git = git
 
-    # Precompile diff regexes for performance
+    # Precompile diff regexes for performance (bytes patterns)
     _MODE_RE = re.compile(
-        r"^(?:new file mode|deleted file mode|old mode|new mode) (\d{6})$"
+        rb"^(?:new file mode|deleted file mode|old mode|new mode) (\d{6})$"
     )
-    _INDEX_RE = re.compile(r"^index [0-9a-f]{7,}\.\.[0-9a-f]{7,}(?: (\d{6}))?$")
-    _RENAME_FROM_RE = re.compile(r"^rename from (.+)$")
-    _RENAME_TO_RE = re.compile(r"^rename to (.+)$")
-    _OLD_PATH_RE = re.compile(r"^--- (?:(?:a/)?(.+)|/dev/null)$")
-    _NEW_PATH_RE = re.compile(r"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
-    _A_B_PATHS_RE = re.compile(r".*a/(.+?) b/(.+)")
+    _INDEX_RE = re.compile(rb"^index [0-9a-f]{7,}\.\..[0-9a-f]{7,}(?: (\d{6}))?$")
+    _RENAME_FROM_RE = re.compile(rb"^rename from (.+)$")
+    _RENAME_TO_RE = re.compile(rb"^rename to (.+)$")
+    _OLD_PATH_RE = re.compile(rb"^--- (?:(?:a/)?(.+)|/dev/null)$")
+    _NEW_PATH_RE = re.compile(rb"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
+    _A_B_PATHS_RE = re.compile(rb".*a/(.+?) b/(.+)")
 
     def get_working_diff_with_renames(
         self,
@@ -41,11 +41,7 @@ class GitCommands:
         diff_output_bytes = self.git.run_git_binary(
             ["diff", base_hash, new_hash, "--unified=0", f"-M{similarity}"] + path_args
         )
-        # Decode with error handling for robustness
-        diff_output = None
-        if diff_output_bytes:
-            diff_output = diff_output_bytes.decode("utf-8", errors="replace")
-        return self._parse_hunks_with_renames(diff_output)
+        return self._parse_hunks_with_renames(diff_output_bytes)
 
     def get_file_diff_with_renames(
         self, fileA: str, fileB: str, similarity: int = 50
@@ -59,14 +55,10 @@ class GitCommands:
         diff_output_bytes = self.git.run_git_binary(
             ["diff", "--no-index", "--unified=0", f"-M{similarity}", "--", fileA, fileB]
         )
-        # Decode with error handling for robustness
-        diff_output = None
-        if diff_output_bytes:
-            diff_output = diff_output_bytes.decode("utf-8", errors="replace")
-        return self._parse_hunks_with_renames(diff_output)
+        return self._parse_hunks_with_renames(diff_output_bytes)
 
     def _parse_hunks_with_renames(
-        self, diff_output: Optional[str]
+        self, diff_output: Optional[bytes]
     ) -> List[HunkWrapper]:
         """
         Parses a unified diff output that may contain rename blocks.
@@ -76,7 +68,7 @@ class GitCommands:
         if not diff_output or diff_output is None:
             return hunks
 
-        file_blocks = diff_output.split("\ndiff --git ")
+        file_blocks = diff_output.split(b"\ndiff --git ")
 
         for block in file_blocks:
             if not block.strip():
@@ -98,7 +90,7 @@ class GitCommands:
 
             # Parse hunks within the block
             hunk_start_indices = [
-                i for i, line in enumerate(lines) if line.startswith("@@ ")
+                i for i, line in enumerate(lines) if line.startswith(b"@@ ")
             ]
 
             # Handle files with no hunks (pure operations)
@@ -139,14 +131,14 @@ class GitCommands:
                     )
         return hunks
 
-    def _parse_file_metadata(self, lines: List[str]) -> tuple:
+    def _parse_file_metadata(self, lines: List[bytes]) -> tuple:
         """
         Extracts file operation metadata from a diff block by unifying the logic
         around the '---' and '+++' file path lines.
 
         Returns a dictionary with file paths, operation flags, and mode information.
         """
-        old_path, new_path = "", ""
+        old_path, new_path = b"", b""
         file_mode = None
 
         # 1. First pass: Extract primary data (paths and mode)
@@ -156,13 +148,13 @@ class GitCommands:
             if mode_match:
                 # We only need one mode; Git diffs can show old and new.
                 # The one on the 'new file mode' or 'deleted file mode' line is most relevant.
-                if file_mode is None or "file mode" in line:
+                if file_mode is None or b"file mode" in line:
                     file_mode = mode_match.group(1)
                 continue
 
             old_path_match = self._OLD_PATH_RE.match(line)
             if old_path_match:
-                if line.strip() == "--- /dev/null":
+                if line.strip() == b"--- /dev/null":
                     old_path = None
                 else:
                     old_path = old_path_match.group(1)
@@ -170,7 +162,7 @@ class GitCommands:
 
             new_path_match = self._NEW_PATH_RE.match(line)
             if new_path_match:
-                if line.strip() == "+++ /dev/null":
+                if line.strip() == b"+++ /dev/null":
                     new_path = None
                 else:
                     new_path = new_path_match.group(1)
@@ -192,14 +184,14 @@ class GitCommands:
                 path_b = m.group(2)
 
             # Use other metadata clues from the block to determine the operation
-            block_text = "\n".join(lines)
-            if "new file mode" in block_text:
+            block_text = b"\n".join(lines)
+            if b"new file mode" in block_text:
                 # This is an empty file addition.
                 return (None, path_b, file_mode)
-            elif "deleted file mode" in block_text:
+            elif b"deleted file mode" in block_text:
                 # This is an empty file deletion (less common, but possible).
                 return (path_a, None, file_mode)
-            elif "rename from" in block_text:
+            elif b"rename from" in block_text:
                 # This is a pure rename with no content change.
                 return (path_a, path_b, file_mode)
             else:
@@ -235,14 +227,14 @@ class GitCommands:
         else:
             raise ValueError("Cannot create no-content hunk for unknown operation.")
 
-    def _parse_hunk_start(self, header_line: str) -> Tuple[int, int, int, int]:
+    def _parse_hunk_start(self, header_line: bytes) -> Tuple[int, int, int, int]:
         """
         Extract old_start, old_len, new_start, new_len from @@ -x,y +a,b @@ header
         Returns: (old_start, old_len, new_start, new_len)
         """
         import re
 
-        match = re.search(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line)
+        match = re.search(rb"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line)
         if match:
             old_start = int(match.group(1))
             old_len = int(match.group(2)) if match.group(2) else 1

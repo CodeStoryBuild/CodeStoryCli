@@ -44,7 +44,7 @@ class ExpandService:
         self,
         commit_hash: str,
         console: Console,
-        confirm_rewrite: Callable[[str], bool],
+        auto_yes: bool
     ) -> bool:
         # Ensure we're in a git repo
         if not _run_git(self.git, ["rev-parse", "--is-inside-work-tree"]):
@@ -102,9 +102,8 @@ class ExpandService:
                 base_commit_hash=parent,
                 new_commit_hash=resolved,
                 console=console,
-                enforce_all_accept=True,
             )
-            plan = pipeline.run(target=".")
+            plan = pipeline.run(target=".", auto_yes=auto_yes)
             if not plan:
                 console.print(
                     "[yellow]Expansion cancelled; no changes applied.[/yellow]"
@@ -145,13 +144,6 @@ class ExpandService:
                 new_head = (
                     _run_git(wt2_git, ["rev-parse", rewrite_branch]) or ""
                 ).strip()
-
-                # Final confirmation to rewrite the branch (delegate to caller)
-                if not confirm_rewrite(
-                    f"Rewrite '{current_branch}' to {_short(new_head)} from {_short(head_hash)}?"
-                ):
-                    console.print("[yellow]Declined; no changes applied.[/yellow]")
-                    return False
 
                 # Update original branch ref and working tree
                 if (

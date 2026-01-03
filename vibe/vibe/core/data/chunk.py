@@ -12,9 +12,9 @@ class Chunk(Protocol):
         """
         ...
 
-    def canonical_paths(self) -> list[str]:
+    def canonical_paths(self) -> list[bytes]:
         """
-        List of affected file paths that this chunk touches.
+        List of affected file paths that this chunk touches (as bytes).
         The canonical path is always the most relevant path for a chunk
         For file_additions/modifications/renames, it is the new file path
         For file_deletions it is the old file path
