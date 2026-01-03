@@ -36,6 +36,7 @@ from codestory.runtimeutil import (
     ensure_utf8_output,
     get_log_dir_callback,
     get_supported_languages_callback,
+    get_supported_providers_callback,
     setup_signal_handlers,
     version_callback,
 )
@@ -111,6 +112,13 @@ def create_global_callback():
             "-SL",
             callback=get_supported_languages_callback,
             help="Show languages that support semantic analysis and grouping, then exit",
+        ),
+        supported_providers: bool = typer.Option(
+            False,
+            "--supported-providers",
+            "-SP",
+            callback=get_supported_providers_callback,
+            help="Show all supported model providers you can use for logical grouping. Set using 'codestory config model provider:model'",
         ),
         repo_path: str = typer.Option(
             ".",
