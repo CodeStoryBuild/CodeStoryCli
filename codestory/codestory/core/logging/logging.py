@@ -34,7 +34,6 @@ from pathlib import Path
 from loguru import logger
 from platformdirs import user_log_path
 from rich.console import Console
-from rich.text import Text
 
 LOG_DIR = user_log_path(appname="codestory")
 LOG_DIR.mkdir(parents=True, exist_ok=True)

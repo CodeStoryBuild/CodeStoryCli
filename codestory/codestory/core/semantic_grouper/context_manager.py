@@ -320,9 +320,7 @@ class ContextManager:
         # for now, reject errored files
         if parsed_file.root_node.has_error:
             version = "old version" if is_old_version else "new version"
-            logger.warning(
-                f"Syntax errors detected in {version} of {file_path}"
-            )
+            logger.warning(f"Syntax errors detected in {version} of {file_path}")
             return None
 
         # Build scope map

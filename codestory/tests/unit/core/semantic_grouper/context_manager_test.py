@@ -23,10 +23,13 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from codestory.core.semantic_grouper.context_manager import ContextManager, AnalysisContext
 from codestory.core.data.diff_chunk import DiffChunk
+from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.file_reader.protocol import FileReader
-from codestory.core.file_reader.file_parser import FileParser, ParsedFile
+from codestory.core.semantic_grouper.context_manager import (
+    AnalysisContext,
+    ContextManager,
+)
 from codestory.core.semantic_grouper.query_manager import QueryManager
 
 # -----------------------------------------------------------------------------

@@ -194,7 +194,7 @@ class GitSynthesizer:
                 )
 
                 logger.info(
-                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i+1}/{total}"
+                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message} | Progress: {i + 1}/{total}"
                 )
 
                 # 4. Update parent for next loop
