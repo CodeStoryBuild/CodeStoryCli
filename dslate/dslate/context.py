@@ -39,27 +39,21 @@ from dslate.core.llm.config import try_create_model
 class GlobalConfig(BaseModel):
     model: str | None = Field(
         default=None,
-        description="LLM model (format: provider:model, e.g., openai:gpt-4)"
+        description="LLM model (format: provider:model, e.g., openai:gpt-4)",
     )
     api_key: str | None = Field(
-        default=None,
-        description="API key for the LLM provider"
+        default=None, description="API key for the LLM provider"
     )
     model_temperature: float = Field(
-        default=0.7,
-        description="Temperature for LLM responses (0.0-1.0)"
+        default=0.7, description="Temperature for LLM responses (0.0-1.0)"
     )
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = Field(
-        default="Regular",
-        description="How aggressively to split commits smaller"
+        default="Regular", description="How aggressively to split commits smaller"
     )
-    verbose: bool = Field(
-        default=False,
-        description="Enable verbose logging output"
-    )
+    verbose: bool = Field(default=False, description="Enable verbose logging output")
     auto_accept: bool = Field(
         default=False,
-        description="Automatically accept all prompts without user confirmation"
+        description="Automatically accept all prompts without user confirmation",
     )
 
 
