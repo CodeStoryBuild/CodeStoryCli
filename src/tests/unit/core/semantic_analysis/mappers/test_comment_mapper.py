@@ -31,8 +31,8 @@ from codestory.core.semantic_analysis.mappers.query_manager import QueryManager
 
 @pytest.fixture(scope="module")
 def tools():
-    """
-    Initializes the heavy components once per module to speed up tests.
+    """Initializes the heavy components once per module to speed up tests.
+
     Returns a tuple of (FileParser, CommentMapper).
     """
     qm = QueryManager.get_instance()

@@ -56,7 +56,7 @@ class AnalysisContext:
 
 @dataclass(frozen=True)
 class SharedContext:
-    """Contains shared context between all files of the same type"""
+    """Contains shared context between all files of the same type."""
 
     defined_symbols: set[str]
 

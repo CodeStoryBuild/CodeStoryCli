@@ -16,9 +16,10 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-Tests for scope-based semantic grouping.
-Tests verify that chunks within the same scope (function, class, etc.) are grouped together.
+"""Tests for scope-based semantic grouping.
+
+Tests verify that chunks within the same scope (function, class, etc.)
+are grouped together.
 """
 
 from textwrap import dedent
