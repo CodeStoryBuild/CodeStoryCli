@@ -23,7 +23,6 @@ class GitCommands:
     _OLD_PATH_RE = re.compile(r"^--- (?:(?:a/)?(.+)|/dev/null)$")
     _NEW_PATH_RE = re.compile(r"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
 
-
     def get_working_diff_with_renames(
         self, target: Optional[str] = None, similarity: int = 50
     ) -> List[HunkWrapper]:
@@ -67,7 +66,9 @@ class GitCommands:
             # Parse file operation metadata
             old_path, new_path, file_mode = self._parse_file_metadata(lines)
             if old_path is None and new_path is None:
-                raise ValueError("Both old and new file paths are None! Invalid /dev/null parsing!")
+                raise ValueError(
+                    "Both old and new file paths are None! Invalid /dev/null parsing!"
+                )
             elif not old_path and not new_path:
                 raise ValueError("Could not parse file paths from diff block!")
 
@@ -159,9 +160,13 @@ class GitCommands:
         if not old_path and not new_path:
 
             # The first line should be in the format "a/path b/path"
-            first_line_parts = lines[0].split(' ')
-            if len(first_line_parts) < 2 or not first_line_parts[0].startswith('a/') or not first_line_parts[1].startswith('b/'):
-                return (None, None, file_mode) # Unrecognized format
+            first_line_parts = lines[0].split(" ")
+            if (
+                len(first_line_parts) < 2
+                or not first_line_parts[0].startswith("a/")
+                or not first_line_parts[1].startswith("b/")
+            ):
+                return (None, None, file_mode)  # Unrecognized format
 
             path_a = first_line_parts[0][2:]
             path_b = first_line_parts[1][2:]
@@ -182,7 +187,6 @@ class GitCommands:
                 return (path_a, path_b, file_mode)
 
         return (old_path, new_path, file_mode)
-
 
     def _create_no_content_hunk(self, file_metadata: dict) -> HunkWrapper:
         """

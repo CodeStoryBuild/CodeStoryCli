@@ -12,7 +12,7 @@ class HunkWrapper:
     new_start: int
     old_len: int
     new_len: int
-    file_mode: Optional[str] = '100644' # default to regular file
+    file_mode: Optional[str] = "100644"  # default to regular file
 
     @property
     def is_rename(self) -> bool:

@@ -466,7 +466,6 @@ def test_pure_deletion_entire_files(git_repo):
 
     # Remove all content
 
-
     # temp.txt
     temp_lines = (repo_path / "temp.txt").read_text().splitlines()
     hunk1 = HunkWrapper(
@@ -554,7 +553,6 @@ def test_pure_deletion_multiple_groups(git_repo):
         group_id="g1",
         commit_message="Remove lines from app.js",
     )
-
 
     # Delete other.txt (all lines as removals)
     other_lines = (repo_path / "other.txt").read_text().splitlines()
