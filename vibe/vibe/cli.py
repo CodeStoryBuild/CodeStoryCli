@@ -1,6 +1,11 @@
 import typer
 from rich.console import Console
 
+from rich.traceback import install
+
+# Disable showing locals in tracebacks
+install(show_locals=False)
+
 # Import the main functions directly from the command modules
 from vibe.commands import init
 from vibe.commands.commit import main as commit_main

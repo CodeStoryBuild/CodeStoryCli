@@ -81,7 +81,6 @@ def test_to_patch_missing_line_numbers_raises_error():
         DiffChunk(
             file_path="incomplete.py",
             start_line=1, end_line=1, content="+test", ai_content=[Addition(1, "test")]
-            # Missing old_start, old_end, new_start, new_end
         )
 
 def test_to_patch_single_line_change():
