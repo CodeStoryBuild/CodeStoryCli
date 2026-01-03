@@ -46,23 +46,22 @@ from codestory.core.semantic_grouper.context_manager import ContextManager
 # Prompts (Optimized for 1.5B LLMs)
 # -----------------------------------------------------------------------------
 
-INITIAL_SUMMARY_SYSTEM = """You are a specialized function that converts structured code change data into a concise Git commit message.
+INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages. 
 
-**Input:**
-- `git_patch` and JSON metadata (added_symbols, removed_symbols, etc.)
-- Focus only on *visible code changes*.
+Given code changes with git patches and metadata (added/removed/modified symbols), write a concise commit message that describes what changed.
 
-**Rules:**
-1. Output a single-line commit message, max 72 characters.
-2. Use imperative mood: e.g., "Add", "Remove", "Update", "Refactor".
-3. Describe what changed and where (file/module/class/function) using the data.
-4. Do NOT include inferred goals, benefits, or context.
-5. Output ONLY the message, nothing else."""
+Rules:
+- Single line, max 72 characters
+- Imperative mood (Add, Update, Remove, Refactor)
+- Describe the change, not the goal
+- Output only the commit message"""
 
-INITIAL_SUMMARY_USER = """**Changes:**
+INITIAL_SUMMARY_USER = """Here is a code change:
+
 {changes}
 
-**Commit Message:**"""
+Commit message:"""
+
 
 CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
