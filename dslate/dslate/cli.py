@@ -41,7 +41,7 @@ from dslate.runtimeutil import (
 
 # create app
 app = typer.Typer(
-    help="✨ dslate: an AI-powered abstraction layer above Git",
+    help="dslate: an AI-powered abstraction layer above Git",
     pretty_exceptions_show_locals=False,
     add_completion=False,
 )
