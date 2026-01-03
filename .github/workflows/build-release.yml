@@ -39,13 +39,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # We install build and pyoxidizer here so the script finds them immediately
-          pip install pyoxidizer build pytest
+          # Switched to Nuitka and Zstandard (for compression)
+          pip install nuitka zstandard pytest
+          # Install the project so Nuitka can find dependencies in the environment
           pip install -e .
 
-      # --- BUILD STEP (Single Source of Truth) ---
+      # --- BUILD STEP ---
       
-      - name: Build Executable (PyOxidizer)
+      - name: Build Executable (Nuitka)
         run: python build_exe_opt.py
 
       # --- TEST STEPS ---
@@ -58,18 +59,23 @@ jobs:
         shell: bash
         run: |
           echo ">>> Testing Single File Build"
-          if [ "${{ matrix.platform }}" == "windows" ]; then
-            EXE_PATH="dist/file/${{ matrix.exe_name }}"
-          else
-            EXE_PATH="dist/file/${{ matrix.exe_name }}"
-          fi
+          # Path updated to 'dist/' based on your latest script
+          EXE_PATH="dist/${{ matrix.exe_name }}"
           
           echo "Target Exe: $EXE_PATH"
+          
+          # Validation: Ensure it exists before testing
+          if [ ! -f "$EXE_PATH" ]; then
+            echo "Error: Executable not found at $EXE_PATH"
+            ls -R dist/
+            exit 1
+          fi
+
           # Set the env var for tests to use this specific binary
           export CLI_ARTIFACT_PATH="$EXE_PATH"
           pytest -vv dslate/tests/integration
 
-      # --- PACKAGING STEPS (Installers use the Single File build) ---
+      # --- PACKAGING STEPS ---
 
       # 1. WINDOWS: Inno Setup
       - name: Install Inno Setup
@@ -83,7 +89,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Source points to the single exe file; DestDir puts it directly in {app}
+          # Updated Source to "dist\dslate.exe"
           $issContent = @"
           [Setup]
           AppName=dslate
@@ -98,7 +104,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          Source: "dist\file\dslate.exe"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "dist\dslate.exe"; DestDir: "{app}"; Flags: ignoreversion
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -137,7 +143,7 @@ jobs:
           mkdir -p dist/installers
           
           # Copy binary directly to /usr/bin
-          cp dist/file/dslate dist/package/usr/bin/dslate
+          cp dist/dslate dist/package/usr/bin/dslate
           chmod +x dist/package/usr/bin/dslate
           
           mkdir -p dist/package/DEBIAN
@@ -147,8 +153,8 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Maintainer: Your Name <your@email.com>
-          Description: dslate CLI tool
+          Maintainer: Adem Can <ademfcan@gmail.com>
+          Description: An AI-powered abstraction layer above Git.
           EOF
           
           dpkg-deb --build dist/package dist/installers/dslate-linux-installer.deb
@@ -165,7 +171,7 @@ jobs:
           
           # Prepare a root folder for pkgbuild
           mkdir -p dist/pkg_root/usr/local/bin
-          cp dist/file/dslate dist/pkg_root/usr/local/bin/
+          cp dist/dslate dist/pkg_root/usr/local/bin/
           
           # Generate PKG from the root folder
           pkgbuild --root dist/pkg_root \
@@ -183,9 +189,9 @@ jobs:
           
           # Copy the standalone executable with a clear name
           if [ "${{ matrix.platform }}" == "windows" ]; then
-            cp dist/file/dslate.exe dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone.exe
+            cp dist/dslate.exe dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone.exe
           else
-            cp dist/file/dslate dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone
+            cp dist/dslate dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone
           fi
           
           # Copy installers

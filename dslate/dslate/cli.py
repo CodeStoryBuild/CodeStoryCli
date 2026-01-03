@@ -55,7 +55,7 @@ app.command(name="clean")(clean.main)
 app.command(name="config")(config.main)
 
 # which commands require a global context
-dependent_commands = ["commit", "fix", "clean"]
+config_command = "config"
 
 
 def setup_config_args(**kwargs):
@@ -141,6 +141,12 @@ def main(
         "-v",
         help="Enable verbose logging.",
     ),
+    silent: bool | None = typer.Option(
+        None,
+        "--silent",
+        "-s",
+        help="Do not output any text to the console, except for prompting acceptance of changes if auto_accept is False",
+    ),
     auto_accept: bool | None = typer.Option(
         None, "--yes", "-y", help="Automatically accept and commit all changes"
     ),
@@ -156,9 +162,10 @@ def main(
         print(ctx.get_help())
         raise typer.Exit()
 
-    setup_logger(ctx.invoked_subcommand, debug=verbose)
+    # initial setup of logger, will be updated later if needed
+    setup_logger(ctx.invoked_subcommand, debug=verbose or False, silent=silent or False)
 
-    if ctx.invoked_subcommand not in dependent_commands:
+    if ctx.invoked_subcommand == config_command:
         return
 
     config_args = setup_config_args(
@@ -167,6 +174,7 @@ def main(
         temperature=temperature,
         verbose=verbose,
         auto_accept=auto_accept,
+        silent=silent,
     )
 
     local_config_path = Path("dslateconfig.toml")
@@ -182,12 +190,15 @@ def main(
         global_config_path,
         custom_config_path,
     )
+
+    setup_logger(ctx.invoked_subcommand, debug=config.verbose, silent=config.silent)
+
+    # if we run a command that requires a global context, check that the user has learned the onboarding process
     if not used_configs and used_defaults:
         # check if this is first run of command
         # if so, run onboarding for user
         check_run_onboarding(ctx)
-
-        logger.warning("No configuration found. Using default values.")
+        logger.debug("No configuration found. Using default values.")
 
     logger.debug(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
@@ -207,19 +218,6 @@ def run_app():
         load_dotenv()
         # launch cli
         app(prog_name="dslate")
-
-    # except ValidationError as e:
-    #     logger.error(f"[red]Validation Error:[/red] {e.message}")
-    #     if e.details:
-    #         logger.error(f"[dim]Details: {e.details}[/dim]")
-    #     raise typer.Exit(1)
-
-    # except GitError as e:
-    #     logger.error(f"[red]Git Error:[/red] {e.message}")
-    #     if e.details:
-    #         logger.error(f"[dim]Details: {e.details}[/dim]")
-    #     logger.error(f"Git operation failed: {e.message}")
-    #     raise typer.Exit(1)
 
     except dslateError as e:
         logger.error(e)

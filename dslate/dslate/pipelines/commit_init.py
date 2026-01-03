@@ -51,7 +51,6 @@ def create_commit_pipeline(
         logical_grouper = SingleGrouper()
 
     if new_commit_hash is None:
-        logger.error("[red] Failed to backup working state, exiting. [/red]")
         raise GitError("Failed to backup working state, exiting.")
 
     file_reader = GitFileReader(

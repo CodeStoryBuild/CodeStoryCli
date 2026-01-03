@@ -63,7 +63,6 @@ class BranchSaver:
         # check that not a detached branch
         if not original_branch:
             msg = "Cannot backup: currently on a detached HEAD."
-            logger.error(msg)
             raise DetachedHeadError(msg)
 
         # check if branch is empty
@@ -112,9 +111,7 @@ class BranchSaver:
         """
         original_branch = (self._run(["branch", "--show-current"]) or "").strip()
         if not original_branch:
-            msg = "Cannot restore: currently on a detached HEAD."
-            logger.error(msg)
-            raise DetachedHeadError(msg)
+            raise DetachedHeadError("Cannot restore: currently on a detached HEAD.")
 
         backup_branch = f"{self.BACKUP_PREFIX}{original_branch}"
 
@@ -151,5 +148,5 @@ class BranchSaver:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to restore from backup: {e}")
+            logger.warning(f"Failed to restore from backup: {e}")
             return False

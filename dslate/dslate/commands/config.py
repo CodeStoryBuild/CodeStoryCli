@@ -25,7 +25,6 @@ from typing import Literal
 from rich import print
 import tomllib
 import typer
-from loguru import logger
 from platformdirs import user_config_dir
 from rich.console import Console
 from rich.table import Table
