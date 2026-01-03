@@ -188,7 +188,7 @@ class SemanticGrouper:
                 total_scope.update(diff_chunk_scope)
 
             except Exception as e:
-                logger.warning(
+                logger.debug(
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path().decode('utf-8', errors='replace') if isinstance(diff_chunk.canonical_path(), bytes) else diff_chunk.canonical_path()}: {e}"
                 )
                 return None

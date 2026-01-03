@@ -195,7 +195,7 @@ class QueryManager:
 
             if not query_src.strip():
                 # Empty query -> no matches
-                logger.warning(f"Empty query for {language_name} {query_type=}!")
+                logger.debug(f"Empty query for {language_name} {query_type=}!")
                 return {}
 
             query = Query(language, query_src)

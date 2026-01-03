@@ -93,7 +93,7 @@ class ContextManager:
         self._generate_parsed_files()
 
         if not self._parsed_files:
-            logger.warning("Empty parsed files!")
+            logger.debug("Empty parsed files!")
 
         # First, build shared context
         self._build_shared_contexts()
@@ -129,7 +129,7 @@ class ContextManager:
         if missing:
             # log a few missing samples to avoid huge logs
             sample = list(missing)[:10]
-            logger.warning(
+            logger.debug(
                 "Missing contexts (sample up to 10): {sample} (total_missing={cnt})",
                 sample=sample,
                 cnt=len(missing),
@@ -209,7 +209,7 @@ class ContextManager:
             )
             content = self.file_reader.read(path_str, old_content=is_old_version)
             if content is None:
-                logger.warning(f"Content read for {path_str} is None")
+                logger.debug(f"Content read for {path_str} is None")
                 continue
 
             # Parse the file (file_parser expects string path)
@@ -217,7 +217,7 @@ class ContextManager:
                 path_str, content, self.simplify_overlapping_ranges(line_ranges)
             )
             if parsed_file is None:
-                logger.warning(f"Parsed file for {path_str} is None")
+                logger.debug(f"Parsed file for {path_str} is None")
                 continue
 
             self._parsed_files[(file_path, is_old_version)] = parsed_file
@@ -279,7 +279,7 @@ class ContextManager:
                 self._shared_context_cache[language] = context
             # TODO change all these to custom subclassed exceptions
             except Exception as e:
-                logger.warning(f"Failed to build shared context for {language}: {e}")
+                logger.debug(f"Failed to build shared context for {language}: {e}")
 
     def _build_all_contexts(self) -> None:
         """
@@ -294,12 +294,12 @@ class ContextManager:
                 if context is not None:
                     self._context_cache[(file_path, is_old_version)] = context
                 else:
-                    logger.warning(
+                    logger.debug(
                         f"Failed to build context for {file_path} (old={is_old_version}): context is None"
                     )
             except Exception as e:
                 # Log error but continue with other files
-                logger.warning(
+                logger.debug(
                     f"Failed to build context for {file_path} (old={is_old_version}): {e}"
                 )
 
@@ -321,7 +321,7 @@ class ContextManager:
         if parsed_file.root_node.has_error:
             version = "old version" if is_old_version else "new version"
             logger.warning(
-                f"Syntax errors detected in {version} of {file_path}; skipping context build"
+                f"Syntax errors detected in {version} of {file_path}"
             )
             return None
 

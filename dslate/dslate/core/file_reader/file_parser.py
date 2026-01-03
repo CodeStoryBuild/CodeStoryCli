@@ -94,7 +94,7 @@ class FileParser:
         # Detect language using Pygments
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
-            logger.warning(f"Failed to get detect language for {file_name}")
+            logger.debug(f"Failed to get detect language for {file_name}")
             return None
 
         # Get Tree-sitter parser for the detected language
@@ -102,7 +102,7 @@ class FileParser:
             parser = get_parser(detected_language)
         except Exception:
             # If we can't get a parser for this language, return None
-            logger.warning(f"Failed to get parser for {detected_language}")
+            logger.debug(f"Failed to get parser for {detected_language}")
             return None
 
         # Parse the content
@@ -119,7 +119,7 @@ class FileParser:
             )
         except Exception as e:
             # If parsing fails, return None
-            logger.warning(f"Failed to parse file with {detected_language} error: {e}")
+            logger.debug(f"Failed to parse file with {detected_language} error: {e}")
             return None
 
     @classmethod
@@ -185,7 +185,7 @@ class FileParser:
             return "c"
 
         # If no mapping found, return None
-        logger.warning(
+        logger.debug(
             f"No mapping found from lexer to language for lexer: {lexer_name}"
         )
         return None
