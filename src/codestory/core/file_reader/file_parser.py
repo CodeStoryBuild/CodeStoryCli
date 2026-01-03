@@ -24,7 +24,7 @@ from loguru import logger
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
 
-from .language_mapper import detect_tree_sitter_language
+from codestory.core.file_reader.language_mapper import detect_tree_sitter_language
 
 
 @dataclass(frozen=True)

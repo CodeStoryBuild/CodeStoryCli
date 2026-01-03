@@ -28,7 +28,7 @@ and type safety for all CLI parameters and configuration values.
 import re
 from pathlib import Path
 
-from .exceptions import (
+from codestory.core.exceptions import (
     DetachedHeadError,
     FileSystemError,
     GitError,

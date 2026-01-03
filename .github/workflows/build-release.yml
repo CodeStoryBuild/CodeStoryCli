@@ -76,7 +76,7 @@ jobs:
 
           # Set the env var for tests to use this specific binary
           export CLI_ARTIFACT_PATH="$EXE_PATH"
-          pytest -vv codestory/tests/integration
+          pytest -vv src/tests/integration
 
       # --- PACKAGING STEPS ---
 
