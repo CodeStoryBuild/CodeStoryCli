@@ -87,10 +87,15 @@ def run_model_setup(scope: str):
     )
 
     # Prompt for model
-    model_string = typer.prompt("Enter model (format: provider:model)")
+    model_string = typer.prompt(
+        f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})",
+        default="ollama:qwen2.5-coder:1.5b",
+    ).strip()
     while ":" not in model_string:
         print(f"{Fore.RED}Invalid format! Must be 'provider:model'{Style.RESET_ALL}")
-        model_string = typer.prompt("Enter model (format: provider:model)")
+        model_string = typer.prompt(
+            f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})"
+        ).strip()
 
     set_config(key="model", value=model_string, scope=scope)
 
@@ -140,16 +145,13 @@ def run_model_setup(scope: str):
 
 def run_onboarding():
     print(f"{Fore.CYAN}{Style.BRIGHT}{CODESTORY_ASCII}{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}{Style.BRIGHT}Welcome to CodeStory!{Style.RESET_ALL}")
     print(
-        f"{Fore.WHITE}This is the first time you're running codestory. Let's get you set up!{Style.RESET_ALL}"
-    )
-    print(
-        f"{Fore.WHITE}You can change any of these settings later using 'cst config'.{Style.RESET_ALL}\n"
+        f"{Fore.WHITE}{Style.BRIGHT}Welcome to CodeStory!{Style.RESET_ALL}\n"
+        f"{Fore.WHITE}- We will help you configure your preferred AI model.\n"
+        f"- These settings can be changed later using {Fore.CYAN}cst config{Fore.WHITE}.\n"
     )
 
-    print(f"{Fore.WHITE}{Style.BRIGHT}Press Enter to continue...{Style.RESET_ALL}")
-    input()
+    typer.confirm(f"{Fore.WHITE}Ready to start?", default=True, abort=True)
 
     # Ask if global or local config
     global_ = typer.confirm(
