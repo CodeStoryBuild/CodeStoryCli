@@ -107,6 +107,139 @@ def _truncate_text(text: str, max_length: int = 50) -> str:
     return text_str[: max_length - 3] + "..."
 
 
+def _write_toml_config(config_path: Path, config_data: dict) -> None:
+    """Write configuration data to a TOML file.
+    
+    Args:
+        config_path: Path to the config file
+        config_data: Dictionary of configuration values
+    """
+    with open(config_path, "w") as f:
+        for k, v in config_data.items():
+            if isinstance(v, bool):
+                f.write(f"{k} = {str(v).lower()}\n")
+            elif isinstance(v, (int, float)):
+                f.write(f"{k} = {v}\n")
+            else:
+                f.write(f"{k} = '{v}'\n")
+
+
+def _load_toml_config(config_path: Path) -> dict:
+    """Load configuration from a TOML file.
+    
+    Args:
+        config_path: Path to the config file
+        
+    Returns:
+        Dictionary of configuration values, or empty dict if file doesn't exist
+        
+    Raises:
+        ConfigurationError: If the TOML file is malformed
+    """
+    if not config_path.exists():
+        return {}
+    
+    try:
+        with open(config_path, "rb") as f:
+            return tomllib.load(f)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigurationError(f"Failed to parse config at {config_path}: {e}")
+
+
+def _format_value_for_display(value: Any) -> str:
+    """Format a configuration value for display.
+    
+    Args:
+        value: The value to format
+        
+    Returns:
+        Formatted string representation of the value
+    """
+    if isinstance(value, bool):
+        return str(value).lower()
+    elif isinstance(value, (int, float)):
+        return str(value)
+    else:
+        return f"'{value}'"
+
+
+def _print_env_instructions(key: str, value: str, is_delete: bool = False) -> None:
+    """Print instructions for setting/deleting environment variables.
+    
+    Args:
+        key: Configuration key
+        value: Configuration value (only used for set operations)
+        is_delete: Whether this is a delete operation
+    """
+    env_var = f"{ENV_APP_PREFIX}{key.upper()}"
+    
+    if is_delete:
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.")
+        print("Please delete them through your terminal/OS:")
+        print(f"  Windows (PowerShell): Remove-Item Env:\\{env_var}")
+        print(f"  Windows (CMD): set {env_var}=")
+        print(f"  Linux/macOS: unset {env_var}")
+    else:
+        print(f"{Fore.GREEN}To set this as an environment variable:{Style.RESET_ALL}")
+        print(f"  Windows (PowerShell): $env:{env_var}='{value}'")
+        print(f"  Windows (CMD): set {env_var}={value}")
+        print(f"  Linux/macOS: export {env_var}='{value}'")
+
+
+def _delete_key_from_config(config_path: Path, key: str, scope: str) -> bool:
+    """Delete a specific key from a configuration file.
+    
+    Args:
+        config_path: Path to the config file
+        key: The key to delete
+        scope: The scope name (for display purposes)
+        
+    Returns:
+        True if the key was deleted, False if it wasn't found
+    """
+    config_data = _load_toml_config(config_path)
+    
+    if not config_data:
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found")
+        return False
+    
+    if key not in config_data:
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config")
+        return False
+    
+    del config_data[key]
+    
+    if config_data:
+        _write_toml_config(config_path, config_data)
+    else:
+        config_path.unlink()
+        print(f"Removed empty config file: {config_path}")
+    
+    print(f"{Fore.GREEN}Deleted {key} from {scope} config{Style.RESET_ALL}")
+    return True
+
+
+def _delete_all_from_config(config_path: Path, scope: str) -> bool:
+    """Delete all keys from a configuration file.
+    
+    Args:
+        config_path: Path to the config file
+        scope: The scope name (for display purposes)
+        
+    Returns:
+        True if config was deleted, False if file didn't exist or was already empty
+    """
+    config_data = _load_toml_config(config_path)
+    
+    if not config_data:
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty")
+        return False
+    
+    config_path.unlink()
+    print(f"{Fore.GREEN}Deleted all config from {scope} scope{Style.RESET_ALL}")
+    return True
+
+
 def print_describe_options():
     schema = _get_config_schema()
 
@@ -170,15 +303,17 @@ def _add_to_gitignore(config_filename: str) -> None:
 
 
 def set_config(key: str, value: str, scope: str) -> None:
-    """Set a configuration value in the specified scope."""
+    """Set a configuration value in the specified scope.
+    
+    Args:
+        key: Configuration key to set
+        value: Value to set (as string from CLI)
+        scope: Scope to set the value in (local, global, or env)
+    """
     field_info = _check_key_exists(key)
 
     if scope == "env":
-        env_var = f"{ENV_APP_PREFIX}{key}"
-        print(f"{Fore.GREEN}To set this as an environment variable:{Style.RESET_ALL}")
-        print(f"  Windows (PowerShell): $env:{env_var}='{value}'")
-        print(f"  Windows (CMD): set {env_var}={value}")
-        print(f"  Linux/macOS: export {env_var}='{value}'")
+        _print_env_instructions(key, value)
         return
 
     # Determine config file path based on scope
@@ -190,20 +325,13 @@ def set_config(key: str, value: str, scope: str) -> None:
         _add_to_gitignore(CONFIG_FILENAME)
 
     # Load existing config
-    config_data = {}
-    if config_path.exists():
-        try:
-            with open(config_path, "rb") as f:
-                config_data = tomllib.load(f)
-        except tomllib.TOMLDecodeError as e:
-            print(f"Failed to parse existing config: {e}. Creating new config.")
+    try:
+        config_data = _load_toml_config(config_path)
+    except ConfigurationError as e:
+        print(f"{Fore.YELLOW}Warning:{Style.RESET_ALL} {e}. Creating new config.")
+        config_data = {}
 
-    # Type Conversion
-    # Inputs from CLI are always strings, but TOML supports types.
-    # We check the GlobalConfig type annotation to convert properly.
-    final_value = value
-
-    # If a constraint exists, use it for coercion and validation
+    # Coerce and validate the value using the constraint
     constraint = field_info.get("constraint")
     try:
         final_value = constraint.coerce(value)
@@ -211,53 +339,41 @@ def set_config(key: str, value: str, scope: str) -> None:
         print(f"{Fore.RED}Error:{Style.RESET_ALL} Invalid value for {key}: {e}")
         raise typer.Exit(1)
 
-    # Update the value
+    # Update and save
     config_data[key] = final_value
+    _write_toml_config(config_path, config_data)
 
-    # Write back to file (Simple TOML serialization)
-    with open(config_path, "w") as f:
-        for k, v in config_data.items():
-            if isinstance(v, bool):
-                f.write(f"{k} = {str(v).lower()}\n")
-            elif isinstance(v, (int, float)):
-                f.write(f"{k} = {v}\n")
-            else:
-                # Use literal strings (single quotes) for TOML
-                f.write(f"{k} = '{v}'\n")
-
+    # Display success message
     scope_label = "global" if scope == "global" else "local"
-    # Format the display value to match how it's written to the file
-    if isinstance(final_value, bool):
-        display_value = str(final_value).lower()
-    elif isinstance(final_value, (int, float)):
-        display_value = str(final_value)
-    else:
-        display_value = f"'{final_value}'"
-
+    display_value = _format_value_for_display(final_value)
     print(f"{Fore.GREEN}Set {key} = {display_value} ({scope_label}){Style.RESET_ALL}")
     print(f"Config file: {config_path.absolute()}")
 
 
 def get_config(key: str | None, scope: str | None) -> None:
-    """Get configuration value(s) from the specified scope or all scopes."""
+    """Get configuration value(s) from the specified scope or all scopes.
+    
+    Args:
+        key: Specific key to get, or None to get all keys
+        scope: Scope to search (local, global, env), or None to search all
+    """
     schema = _get_config_schema()
 
     if key is not None:
         _check_key_exists(key)
 
-    # 1. Gather all sources
-    # Priority order for display: Local > Env > Global
+    # Gather all sources (Priority order for display: Local > Env > Global)
     sources = []
 
     # Local
     if (scope is None or scope == "local") and LOCAL_CONFIG_FILE.exists():
         try:
-            with open(LOCAL_CONFIG_FILE, "rb") as f:
-                local_config = tomllib.load(f)
+            local_config = _load_toml_config(LOCAL_CONFIG_FILE)
+            if local_config:
                 sources.append(
                     ("Set from: Local Config", LOCAL_CONFIG_FILE, local_config)
                 )
-        except tomllib.TOMLDecodeError:
+        except ConfigurationError:
             pass
 
     # Env
@@ -273,12 +389,12 @@ def get_config(key: str | None, scope: str | None) -> None:
     # Global
     if (scope is None or scope == "global") and GLOBAL_CONFIG_FILE.exists():
         try:
-            with open(GLOBAL_CONFIG_FILE, "rb") as f:
-                global_config = tomllib.load(f)
+            global_config = _load_toml_config(GLOBAL_CONFIG_FILE)
+            if global_config:
                 sources.append(
                     ("Set from: Global Config", GLOBAL_CONFIG_FILE, global_config)
                 )
-        except tomllib.TOMLDecodeError:
+        except ConfigurationError:
             pass
 
     # 2. Display Logic
@@ -364,62 +480,47 @@ def get_config(key: str | None, scope: str | None) -> None:
 
 
 def delete_config(key: str | None, scope: str) -> None:
-    """Delete configuration value(s) from the specified scope."""
+    """Delete configuration value(s) from the specified scope.
+    
+    Args:
+        key: Specific key to delete, or None to delete all
+        scope: Scope to delete from (local, global, or env)
+    """
     if scope == "env":
         if key is not None:
-            env_var = f"{ENV_APP_PREFIX}{key.upper()}"
-            print(
-                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.\n"
-                f"Please delete them through your terminal/OS:\n"
-                f"  Windows (PowerShell): Remove-Item Env:\\{env_var}\n"
-                f"  Windows (CMD): set {env_var}=\n"
-                f"  Linux/macOS: unset {env_var}"
-            )
+            _print_env_instructions(key, "", is_delete=True)
         else:
-            print(
-                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.\n"
-                f"Please delete them through your terminal/OS:\n"
-                f"  Windows (PowerShell): Remove-Item Env:\\{ENV_APP_PREFIX}*\n"
-                f"  Windows (CMD): set {ENV_APP_PREFIX}*=\n"
-                f"  Linux/macOS: unset {ENV_APP_PREFIX}*"
-            )
+            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.")
+            print("Please delete them through your terminal/OS:")
+            print(f"  Windows (PowerShell): Remove-Item Env:\\{ENV_APP_PREFIX}*")
+            print(f"  Windows (CMD): set {ENV_APP_PREFIX}*=")
+            print(f"  Linux/macOS: unset {ENV_APP_PREFIX}*")
         return
 
     config_path = GLOBAL_CONFIG_FILE if scope == "global" else LOCAL_CONFIG_FILE
 
     if not config_path.exists():
-        print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found at {config_path}"
-        )
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found at {config_path}")
         return
 
     # Load existing config
     try:
-        with open(config_path, "rb") as f:
-            config_data = tomllib.load(f)
-    except tomllib.TOMLDecodeError as e:
-        print(f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse config: {e}")
+        config_data = _load_toml_config(config_path)
+    except ConfigurationError as e:
+        print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
         raise typer.Exit(1)
 
     if not config_data:
-        print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty"
-        )
+        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty")
         return
 
     if key is not None:
         # Delete specific key
         if key not in config_data:
-            print(
-                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config"
-            )
+            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config")
             return
 
-        # Confirmation prompt for specific key
-        confirm = typer.confirm(
-            f"Are you sure you want to delete '{key}' from {scope} config?"
-        )
-        if not confirm:
+        if not typer.confirm(f"Are you sure you want to delete '{key}' from {scope} config?"):
             print("Delete cancelled.")
             return
 
@@ -428,156 +529,74 @@ def delete_config(key: str | None, scope: str) -> None:
     else:
         # Delete all keys
         keys_list = ", ".join(config_data.keys())
-        confirm = typer.confirm(
+        if not typer.confirm(
             f"Are you sure you want to delete ALL config from {scope} scope?\n"
             f"Keys to be deleted: {keys_list}"
-        )
-        if not confirm:
+        ):
             print("Delete cancelled.")
             return
 
         config_data.clear()
         print(f"{Fore.GREEN}Deleted all config from {scope} scope{Style.RESET_ALL}")
 
-    # Write back to file
+    # Write back to file or remove if empty
     if config_data:
-        with open(config_path, "w") as f:
-            for k, v in config_data.items():
-                if isinstance(v, bool):
-                    f.write(f"{k} = {str(v).lower()}\n")
-                elif isinstance(v, (int, float)):
-                    f.write(f"{k} = {v}\n")
-                else:
-                    f.write(f"{k} = '{v}'\n")
+        _write_toml_config(config_path, config_data)
     else:
-        # If empty, remove the file
         config_path.unlink()
         print(f"Removed empty config file: {config_path}")
 
 
 def deleteall_config(key: str | None) -> None:
-    """Delete configuration value(s) from both global and local scopes."""
+    """Delete configuration value(s) from both global and local scopes.
+    
+    Args:
+        key: Specific key to delete, or None to delete all
+    """
     if key is not None:
         # Confirmation prompt for specific key across all scopes
-        confirm = typer.confirm(
-            f"Are you sure you want to delete '{key}' from BOTH global and local config?"
-        )
-        if not confirm:
+        if not typer.confirm(f"Are you sure you want to delete '{key}' from BOTH global and local config?"):
             print("Delete cancelled.")
             return
 
         print(f"\n{Fore.CYAN}Deleting from local scope:{Style.RESET_ALL}")
-        # Delete from local without additional confirmation (already confirmed)
         if LOCAL_CONFIG_FILE.exists():
             try:
-                with open(LOCAL_CONFIG_FILE, "rb") as f:
-                    config_data = tomllib.load(f)
-                if key in config_data:
-                    del config_data[key]
-                    if config_data:
-                        with open(LOCAL_CONFIG_FILE, "w") as f:
-                            for k, v in config_data.items():
-                                if isinstance(v, bool):
-                                    f.write(f"{k} = {str(v).lower()}\n")
-                                elif isinstance(v, (int, float)):
-                                    f.write(f"{k} = {v}\n")
-                                else:
-                                    f.write(f"{k} = '{v}'\n")
-                    else:
-                        LOCAL_CONFIG_FILE.unlink()
-                    print(
-                        f"{Fore.GREEN}Deleted {key} from local config{Style.RESET_ALL}"
-                    )
-                else:
-                    print(
-                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in local config"
-                    )
-            except tomllib.TOMLDecodeError as e:
-                print(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}"
-                )
+                _delete_key_from_config(LOCAL_CONFIG_FILE, key, "local")
+            except ConfigurationError as e:
+                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
 
         print(f"\n{Fore.CYAN}Deleting from global scope:{Style.RESET_ALL}")
         if GLOBAL_CONFIG_FILE.exists():
             try:
-                with open(GLOBAL_CONFIG_FILE, "rb") as f:
-                    config_data = tomllib.load(f)
-                if key in config_data:
-                    del config_data[key]
-                    if config_data:
-                        with open(GLOBAL_CONFIG_FILE, "w") as f:
-                            for k, v in config_data.items():
-                                if isinstance(v, bool):
-                                    f.write(f"{k} = {str(v).lower()}\n")
-                                elif isinstance(v, (int, float)):
-                                    f.write(f"{k} = {v}\n")
-                                else:
-                                    f.write(f"{k} = '{v}'\n")
-                    else:
-                        GLOBAL_CONFIG_FILE.unlink()
-                    print(
-                        f"{Fore.GREEN}Deleted {key} from global config{Style.RESET_ALL}"
-                    )
-                else:
-                    print(
-                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in global config"
-                    )
-            except tomllib.TOMLDecodeError as e:
-                print(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}"
-                )
+                _delete_key_from_config(GLOBAL_CONFIG_FILE, key, "global")
+            except ConfigurationError as e:
+                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
     else:
         # Delete all from both scopes
-        confirm = typer.confirm(
-            "Are you sure you want to delete ALL config from BOTH global and local scopes?"
-        )
-        if not confirm:
+        if not typer.confirm("Are you sure you want to delete ALL config from BOTH global and local scopes?"):
             print("Delete cancelled.")
             return
 
         print(f"\n{Fore.CYAN}Deleting from local scope:{Style.RESET_ALL}")
         if LOCAL_CONFIG_FILE.exists():
             try:
-                with open(LOCAL_CONFIG_FILE, "rb") as f:
-                    config_data = tomllib.load(f)
-                if config_data:
-                    LOCAL_CONFIG_FILE.unlink()
-                    print(
-                        f"{Fore.GREEN}Deleted all config from local scope{Style.RESET_ALL}"
-                    )
-                else:
-                    print(
-                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Local config is already empty"
-                    )
-            except tomllib.TOMLDecodeError as e:
-                print(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse local config: {e}"
-                )
+                _delete_all_from_config(LOCAL_CONFIG_FILE, "local")
+            except ConfigurationError as e:
+                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
 
         print(f"\n{Fore.CYAN}Deleting from global scope:{Style.RESET_ALL}")
         if GLOBAL_CONFIG_FILE.exists():
             try:
-                with open(GLOBAL_CONFIG_FILE, "rb") as f:
-                    config_data = tomllib.load(f)
-                if config_data:
-                    GLOBAL_CONFIG_FILE.unlink()
-                    print(
-                        f"{Fore.GREEN}Deleted all config from global scope{Style.RESET_ALL}"
-                    )
-                else:
-                    print(
-                        f"{Fore.YELLOW}Info:{Style.RESET_ALL} Global config is already empty"
-                    )
-            except tomllib.TOMLDecodeError as e:
-                print(
-                    f"{Fore.RED}Error:{Style.RESET_ALL} Failed to parse global config: {e}"
-                )
+                _delete_all_from_config(GLOBAL_CONFIG_FILE, "global")
+            except ConfigurationError as e:
+                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
         else:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
 
