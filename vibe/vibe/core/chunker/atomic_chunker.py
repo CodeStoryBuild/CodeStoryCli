@@ -16,8 +16,8 @@ class AtomicChunker(MechanicalChunker):
     """
 
     @staticmethod
-    def _is_blank(line_text: str) -> bool:
-        return line_text.strip() == ""
+    def _is_blank(line_text: bytes) -> bool:
+        return line_text.strip() == b""
 
     def _line_is_context(
         self,

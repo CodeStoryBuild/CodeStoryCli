@@ -48,12 +48,6 @@ class CleanRunner:
         console.rule("[bold green]vibe clean")
         console.print(f"[green]Considering {total} commits (HEAD -> second).[/green]")
 
-        def confirm(prompt: str) -> bool:
-            if options.auto_yes:
-                console.print(f"[yellow]Auto-confirm:[/yellow] {prompt}")
-                return True
-            return self._confirm(prompt)
-
         expanded = 0
         skipped = 0
 
@@ -89,7 +83,7 @@ class CleanRunner:
             ok = self.expand_service.expand_commit(
                 commit,
                 console=console,
-                confirm_rewrite=confirm,
+                auto_yes=options.auto_yes
             )
             if not ok:
                 console.print(

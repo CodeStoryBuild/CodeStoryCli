@@ -170,7 +170,7 @@ class SemanticGrouper:
 
             except Exception as e:
                 logger.warning(
-                    f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
+                    f"Signature generation failed for diff chunk {diff_chunk.canonical_path().decode('utf-8', errors='replace') if isinstance(diff_chunk.canonical_path(), bytes) else diff_chunk.canonical_path()}: {e}"
                 )
                 return None
 
