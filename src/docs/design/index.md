@@ -1,7 +1,6 @@
-```markdown
 # Architecture Design
 
-This section links to the architecture and design docs for codestory.
+Check out the core pillars of what makes the codestory cli so great
 
 - [The Core Logic](./how-it-works.md)
 - [Mechanical Grouping](./mechanical-chunking.md)
@@ -9,4 +8,3 @@ This section links to the architecture and design docs for codestory.
 - [Logical Grouping](./logical-grouping.md)
 - [Commit Strategy](./commit-strategy.md)
 
-```
