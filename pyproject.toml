@@ -40,3 +40,6 @@ dev = [
   "mypy"
 ]
 
+[tool.setuptools.package-data]
+vibe = ["resources/*"]
+

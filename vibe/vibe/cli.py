@@ -1,11 +1,8 @@
 import typer
 from rich.console import Console
-
 from rich.traceback import install
 from dotenv import load_dotenv
 
-# Disable showing locals in tracebacks
-install(show_locals=False)
 
 from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.chunker.atomic_chunker import AtomicChunker
@@ -15,6 +12,9 @@ from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterfac
 from vibe.core.pipeline.runner import AIGitPipeline
 
 from vibe.commands import commit
+
+# Disable showing locals in tracebacks (way too much text)
+install(show_locals=False)
 load_dotenv()
 
 # create app
@@ -50,4 +50,5 @@ def main(ctx: typer.Context):
 
 
 if __name__ == "__main__":
+    # start app
     app()
