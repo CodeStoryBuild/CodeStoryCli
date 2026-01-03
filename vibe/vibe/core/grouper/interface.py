@@ -18,11 +18,9 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
-from itertools import groupby
-from typing import List, Dict, Optional
-from ..data.models import CommitGroup, ProgressCallback
+
 from ..data.chunk import Chunk
-from ..synthesizer.git_synthesizer import GitSynthesizer
+from ..data.models import CommitGroup, ProgressCallback
 
 
 class LogicalGrouper(ABC):
@@ -31,6 +29,6 @@ class LogicalGrouper(ABC):
         self,
         chunks: list[Chunk],
         message: str,
-        on_progress: Optional[ProgressCallback] = None,
-    ) -> List[CommitGroup]:
+        on_progress: ProgressCallback | None = None,
+    ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""

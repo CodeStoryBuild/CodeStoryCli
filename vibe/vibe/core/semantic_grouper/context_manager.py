@@ -1,16 +1,15 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
-from tree_sitter import Node
 
-from vibe.core.file_reader.protocol import FileReader
-from vibe.core.file_reader.file_parser import FileParser, ParsedFile
-from vibe.core.data.diff_chunk import DiffChunk
-from .query_manager import QueryManager
-from .scope_mapper import ScopeMapper, ScopeMap
-from .symbol_mapper import SymbolMapper, SymbolMap
-from .comment_mapper import CommentMapper, CommentMap
-from .symbol_extractor import SymbolExtractor
 from loguru import logger
+from vibe.core.data.diff_chunk import DiffChunk
+from vibe.core.file_reader.file_parser import FileParser, ParsedFile
+from vibe.core.file_reader.protocol import FileReader
+
+from .comment_mapper import CommentMap, CommentMapper
+from .query_manager import QueryManager
+from .scope_mapper import ScopeMap, ScopeMapper
+from .symbol_extractor import SymbolExtractor
+from .symbol_mapper import SymbolMap, SymbolMapper
 
 
 @dataclass(frozen=True)
@@ -46,7 +45,7 @@ class ContextManager:
         file_parser: FileParser,
         file_reader: FileReader,
         query_manager: QueryManager,
-        diff_chunks: List[DiffChunk],
+        diff_chunks: list[DiffChunk],
     ):
         self.file_parser = file_parser
         self.file_reader = file_reader
@@ -60,9 +59,9 @@ class ContextManager:
         self.comment_mapper = CommentMapper(query_manager)
 
         # Context storage: (file_type (language name)) -> SharedContext
-        self._shared_context_cache: Dict[str, SharedContext] = {}
+        self._shared_context_cache: dict[str, SharedContext] = {}
         # Context storage: (file_path, is_old_version) -> AnalysisContext
-        self._context_cache: Dict[tuple[str, bool], AnalysisContext] = {}
+        self._context_cache: dict[tuple[str, bool], AnalysisContext] = {}
 
         # Determine which file versions need to be analyzed
         self._required_contexts: dict[tuple[str, bool], list[tuple[int, int]]] = {}
@@ -84,7 +83,7 @@ class ContextManager:
         total_required = len(self._required_contexts.keys())
         total_built = len(self._context_cache)
         files_with_context = {fp for fp, _ in self._context_cache.keys()}
-        languages: Dict[str, int] = {}
+        languages: dict[str, int] = {}
         for ctx in self._context_cache.values():
             lang = ctx.parsed_file.detected_language or "unknown"
             languages[lang] = languages.get(lang, 0) + 1
@@ -263,7 +262,7 @@ class ContextManager:
 
     def _build_context(
         self, file_path: str, is_old_version: bool, parsed_file: ParsedFile
-    ) -> Optional[AnalysisContext]:
+    ) -> AnalysisContext | None:
         """
         Build analysis context for a specific file version.
 
@@ -337,7 +336,7 @@ class ContextManager:
 
     def get_context(
         self, file_path: str, is_old_version: bool
-    ) -> Optional[AnalysisContext]:
+    ) -> AnalysisContext | None:
         """
         Get analysis context for a specific file version.
 
@@ -350,7 +349,7 @@ class ContextManager:
         """
         return self._context_cache.get((file_path, is_old_version))
 
-    def get_available_contexts(self) -> List[AnalysisContext]:
+    def get_available_contexts(self) -> list[AnalysisContext]:
         """
         Get all available analysis contexts.
 
@@ -372,7 +371,7 @@ class ContextManager:
         """
         return (file_path, is_old_version) in self._context_cache
 
-    def get_required_contexts(self) -> Set[tuple[str, bool]]:
+    def get_required_contexts(self) -> set[tuple[str, bool]]:
         """
         Get the set of required contexts based on diff chunks.
 
@@ -381,7 +380,7 @@ class ContextManager:
         """
         return self._required_contexts.copy()
 
-    def get_file_paths(self) -> Set[str]:
+    def get_file_paths(self) -> set[str]:
         """
         Get all unique file paths that have contexts.
 

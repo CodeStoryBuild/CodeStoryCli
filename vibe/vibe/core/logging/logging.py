@@ -5,17 +5,14 @@ This module provides structured logging with proper formatting,
 log levels, and file management for better observability and debugging.
 """
 
-from platformdirs import user_log_path
-from pathlib import Path
-from typing import Optional, Dict, Any
 import os
-import sys
+from datetime import datetime
+from pathlib import Path
 
-import typer
+from loguru import logger
+from platformdirs import user_log_path
 from rich.console import Console
 from rich.text import Text
-from loguru import logger
-from datetime import datetime
 
 LOG_DIR = user_log_path(appname="VibeCommit")
 LOG_DIR.mkdir(parents=True, exist_ok=True)

@@ -6,11 +6,10 @@ and type safety for all CLI parameters and configuration values.
 """
 
 import re
-from pathlib import Path
-from typing import Optional, List, Union
 import subprocess
+from pathlib import Path
 
-from .exceptions import ValidationError, GitError, FileSystemError
+from .exceptions import FileSystemError, GitError, ValidationError
 
 
 def validate_commit_hash(value: str) -> str:
@@ -93,7 +92,7 @@ def validate_target_path(value: str) -> Path:
     return path
 
 
-def validate_message_length(value: Optional[str]) -> Optional[str]:
+def validate_message_length(value: str | None) -> str | None:
     """
     Validate commit message length and content.
     
@@ -108,32 +107,32 @@ def validate_message_length(value: Optional[str]) -> Optional[str]:
     """
     if value is None:
         return None
-    
+
     if not isinstance(value, str):
         raise ValidationError("Commit message must be a string")
-    
+
     value = value.strip()
-    
+
     if len(value) == 0:
         raise ValidationError("Commit message cannot be empty")
-    
+
     if len(value) > 1000:
         raise ValidationError(
             "Commit message is too long (maximum 1000 characters)",
             f"Current length: {len(value)} characters"
         )
-    
+
     # Check for potentially problematic characters
     if '\x00' in value:
         raise ValidationError(
             "Commit message contains null bytes",
             "Please remove null characters from the message"
         )
-    
+
     return value
 
 
-def validate_ignore_patterns(patterns: Optional[List[str]]) -> List[str]:
+def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
     """
     Validate ignore patterns for commit hashes.
     
@@ -148,38 +147,38 @@ def validate_ignore_patterns(patterns: Optional[List[str]]) -> List[str]:
     """
     if patterns is None:
         return []
-    
+
     if not isinstance(patterns, list):
         raise ValidationError("Ignore patterns must be a list")
-    
+
     validated_patterns = []
     for i, pattern in enumerate(patterns):
         if not isinstance(pattern, str):
             raise ValidationError(f"Ignore pattern {i} must be a string")
-        
+
         pattern = pattern.strip()
         if not pattern:
             continue
-            
+
         # Validate as potential commit hash prefix
         if not re.match(r'^[a-fA-F0-9]+$', pattern):
             raise ValidationError(
                 f"Invalid ignore pattern: {pattern}",
                 "Patterns must be hexadecimal characters (commit hash prefixes)"
             )
-        
+
         if len(pattern) > 40:
             raise ValidationError(
                 f"Ignore pattern too long: {pattern}",
                 "Commit hash patterns cannot exceed 40 characters"
             )
-        
+
         validated_patterns.append(pattern.lower())
-    
+
     return validated_patterns
 
 
-def validate_min_size(value: Optional[int]) -> Optional[int]:
+def validate_min_size(value: int | None) -> int | None:
     """
     Validate minimum size parameter.
     
@@ -194,22 +193,22 @@ def validate_min_size(value: Optional[int]) -> Optional[int]:
     """
     if value is None:
         return None
-    
+
     if not isinstance(value, int):
         raise ValidationError("Minimum size must be an integer")
-    
+
     if value < 1:
         raise ValidationError(
             "Minimum size must be positive",
             f"Got: {value}"
         )
-    
+
     if value > 10000:
         raise ValidationError(
             "Minimum size is too large (maximum 10000)",
             f"Got: {value}"
         )
-    
+
     return value
 
 

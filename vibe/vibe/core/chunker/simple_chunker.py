@@ -1,4 +1,3 @@
-from typing import List
 from ..data.chunk import Chunk
 from ..semantic_grouper.context_manager import ContextManager
 

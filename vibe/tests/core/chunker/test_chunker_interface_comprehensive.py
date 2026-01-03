@@ -5,12 +5,11 @@ Tests the actual chunker implementations: AtomicChunker and SimpleChunker.
 These tests ensure basic functionality and interface compliance.
 """
 
-import pytest
-from typing import List
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from vibe.core.chunker.interface import MechanicalChunker
+import pytest
 from vibe.core.chunker.atomic_chunker import AtomicChunker
+from vibe.core.chunker.interface import MechanicalChunker
 from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
@@ -51,11 +50,11 @@ def assert_chunker_interface_compliance(chunker: MechanicalChunker):
     assert callable(chunker.chunk), "chunk must be callable"
 
 
-def assert_chunk_output_valid(output_chunks: List, original_chunks: List):
+def assert_chunk_output_valid(output_chunks: list, original_chunks: list):
     """Assert that chunker output is valid."""
     assert isinstance(output_chunks, list), "Output must be a list"
     assert len(output_chunks) >= len(original_chunks), "Output should have at least as many chunks as input"
-    
+
     for chunk in output_chunks:
         # Each output item should be a valid chunk-like object
         assert hasattr(chunk, 'canonical_path'), "Output chunks must have canonical_path method"

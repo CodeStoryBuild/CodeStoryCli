@@ -1,17 +1,12 @@
-from typing import Callable
 
 import typer
-import inquirer
-from rich.console import Console
 from loguru import logger
+from rich.console import Console
 
+from vibe.core.exceptions import GitError, ValidationError, VibeError
 from vibe.core.expand.service import ExpandService
 from vibe.core.logging.logging import setup_logger
-from vibe.core.validation import (
-    validate_commit_hash,
-    validate_git_repository
-)
-from vibe.core.exceptions import VibeError, GitError, ValidationError
+from vibe.core.validation import validate_commit_hash, validate_git_repository
 
 
 def main(

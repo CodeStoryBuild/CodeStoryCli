@@ -1,4 +1,4 @@
-from typing import Optional
+
 from ..git_interface.interface import GitInterface
 
 
@@ -8,7 +8,7 @@ class GitFileReader:
         self.base_commit = base_commit
         self.patched_commit = patched_commit
 
-    def read(self, path: str, old_content: bool = False) -> Optional[str]:
+    def read(self, path: str, old_content: bool = False) -> str | None:
         """
         Returns the file content from the specified commit using git cat-file.
         version: 'old' for base_commit, 'new' for patched_commit (HEAD by default)

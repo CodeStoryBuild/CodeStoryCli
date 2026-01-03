@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from .chunk import Chunk
 
@@ -16,7 +15,7 @@ class CompositeDiffChunk:
         chunks: List of DiffChunk objects that make up this composite chunk
     """
 
-    chunks: List[Chunk]
+    chunks: list[Chunk]
 
     def __post_init__(self):
         if len(self.chunks) <= 0:

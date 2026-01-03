@@ -1,8 +1,8 @@
 import random
-from typing import List, Optional
+
+from ..data.chunk import Chunk
 from ..data.models import CommitGroup, ProgressCallback
 from .interface import LogicalGrouper
-from ..data.chunk import Chunk
 
 
 class RandomSizeGrouper(LogicalGrouper):
@@ -11,10 +11,10 @@ class RandomSizeGrouper(LogicalGrouper):
 
     def group_chunks(
         self,
-        chunks: List[Chunk],
+        chunks: list[Chunk],
         message: str,
-        on_progress: Optional[ProgressCallback] = None,
-    ) -> List[CommitGroup]:
+        on_progress: ProgressCallback | None = None,
+    ) -> list[CommitGroup]:
         shuffled = chunks[:]
         random.shuffle(shuffled)
         groups = []

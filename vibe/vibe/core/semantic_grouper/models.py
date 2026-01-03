@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from tree_sitter import Node
-
 from vibe.core.data.chunk import Chunk
 
 

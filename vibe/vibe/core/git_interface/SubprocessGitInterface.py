@@ -1,24 +1,24 @@
 # vibe/core/git_interface/subprocess_git.py
 
-from pathlib import Path
-from typing import List, Optional, Dict, Union
 import subprocess
+from pathlib import Path
+
 from loguru import logger
 from .interface import GitInterface
 
 
 class SubprocessGitInterface(GitInterface):
-    def __init__(self, repo_path: Union[str, Path] | None = None) -> None:
+    def __init__(self, repo_path: str | Path | None = None) -> None:
         # Ensure repo_path is a Path object for consistency
         self.repo_path = Path(repo_path) if repo_path else Path(".")
 
     def run_git_text(
         self,
-        args: List[str],
-        input_text: Optional[str] = None,
-        env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None,
-    ) -> Optional[str]:
+        args: list[str],
+        input_text: str | None = None,
+        env: dict | None = None,
+        cwd: str | Path | None = None,
+    ) -> str | None:
         # This method is not used by the synthesizer, but included for completeness
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
@@ -42,7 +42,7 @@ class SubprocessGitInterface(GitInterface):
                     f"git stdout (text): {result.stdout[:2000]}"
                     + ("...(truncated)" if len(result.stdout) > 2000 else "")
                 )
-            
+
             if result.stderr:
                 logger.warning(
                     f"git stderr (text): {result.stderr[:2000]}"
@@ -58,11 +58,11 @@ class SubprocessGitInterface(GitInterface):
 
     def run_git_binary(
         self,
-        args: List[str],
-        input_bytes: Optional[bytes] = None,
-        env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None,
-    ) -> Optional[bytes]:
+        args: list[str],
+        input_bytes: bytes | None = None,
+        env: dict | None = None,
+        cwd: str | Path | None = None,
+    ) -> bytes | None:
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
 

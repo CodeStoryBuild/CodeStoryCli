@@ -1,10 +1,8 @@
-from tree_sitter import Node
 
-from vibe.core.semantic_grouper.query_manager import QueryManager
-from vibe.core.semantic_grouper.scope_mapper import ScopeMapper, ScopeMap
-from vibe.core.semantic_grouper.symbol_mapper import SymbolMapper, SymbolMap
 from vibe.core.file_reader.file_parser import FileParser
-
+from vibe.core.semantic_grouper.query_manager import QueryManager
+from vibe.core.semantic_grouper.scope_mapper import ScopeMapper
+from vibe.core.semantic_grouper.symbol_mapper import SymbolMapper
 
 # --- MAIN EXECUTION ---
 

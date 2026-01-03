@@ -1,9 +1,8 @@
 from dataclasses import dataclass
+from pygments.util import ClassNotFound
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
 from pygments.lexers import guess_lexer_for_filename, get_lexer_for_filename
-from pygments.util import ClassNotFound
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -52,7 +51,7 @@ class FileParser:
     @classmethod
     def parse_file(
         cls, file_name: str, file_content: str, line_ranges: list[tuple[int, int]]
-    ) -> Optional[ParsedFile]:
+    ) -> ParsedFile | None:
         """
         Parse a file by detecting its language and creating an AST.
 
@@ -94,7 +93,7 @@ class FileParser:
             return None
 
     @classmethod
-    def _detect_language(cls, file_name: str, file_content: str) -> Optional[str]:
+    def _detect_language(cls, file_name: str, file_content: str) -> str | None:
         """
         Detect the programming language using Pygments.
 
@@ -122,7 +121,7 @@ class FileParser:
             return None
 
     @classmethod
-    def _map_lexer_to_language(cls, lexer_name: str) -> Optional[str]:
+    def _map_lexer_to_language(cls, lexer_name: str) -> str | None:
         """
         Map a Pygments lexer name to a Tree-sitter language name.
 

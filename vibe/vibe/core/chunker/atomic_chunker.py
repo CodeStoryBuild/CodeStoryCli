@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
-from .interface import MechanicalChunker
 from ..data.chunk import Chunk
-from ..data.diff_chunk import DiffChunk
 from ..data.composite_diff_chunk import CompositeDiffChunk
+from ..data.diff_chunk import DiffChunk
 from ..data.line_changes import Addition, Removal
 from ..semantic_grouper.context_manager import ContextManager
+from .interface import MechanicalChunker
 
 
 class AtomicChunker(MechanicalChunker):

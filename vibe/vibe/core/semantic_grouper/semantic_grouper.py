@@ -1,16 +1,13 @@
-from dataclasses import dataclass
-from typing import List, Set, Dict, Optional, Tuple
 from collections import defaultdict
+from dataclasses import dataclass
 
-from vibe.core.data.chunk import Chunk
-from vibe.core.data.diff_chunk import DiffChunk
-from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
-from vibe.core.file_reader.protocol import FileReader
-from .query_manager import QueryManager
-from vibe.core.file_reader.file_parser import FileParser
-from .context_manager import ContextManager, AnalysisContext
-from .union_find import UnionFind
 from loguru import logger
+from vibe.core.data.chunk import Chunk
+from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
+from vibe.core.data.diff_chunk import DiffChunk
+
+from .context_manager import AnalysisContext, ContextManager
+from .union_find import UnionFind
 
 
 @dataclass(frozen=True)
@@ -18,8 +15,8 @@ class ChunkSignature:
     """Represents the semantic signature of a chunk."""
 
     chunk_id: int
-    symbols: Set[str]
-    scopes: Set[str]
+    symbols: set[str]
+    scopes: set[str]
     has_analysis_context: bool
 
 
@@ -34,8 +31,8 @@ class SemanticGrouper:
     """
 
     def group_chunks(
-        self, chunks: List[Chunk], context_manager: ContextManager
-    ) -> List[CompositeDiffChunk]:
+        self, chunks: list[Chunk], context_manager: ContextManager
+    ) -> list[CompositeDiffChunk]:
         """
         Group chunks semantically based on overlapping symbol signatures.
 
@@ -83,7 +80,7 @@ class SemanticGrouper:
 
         return semantic_groups
 
-    def _flatten_chunks(self, chunks: List[Chunk]) -> List[DiffChunk]:
+    def _flatten_chunks(self, chunks: list[Chunk]) -> list[DiffChunk]:
         """
         Flatten all chunks into a list of DiffChunks.
 
@@ -100,9 +97,9 @@ class SemanticGrouper:
 
     def _generate_chunk_signatures(
         self,
-        original_chunks: List[Chunk],
+        original_chunks: list[Chunk],
         context_manager: ContextManager,  # No longer need diff_chunks here
-    ) -> List[ChunkSignature]:
+    ) -> list[ChunkSignature]:
         """
         Generate semantic signatures for each original chunk.
         """
@@ -139,10 +136,8 @@ class SemanticGrouper:
         return chunk_signatures
 
     def _generate_signature_for_chunk(
-        self, diff_chunks: List[DiffChunk], context_manager: ContextManager
-    ) -> Optional[
-        tuple[Set[str], Set[str]]
-    ]:  # Return type is now Optional[tuple[Set[str], Optional[str]]]
+        self, diff_chunks: list[DiffChunk], context_manager: ContextManager
+    ) -> tuple[set[str], set[str]] | None:  # Return type is now Optional[tuple[Set[str], Optional[str]]]
         """
         Generate a semantic signature for a single chunk.
         Returns tuple of (symbols, scope) if analysis succeeds, None if analysis fails.
@@ -216,7 +211,7 @@ class SemanticGrouper:
 
     def _get_signature_for_diff_chunk(
         self, diff_chunk: DiffChunk, context_manager: ContextManager
-    ) -> tuple[Set[str], Set[str]]:
+    ) -> tuple[set[str], set[str]]:
         """
         Generate signature and scope information for a single DiffChunk based on affected line ranges.
 
@@ -302,7 +297,7 @@ class SemanticGrouper:
 
     def _get_signature_for_line_range(
         self, start_line: int, end_line: int, context: AnalysisContext
-    ) -> tuple[Set[str], Set[str]]:
+    ) -> tuple[set[str], set[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -341,8 +336,8 @@ class SemanticGrouper:
         return (range_symbols, range_scope)
 
     def _group_by_overlapping_signatures(
-        self, chunk_signatures: List[ChunkSignature], original_chunks: List[Chunk]
-    ) -> List[CompositeDiffChunk]:
+        self, chunk_signatures: list[ChunkSignature], original_chunks: list[Chunk]
+    ) -> list[CompositeDiffChunk]:
         """
         Group chunks with overlapping signatures using an efficient
         inverted index and Union-Find algorithm.
@@ -360,8 +355,8 @@ class SemanticGrouper:
         uf = UnionFind(chunk_ids)
 
         # Step 1: Create an inverted index from symbol -> list of chunk_ids
-        symbol_to_chunks: Dict[str, List[int]] = defaultdict(list)
-        scope_to_chunks: Dict[str, List[int]] = defaultdict(list)
+        symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
+        scope_to_chunks: dict[str, list[int]] = defaultdict(list)
         for sig in chunk_signatures:
             # Only consider chunks with symbols for grouping
             for symbol in sig.symbols:
@@ -384,7 +379,7 @@ class SemanticGrouper:
                     uf.union(first_chunk_id, ids[i])
 
         # Step 3: Group chunks by their root in the Union-Find structure
-        groups: Dict[int, List[Chunk]] = defaultdict(list)
+        groups: dict[int, list[Chunk]] = defaultdict(list)
         for signature in chunk_signatures:
             root = uf.find(signature.chunk_id)
             original_chunk = original_chunks[signature.chunk_id]

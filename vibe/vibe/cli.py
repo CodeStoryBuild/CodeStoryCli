@@ -1,14 +1,13 @@
-import typer
-from rich.traceback import install
-from rich.console import Console
-from dotenv import load_dotenv
-import sys
-import signal
 import importlib.metadata
+import signal
+import sys
 
-from vibe.commands import commit
-from vibe.commands import expand
-from vibe.commands import clean
+import typer
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.traceback import install
+
+from vibe.commands import clean, commit, expand
 from vibe.core.exceptions import VibeError
 
 # Disable showing locals in tracebacks (way too much text)

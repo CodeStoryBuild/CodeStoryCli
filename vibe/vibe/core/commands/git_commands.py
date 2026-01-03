@@ -1,10 +1,10 @@
-from itertools import groupby
-from typing import List, Optional, Tuple, Union
 import re
+from itertools import groupby
+from typing import Union
 
-from ..data.hunk_wrapper import HunkWrapper
-from ..data.diff_chunk import DiffChunk
 from ..data.composite_diff_chunk import CompositeDiffChunk
+from ..data.diff_chunk import DiffChunk
+from ..data.hunk_wrapper import HunkWrapper
 from ..git_interface.interface import GitInterface
 
 
@@ -29,9 +29,9 @@ class GitCommands:
         self,
         base_hash: str,
         new_hash: str,
-        target: Optional[str] = None,
+        target: str | None = None,
         similarity: int = 50,
-    ) -> List[HunkWrapper]:
+    ) -> list[HunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
         This is the authoritative source of diff information.
@@ -45,7 +45,7 @@ class GitCommands:
 
     def get_file_diff_with_renames(
         self, fileA: str, fileB: str, similarity: int = 50
-    ) -> List[HunkWrapper]:
+    ) -> list[HunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
         This is the authoritative source of diff information.
@@ -58,13 +58,13 @@ class GitCommands:
         return self._parse_hunks_with_renames(diff_output_bytes)
 
     def _parse_hunks_with_renames(
-        self, diff_output: Optional[bytes]
-    ) -> List[HunkWrapper]:
+        self, diff_output: bytes | None
+    ) -> list[HunkWrapper]:
         """
         Parses a unified diff output that may contain rename blocks.
         Extracts metadata about file operations (additions, deletions, renames).
         """
-        hunks: List[HunkWrapper] = []
+        hunks: list[HunkWrapper] = []
         if not diff_output or diff_output is None:
             return hunks
 
@@ -131,7 +131,7 @@ class GitCommands:
                     )
         return hunks
 
-    def _parse_file_metadata(self, lines: List[bytes]) -> tuple:
+    def _parse_file_metadata(self, lines: list[bytes]) -> tuple:
         """
         Extracts file operation metadata from a diff block by unifying the logic
         around the '---' and '+++' file path lines.
@@ -227,7 +227,7 @@ class GitCommands:
         else:
             raise ValueError("Cannot create no-content hunk for unknown operation.")
 
-    def _parse_hunk_start(self, header_line: bytes) -> Tuple[int, int, int, int]:
+    def _parse_hunk_start(self, header_line: bytes) -> tuple[int, int, int, int]:
         """
         Extract old_start, old_len, new_start, new_len from @@ -x,y +a,b @@ header
         Returns: (old_start, old_len, new_start, new_len)
@@ -247,7 +247,7 @@ class GitCommands:
         """Reset staged changes (keeping working directory intact)"""
         self.git.run_git_text(["reset"])
 
-    def track_untracked(self, target: Optional[str] = None) -> None:
+    def track_untracked(self, target: str | None = None) -> None:
         """
         Make untracked files tracked without staging their content, using 'git add -N'.
         """
@@ -271,7 +271,7 @@ class GitCommands:
         except Exception:
             return True  # Staged changes exist (exit code 1)
 
-    def need_track_untracked(self, target: Optional[str] = None) -> bool:
+    def need_track_untracked(self, target: str | None = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
         path_args = [target] if target else []
         untracked_files = self.git.run_git_text(
@@ -286,8 +286,8 @@ class GitCommands:
         return bool(result and result.strip() == "true")
 
     def get_processed_working_diff(
-        self, base_hash: str, new_hash: str, target: Optional[str] = None
-    ) -> List[DiffChunk]:
+        self, base_hash: str, new_hash: str, target: str | None = None
+    ) -> list[DiffChunk]:
         """
         Parses the git diff once and converts each hunk directly into an
         atomic DiffChunk object (DiffChunk).
@@ -297,9 +297,9 @@ class GitCommands:
         return self.parse_and_merge_hunks(hunks)
 
     def parse_and_merge_hunks(
-        self, hunks: List[HunkWrapper]
-    ) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
-        chunks: List[DiffChunk] = []
+        self, hunks: list[HunkWrapper]
+    ) -> list[Union[DiffChunk, "CompositeDiffChunk"]]:
+        chunks: list[DiffChunk] = []
         for hunk in hunks:
             chunks.append(DiffChunk.from_hunk(hunk))
 
@@ -308,8 +308,8 @@ class GitCommands:
         return merged
 
     def merge_overlapping_chunks(
-        self, chunks: List[DiffChunk]
-    ) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
+        self, chunks: list[DiffChunk]
+    ) -> list[Union[DiffChunk, "CompositeDiffChunk"]]:
         """
         Merge DiffChunks that are not disjoint (i.e., overlapping or touching)
         into CompositeDiffChunks, grouped per canonical path (file).
@@ -333,7 +333,7 @@ class GitCommands:
             ),
         )
 
-        merged_results: List[Union[DiffChunk, "CompositeDiffChunk"]] = []
+        merged_results: list[DiffChunk | CompositeDiffChunk] = []
 
         # Helper for overlap/touch logic
         # Chunks are disjoint if they don't overlap in old file coordinates
@@ -341,7 +341,7 @@ class GitCommands:
             a_old_start = a.old_start or 0
             a_old_end = a_old_start + a.old_len()
             b_old_start = b.old_start or 0
-            
+
             # Chunks overlap if a's end is >= b's start
             # This handles touching chunks (end == start) as overlapping for merging
             return a_old_end >= b_old_start
@@ -352,7 +352,7 @@ class GitCommands:
             if not file_chunks:
                 continue
 
-            current_group: List[DiffChunk] = [file_chunks[0]]
+            current_group: list[DiffChunk] = [file_chunks[0]]
 
             for h in file_chunks[1:]:
                 last = current_group[-1]

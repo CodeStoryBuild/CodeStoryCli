@@ -1,21 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Callable
 
-from rich.console import Console
 from loguru import logger
-
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from rich.console import Console
 from vibe.core.expand.service import ExpandService
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 
 @dataclass
 class CleanOptions:
     ignore: Sequence[str] | None = None
-    min_size: Optional[int] = None
+    min_size: int | None = None
     auto_yes: bool = False
-    start_from: Optional[str] = None
+    start_from: str | None = None
 
 
 class CleanRunner:
@@ -30,8 +29,8 @@ class CleanRunner:
     def __init__(
         self,
         repo_path: str = ".",
-        git: Optional[SubprocessGitInterface] = None,
-        expand_service: Optional[ExpandService] = None,
+        git: SubprocessGitInterface | None = None,
+        expand_service: ExpandService | None = None,
     ):
         self.repo_path = repo_path
         self.git = git or SubprocessGitInterface(repo_path)
@@ -114,7 +113,7 @@ class CleanRunner:
         except Exception:
             return True
 
-    def _get_first_parent_commits(self, start_from: Optional[str] = None) -> list[str]:
+    def _get_first_parent_commits(self, start_from: str | None = None) -> list[str]:
         start_ref = start_from or "HEAD"
         if start_from:
             # Resolve the commit hash first to ensure it exists
@@ -140,7 +139,7 @@ class CleanRunner:
                 return True
         return False
 
-    def _count_line_changes(self, commit: str) -> Optional[int]:
+    def _count_line_changes(self, commit: str) -> int | None:
         # Sum additions + deletions between parent and commit.
         # Use numstat for robust parsing; binary files show '-' which we treat as 0.
         out = self.git.run_git_text(["diff", "--numstat", f"{commit}^", commit])
