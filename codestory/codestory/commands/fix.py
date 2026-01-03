@@ -139,4 +139,3 @@ def main(
     else:
         logger.error("Fix operation failed")
         logger.warning("[red]Failed to fix commit[/red]")
-        raise typer.Exit(1)

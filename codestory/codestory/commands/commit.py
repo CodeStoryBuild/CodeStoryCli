@@ -172,4 +172,3 @@ def main(
         )
     else:
         logger.info("[yellow]No commits were created[/yellow]")
-        raise typer.Exit(1)
