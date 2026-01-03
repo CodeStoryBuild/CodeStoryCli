@@ -32,6 +32,7 @@ app.command(name="commit")(commit.main)
 app.command(name="expand")(expand.main)
 app.command(name="clean")(clean.main)
 
+
 def setup_config_args(**kwargs):
     config_args = {}
 
@@ -136,7 +137,7 @@ def run_app():
         load_dotenv()
         # launch cli
         app(prog_name="vibe")
-    
+
     except ValidationError as e:
         console.print(f"[red]Validation Error:[/red] {e.message}")
         if e.details:
@@ -156,7 +157,7 @@ def run_app():
             console.print(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Vibe operation failed: {e.message}")
         raise typer.Exit(1)
-    
+
     except KeyboardInterrupt:
         console = Console()
         console.print("\n[yellow]Operation cancelled by user[/yellow]")

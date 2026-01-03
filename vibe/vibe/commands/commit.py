@@ -53,6 +53,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 
     return True
 
+
 def main(
     ctx: typer.Context,
     target: Optional[str] = typer.Argument(

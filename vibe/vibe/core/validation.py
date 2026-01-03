@@ -40,7 +40,7 @@ def validate_commit_hash(value: str) -> str:
     return value.lower()
 
 
-def validate_target_path(value: str) -> Path:
+def validate_target_path(value: str | None) -> Path:
     """
     Validate that a target path exists and is accessible.
 
@@ -54,6 +54,10 @@ def validate_target_path(value: str) -> Path:
         ValidationError: If the path doesn't exist or isn't accessible
         FileSystemError: If there are permission issues
     """
+    if value is None:
+        # using no target
+        return None
+
     if not value or not isinstance(value, str):
         raise ValidationError("Target path cannot be empty")
 

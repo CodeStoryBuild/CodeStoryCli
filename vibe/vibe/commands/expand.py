@@ -56,8 +56,6 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
     return parent, resolved, current_branch
 
 
-
-
 def main(
     ctx: typer.Context,
     commit_hash: str = typer.Argument(..., help="Commit hash to expand"),
