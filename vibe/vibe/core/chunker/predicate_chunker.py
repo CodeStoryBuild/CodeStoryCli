@@ -26,7 +26,11 @@ class PredicateChunker(ChunkerInterface):
                 ln = line.line_number
                 if self.split_predicate(line.content):
                     # separator: close current piece if it contains at least one non-separator line
-                    if start_num is not None and last_num is not None and last_num >= start_num:
+                    if (
+                        start_num is not None
+                        and last_num is not None
+                        and last_num >= start_num
+                    ):
                         sub_chunk = chunk.extract_by_lines(start_num, last_num)
                         if sub_chunk:
                             result.append(sub_chunk)

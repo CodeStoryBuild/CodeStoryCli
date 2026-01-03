@@ -5,21 +5,22 @@ from vibe.core.data.s_diff_chunk import StandardDiffChunk
 def setup_extract_chunk():
     """Helper to create a common complex DiffChunk for testing extractions."""
     parsed_content_list = [
-        Removal(1, "R1"), # Index 0 - old_start=1, consecutive removals: 1,2,3,4
-        Addition(1, "A1"), # Index 1 - new_start=1, consecutive additions: 1,2,3,4
-        Removal(2, "R2"), # Index 2
-        Addition(2, "A2"), # Index 3
-        Removal(3, "R3"), # Index 4
-        Addition(3, "A3"), # Index 5
-        Addition(4, "A4"), # Index 6
-        Removal(4, "R4"), # Index 7
+        Removal(1, "R1"),  # Index 0 - old_start=1, consecutive removals: 1,2,3,4
+        Addition(1, "A1"),  # Index 1 - new_start=1, consecutive additions: 1,2,3,4
+        Removal(2, "R2"),  # Index 2
+        Addition(2, "A2"),  # Index 3
+        Removal(3, "R3"),  # Index 4
+        Addition(3, "A3"),  # Index 5
+        Addition(4, "A4"),  # Index 6
+        Removal(4, "R4"),  # Index 7
     ]
     raw_content = "-R1\n+A1\n-R2\n+A2\n-R3\n+A3\n+A4\n-R4"
     return StandardDiffChunk(
         file_path="extract_file.py",
         content=raw_content,
         parsed_content=parsed_content_list,
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
 
 def test_extract_middle_subchunk():
@@ -77,7 +78,9 @@ def test_extract_entire_chunk():
     assert extracted_chunk is not None
     assert extracted_chunk.file_path == original_chunk.file_path
     assert extracted_chunk.content == original_chunk.content
-    assert extracted_chunk.parsed_content == original_chunk.parsed_content # List equality for content
+    assert (
+        extracted_chunk.parsed_content == original_chunk.parsed_content
+    )  # List equality for content
     assert extracted_chunk.old_start == original_chunk.old_start
     assert extracted_chunk.new_start == original_chunk.new_start
 
@@ -99,25 +102,26 @@ def test_extract_out_of_bounds_indices():
     # Slice from before start to after end
     with pytest.raises(ValueError):
         original_chunk.extract(-5, len(original_chunk.parsed_content) + 5)
-    
 
     # Slice with only a valid part
     with pytest.raises(ValueError):
-        original_chunk.extract(-2, 2) 
-        
+        original_chunk.extract(-2, 2)
+
 
 def test_extract_chunk_with_only_additions():
     """Extracts from a chunk containing only additions."""
     parsed_content_list = [Addition(1, "A1"), Addition(2, "A2"), Addition(3, "A3")]
     original_chunk = StandardDiffChunk(
         file_path="only_adds.py",
-        content="+A1\n+A2\n+A3", parsed_content=parsed_content_list,
-        old_start=0, new_start=1
+        content="+A1\n+A2\n+A3",
+        parsed_content=parsed_content_list,
+        old_start=0,
+        new_start=1,
     )
-    extracted_chunk = original_chunk.extract(1, 3) # A2, A3
+    extracted_chunk = original_chunk.extract(1, 3)  # A2, A3
     assert extracted_chunk is not None
     assert extracted_chunk.content == "+A2\n+A3"
-    assert extracted_chunk.old_start == 1  # Line before first addition (A2 at line 2) 
+    assert extracted_chunk.old_start == 1  # Line before first addition (A2 at line 2)
     assert extracted_chunk.new_start == 2
 
 def test_extract_chunk_with_only_removals():
@@ -125,31 +129,32 @@ def test_extract_chunk_with_only_removals():
     parsed_content_list = [Removal(1, "R1"), Removal(2, "R2"), Removal(3, "R3")]
     original_chunk = StandardDiffChunk(
         file_path="only_removes.py",
-        content="-R1\n-R2\n-R3", parsed_content=parsed_content_list,
-        old_start=1, new_start=0,
+        content="-R1\n-R2\n-R3",
+        parsed_content=parsed_content_list,
+        old_start=1,
+        new_start=0,
     )
-    extracted_chunk = original_chunk.extract(0, 2) # R1, R2
+    extracted_chunk = original_chunk.extract(0, 2)  # R1, R2
     assert extracted_chunk is not None
     assert extracted_chunk.content == "-R1\n-R2"
-    assert extracted_chunk.old_start == 1 
+    assert extracted_chunk.old_start == 1
     assert extracted_chunk.new_start == 0
 
 def test_extract_resulting_in_no_old_lines_but_new_lines():
     """Tests a scenario where the extracted chunk has additions but no removals."""
-    original_chunk = setup_extract_chunk() # Has R and A
-    extracted_chunk = original_chunk.extract(5, 7) # A3, A4
+    original_chunk = setup_extract_chunk()  # Has R and A
+    extracted_chunk = original_chunk.extract(5, 7)  # A3, A4
     assert extracted_chunk is not None
     assert extracted_chunk.content == "+A3\n+A4"
-    assert extracted_chunk.old_start == 2 # Should be line before first addition
+    assert extracted_chunk.old_start == 2  # Should be line before first addition
     assert extracted_chunk.new_start == 3
     
 
 def test_extract_resulting_in_no_new_lines_but_old_lines():
     """Tests a scenario where the extracted chunk has removals but no additions."""
-    original_chunk = setup_extract_chunk() # Has R and A
-    extracted_chunk = original_chunk.extract(0, 1) # R1
+    original_chunk = setup_extract_chunk()  # Has R and A
+    extracted_chunk = original_chunk.extract(0, 1)  # R1
     assert extracted_chunk is not None
     assert extracted_chunk.content == "-R1"
     assert extracted_chunk.old_start == 1
-    assert extracted_chunk.new_start == 0 # Should be line before first removal
-    
+    assert extracted_chunk.new_start == 0  # Should be line before first removal

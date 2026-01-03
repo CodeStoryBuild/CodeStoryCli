@@ -6,7 +6,12 @@ class SubprocessGitInterface(GitInterface):
     def __init__(self, repo_path: str):
         self.repo_path = repo_path
 
-    def run_git_text(self, args: List[str], input_text: Optional[str] = None, env: Optional[Dict] = None) -> str:
+    def run_git_text(
+        self,
+        args: List[str],
+        input_text: Optional[str] = None,
+        env: Optional[Dict] = None,
+    ) -> str:
         result = subprocess.run(
             ["git", "-C", self.repo_path] + args,
             input=input_text,
@@ -18,7 +23,12 @@ class SubprocessGitInterface(GitInterface):
         )
         return result.stdout
 
-    def run_git_binary(self, args: List[str], input_bytes: Optional[bytes] = None, env: Optional[Dict] = None) -> bytes:
+    def run_git_binary(
+        self,
+        args: List[str],
+        input_bytes: Optional[bytes] = None,
+        env: Optional[Dict] = None,
+    ) -> bytes:
         result = subprocess.run(
             ["git", "-C", self.repo_path] + args,
             input=input_bytes,

@@ -11,11 +11,9 @@ class DiffChunk(ABC):
     """
 
     @abstractmethod
-    def format_json(
-        self
-    ) -> str:
+    def format_json(self) -> str:
         """
-        Converts a structured diff object into a standardized JSON format 
+        Converts a structured diff object into a standardized JSON format
         optimized for LLM comprehension.
 
         Args:

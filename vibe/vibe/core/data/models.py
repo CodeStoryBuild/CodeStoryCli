@@ -33,14 +33,15 @@ class Move(LineNumbered):
 
 @dataclass(init=False)
 class Replacement(LineNumbered):
-    """ Represents a line of code replaced with another, on the same line"""
+    """Represents a line of code replaced with another, on the same line"""
+
     old_content: str
     new_content: str
 
-    def __init__(self, old_content : str, new_content: str, line_number : int):
+    def __init__(self, old_content: str, new_content: str, line_number: int):
         self.old_content = old_content
         self.new_content = new_content
-        self.content = new_content # you can think of it as the final content state
+        self.content = new_content  # you can think of it as the final content state
         self.line_number = line_number
 
 

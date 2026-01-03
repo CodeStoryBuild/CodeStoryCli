@@ -15,18 +15,27 @@ from vibe.core.data.r_diff_chunk import RenameDiffChunk
 def git_repo() -> tuple[Path, str]:
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_path = Path(tmpdir)
-        subprocess.run(["git", "init", "-b", "main"], cwd=repo_path, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo_path)
+        subprocess.run(
+            ["git", "init", "-b", "main"],
+            cwd=repo_path,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"], cwd=repo_path
+        )
         subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path)
-        
+
         (repo_path / "app.js").write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=repo_path, check=True)
-        
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"], cwd=repo_path, check=True
+        )
+
         base_hash = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
         ).stdout.strip()
-        
+
         yield repo_path, base_hash
 
 ## Test Cases
@@ -39,55 +48,71 @@ def test_basic_modification(git_repo):
         file_path="app.js",
         content="-line 3\n+line three",
         parsed_content=[Removal(3, "line 3"), Addition(3, "line three")],
-        old_start=3, new_start=3
+        old_start=3,
+        new_start=3,
     )
     group = CommitGroup(chunks=[chunk], group_id="g1", commmit_message="Modify line 3")
 
     synthesizer.execute_plan([group], base_hash, "main")
 
     content = (repo_path / "app.js").read_text()
-    lines = content.split('\n')
-    
+    lines = content.split("\n")
+
     # Verify exact position and content of the modification
     assert lines[2] == "line three"  # Line 3 should be modified (0-indexed position 2)
     assert "line 3" not in lines  # Original line 3 should be completely replaced
-    
+
     # Verify other lines remain unchanged and in correct positions
     assert lines[0] == "line 1"
-    assert lines[1] == "line 2" 
+    assert lines[1] == "line 2"
     assert lines[3] == "line 4"
     assert lines[4] == "line 5"
     assert len(lines) == 6  # Should have 5 lines + 1 empty line from trailing newline
-    
-    log = subprocess.run(["git", "log", "-1", "--pretty=%s"], cwd=repo_path, text=True, capture_output=True).stdout.strip()
+
+    log = subprocess.run(
+        ["git", "log", "-1", "--pretty=%s"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
     assert log == "Modify line 3"
 
 def test_file_deletion(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
-    
+
     chunk = StandardDiffChunk(
-        file_path="app.js", content="-line 1\n-line 2\n-line 3\n-line 4\n-line 5",
-        parsed_content=[Removal(i + 1, f"line {i+1}") for i in range(5)], old_start=1, new_start=1
+        file_path="app.js",
+        content="-line 1\n-line 2\n-line 3\n-line 4\n-line 5",
+        parsed_content=[Removal(i + 1, f"line {i+1}") for i in range(5)],
+        old_start=1,
+        new_start=1,
     )
     group = CommitGroup(chunks=[chunk], group_id="g1", commmit_message="Delete app.js")
 
     synthesizer.execute_plan([group], base_hash, "main")
-    
+
     assert not (repo_path / "app.js").exists()
 
 def test_rename_file(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
-    chunk = RenameDiffChunk(old_file_path="app.js", new_file_path="server.js", patch_content="")
-    group = CommitGroup(chunks=[chunk], group_id="g1", commmit_message="Rename app.js to server.js")
+    chunk = RenameDiffChunk(
+        old_file_path="app.js", new_file_path="server.js", patch_content=""
+    )
+    group = CommitGroup(
+        chunks=[chunk], group_id="g1", commmit_message="Rename app.js to server.js"
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
-    
+
     assert not (repo_path / "app.js").exists()
     assert (repo_path / "server.js").exists()
-    assert (repo_path / "server.js").read_text() == "line 1\nline 2\nline 3\nline 4\nline 5\n"
+    assert (
+        repo_path / "server.js"
+    ).read_text() == "line 1\nline 2\nline 3\nline 4\nline 5\n"
+
 
 import subprocess
 
@@ -96,21 +121,29 @@ import subprocess
 def test_critical_line_shift_scenario(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
-    
+
     # Add a header (second commit)
     chunk1 = StandardDiffChunk(
-        file_path="app.js", content="+line 0",
-        parsed_content=[Addition(1, "line 0")], old_start=0, new_start=1
+        file_path="app.js",
+        content="+line 0",
+        parsed_content=[Addition(1, "line 0")],
+        old_start=0,
+        new_start=1,
     )
     group1 = CommitGroup(chunks=[chunk1], group_id="g1", commmit_message="Add header")
 
     # Update the footer (first commit)
     chunk2 = StandardDiffChunk(
-        file_path="app.js", content="-line 5\n+line five",
-        parsed_content=[Removal(5, "line 5"), Addition(5, "line five")], old_start=5, new_start=5
+        file_path="app.js",
+        content="-line 5\n+line five",
+        parsed_content=[Removal(5, "line 5"), Addition(5, "line five")],
+        old_start=5,
+        new_start=5,
     )
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commmit_message="Update footer")
-    
+    group2 = CommitGroup(
+        chunks=[chunk2], group_id="g2", commmit_message="Update footer"
+    )
+
     # Execute: commit group2, then group1
     synthesizer.execute_plan([group2, group1], base_hash, "main")
 
@@ -120,21 +153,30 @@ def test_critical_line_shift_scenario(git_repo):
     assert final_content == expected_content
 
     # Verify commit history
-    log_output = subprocess.run(
-        ["git", "log", "--oneline", f"{base_hash}..HEAD"], cwd=repo_path, text=True, capture_output=True
-    ).stdout.strip().splitlines()
-    
+    log_output = (
+        subprocess.run(
+            ["git", "log", "--oneline", f"{base_hash}..HEAD"],
+            cwd=repo_path,
+            text=True,
+            capture_output=True,
+        )
+        .stdout.strip()
+        .splitlines()
+    )
+
     assert len(log_output) == 2
-    assert "Add header" in log_output[0]    # Newest commit (HEAD)
+    assert "Add header" in log_output[0]  # Newest commit (HEAD)
     assert "Update footer" in log_output[1]  # Parent commit (HEAD~1)
-    
+
     # Verify diff of HEAD commit (group1)
     head_diff_output = subprocess.run(
         ["git", "show", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout
-    
+
     assert "+line 0" in head_diff_output
-    assert "+line five" not in head_diff_output # This change is not in this commit's diff
+    assert (
+        "+line five" not in head_diff_output
+    )  # This change is not in this commit's diff
 
     # Verify diff of parent commit (group2)
     parent_diff_output = subprocess.run(
@@ -143,7 +185,9 @@ def test_critical_line_shift_scenario(git_repo):
 
     assert "+line five" in parent_diff_output
     assert "-line 5" in parent_diff_output
-    assert "+line 0" not in parent_diff_output # This change is not in this commit's diff
+    assert (
+        "+line 0" not in parent_diff_output
+    )  # This change is not in this commit's diff
 
 
 # --- Pure Addition Tests ---
@@ -158,44 +202,51 @@ def test_pure_addition_single_file(git_repo):
         file_path="app.js",
         content="+header line",
         parsed_content=[Addition(1, "header line")],
-        old_start=0, new_start=1
+        old_start=0,
+        new_start=1,
     )
-    
+
     # Add middle insertion after line 2
     chunk2 = StandardDiffChunk(
-        file_path="app.js", 
+        file_path="app.js",
         content="+middle insertion",
         parsed_content=[Addition(3, "middle insertion")],
-        old_start=2, new_start=3
+        old_start=2,
+        new_start=3,
     )
-    
+
     # Add footer line after line 5
     chunk3 = StandardDiffChunk(
         file_path="app.js",
-        content="+footer line", 
+        content="+footer line",
         parsed_content=[Addition(6, "footer line")],
-        old_start=5, new_start=6
+        old_start=5,
+        new_start=6,
     )
-    
-    group = CommitGroup(chunks=[chunk1, chunk2, chunk3], group_id="g1", commmit_message="Add multiple lines")
+
+    group = CommitGroup(
+        chunks=[chunk1, chunk2, chunk3],
+        group_id="g1",
+        commmit_message="Add multiple lines",
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
 
     content = (repo_path / "app.js").read_text()
-    lines = content.strip().split('\n')
-    
+    lines = content.strip().split("\n")
+
     # Each insertion is handled independently
     assert "header line" in lines
     assert "middle insertion" in lines
     assert "footer line" in lines
-    
+
     # Verify original content is still there
     assert "line 1" in lines
     assert "line 2" in lines
     assert "line 3" in lines
     assert "line 4" in lines
     assert "line 5" in lines
-    
+
     # Verify total line count is correct (5 original + 3 additions)
     assert len(lines) == 8
 
@@ -208,35 +259,36 @@ def test_pure_addition_new_files(git_repo):
     # Add multiple new files
     chunk1 = StandardDiffChunk(
         file_path="config.json",
-        content="+{\n+  \"name\": \"test\",\n+  \"version\": \"1.0.0\"\n+}",
+        content='+{\n+  "name": "test",\n+  "version": "1.0.0"\n+}',
         parsed_content=[
             Addition(1, "{"),
-            Addition(2, "  \"name\": \"test\","),
-            Addition(3, "  \"version\": \"1.0.0\""),
-            Addition(4, "}")
+            Addition(2, '  "name": "test",'),
+            Addition(3, '  "version": "1.0.0"'),
+            Addition(4, "}"),
         ],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
-    
+
     chunk2 = StandardDiffChunk(
         file_path="nested/deep/file.txt",
         content="+content line 1\n+content line 2",
-        parsed_content=[
-            Addition(1, "content line 1"),
-            Addition(2, "content line 2")
-        ],
-        old_start=1, new_start=1
+        parsed_content=[Addition(1, "content line 1"), Addition(2, "content line 2")],
+        old_start=1,
+        new_start=1,
     )
-    
-    group = CommitGroup(chunks=[chunk1, chunk2], group_id="g1", commmit_message="Add new files")
+
+    group = CommitGroup(
+        chunks=[chunk1, chunk2], group_id="g1", commmit_message="Add new files"
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
 
     # Verify new files exist with correct content
     assert (repo_path / "config.json").exists()
     config_content = (repo_path / "config.json").read_text()
-    assert "\"name\": \"test\"" in config_content
-    
+    assert '"name": "test"' in config_content
+
     assert (repo_path / "nested" / "deep" / "file.txt").exists()
     nested_content = (repo_path / "nested" / "deep" / "file.txt").read_text()
     assert "content line 1\ncontent line 2\n" == nested_content
@@ -252,9 +304,12 @@ def test_pure_addition_multiple_groups(git_repo):
         file_path="app.js",
         content="+// Header comment",
         parsed_content=[Addition(1, "// Header comment")],
-        old_start=0, new_start=1
+        old_start=0,
+        new_start=1,
     )
-    group1 = CommitGroup(chunks=[chunk1], group_id="g1", commmit_message="Add header comment")
+    group1 = CommitGroup(
+        chunks=[chunk1], group_id="g1", commmit_message="Add header comment"
+    )
 
     # Add new file
     chunk2 = StandardDiffChunk(
@@ -263,9 +318,10 @@ def test_pure_addition_multiple_groups(git_repo):
         parsed_content=[
             Addition(1, "# Project Title"),
             Addition(2, ""),
-            Addition(3, "Description here")
+            Addition(3, "Description here"),
         ],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
     group2 = CommitGroup(chunks=[chunk2], group_id="g2", commmit_message="Add README")
 
@@ -274,7 +330,7 @@ def test_pure_addition_multiple_groups(git_repo):
     # Verify both changes
     app_content = (repo_path / "app.js").read_text()
     assert app_content.startswith("// Header comment\n")
-    
+
     readme_content = (repo_path / "README.md").read_text()
     assert "# Project Title" in readme_content
 
@@ -291,31 +347,35 @@ def test_pure_deletion_partial_content(git_repo):
         file_path="app.js",
         content="-line 2",
         parsed_content=[Removal(2, "line 2")],
-        old_start=2, new_start=2
+        old_start=2,
+        new_start=2,
     )
-    
+
     chunk2 = StandardDiffChunk(
         file_path="app.js",
         content="-line 4",
         parsed_content=[Removal(4, "line 4")],
-        old_start=4, new_start=4
+        old_start=4,
+        new_start=4,
     )
-    
-    group = CommitGroup(chunks=[chunk1, chunk2], group_id="g1", commmit_message="Remove lines 2 and 4")
+
+    group = CommitGroup(
+        chunks=[chunk1, chunk2], group_id="g1", commmit_message="Remove lines 2 and 4"
+    )
 
     synthesizer.execute_plan([group], base_hash, "main")
 
     content = (repo_path / "app.js").read_text()
-    lines = content.strip().split('\n')
-    
+    lines = content.strip().split("\n")
+
     # Verify line count and positions after deletions
     assert len(lines) == 3  # Should have 3 lines remaining (5 original - 2 deleted)
-    
+
     # Verify content and positions of remaining lines
     assert lines[0] == "line 1"  # First remaining line
-    assert lines[1] == "line 3"  # Second remaining line  
+    assert lines[1] == "line 3"  # Second remaining line
     assert lines[2] == "line 5"  # Third remaining line
-    
+
     # Deleted lines should be gone
     assert "line 2" not in lines
     assert "line 4" not in lines
@@ -328,10 +388,12 @@ def test_pure_deletion_entire_files(git_repo):
 
     # Create files to delete
     (repo_path / "temp.txt").write_text("temporary content\n")
-    (repo_path / "config.json").write_text("{\"test\": true}\n")
+    (repo_path / "config.json").write_text('{"test": true}\n')
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Add files to delete"], cwd=repo_path, check=True)
-    
+    subprocess.run(
+        ["git", "commit", "-m", "Add files to delete"], cwd=repo_path, check=True
+    )
+
     # Get new base commit hash
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
@@ -342,17 +404,21 @@ def test_pure_deletion_entire_files(git_repo):
         file_path="temp.txt",
         content="-temporary content",
         parsed_content=[Removal(1, "temporary content")],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
-    
+
     chunk2 = StandardDiffChunk(
-        file_path="config.json", 
-        content="-{\"test\": true}",
-        parsed_content=[Removal(1, "{\"test\": true}")],
-        old_start=1, new_start=1
+        file_path="config.json",
+        content='-{"test": true}',
+        parsed_content=[Removal(1, '{"test": true}')],
+        old_start=1,
+        new_start=1,
     )
-    
-    group = CommitGroup(chunks=[chunk1, chunk2], group_id="g1", commmit_message="Delete temp files")
+
+    group = CommitGroup(
+        chunks=[chunk1, chunk2], group_id="g1", commmit_message="Delete temp files"
+    )
 
     synthesizer.execute_plan([group], new_base_hash, "main")
 
@@ -369,11 +435,15 @@ def test_pure_deletion_multiple_groups(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     # Add more content first
-    (repo_path / "app.js").write_text("line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\n")
+    (repo_path / "app.js").write_text(
+        "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\n"
+    )
     (repo_path / "other.txt").write_text("other line 1\nother line 2\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Add more content"], cwd=repo_path, check=True)
-    
+    subprocess.run(
+        ["git", "commit", "-m", "Add more content"], cwd=repo_path, check=True
+    )
+
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout.strip()
@@ -383,42 +453,48 @@ def test_pure_deletion_multiple_groups(git_repo):
         file_path="app.js",
         content="-line 1",
         parsed_content=[Removal(1, "line 1")],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
     chunk1b = StandardDiffChunk(
         file_path="app.js",
         content="-line 3",
         parsed_content=[Removal(3, "line 3")],
-        old_start=3, new_start=3
+        old_start=3,
+        new_start=3,
     )
-    group1 = CommitGroup(chunks=[chunk1, chunk1b], group_id="g1", commmit_message="Remove lines from app.js")
+    group1 = CommitGroup(
+        chunks=[chunk1, chunk1b],
+        group_id="g1",
+        commmit_message="Remove lines from app.js",
+    )
 
     # Remove entire other.txt
     chunk2 = StandardDiffChunk(
         file_path="other.txt",
         content="-other line 1\n-other line 2",
-        parsed_content=[
-            Removal(1, "other line 1"),
-            Removal(2, "other line 2")
-        ],
-        old_start=1, new_start=1
+        parsed_content=[Removal(1, "other line 1"), Removal(2, "other line 2")],
+        old_start=1,
+        new_start=1,
     )
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commmit_message="Delete other.txt")
+    group2 = CommitGroup(
+        chunks=[chunk2], group_id="g2", commmit_message="Delete other.txt"
+    )
 
     synthesizer.execute_plan([group1, group2], new_base_hash, "main")
 
     # Verify deletions
     app_content = (repo_path / "app.js").read_text()
-    lines = app_content.strip().split('\n')
-    
+    lines = app_content.strip().split("\n")
+
     # Some content should be removed, some remains
     assert len(lines) < 7  # Should have fewer lines than we started with
     assert len(lines) > 0  # Should have some lines remaining
-    
+
     # Targeted lines should be gone
     assert "line 1" not in lines
     assert "line 3" not in lines
-    
+
     assert not (repo_path / "other.txt").exists()
 
 
@@ -436,37 +512,41 @@ def test_large_mixed_changes_single_group(git_repo):
     (repo_path / "docs" / "readme.txt").write_text("Old documentation\n")
     (repo_path / "config.ini").write_text("[section]\nold_value=1\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Setup for mixed changes"], cwd=repo_path, check=True)
-    
+    subprocess.run(
+        ["git", "commit", "-m", "Setup for mixed changes"], cwd=repo_path, check=True
+    )
+
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout.strip()
 
     # Mixed operations
     chunks = [
-    # Modify file
+        # Modify file
         StandardDiffChunk(
             file_path="app.js",
             content="-line 1\n+modified line 1\n+new line after 1",
             parsed_content=[
                 Removal(1, "line 1"),
                 Addition(1, "modified line 1"),
-                Addition(2, "new line after 1")
+                Addition(2, "new line after 1"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
-    # Add nested file
+        # Add nested file
         StandardDiffChunk(
             file_path="src/models/user.py",
             content="+class User:\n+    def __init__(self, name):\n+        self.name = name",
             parsed_content=[
                 Addition(1, "class User:"),
                 Addition(2, "    def __init__(self, name):"),
-                Addition(3, "        self.name = name")
+                Addition(3, "        self.name = name"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
-    # Modify nested file
+        # Modify nested file
         StandardDiffChunk(
             file_path="src/utils.py",
             content="-def helper():\n-    pass\n+def helper(param):\n+    return param * 2",
@@ -474,22 +554,24 @@ def test_large_mixed_changes_single_group(git_repo):
                 Removal(1, "def helper():"),
                 Removal(2, "    pass"),
                 Addition(1, "def helper(param):"),
-                Addition(2, "    return param * 2")
+                Addition(2, "    return param * 2"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
-    # Remove file
+        # Remove file
         StandardDiffChunk(
             file_path="docs/readme.txt",
             content="-Old documentation",
             parsed_content=[Removal(1, "Old documentation")],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
-    # Rename and modify
+        # Rename and modify
         RenameDiffChunk(
             old_file_path="config.ini",
             new_file_path="config/settings.ini",
-            patch_content=""
+            patch_content="",
         ),
         StandardDiffChunk(
             file_path="config/settings.ini",
@@ -499,19 +581,22 @@ def test_large_mixed_changes_single_group(git_repo):
                 Removal(2, "old_value=1"),
                 Addition(1, "[database]"),
                 Addition(2, "host=localhost"),
-                Addition(3, "port=5432")
+                Addition(3, "port=5432"),
             ],
-            old_start=1, new_start=1
-        )
+            old_start=1,
+            new_start=1,
+        ),
     ]
-    
-    group = CommitGroup(chunks=chunks, group_id="large_mixed", commmit_message="Large mixed changes")
+
+    group = CommitGroup(
+        chunks=chunks, group_id="large_mixed", commmit_message="Large mixed changes"
+    )
     synthesizer.execute_plan([group], new_base_hash, "main")
 
     # Verify all changes
     # Verify modified file
     app_content = (repo_path / "app.js").read_text()
-    app_lines = app_content.split('\n')
+    app_lines = app_content.split("\n")
     assert app_lines[0] == "modified line 1"  # First line should be modified
     assert app_lines[1] == "new line after 1"  # Second line should be the addition
     # Original "line 1" should be completely replaced, not just modified
@@ -520,14 +605,14 @@ def test_large_mixed_changes_single_group(git_repo):
     # Verify new nested file
     assert (repo_path / "src" / "models" / "user.py").exists()
     user_content = (repo_path / "src" / "models" / "user.py").read_text()
-    user_lines = user_content.split('\n')
+    user_lines = user_content.split("\n")
     assert user_lines[0] == "class User:"
     assert user_lines[1] == "    def __init__(self, name):"
     assert user_lines[2] == "        self.name = name"
 
     # Verify modified nested file
     utils_content = (repo_path / "src" / "utils.py").read_text()
-    utils_lines = utils_content.split('\n')
+    utils_lines = utils_content.split("\n")
     assert utils_lines[0] == "def helper(param):"
     assert utils_lines[1] == "    return param * 2"
     # Old content should be gone
@@ -541,7 +626,7 @@ def test_large_mixed_changes_single_group(git_repo):
     assert not (repo_path / "config.ini").exists()
     assert (repo_path / "config" / "settings.ini").exists()
     config_content = (repo_path / "config" / "settings.ini").read_text()
-    config_lines = config_content.split('\n')
+    config_lines = config_content.split("\n")
     assert config_lines[0] == "[database]"
     assert config_lines[1] == "host=localhost"
     assert config_lines[2] == "port=5432"
@@ -558,12 +643,16 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     # Setup initial structure
     (repo_path / "frontend").mkdir()
     (repo_path / "backend").mkdir()
-    (repo_path / "frontend" / "index.html").write_text("<html><body>Old</body></html>\n")
+    (repo_path / "frontend" / "index.html").write_text(
+        "<html><body>Old</body></html>\n"
+    )
     (repo_path / "backend" / "server.py").write_text("print('old server')\n")
     (repo_path / "shared.txt").write_text("shared content\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Initial structure"], cwd=repo_path, check=True)
-    
+    subprocess.run(
+        ["git", "commit", "-m", "Initial structure"], cwd=repo_path, check=True
+    )
+
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout.strip()
@@ -575,21 +664,27 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             content="-<html><body>Old</body></html>\n+<html><head><title>New</title></head><body>New</body></html>",
             parsed_content=[
                 Removal(1, "<html><body>Old</body></html>"),
-                Addition(1, "<html><head><title>New</title></head><body>New</body></html>")
+                Addition(
+                    1, "<html><head><title>New</title></head><body>New</body></html>"
+                ),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
         StandardDiffChunk(
             file_path="frontend/styles.css",
             content="+body { margin: 0; }\n+.container { width: 100%; }",
             parsed_content=[
                 Addition(1, "body { margin: 0; }"),
-                Addition(2, ".container { width: 100%; }")
+                Addition(2, ".container { width: 100%; }"),
             ],
-            old_start=1, new_start=1
-        )
+            old_start=1,
+            new_start=1,
+        ),
     ]
-    group1 = CommitGroup(chunks=group1_chunks, group_id="frontend", commmit_message="Update frontend")
+    group1 = CommitGroup(
+        chunks=group1_chunks, group_id="frontend", commmit_message="Update frontend"
+    )
 
     # Backend changes
     group2_chunks = [
@@ -603,9 +698,10 @@ def test_large_mixed_changes_multiple_groups(git_repo):
                 Addition(3, ""),
                 Addition(4, "@app.route('/')"),
                 Addition(5, "def hello():"),
-                Addition(6, "    return 'Hello World'")
+                Addition(6, "    return 'Hello World'"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
         StandardDiffChunk(
             file_path="backend/models.py",
@@ -615,12 +711,15 @@ def test_large_mixed_changes_multiple_groups(git_repo):
                 Addition(2, "    pass"),
                 Addition(3, ""),
                 Addition(4, "class Post:"),
-                Addition(5, "    pass")
+                Addition(5, "    pass"),
             ],
-            old_start=1, new_start=1
-        )
+            old_start=1,
+            new_start=1,
+        ),
     ]
-    group2 = CommitGroup(chunks=group2_chunks, group_id="backend", commmit_message="Update backend")
+    group2 = CommitGroup(
+        chunks=group2_chunks, group_id="backend", commmit_message="Update backend"
+    )
 
     # Cleanup and restructure
     group3_chunks = [
@@ -628,15 +727,18 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             file_path="shared.txt",
             content="-shared content",
             parsed_content=[Removal(1, "shared content")],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
         RenameDiffChunk(
-            old_file_path="app.js",
-            new_file_path="legacy/app.js",
-            patch_content=""
-        )
+            old_file_path="app.js", new_file_path="legacy/app.js", patch_content=""
+        ),
     ]
-    group3 = CommitGroup(chunks=group3_chunks, group_id="cleanup", commmit_message="Cleanup and reorganize")
+    group3 = CommitGroup(
+        chunks=group3_chunks,
+        group_id="cleanup",
+        commmit_message="Cleanup and reorganize",
+    )
 
     synthesizer.execute_plan([group1, group2, group3], new_base_hash, "main")
 
@@ -663,12 +765,16 @@ def test_complex_interdependent_changes(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     # Create files that reference each other
-    (repo_path / "main.py").write_text("from utils import old_function\nold_function()\n")
+    (repo_path / "main.py").write_text(
+        "from utils import old_function\nold_function()\n"
+    )
     (repo_path / "utils.py").write_text("def old_function():\n    return 'old'\n")
     (repo_path / "config.py").write_text("OLD_CONFIG = True\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Setup interdependent files"], cwd=repo_path, check=True)
-    
+    subprocess.run(
+        ["git", "commit", "-m", "Setup interdependent files"], cwd=repo_path, check=True
+    )
+
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout.strip()
@@ -686,9 +792,10 @@ def test_complex_interdependent_changes(git_repo):
                 Addition(2, "    return 'new'"),
                 Addition(3, ""),
                 Addition(4, "def helper():"),
-                Addition(5, "    return 'helper'")
+                Addition(5, "    return 'helper'"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
         # Update imports in main.py
         StandardDiffChunk(
@@ -702,9 +809,10 @@ def test_complex_interdependent_changes(git_repo):
                 Addition(3, ""),
                 Addition(4, "if NEW_CONFIG:"),
                 Addition(5, "    result = new_function()"),
-                Addition(6, "    helper()")
+                Addition(6, "    helper()"),
             ],
-            old_start=1, new_start=1
+            old_start=1,
+            new_start=1,
         ),
         # Update config.py
         StandardDiffChunk(
@@ -713,13 +821,18 @@ def test_complex_interdependent_changes(git_repo):
             parsed_content=[
                 Removal(1, "OLD_CONFIG = True"),
                 Addition(1, "NEW_CONFIG = True"),
-                Addition(2, "DEBUG = False")
+                Addition(2, "DEBUG = False"),
             ],
-            old_start=1, new_start=1
-        )
+            old_start=1,
+            new_start=1,
+        ),
     ]
-    
-    group = CommitGroup(chunks=chunks, group_id="refactor", commmit_message="Refactor interdependent code")
+
+    group = CommitGroup(
+        chunks=chunks,
+        group_id="refactor",
+        commmit_message="Refactor interdependent code",
+    )
     synthesizer.execute_plan([group], new_base_hash, "main")
 
     # Verify coordinated changes
@@ -747,19 +860,21 @@ def test_empty_group_handling(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     # Empty group
-    empty_group = CommitGroup(chunks=[], group_id="empty", commmit_message="Empty commit")
-    
+    empty_group = CommitGroup(
+        chunks=[], group_id="empty", commmit_message="Empty commit"
+    )
+
     # No-op group
     no_op_chunk = StandardDiffChunk(
         file_path="app.js",
         content="-line 1\n+line 1",
-        parsed_content=[
-            Removal(1, "line 1"),
-            Addition(1, "line 1")
-        ],
-        old_start=1, new_start=1
+        parsed_content=[Removal(1, "line 1"), Addition(1, "line 1")],
+        old_start=1,
+        new_start=1,
     )
-    no_op_group = CommitGroup(chunks=[no_op_chunk], group_id="noop", commmit_message="No-op change")
+    no_op_group = CommitGroup(
+        chunks=[no_op_chunk], group_id="noop", commmit_message="No-op change"
+    )
 
     # Handles edge cases
     synthesizer.execute_plan([empty_group, no_op_group], base_hash, "main")
@@ -778,11 +893,9 @@ def test_single_line_changes(git_repo):
     chunk1 = StandardDiffChunk(
         file_path="app.js",
         content="-line 1\n+Line 1",  # Just capitalize L
-        parsed_content=[
-            Removal(1, "line 1"),
-            Addition(1, "Line 1")
-        ],
-        old_start=1, new_start=1
+        parsed_content=[Removal(1, "line 1"), Addition(1, "Line 1")],
+        old_start=1,
+        new_start=1,
     )
 
     # Add single character file
@@ -790,18 +903,20 @@ def test_single_line_changes(git_repo):
         file_path="single.txt",
         content="+x",
         parsed_content=[Addition(1, "x")],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
 
     # Empty file creation
     chunk3 = StandardDiffChunk(
-        file_path="empty.txt",
-        content="",
-        parsed_content=[],
-        old_start=1, new_start=1
+        file_path="empty.txt", content="", parsed_content=[], old_start=1, new_start=1
     )
 
-    group = CommitGroup(chunks=[chunk1, chunk2, chunk3], group_id="minimal", commmit_message="Minimal changes")
+    group = CommitGroup(
+        chunks=[chunk1, chunk2, chunk3],
+        group_id="minimal",
+        commmit_message="Minimal changes",
+    )
     synthesizer.execute_plan([group], base_hash, "main")
 
     # Verify single character change
@@ -828,18 +943,17 @@ def test_boundary_line_numbers(git_repo):
         file_path="app.js",
         content="+line 0",
         parsed_content=[Addition(1, "line 0")],
-        old_start=0, new_start=1
+        old_start=0,
+        new_start=1,
     )
 
     # Change at last line
     chunk2 = StandardDiffChunk(
-        file_path="app.js", 
+        file_path="app.js",
         content="-line 5\n+line 5 modified",
-        parsed_content=[
-            Removal(5, "line 5"),
-            Addition(5, "line 5 modified")
-        ],
-        old_start=5, new_start=5
+        parsed_content=[Removal(5, "line 5"), Addition(5, "line 5 modified")],
+        old_start=5,
+        new_start=5,
     )
 
     # Add after last line
@@ -847,14 +961,19 @@ def test_boundary_line_numbers(git_repo):
         file_path="app.js",
         content="+line 6",
         parsed_content=[Addition(6, "line 6")],
-        old_start=6, new_start=6
+        old_start=6,
+        new_start=6,
     )
 
-    group = CommitGroup(chunks=[chunk1, chunk2, chunk3], group_id="boundaries", commmit_message="Boundary line changes")
+    group = CommitGroup(
+        chunks=[chunk1, chunk2, chunk3],
+        group_id="boundaries",
+        commmit_message="Boundary line changes",
+    )
     synthesizer.execute_plan([group], base_hash, "main")
 
     content = (repo_path / "app.js").read_text()
-    lines = content.split('\n')
+    lines = content.split("\n")
     assert lines[0] == "line 0"
     assert "line 5 modified" in content
     assert "line 6" in content
@@ -872,37 +991,43 @@ def test_unicode_and_special_characters(git_repo):
         parsed_content=[
             Addition(1, "Hello 世界 🌍"),
             Addition(2, "Café naïve résumé"),
-            Addition(3, "Ελληνικά Русский العربية")
+            Addition(3, "Ελληνικά Русский العربية"),
         ],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
 
     # Special characters and symbols
     chunk2 = StandardDiffChunk(
         file_path="special.txt",
-        content="+#!/bin/bash\n+echo \"$HOME\"\n+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}\n+math: ∑(x²) = π/2",
+        content='+#!/bin/bash\n+echo "$HOME"\n+regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}\n+math: ∑(x²) = π/2',
         parsed_content=[
             Addition(1, "#!/bin/bash"),
-            Addition(2, "echo \"$HOME\""),
+            Addition(2, 'echo "$HOME"'),
             Addition(3, "regex: [a-zA-Z0-9]+@[a-zA-Z0-9]+\\.[a-zA-Z]{2,}"),
-            Addition(4, "math: ∑(x²) = π/2")
+            Addition(4, "math: ∑(x²) = π/2"),
         ],
-        old_start=1, new_start=1
+        old_start=1,
+        new_start=1,
     )
 
-    group = CommitGroup(chunks=[chunk1, chunk2], group_id="unicode", commmit_message="Unicode and special chars")
+    group = CommitGroup(
+        chunks=[chunk1, chunk2],
+        group_id="unicode",
+        commmit_message="Unicode and special chars",
+    )
     synthesizer.execute_plan([group], base_hash, "main")
 
     # Verify unicode content
-    unicode_content = (repo_path / "unicode.txt").read_text(encoding='utf-8')
+    unicode_content = (repo_path / "unicode.txt").read_text(encoding="utf-8")
     assert "Hello 世界 🌍" in unicode_content
     assert "Café naïve résumé" in unicode_content
     assert "Ελληνικά Русский العربية" in unicode_content
 
     # Verify special characters
-    special_content = (repo_path / "special.txt").read_text(encoding='utf-8')
+    special_content = (repo_path / "special.txt").read_text(encoding="utf-8")
     assert "#!/bin/bash" in special_content
-    assert "echo \"$HOME\"" in special_content
+    assert 'echo "$HOME"' in special_content
     assert "∑(x²) = π/2" in special_content
 
 
@@ -918,28 +1043,30 @@ def test_conflicting_simultaneous_changes(git_repo):
             file_path="app.js",
             content="-line 2",
             parsed_content=[Removal(2, "line 2")],
-            old_start=2, new_start=2
+            old_start=2,
+            new_start=2,
         ),
         # Insert between lines 1 and 2 (which will be gone)
         StandardDiffChunk(
-            file_path="app.js", 
+            file_path="app.js",
             content="+inserted line",
             parsed_content=[Addition(2, "inserted line")],
-            old_start=2, new_start=2
+            old_start=2,
+            new_start=2,
         ),
         # Modify line 3 (which will shift)
         StandardDiffChunk(
             file_path="app.js",
             content="-line 3\n+modified line 3",
-            parsed_content=[
-                Removal(3, "line 3"),
-                Addition(3, "modified line 3")
-            ],
-            old_start=3, new_start=3
-        )
+            parsed_content=[Removal(3, "line 3"), Addition(3, "modified line 3")],
+            old_start=3,
+            new_start=3,
+        ),
     ]
 
-    group = CommitGroup(chunks=chunks, group_id="overlapping", commmit_message="Overlapping changes")
+    group = CommitGroup(
+        chunks=chunks, group_id="overlapping", commmit_message="Overlapping changes"
+    )
     synthesizer.execute_plan([group], base_hash, "main")
 
     # Should handle overlapping changes gracefully
@@ -955,69 +1082,72 @@ def test_very_large_file_changes(git_repo):
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
 
     # Create a large file
-    large_content = '\n'.join([f"line {i}" for i in range(1, 101)])  # 100 lines
-    (repo_path / "large.txt").write_text(large_content + '\n')
+    large_content = "\n".join([f"line {i}" for i in range(1, 101)])  # 100 lines
+    (repo_path / "large.txt").write_text(large_content + "\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(["git", "commit", "-m", "Add large file"], cwd=repo_path, check=True)
-    
+
     new_base_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
     ).stdout.strip()
 
     # Many separate contiguous chunks for modifications
     chunks = []
-    
+
     # Chunks for each 10th line modification
     for i in range(10, 101, 10):
         chunk = StandardDiffChunk(
             file_path="large.txt",
             content=f"-line {i}\n+MODIFIED line {i}",
-            parsed_content=[
-                Removal(i, f"line {i}"),
-                Addition(i, f"MODIFIED line {i}")
-            ],
-            old_start=i, new_start=i
+            parsed_content=[Removal(i, f"line {i}"), Addition(i, f"MODIFIED line {i}")],
+            old_start=i,
+            new_start=i,
         )
         chunks.append(chunk)
-    
+
     # Chunks for insertions at various positions
     for i in [25, 50, 75]:
         chunk = StandardDiffChunk(
             file_path="large.txt",
             content=f"+INSERTED at {i}",
             parsed_content=[Addition(i, f"INSERTED at {i}")],
-            old_start=i-1, new_start=i  # Insert before line i
+            old_start=i - 1,
+            new_start=i,  # Insert before line i
         )
         chunks.append(chunk)
 
-    group = CommitGroup(chunks=chunks, group_id="large_changes", commmit_message="Many changes to large file")
+    group = CommitGroup(
+        chunks=chunks,
+        group_id="large_changes",
+        commmit_message="Many changes to large file",
+    )
     synthesizer.execute_plan([group], new_base_hash, "main")
 
     # Verify changes
     content = (repo_path / "large.txt").read_text()
-    lines = content.split('\n')
-    
+    lines = content.split("\n")
+
     # Check that modifications exist (exact positions may vary due to insertions)
     modified_lines = [line for line in lines if "MODIFIED line" in line]
     assert len(modified_lines) == 10  # Should have 10 modified lines
-    
+
     # Check that specific modifications exist
     assert "MODIFIED line 10" in modified_lines
     assert "MODIFIED line 50" in modified_lines
     assert "MODIFIED line 90" in modified_lines
-    
+
     # Check insertions exist
     inserted_lines = [line for line in lines if "INSERTED at" in line]
     assert len(inserted_lines) == 3  # Should have 3 insertions
     assert "INSERTED at 25" in inserted_lines
     assert "INSERTED at 50" in inserted_lines
     assert "INSERTED at 75" in inserted_lines
-    
+
     # Verify original unmodified lines still exist
     assert "line 5" in lines  # Should be unchanged (not every 10th)
     assert "line 15" in lines  # Should be unchanged (not every 10th)
     assert "line 35" in lines  # Should be unchanged (not every 10th)
-    
+
     # Original modified lines should not exist anymore (every 10th line was modified)
     assert "line 10" not in lines  # Was modified to "MODIFIED line 10"
     assert "line 20" not in lines  # Was modified to "MODIFIED line 20"
