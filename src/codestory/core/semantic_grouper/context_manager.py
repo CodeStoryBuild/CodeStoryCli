@@ -18,7 +18,6 @@
 
 from dataclasses import dataclass
 
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.exceptions import SyntaxErrorDetected

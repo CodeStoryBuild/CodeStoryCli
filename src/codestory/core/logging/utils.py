@@ -19,7 +19,6 @@
 import contextlib
 from time import perf_counter
 
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 
