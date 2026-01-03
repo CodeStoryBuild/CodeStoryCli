@@ -20,7 +20,6 @@ class Removal(LineNumbered):
 
 @dataclass(init=False)
 class Move(LineNumbered):
-    content: str
     from_line: int
     to_line: int
 
@@ -32,12 +31,17 @@ class Move(LineNumbered):
         self.line_number = to_line
 
 
-@dataclass
+@dataclass(init=False)
 class Replacement(LineNumbered):
     """ Represents a line of code replaced with another, on the same line"""
     old_content: str
     new_content: str
 
+    def __init__(self, old_content : str, new_content: str, line_number : int):
+        self.old_content = old_content
+        self.new_content = new_content
+        self.content = new_content # you can think of it as the final content state
+        self.line_number = line_number
 
 
 # @dataclass
@@ -407,10 +411,6 @@ class CommitGroup:
     commmit_message: str
     extended_message: Optional[str] = None
     
-    def to_patch(self) -> str:
-        """Concatenates the patches of all chunks in the group."""
-        return "\n".join(chunk.to_patch() for chunk in self.chunks)
-
 @dataclass
 class CommitResult:
     """
@@ -418,3 +418,29 @@ class CommitResult:
     """
     commit_hash: str
     group: CommitGroup
+
+@dataclass(frozen=True)
+class ChunkApplicationData:
+    """A simplified, internal representation of a standard chunk's change data."""
+    start_line: int
+    line_count: int
+    add_content: List[str]
+
+@dataclass
+class HunkWrapper:
+    # new_file_path is the primary path for modifications or additions.
+    new_file_path: str
+    hunk_lines: List[str]
+    old_start: int
+    new_start: int
+    # old_file_path is None unless this hunk is part of a rename.
+    old_file_path: Optional[str] = None
+
+    @property
+    def is_rename(self) -> bool:
+        return self.old_file_path is not None
+
+    @property
+    def file_path(self) -> str:
+        # For backward compatibility or simple logic, provide a single file_path.
+        return self.new_file_path

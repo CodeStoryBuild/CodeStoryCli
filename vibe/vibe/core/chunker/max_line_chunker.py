@@ -46,7 +46,7 @@ class MaxLineChunker(ChunkerInterface):
                 cur_num = None
                 num_seen = 0
 
-                for line in chunk.ai_content:
+                for line in chunk.parsed_content:
                     if start_num is None:
                         start_num = line.line_number
                     if cur_num != line.line_number:
