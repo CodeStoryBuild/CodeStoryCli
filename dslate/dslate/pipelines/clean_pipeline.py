@@ -103,7 +103,7 @@ class CleanPipeline:
                 idx=idx,
                 total=total,
             )
-            self.fix_command(commit)
+            self.fix_command(commit_hash=commit)
             fixed += 1
 
         logger.info(
