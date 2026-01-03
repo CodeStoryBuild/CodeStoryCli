@@ -23,7 +23,7 @@ dependencies = [
 vibe = "vibe.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["vibe"]
 
 [project.optional-dependencies]
 dev = [
