@@ -48,7 +48,7 @@ def main():
         )
 
     # Entry point
-    entry_point = Path("codestory/codestory/cli.py")
+    entry_point = Path("src/codestory/cli.py")
     if not entry_point.exists():
         print(f"Error: Entry point {entry_point} not found.")
         sys.exit(1)

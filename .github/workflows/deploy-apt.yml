@@ -1,0 +1,113 @@
+name: Deploy to APT Repository
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  deploy_apt:
+    name: Deploy to APT Repository
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Linux .deb Artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build-release.yml
+          name: release-assets-linux
+          path: artifacts/
+          workflow_conclusion: success
+
+      - name: Extract version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(git describe --tags --abbrev=0)
+          fi
+          VERSION=$(echo "$VERSION" | sed 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+      - name: Setup GPG
+        run: |
+          echo "${{ secrets.APT_GPG_PRIVATE_KEY }}" | gpg --import
+          
+      - name: Checkout APT Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/apt-repository
+          token: ${{ secrets.APT_REPO_TOKEN }}
+          path: apt-repo
+          
+      - name: Add .deb to APT Repository
+        run: |
+          # Find the .deb file
+          DEB_FILE=$(find artifacts -name "*.deb" -type f | head -n 1)
+          if [ -z "$DEB_FILE" ]; then
+            echo "No .deb file found!"
+            exit 1
+          fi
+          
+          # Copy to repository pool
+          mkdir -p apt-repo/pool/main/c/codestory
+          cp "$DEB_FILE" apt-repo/pool/main/c/codestory/
+          
+          # Update repository metadata
+          cd apt-repo
+          
+          # Create/update Packages file
+          dpkg-scanpackages --multiversion pool > dists/stable/main/binary-amd64/Packages
+          gzip -k -f dists/stable/main/binary-amd64/Packages
+          
+          # Create Release file
+          cd dists/stable
+          cat > Release <<EOF
+          Origin: CodeStoryBuild
+          Label: CodeStory APT Repository
+          Suite: stable
+          Codename: stable
+          Architectures: amd64
+          Components: main
+          Description: Official CodeStory APT repository
+          Date: $(date -Ru)
+          EOF
+          
+          # Generate checksums
+          apt-ftparchive release . >> Release
+          
+          # Sign the Release file
+          gpg --default-key ${{ secrets.APT_GPG_KEY_ID }} -abs -o Release.gpg Release
+          gpg --default-key ${{ secrets.APT_GPG_KEY_ID }} --clearsign -o InRelease Release
+          
+      - name: Commit and push to APT repository
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Add codestory version ${{ steps.get_version.outputs.version }}"
+          git push

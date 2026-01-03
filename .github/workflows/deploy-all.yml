@@ -1,0 +1,82 @@
+name: Deploy to All Package Managers
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+      deploy_pypi:
+        description: 'Deploy to PyPI'
+        required: false
+        type: boolean
+        default: true
+      deploy_winget:
+        description: 'Deploy to WinGet'
+        required: false
+        type: boolean
+        default: true
+      deploy_chocolatey:
+        description: 'Deploy to Chocolatey'
+        required: false
+        type: boolean
+        default: true
+      deploy_homebrew:
+        description: 'Deploy to Homebrew'
+        required: false
+        type: boolean
+        default: true
+      deploy_apt:
+        description: 'Deploy to APT'
+        required: false
+        type: boolean
+        default: false
+      deploy_snap:
+        description: 'Deploy to Snap Store'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  trigger_pypi:
+    if: ${{ inputs.deploy_pypi }}
+    uses: ./.github/workflows/deploy-pypi.yml
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
+
+  trigger_winget:
+    if: ${{ inputs.deploy_winget }}
+    uses: ./.github/workflows/deploy-winget.yml
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
+
+  trigger_chocolatey:
+    if: ${{ inputs.deploy_chocolatey }}
+    uses: ./.github/workflows/deploy-chocolatey.yml
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
+
+  trigger_homebrew:
+    if: ${{ inputs.deploy_homebrew }}
+    uses: ./.github/workflows/deploy-homebrew.yml
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
+
+  trigger_apt:
+    if: ${{ inputs.deploy_apt }}
+    uses: ./.github/workflows/deploy-apt.yml
+    with:
+      version: ${{ inputs.version }}
+    secrets: inherit
+
+#   trigger_snap:
+#     if: ${{ inputs.deploy_snap }}
+#     uses: ./.github/workflows/deploy-snapcraft.yml
+#     with:
+#       version: ${{ inputs.version }}
+#     secrets: inherit
