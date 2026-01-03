@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from typing import Callable
 
 from loguru import logger
-from rich.console import Console
 from dslate.context import GlobalContext, CleanContext
 
 
