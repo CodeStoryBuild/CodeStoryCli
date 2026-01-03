@@ -7,6 +7,7 @@ from .query_manager import QueryManager
 @dataclass(frozen=True)
 class ScopeMap:
     """Maps each line number to scope inside it."""
+
     scope_lines: dict[int, set[str]]
 
 
