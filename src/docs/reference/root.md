@@ -1,3 +1,3 @@
 ::: mkdocs-typer2
 :module: codestory.cli
-:name: codestory
+:name: Codestory CLI

@@ -1,88 +1,97 @@
 # Usage Guide
 
-`codestory` (`cst`) helps you maintain a clean, logical git history. It works by analyzing your changes and splitting them into meaningful commits.
+Codestory CLI (`cst`) is designed to fit seamlessly into your existing Git workflow. It helps you keep your history clean and documented by analyzing your work and proposing logical, atomic commits.
 
-The CLI follows a standard pattern:
+The CLI follows a simple, standard pattern:
+
 `cst [global options] <command> [command options]`
 
-## Core Workflows
+## Common Workflows
 
-### 1. Committing New Changes
-The `commit` command is your daily driver. It looks at your current working directory and stages changes into logical groups.
+### 1. Committing Your Current Work
+
+The `commit` command is likely where you'll spend most of your time. It analyzes your uncommitted changes and suggests how to group them into meaningful commits.
 
 ```bash
-# Interactively review and commit all changes
+# Interactively review and commit all current changes
 cst commit
 
-# Focus on a specific directory
-cst commit src/core/
+# Focus on a specific area of your project
+cst commit src/ui/
 
-# Provide a hint to the AI for better commit messages
-cst commit -m "Refactor the database connection pool"
+# Provide a hint to guide the AI's commit messages
+cst commit -m "Implement the new billing dashboard"
 
-# Use an intent filter to only capture specific types of changes
-# (Requires relevance filtering to be enabled in config)
-cst commit --intent "fix typos and documentation"
+# Use intentional filtering to capture specific types of work
+# (Note: This depends on your relevance filtering settings)
+cst commit --intent "fix visual regressions and update readme"
 ```
 
-### 2. Fixing Past Commits
-If you've already made a "mega-commit" and want to split it up after the fact, use `fix`.
+### 2. Refining Recent History
+
+If you've already made a large commit and realized it would be better as several smaller steps, use the `fix` command.
 
 ```bash
-# Split the most recent commit
+# Break down your most recent commit
 cst fix HEAD
 
-# Split a specific commit in your history
+# Split any specific commit from your history
 cst fix abc1234
 ```
 
-### 3. Cleaning Repository History
-The `clean` command is for deep maintenance. It iterates through your history and attempts to split every commit it encounters until it hits a merge commit.
+### 3. Repository Maintenance with `clean`
+
+The `clean` command helps you improve the quality of a series of recent commits. It walks through your history and attempts to decompose "mega-commits" into smaller, logical units.
+
+**Safety Note**: Since this command rewrites history, it's best to run it on a new branch.
 
 ```bash
-# Start cleaning from the current HEAD
+# Cleanup history starting from the current branch tip
 cst clean
 
-# Start from a specific point in history
-cst clean abc1234 --min-size 5
+# Start cleaning from a specific point, ignoring smaller commits
+cst clean abc1234 --min-size 10
 ```
 
-## Global Overrides
+## On-the-Fly Overrides
 
-You can override any configuration value on the fly by passing it as a global option before the command.
+You can temporarily change any setting by passing it as a global option before the command.
 
-### AI & Model Selection
+### AI & Model Settings
+
 ```bash
-# Use a specific model for a one-off task
-cst --model "openai/gpt-4o" commit
+# Try a different model for a specific task
+cst --model "openai:gpt-4o" commit
 
-# Lower temperature for more deterministic messages
-cst --temperature 0 commit
+# Adjust the 'creativity' of the commit generation
+cst --temperature 0.3 commit
 ```
 
-### Filtering & Precision
-```bash
-# Increase relevance filtering for a cleaner result
-cst --relevance-filter-level strict commit --intent "refactor"
+### Precision & Filtering
 
-# Aggressively scan for secrets before committing
+```bash
+# Enable strict filtering to focus on specific work
+cst --relevance-filtering true --relevance-filter-similarity-threshold 0.8 commit --intent "refactor"
+
+# Increase the aggression of the secret scanner
 cst --secret-scanner-aggression strict commit
 ```
 
-## Configuration Management
+## Managing Your Settings
 
-Use `cst config` to manage your persistent settings. Settings can be stored at the repository level (`local`) or user level (`global`).
+Use `cst config` to view and modify your persistent preferences. You can store settings globally for all your projects or locally within a single repository.
 
 ```bash
-# Set your preferred model globally
-cst config model "anthropic/claude-3-5-sonnet-20240620" --scope global
+# Set your preferred model for all projects
+cst config model "anthropic:claude-3-5-sonnet-20240620" --scope global
 
-# Set an API key for the current project (scope will default to local if --scope is not specified)
+# Save a project-specific API key
 cst config api_key "sk-..."
 
-# View your active configuration (merges local, global, and env vars if --scope is not specified)
+# View your active configuration across all sources
 cst config
 ```
 
 ## Pro Tip
-- **Custom Languages**: If you're using a niche language, you can provide your own Tree-sitter queries via `--custom-language-config`.
+
+- **Extending Language Support**: Working with a newer or custom language? You can provide your own Tree-sitter definitions using `--custom-language-config`.
