@@ -328,7 +328,6 @@ class ContextManager:
                 parsed_file.detected_language,
                 parsed_file.root_node,
                 file_path,
-                parsed_file.content_bytes,
                 parsed_file.line_ranges,
             )
 

@@ -24,6 +24,7 @@
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from loguru import logger
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
@@ -88,6 +89,7 @@ class EmbeddingGrouper(LogicalGrouper):
 
     def generate_summaries(self, annotated_chunk_patches: list[str]):
         tasks = [PROMPT.format(changes=patch) for patch in annotated_chunk_patches]
+        logger.debug(f"Generating {len(tasks)} summaries using LLM.")
         summaries = self.model.invoke_batch(tasks)
         # Added stricter cleanup for small models which often output quotes or newlines
         return [
@@ -124,31 +126,17 @@ class EmbeddingGrouper(LogicalGrouper):
             )
             added_symbols = signature.def_new_symbols - modified_symbols
             removed_symbols = signature.def_old_symbols - modified_symbols
-            # these "fallbacks" where we use other path will never actually occur, as the analysis context would be none
-            new_file_name = (chunk.new_file_path or chunk.old_file_path).decode(
-                "utf-8", errors="replace"
-            )
-            old_file_name = (chunk.old_file_path or chunk.new_file_path).decode(
-                "utf-8", errors="replace"
-            )
-            new_fully_qualified_name = ".".join(
-                [new_file_name] + signature.new_named_scopes
-            )
-            old_fully_qualified_name = ".".join(
-                [old_file_name] + signature.new_named_scopes
-            )
 
             patch_json = {
                 "patch": patch,
                 "modified_symbols": list(modified_symbols),
                 "added_symbols": list(added_symbols),
                 "removed_symbols": list(removed_symbols),
-                "new_fully_qualified_name": new_fully_qualified_name,
-                "old_fully_qualified_name": old_fully_qualified_name,
+                "new_affected_scopes": list(signature.new_fqns),
+                "old_affected_scopes": list(signature.old_fqns),
             }
+            # print(json.dumps(patch_json, indent=2))
             annotated_patch.append(patch_json)
-            # Removed print statement to prevent stdout clutter in production
-            print(json.dumps(patch_json, indent=2))
 
         return json.dumps(annotated_patch, indent=2)
 
@@ -249,5 +237,7 @@ class EmbeddingGrouper(LogicalGrouper):
                     commit_message=clean_message,
                 )
                 groups.append(group)
+
+        logger.info(f"Created {len(groups)} commit groups from {len(chunks) + len(immut_chunks)} semantic groups using embeddings.")
 
         return groups

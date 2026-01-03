@@ -39,13 +39,14 @@ from codestory.core.llm import CodeStoryAdapter, ModelConfig
 class GlobalConfig:
     model: str | None = None
     api_key: str | None = None
+    logical_grouping_type: Literal["embeddings", "brute_force_llm"] = "embeddings"
     temperature: float = 0.7
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
-    aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
     fallback_grouping_strategy: Literal[
         "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
     ] = "all_together"
+    split_hunks: bool = True
     verbose: bool = False
     auto_accept: bool = False
     silent: bool = False
@@ -54,15 +55,15 @@ class GlobalConfig:
     constraints = {
         "model": StringConstraint(),
         "api_key": StringConstraint(),
+        "logical_grouping_type": LiteralTypeConstraint(
+            allowed=["embeddings", "brute_force_llm"]
+        ),
         "temperature": RangeTypeConstraint(min_value=0.0, max_value=1.0),
         "relevance_filter_level": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
         ),
         "secret_scanner_aggression": LiteralTypeConstraint(
             allowed=["safe", "standard", "strict", "none"]
-        ),
-        "aggresiveness": LiteralTypeConstraint(
-            allowed=("Conservative", "Regular", "Extra")
         ),
         "fallback_grouping_strategy": LiteralTypeConstraint(
             allowed=(
@@ -73,6 +74,7 @@ class GlobalConfig:
                 "all_alone",
             )
         ),
+        "split_hunks": BoolConstraint(),
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
@@ -82,11 +84,12 @@ class GlobalConfig:
     descriptions = {
         "model": "LLM model (format: provider:model, e.g., openai:gpt-4)",
         "api_key": "API key for the LLM provider",
+        "logical_grouping_type": "Strategy for logically grouping chunks. Note embeddings will make many batched api calls, only really recommended for local models",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
-        "aggresiveness": "How aggressively to split commits smaller",
         "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation",
+        "split_hunks": "Whether to split git hunks into smaller atomic chunks",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",

@@ -68,7 +68,7 @@ class CommentMapper:
            non-whitespace characters (found efficiently using str.translate)
            is equal to the summed length of comment captures on that line.
         """
-        comment_captures = self.query_manager.run_query(
+        comment_captures = self.query_manager.run_query_captures(
             language_name,
             root_node,
             query_type="comment",

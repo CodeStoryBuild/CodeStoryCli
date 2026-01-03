@@ -108,7 +108,7 @@ class LanguageConfig:
 
     def get_source(
         self,
-        query_type: Literal["scope", "comment", "token_general", "token_definition"],
+        query_type: Literal["scope", "named_scope", "structural_scope", "comment", "token_general", "token_definition"],
     ):
         if query_type == "scope":
             named_lines = self.__get_source(
@@ -118,6 +118,14 @@ class LanguageConfig:
                 self.scope_queries.structural_scope, "structural_scope"
             )
             return "\n".join(named_lines + structural_lines)
+        if query_type == "named_scope":
+            return "\n".join(
+                self.__get_source(self.scope_queries.named_scope, "named_scope")
+            )
+        if query_type == "structural_scope":
+            return "\n".join(
+                self.__get_source(self.scope_queries.structural_scope, "structural_scope")
+            )
         if query_type == "comment":
             return "\n".join(
                 self.__get_source(self.comment_queries, "STRUCTURALCOMMENTQUERY")
@@ -199,11 +207,11 @@ class QueryManager:
         except Exception as e:
             raise RuntimeError("Failed to parse language configs!") from e
 
-    def run_query(
+    def run_query_captures(
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal["scope", "comment", "token_general", "token_definition"],
+        query_type: Literal["scope", "named_scope","structural_scope", "comment", "token_general", "token_definition"],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """
@@ -257,6 +265,66 @@ class QueryManager:
 
             for capture_name, nodes in cursor.captures(tree_root).items():
                 results.setdefault(capture_name, []).extend(nodes)
+
+        return results
+
+    def run_query_matches(
+        self,
+        language_name: str,
+        tree_root: Node,
+        query_type: Literal["scope", "named_scope","structural_scope", "comment", "token_general", "token_definition"],
+        line_ranges: list[tuple[int, int]] | None = None,
+    ):
+        """
+        Run either the scope or shared token query for the language on `tree_root`.
+        If `line_ranges` is provided, only matches within those 0-indexed (start, end) line ranges are returned.
+        Returns a list of matches from the query.
+        """
+        key = f"{language_name}:{query_type}"
+
+        language = get_language(language_name)
+        if language is None:
+            raise ValueError(f"Invalid language '{language_name}'")
+
+        lang_config = self._language_configs.get(language_name)
+        if lang_config is None:
+            raise ValueError(f"Missing config for language '{language_name}'")
+
+        # Build and cache Query + QueryCursor if not present
+        if key not in self._cursor_cache:
+            query_src = lang_config.get_source(query_type)
+
+            if not query_src.strip():
+                # Empty query -> no matches
+                logger.debug(f"Empty query for {language_name} {query_type=}!")
+                return []
+
+            query = Query(language, query_src)
+            cursor = QueryCursor(query)
+            self._cursor_cache[key] = (query, cursor)
+        else:
+            query, cursor = self._cursor_cache[key]
+
+        # If no line_ranges provided, just run over the whole tree
+        if line_ranges is None:
+            # make sure the match range is the whole file
+            cursor.set_point_range(tree_root.start_point, tree_root.end_point)
+            return cursor.matches(tree_root)
+
+        # Otherwise, loop over line ranges and accumulate results
+        results = []
+        for start_line, end_line in line_ranges:
+            if end_line < start_line:
+                # cases like empty hunks will head to invalid range
+                continue
+            start_point = (start_line, 0)
+            end_point = (end_line + 1, 0)  # end is exclusive
+
+            # Reset cursor and restrict to this range
+            cursor.set_point_range(start_point, end_point)
+
+            # Accumulate matches from this range
+            results.extend(cursor.matches(tree_root))
 
         return results
 
