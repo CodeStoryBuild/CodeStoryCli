@@ -31,8 +31,6 @@ class GitInterface:
     sandbox instances.
     """
 
-    global_env_override: dict | None = None
-
     def _build_env(self, env: dict | None) -> dict:
         """
         Build the subprocess environment by merging global_env_override.
@@ -53,6 +51,10 @@ class GitInterface:
         return base_env
 
     def __init__(self, repo_path: str | Path) -> None:
+        # Instance-level environment override (not shared across instances)
+        # This is used by GitSandbox to redirect Git object storage
+        self.global_env_override: dict | None = None
+
         # Ensure repo_path is a Path object for consistency
         if isinstance(repo_path, Path):
             self.repo_path = repo_path
