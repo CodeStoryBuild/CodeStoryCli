@@ -1,10 +1,11 @@
-from vibe.core.data.models import Addition, Removal, Move, Replacement, ExtendedDiffChunk
+from vibe.core.data.models import Addition, Removal, Move, Replacement
+from vibe.core.data.s_diff_chunk import StandardDiffChunk
 
 
 def test_detect_moves_simple_move_up():
     # simple move line of code up from line 2 -> 1
     input = [Addition(1, "test"), Removal (2, "test")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 1
     assert isinstance(out[0], Move)
     assert out[0].content == "test"
@@ -14,7 +15,7 @@ def test_detect_moves_simple_move_up():
 def test_detect_moves_simple_move_down():
     # simple move line of code down from line 1 -> 2
     input = [Removal (1, "test"), Addition(2, "test")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 1
     assert isinstance(out[0], Move)
     assert out[0].content == "test"
@@ -24,7 +25,7 @@ def test_detect_moves_simple_move_down():
 def test_detect_moves_duplicate_removals_match_first():
     # duplicate removals, expect to match to first removal based on line number
     input = [Removal (1, "test"), Addition(2, "test"), Removal (3, "test")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     # The move should be from line 1 to line 2
     assert isinstance(out[0], Move)
@@ -42,7 +43,7 @@ def test_detect_moves_duplicate_removals_match_first():
 def test_detect_moves_no_moves_only_additions():
     """No removals to pair with additions, so all remain additions."""
     input = [Addition(1, "line A"), Addition(2, "line B")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Addition) and out[0].content == "line A" and out[0].line_number == 1
     assert isinstance(out[1], Addition) and out[1].content == "line B" and out[1].line_number == 2
@@ -50,7 +51,7 @@ def test_detect_moves_no_moves_only_additions():
 def test_detect_moves_no_moves_only_removals():
     """No additions to pair with removals, so all remain removals."""
     input = [Removal(1, "line A"), Removal(2, "line B")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Removal) and out[0].content == "line A" and out[0].line_number == 1
     assert isinstance(out[1], Removal) and out[1].content == "line B" and out[1].line_number == 2
@@ -58,7 +59,7 @@ def test_detect_moves_no_moves_only_removals():
 def test_detect_moves_no_moves_mismatched_content():
     """Additions and removals with different content should not form moves."""
     input = [Removal(1, "line A"), Addition(2, "line B")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Removal) and out[0].content == "line A" and out[0].line_number == 1
     assert isinstance(out[1], Addition) and out[1].content == "line B" and out[1].line_number == 2
@@ -71,7 +72,7 @@ def test_detect_moves_multiple_distinct_moves():
         Removal(2, "line B"),
         Addition(4, "line B")   # Move 2->4
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     # Ensure both moves are found, order by to_line (which is line_number for Move)
     assert isinstance(out[0], Move)
@@ -92,7 +93,7 @@ def test_detect_moves_intervening_changes():
         Removal(3, "old line"),    # Intervening removal
         Addition(4, "line A")     # Move 1->4
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 3  # One move, one addition, one removal
     # Order by line_number (to_line for moves)
     assert isinstance(out[0], Addition) and out[0].content == "new line" and out[0].line_number == 2
@@ -102,7 +103,7 @@ def test_detect_moves_intervening_changes():
 def test_detect_moves_content_change_not_a_move():
     """If content changes, it's a removal and an addition, not a move."""
     input = [Removal(1, "original content"), Addition(2, "modified content")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Removal) and out[0].content == "original content" and out[0].line_number == 1
     assert isinstance(out[1], Addition) and out[1].content == "modified content" and out[1].line_number == 2
@@ -110,7 +111,7 @@ def test_detect_moves_content_change_not_a_move():
 def test_detect_moves_same_line_add_remove_not_a_move():
     """An addition and removal on the same line number should not be considered a move."""
     input = [Removal(1, "old"), Addition(1, "new")]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     # Order will be Removal then Addition if they have the same line_number because of stable sort
     assert isinstance(out[0], Removal) and out[0].content == "old" and out[0].line_number == 1
@@ -127,7 +128,7 @@ def test_detect_moves_multiple_removals_one_addition_match_first_by_line():
         Removal(3, "test"),          # Should remain a removal
         Addition(4, "test")          # This addition
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 3 # One move, two removals
     # Sorted by line_number (to_line for move)
     assert isinstance(out[0], Removal) and out[0].content == "another line" and out[0].line_number == 2
@@ -146,7 +147,7 @@ def test_detect_moves_multiple_additions_one_removal_match_first_by_line():
         Addition(2, "test"), # This should become a move (1->2)
         Addition(3, "test")  # This should remain an addition
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2 # One move, one addition
     # Sorted by line_number (to_line for move)
     assert isinstance(out[0], Move) and out[0].content == "test" and out[0].from_line == 1 and out[0].to_line == 2
@@ -155,7 +156,7 @@ def test_detect_moves_multiple_additions_one_removal_match_first_by_line():
 def test_detect_moves_empty_input():
     """Handling an empty list of changes."""
     input = []
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert out == []
 
 def test_detect_moves_complex_interleaved_operations():
@@ -169,7 +170,7 @@ def test_detect_moves_complex_interleaved_operations():
         Removal(6, "line C"),
         Addition(7, "line B"),  # Move from 3 -> 7
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 5 # Two moves, two additions, one removal
 
     # Expected order based on line_number (to_line for moves)
@@ -186,7 +187,7 @@ def test_detect_moves_unmatched_removal():
         Removal(1, "line A"),  # No matching addition
         Addition(2, "line B")
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Removal) and out[0].content == "line A" and out[0].line_number == 1
     assert isinstance(out[1], Addition) and out[1].content == "line B" and out[1].line_number == 2
@@ -197,7 +198,7 @@ def test_detect_moves_unmatched_addition():
         Addition(1, "line A"),  # No matching removal
         Removal(2, "line B")
     ]
-    out = ExtendedDiffChunk.detect_moves(input)
+    out = StandardDiffChunk.detect_moves(input)
     assert len(out) == 2
     assert isinstance(out[0], Addition) and out[0].content == "line A" and out[0].line_number == 1
     assert isinstance(out[1], Removal) and out[1].content == "line B" and out[1].line_number == 2
