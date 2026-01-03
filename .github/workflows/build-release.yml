@@ -49,7 +49,7 @@ jobs:
       # --- BUILD STEP ---
       
       - name: Build Executable (PyInstaller)
-        run: python build.py
+        run: python build_exe.py
 
       # --- TEST STEPS ---
 
