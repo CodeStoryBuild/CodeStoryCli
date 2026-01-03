@@ -100,10 +100,6 @@ class AtomicChunker(MechanicalChunker):
     ) -> list[Chunk]:
         mechanical_chunks: list[Chunk] = []
 
-        if pbar is not None:
-            pbar.total = len(diff_chunks)
-            pbar.refresh()
-
         for chunk in diff_chunks:
             if pbar is not None:
                 pbar.update(1)

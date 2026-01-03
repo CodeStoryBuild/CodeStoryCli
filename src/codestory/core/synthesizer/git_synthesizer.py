@@ -176,9 +176,6 @@ class GitSynthesizer:
             )
 
             total = len(groups)
-            if pbar is not None:
-                pbar.total = total
-                pbar.refresh()
 
             for i, group in enumerate(groups):
                 try:
