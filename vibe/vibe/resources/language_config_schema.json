@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Semantic Token Configuration Schema (Minimal)",
+  "description": "Schema for defining semantic token classes and scope extraction using Tree-sitter. Captures are injected automatically in code.",
+  "type": "object",
+  "patternProperties": {
+    "^[a-zA-Z_][a-zA-Z0-9_-]*$": {
+      "type": "object",
+      "description": "Configuration for a single programming language. The property name is the language identifier (e.g. 'python').",
+      "properties": {
+        "shared_token_queries": {
+          "type": "object",
+          "description": "Semantic token classes and the Tree-sitter patterns used to extract them.",
+          "patternProperties": {
+            "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+              "type": "object",
+              "description": "Definition of a semantic token class, e.g., function_class, variable_class.",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "Optional human-readable description of what this class represents."
+                },
+                "queries": {
+                  "type": "array",
+                  "description": "List of Tree-sitter patterns for this class. Captures are automatically assigned in code.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "pattern": {
+                        "type": "string",
+                        "description": "Tree-sitter S-expression pattern for matching nodes. Do not include capture name."
+                      }
+                    },
+                    "required": ["pattern"]
+                  }
+                }
+              },
+              "required": ["queries"]
+            }
+          }
+        },
+        "scope_queries": {
+          "type": "object",
+          "description": "Patterns used to detect scope boundaries. Captures are automatically named 'scope'.",
+          "properties": {
+            "queries": {
+              "type": "array",
+              "description": "List of Tree-sitter patterns that mark scope start/end.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "description": "Tree-sitter pattern for scope-bearing nodes. Do not include capture name."
+                  }
+                },
+                "required": ["pattern"]
+              }
+            }
+          },
+          "required": ["queries"]
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional metadata for parser behavior.",
+          "properties": {
+            "ignore_nodes": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Node types to ignore when building token mappings (e.g., comments, string literals)."
+            }
+          }
+        }
+      },
+      "required": ["shared_token_queries", "scope_queries"],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

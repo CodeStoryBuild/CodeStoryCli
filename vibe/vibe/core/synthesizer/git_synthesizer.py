@@ -12,7 +12,7 @@ from ..git_interface.interface import GitInterface
 from ..data.models import CommitGroup, CommitResult
 from ..data.diff_chunk import DiffChunk
 from ..data.line_changes import Addition, Removal
-from ..data.c_diff_chunk import CompositeDiffChunk
+from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..commands.git_const import DEVNULL
 
 
@@ -255,6 +255,8 @@ class GitSynthesizer:
                 "\n" if terminator_needed else ""
             )
 
+            print(f"{patches=}")
+
         return patches
 
     def _build_tree_from_changes(
@@ -351,10 +353,7 @@ class GitSynthesizer:
         all_chunks = []
         for group in groups:
             for chunk in group.chunks:
-                if isinstance(chunk, CompositeDiffChunk):
-                    all_chunks.extend(chunk.chunks)
-                else:
-                    all_chunks.append(chunk)
+                all_chunks.extend(chunk.get_chunks())
 
         total_chunks_per_file = {}
         for file_path, file_chunks_iter in groupby(
@@ -383,10 +382,7 @@ class GitSynthesizer:
                 # Flatten composite chunks into primitives
                 primitive_chunks: List[DiffChunk] = []
                 for chunk in cumulative_chunks:
-                    if isinstance(chunk, CompositeDiffChunk):
-                        primitive_chunks.extend(chunk.chunks)
-                    else:
-                        primitive_chunks.append(chunk)
+                    primitive_chunks.extend(chunk.get_chunks())
 
                 # 4. Build a new tree from scratch.
                 #    - ALWAYS start from the original base commit's state.

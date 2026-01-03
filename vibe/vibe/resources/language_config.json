@@ -1,0 +1,29 @@
+{
+    "python": {
+        "shared_token_queries": {
+            "function_class": {
+                "queries":[
+                    "function_definition name: (identifier)",
+                    "call function: (identifier)"
+                ],
+                "filters": ["print"]
+            }
+            ,
+            "class_class": [
+                    "class_definition name: (identifier)"
+                ],
+            "variable_class": [
+                    "assignment left: (identifier)",
+                    "attribute object: (identifier)"
+                ]
+        },
+        "scope_queries": [
+                "(function_definition)",
+                "(class_definition)"
+            ]
+        ,
+        "metadata": {
+            "ignore_nodes": ["comment", "string"]
+        }
+    }
+}

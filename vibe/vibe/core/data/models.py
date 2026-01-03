@@ -8,7 +8,7 @@ class CommitGroup:
     A collection of DiffChunks that are committed together.
     """
 
-    chunks: List["DiffChunk"]
+    chunks: List["Chunk"]
     group_id: str
     # branch_name: str
     commit_message: str

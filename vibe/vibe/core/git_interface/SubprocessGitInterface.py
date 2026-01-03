@@ -7,9 +7,9 @@ from .interface import GitInterface
 
 
 class SubprocessGitInterface(GitInterface):
-    def __init__(self, repo_path: Union[str, Path]):
+    def __init__(self, repo_path: Union[str, Path] = None):
         # Ensure repo_path is a Path object for consistency
-        self.repo_path = Path(repo_path)
+        self.repo_path = Path(repo_path) if repo_path else Path(".")
 
     def run_git_text(
         self,

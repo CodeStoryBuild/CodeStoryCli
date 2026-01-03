@@ -41,6 +41,8 @@ class DiffChunk(Groupable):
         else:
             return self.old_file_path
 
+    
+
     @property
     def is_file_rename(self) -> bool:
         return (
@@ -284,3 +286,60 @@ class DiffChunk(Groupable):
             old_start=old_start,
             new_start=new_start,
         )
+    
+    # chunk protocol
+    
+    def get_chunks(self):
+        return [self]
+    
+    def canonical_paths(self):
+        """
+        Returns the relevant path for the chunk.
+        For renames or standard chunks, this is new_file_path
+        For additions/deletions, this is the path that is not NONE
+        """
+
+        if self.new_file_path is not None:
+            return [self.new_file_path]
+        else:
+            return [self.old_file_path]
+        
+    def format_json(self) -> str:
+        """
+        Converts a structured diff object into a standardized JSON format
+        optimized for LLM comprehension.
+
+        Args:
+            file_path: The path of the file being modified.
+            change_list: The list of changes in the diff chunk object.
+
+        Returns:
+            A JSON string representing the structured diff.
+        """
+
+        if self.has_content:
+            changes = format_content_json(self.parsed_content)
+        elif self.is_file_rename:
+            changes = {
+                "type": "Rename",
+                "old_file_path": self.old_file_path,
+                "new_file_path": self.new_file_path,
+            }
+        elif self.is_file_addition:
+            changes = {
+                "type": "FileAddition",
+                "new_file_path": self.new_file_path,
+            }
+        elif self.is_file_deletion:
+            changes = {
+                "type": "FileDeletion",
+                "old_file_path": self.old_file_path,
+            }
+        else:
+            logger.warning(
+                "A diff chunk with no content and no special purpouse was found!: {chunk}".format(
+                    chunk=self
+                )
+            )
+
+        return json.dumps(changes, indent=2)

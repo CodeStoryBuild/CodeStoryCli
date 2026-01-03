@@ -140,7 +140,7 @@ def format_content_json(parsed_content) -> str:
 
 
 def flatten_diff_chunks(chunks):
-    from .c_diff_chunk import CompositeDiffChunk
+    from .composite_diff_chunk import CompositeDiffChunk
 
     # flatten composite diff chunks and diff chunks to be only diff chunks
     primitive_chunks: List["DiffChunk"] = []

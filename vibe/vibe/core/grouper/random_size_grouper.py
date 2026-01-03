@@ -1,11 +1,11 @@
 import random
 from typing import List, Optional
 from ..data.models import CommitGroup, ProgressCallback
-from .interface import GrouperInterface
+from .interface import AIGrouper
 from .interface import Groupable
 
 
-class RandomSizeGrouper(GrouperInterface):
+class RandomSizeGrouper(AIGrouper):
     def __init__(self, size: int):
         self.size = size
 

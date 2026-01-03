@@ -1,8 +1,8 @@
 from typing import List
-from ..data.diff_chunk import DiffChunk
+from ..data.chunk import Chunk
 
 
 class SimpleChunker:
-    def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:
+    def chunk(self, diff_chunks: List[Chunk]) -> List[Chunk]:
         """Just returns as is"""
         return diff_chunks

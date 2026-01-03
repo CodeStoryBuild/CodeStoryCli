@@ -23,10 +23,10 @@ Notes:
 
 from abc import ABC, abstractmethod
 from typing import List
-from ..data.diff_chunk import DiffChunk
+from ..data.chunk import Chunk
 
 
-class ChunkerInterface(ABC):
+class MechanicalChunker(ABC):
     @abstractmethod
-    def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:
+    def chunk(self, diff_chunks: List[Chunk]) -> List[Chunk]:
         """Split hunks into smaller chunks or sub-hunks"""

@@ -3,14 +3,14 @@ Deterministic test helpers for predictable end-to-end testing.
 """
 
 from typing import List
-from vibe.core.chunker.interface import ChunkerInterface
-from vibe.core.grouper.interface import GrouperInterface, Groupable
+from vibe.core.chunker.interface import MechanicalChunker
+from vibe.core.grouper.interface import AIGrouper, Groupable
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.models import CommitGroup
 from vibe.core.data.line_changes import Addition, Removal
 
 
-class DeterministicChunker(ChunkerInterface):
+class DeterministicChunker(MechanicalChunker):
     """
     A deterministic chunker that splits chunks based on predefined rules for testing.
     This chunker will split chunks at specific keywords or patterns to create predictable results.
@@ -50,7 +50,7 @@ class DeterministicChunker(ChunkerInterface):
         Split a chunk into atomic chunks, then group them for testing.
         Uses the split_into_atomic_chunks method from ChunkerInterface.
         """
-        from vibe.core.data.c_diff_chunk import CompositeDiffChunk
+        from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
 
         # Split into atomic chunks
         atomic_chunks = chunk.split_into_atomic_chunks()
@@ -79,7 +79,7 @@ class DeterministicChunker(ChunkerInterface):
         return sub_chunks if sub_chunks else [chunk]
 
 
-class DeterministicGrouper(GrouperInterface):
+class DeterministicGrouper(AIGrouper):
     """
     A deterministic grouper that groups chunks based on file patterns and content for testing.
     """

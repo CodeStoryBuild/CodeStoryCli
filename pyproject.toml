@@ -20,7 +20,10 @@ dependencies = [
   "langchain>=0.3.27",
   "langchain-google-genai>=2.1.12",
   "python-dotenv>=1.1.1",
-  "loguru>=0.7.3"
+  "loguru>=0.7.3",
+  "tree-sitter>=0.21.0",
+  "tree-sitter-language-pack>=0.1.0",
+  "pygments>=2.14.0"
 ]
 
 [project.scripts]

@@ -1,11 +1,10 @@
 from itertools import groupby
-import subprocess
 from typing import List, Optional, Tuple, Union
 import re
 
 from ..data.hunk_wrapper import HunkWrapper
 from ..data.diff_chunk import DiffChunk
-from ..data.c_diff_chunk import CompositeDiffChunk
+from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..git_interface.interface import GitInterface
 
 
@@ -27,23 +26,42 @@ class GitCommands:
     _A_B_PATHS_RE = re.compile(r".*a/(.+?) b/(.+)")
 
     def get_working_diff_with_renames(
-        self, target: Optional[str] = None, similarity: int = 50
+        self, base_hash : str, new_hash : str, target: Optional[str] = None, similarity: int = 50
     ) -> List[HunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
         This is the authoritative source of diff information.
         Uses binary mode to avoid encoding issues with Unicode characters in diffs.
         """
-        path_args = [target] if target else []
-        # Use binary mode to properly handle Unicode characters (€, £, etc.)
+        path_args = ["--"] + ([target] if target else [])
         diff_output_bytes = self.git.run_git_binary(
-            ["diff", "HEAD", "--unified=0", f"-M{similarity}"] + path_args
+            ["diff", base_hash, new_hash, "--unified=0", f"-M{similarity}"] + path_args
         )
         # Decode with error handling for robustness
         diff_output = None
         if diff_output_bytes:
             diff_output = diff_output_bytes.decode("utf-8", errors="replace")
         return self._parse_hunks_with_renames(diff_output)
+    
+    def get_file_diff_with_renames(
+        self, fileA: str, fileB: str, similarity: int = 50
+    ) -> List[HunkWrapper]:
+        """
+        Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
+        This is the authoritative source of diff information.
+        Uses binary mode to avoid encoding issues with Unicode characters in diffs.
+        """
+        # Use binary mode to properly handle Unicode characters (€, £, etc.)
+        diff_output_bytes = self.git.run_git_binary(
+            ["diff", "--no-index", "--unified=0", f"-M{similarity}", "--", fileA, fileB]
+        )
+        # Decode with error handling for robustness
+        diff_output = None
+        if diff_output_bytes:
+            diff_output = diff_output_bytes.decode("utf-8", errors="replace")
+        return self._parse_hunks_with_renames(diff_output)
+
+    
 
     def _parse_hunks_with_renames(
         self, diff_output: Optional[str]
@@ -252,11 +270,11 @@ class GitCommands:
     def need_reset(self) -> bool:
         """Checks if there are staged changes that need to be reset"""
         # 'git diff --cached --quiet' exits with 1 if there are staged changes, 0 otherwise
-        result = subprocess.run(
-            ["git", "-C", self.git.repo_path, "diff", "--cached", "--quiet"],
-            capture_output=True,
-        )
-        return result.returncode != 0
+        try:
+            self.git.run_git_text(["diff", "--cached", "--quiet"])
+            return False  # No staged changes (exit code 0)
+        except Exception:
+            return True   # Staged changes exist (exit code 1)
 
     def need_track_untracked(self, target: Optional[str] = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
@@ -266,21 +284,23 @@ class GitCommands:
         )
         return bool(untracked_files.strip())
 
-    def get_processed_diff(self, target: Optional[str] = None) -> List[DiffChunk]:
+    def get_processed_working_diff(self, base_hash : str, new_hash : str, target: Optional[str] = None) -> List[DiffChunk]:
         """
         Parses the git diff once and converts each hunk directly into an
         atomic DiffChunk object (DiffChunk).
         """
         # Parse ONCE to get a list of HunkWrapper objects.
-        hunks = self.get_working_diff_with_renames(target)
+        hunks = self.get_working_diff_with_renames(base_hash, new_hash, target)
+        return self.parse_and_merge_hunks(hunks)
 
+
+    def parse_and_merge_hunks(self, hunks: List[HunkWrapper]) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
         chunks: List[DiffChunk] = []
         for hunk in hunks:
             chunks.append(DiffChunk.from_hunk(hunk))
 
         # Merge overlapping or touching chunks into CompositeDiffChunks
         merged = self.merge_overlapping_chunks(chunks)
-
         return merged
 
     def merge_overlapping_chunks(

@@ -1,6 +1,6 @@
 import pytest
-from vibe.core.chunker.interface import ChunkerInterface
-from vibe.core.data.c_diff_chunk import CompositeDiffChunk
+from vibe.core.chunker.interface import MechanicalChunker
+from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
 from vibe.core.checks.chunk_checks import chunks_disjoint as check_disjoint

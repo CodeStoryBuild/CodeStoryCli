@@ -2,30 +2,48 @@ import typer
 from rich.console import Console
 
 from rich.traceback import install
+from dotenv import load_dotenv
 
 # Disable showing locals in tracebacks
 install(show_locals=False)
 
-# Import the main functions directly from the command modules
-from vibe.commands import init
-from vibe.commands.commit import main as commit_main
+from vibe.core.chunker.simple_chunker import SimpleChunker
+from vibe.core.chunker.atomic_chunker import AtomicChunker
+from vibe.core.grouper.random_size_grouper import RandomSizeGrouper
+from vibe.core.grouper.single_grouper import SingleGrouper
+from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.pipeline.runner import AIGitPipeline
 
+from vibe.commands import commit
+load_dotenv()
+
+# create app
 app = typer.Typer(
     help="✨ vibe: an AI-powered abstraction layer above Git",
     pretty_exceptions_show_locals=False,
 )
-console = Console()
 
-# Register init as a subcommand
-app.add_typer(init.app, name="init")
-
-# Register the commit function as a direct command
-app.command(name="commit")(commit_main)
-
+# attach commands
+app.command(name="commit")(commit.main)
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
-    """Show help if no subcommand is provided"""
+    """
+    Global setup callback. Initialize shared objects here.
+    """
+    git = SubprocessGitInterface(".")
+    chk = AtomicChunker()
+    grp = SingleGrouper()
+    console = Console()
+    runner = AIGitPipeline(git, chk, grp, console)
+
+    # Store objects in context
+    ctx.obj = {
+        "console": console,
+        "runner": runner
+    }
+
+    # default behavior
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()

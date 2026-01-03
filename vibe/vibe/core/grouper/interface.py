@@ -22,7 +22,7 @@ from typing import List, Dict, Optional
 from ..data.models import CommitGroup, ProgressCallback
 
 
-class GrouperInterface(ABC):
+class AIGrouper(ABC):
     @abstractmethod
     def group_chunks(
         self,

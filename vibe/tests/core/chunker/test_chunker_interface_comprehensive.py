@@ -12,8 +12,8 @@ import pytest
 from typing import List, Type
 import importlib
 
-from vibe.core.chunker.interface import ChunkerInterface
-from vibe.core.data.c_diff_chunk import CompositeDiffChunk
+from vibe.core.chunker.interface import MechanicalChunker
+from vibe.core.data.composite_diff_chunk import CompositeDiffChunk
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
 from vibe.core.checks.chunk_checks import chunks_disjoint
@@ -100,7 +100,7 @@ def assert_chunks_valid(chunks: List[DiffChunk]):
                 assert sub_chunk.parsed_content is not None
 
 
-def run_chunker_invariants(chunker: ChunkerInterface, input_chunk: DiffChunk):
+def run_chunker_invariants(chunker: MechanicalChunker, input_chunk: DiffChunk):
     """
     Run all invariant checks on a chunker's output.
     """
@@ -139,7 +139,7 @@ CHUNKERS = [
 ]
 
 
-def load_chunker(chunker_cls: str, chunker_kwargs: dict) -> ChunkerInterface:
+def load_chunker(chunker_cls: str, chunker_kwargs: dict) -> MechanicalChunker:
     """Load a chunker class dynamically."""
     mod_name, cls_name = chunker_cls.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
