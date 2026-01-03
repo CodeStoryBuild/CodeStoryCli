@@ -2,16 +2,16 @@ import typer
 from loguru import logger
 from rich.console import Console
 
-from dslate.pipelines.expand_pipeline import ExpandPipeline
+from dslate.pipelines.fix_pipeline import FixPipeline
 from dslate.pipelines.commit_init import create_commit_pipeline
 from dslate.core.git_interface.interface import GitInterface
 from dslate.core.validation import validate_commit_hash
 from dslate.core.exceptions import GitError, DetachedHeadError
 from dslate.core.logging.utils import time_block
-from dslate.context import GlobalContext, ExpandContext, CommitContext
+from dslate.context import GlobalContext, FixContext, CommitContext
 
 
-def get_info(git_interface: GitInterface, expand_context: ExpandContext):
+def get_info(git_interface: GitInterface, fix_context: FixContext):
     # Resolve current branch and head
     current_branch = (
         git_interface.run_git_text_out(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
@@ -20,18 +20,18 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
     head_hash = git_interface.run_git_text_out(["rev-parse", "HEAD"]).strip() or ""
 
     if not current_branch:
-        raise DetachedHeadError("Detached HEAD is not supported for expand")
+        raise DetachedHeadError("Detached HEAD is not supported for dslate fix")
 
     # Verify commit exists and is on current branch history
     resolved = (
         git_interface.run_git_text_out(
-            ["rev-parse", expand_context.commit_hash]
+            ["rev-parse", fix_context.commit_hash]
         ).strip()
         or ""
     )
     if not resolved:
         raise GitError(
-            "Commit not found: {commit}".format(commit=expand_context.commit_hash)
+            "Commit not found: {commit}".format(commit=fix_context.commit_hash)
         )
 
     if (
@@ -51,7 +51,7 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
     parent = git_interface.run_git_text_out(["rev-parse", f"{resolved}^"])
 
     if not parent:
-        raise GitError("Expanding the root commit is not supported yet!")
+        raise GitError("Fixing the root commit is not supported yet!")
 
     parent = parent.strip()
 
@@ -60,41 +60,35 @@ def get_info(git_interface: GitInterface, expand_context: ExpandContext):
 
 def main(
     ctx: typer.Context,
-    commit_hash: str = typer.Argument(..., help="Commit hash to expand"),
+    commit_hash: str = typer.Argument(..., help="Commit hash to fix"),
 ) -> None:
-    """Expand a past commit into smaller logical commits safely.
+    """Fix a past commit by splitting into smaller logical commits safely.
 
     Examples:
-        # Expand a specific commit
-        dslate expand abc123
-
-        # Expand with auto-confirmation
-        dslate expand abc123 --yes
-
-        # Use specific model
-        dslate --model anthropic:claude-3-5-sonnet-20241022 expand abc123
+        # Fix a specific commit
+        dslate fix abc123
     """
     validated_hash = validate_commit_hash(commit_hash)
 
     global_context: GlobalContext = ctx.obj
-    expand_context = ExpandContext(validated_hash)
+    fix_context = FixContext(validated_hash)
 
-    logger.info("Expand command started", expand_context=expand_context)
+    logger.info("Fix command started", fix_context=fix_context)
 
     base_hash, new_hash, base_branch = get_info(
-        global_context.git_interface, expand_context
+        global_context.git_interface, fix_context
     )
 
     commit_context = CommitContext(
         target=None, message=None
-    )  # TODO add custom expand message
+    )  # TODO add custom fix message
     commit_pipeline = create_commit_pipeline(
         global_context, commit_context, base_hash, new_hash
     )
 
     # Execute expansion
-    with time_block("Expand Pipeline E2E"):
-        service = ExpandPipeline(global_context, expand_context, commit_pipeline)
+    with time_block("Fix Pipeline E2E"):
+        service = FixPipeline(global_context, fix_context, commit_pipeline)
         final_head = service.run()
 
     if final_head is not None:
@@ -114,9 +108,9 @@ def main(
 
         # Sync the working directory to the new head
         global_context.git_interface.run_git_text_out(["read-tree", "HEAD"])
-        logger.info("Expand command completed successfully")
+        logger.info("Fix command completed successfully")
 
     else:
-        logger.warning("[red]Failed to expand commit[/red]")
-        logger.error("Expand operation failed")
+        logger.error("Fix operation failed")
+        logger.warning("[red]Failed to fix commit[/red]")
         raise typer.Exit(1)

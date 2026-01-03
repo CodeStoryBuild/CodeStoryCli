@@ -61,7 +61,7 @@ class CommitContext:
 
 
 @dataclass(frozen=True)
-class ExpandContext:
+class FixContext:
     commit_hash: str
 
 

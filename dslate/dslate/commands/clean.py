@@ -10,7 +10,7 @@ from dslate.core.validation import (
 from dslate.core.logging.utils import time_block
 from dslate.context import CleanContext
 
-from .expand import main as expand_main
+from .fix import main as fix_main
 
 from functools import partial
 
@@ -20,7 +20,7 @@ def main(
     ignore: list[str] | None = typer.Option(
         None,
         "--ignore",
-        help="Commit hashes to skip (can be prefixes). Use multiple times to specify more.",
+        help="Commit hashes to skip (can be prefixes). Eg --ignore hash1 hash2...",
     ),
     min_size: int | None = typer.Option(
         None,
@@ -36,7 +36,7 @@ def main(
         help="Should the clean command skip cleaning merge commits?",
     ),
 ) -> None:
-    """Run 'dslate expand' iteratively from HEAD (or start_from) to the second commit with filtering.
+    """Run 'dslate fix' iteratively from HEAD (or start_from) to the start of the repository fixing each commit.
 
     Examples:
         # Clean all commits with auto-confirmation
@@ -48,7 +48,7 @@ def main(
         # Clean while ignoring certain commits
         dslate clean --ignore def456 --ignore ghi789
     """
-    expand_command = partial(expand_main, ctx)
+    fix_command = partial(fix_main, ctx)
 
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
@@ -74,7 +74,7 @@ def main(
 
     # Execute cleaning
     with time_block("Clean Runner E2E"):
-        runner = CleanPipeline(global_context, clean_context, expand_command)
+        runner = CleanPipeline(global_context, clean_context, fix_command)
         success = runner.run()
 
     if success:

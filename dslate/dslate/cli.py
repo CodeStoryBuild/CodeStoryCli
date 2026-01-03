@@ -9,7 +9,7 @@ from loguru import logger
 from rich.console import Console
 from rich.traceback import install
 
-from dslate.commands import clean, commit, expand
+from dslate.commands import clean, commit, fix
 from dslate.core.exceptions import GitError, ValidationError, dslateError
 from dslate.core.validation import validate_git_repository
 from dslate.core.logging.logging import setup_logger
@@ -33,7 +33,7 @@ app = typer.Typer(
 
 # attach commands
 app.command(name="commit")(commit.main)
-app.command(name="expand")(expand.main)
+app.command(name="fix")(fix.main)
 app.command(name="clean")(clean.main)
 
 
