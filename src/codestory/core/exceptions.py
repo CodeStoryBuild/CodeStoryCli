@@ -79,6 +79,12 @@ class ConfigurationError(CodestoryError):
     pass
 
 
+class ConfigurationWarning(CodestoryError):
+    """Non-critical configuration warnings."""
+
+    pass
+
+
 class AIServiceError(CodestoryError):
     """AI service related errors.
 
