@@ -37,7 +37,7 @@ class ScopeMapper:
             ScopeMap containing the mapping of line numbers to scope names
         """
 
-        line_to_scope : dict[int, set[str]] = {}
+        line_to_scope: dict[int, set[str]] = {}
 
         # Run scope queries using the query manager
         scope_captures = self.query_manager.run_query(
@@ -47,9 +47,7 @@ class ScopeMapper:
         for _, nodes in scope_captures.items():
             for node in nodes:
                 scope_name = f"{file_name}:{node.id}"
-                for line_num in range(
-                    node.start_point[0], node.end_point[0] + 1
-                ):
+                for line_num in range(node.start_point[0], node.end_point[0] + 1):
                     line_to_scope.setdefault(line_num, set()).add(scope_name)
 
         return ScopeMap(scope_lines=line_to_scope)
