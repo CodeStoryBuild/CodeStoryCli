@@ -20,6 +20,8 @@ from collections import defaultdict
 from collections.abc import Callable
 from typing import Literal
 
+from tqdm import tqdm
+
 from codestory.core.chunker.interface import MechanicalChunker
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
@@ -91,10 +93,21 @@ class AtomicChunker(MechanicalChunker):
         return True
 
     def chunk(
-        self, diff_chunks: list[Chunk], context_manager: ContextManager
+        self,
+        diff_chunks: list[Chunk],
+        context_manager: ContextManager,
+        pbar: tqdm | None = None,
     ) -> list[Chunk]:
         mechanical_chunks: list[Chunk] = []
+
+        if pbar is not None:
+            pbar.total = len(diff_chunks)
+            pbar.refresh()
+
         for chunk in diff_chunks:
+            if pbar is not None:
+                pbar.update(1)
+
             if self.chunking_level == "none" or not isinstance(chunk, DiffChunk):
                 mechanical_chunks.append(chunk)
                 continue

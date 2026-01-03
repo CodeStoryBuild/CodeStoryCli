@@ -18,6 +18,8 @@
 
 from dataclasses import dataclass
 
+from tqdm import tqdm
+
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.semantic_grouper.context_manager import (
@@ -120,6 +122,7 @@ class ChunkLabeler:
     def annotate_chunks(
         original_chunks: list[Chunk],
         context_manager: ContextManager,
+        pbar: tqdm | None = None,
     ) -> list[AnnotatedChunk]:
         """
         Generate semantic signatures for each original chunk.
@@ -128,7 +131,14 @@ class ChunkLabeler:
         # ensure these chunks are merged
         annotated_chunks = []
 
+        if pbar is not None:
+            pbar.total = len(merged_chunks)
+            pbar.refresh()
+
         for chunk in merged_chunks:
+            if pbar is not None:
+                pbar.update(1)
+
             # Get all DiffChunks that belong to this original chunk
             chunk_diff_chunks = chunk.get_chunks()
 

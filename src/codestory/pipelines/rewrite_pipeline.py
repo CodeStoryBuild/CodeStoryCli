@@ -192,22 +192,26 @@ class RewritePipeline:
             return None
 
         # init context_manager
-        context_manager = ContextManager(
-            raw_chunks,
-            self.file_reader,
-            self.commit_context.fail_on_syntax_errors,
-        )
+        with transient_step(
+            "Analyzing Context", self.global_context.config.silent
+        ) as pbar:
+            context_manager = ContextManager(
+                raw_chunks,
+                self.file_reader,
+                self.commit_context.fail_on_syntax_errors,
+                pbar=pbar,
+            )
 
         if raw_chunks:
             # create smallest mechanically valid chunks
             with (
                 transient_step(
                     "Creating Mechanical Chunks", self.global_context.config.silent
-                ),
+                ) as pbar,
                 time_block("mechanical_chunking"),
             ):
                 mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
-                    raw_chunks, context_manager
+                    raw_chunks, context_manager, pbar=pbar
                 )
 
             log_chunks(
@@ -219,11 +223,11 @@ class RewritePipeline:
             with (
                 transient_step(
                     "Creating Semantic Groups", self.global_context.config.silent
-                ),
+                ) as pbar,
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
-                    mechanical_chunks, context_manager
+                    mechanical_chunks, context_manager, pbar=pbar
                 )
 
             log_chunks(
@@ -243,7 +247,7 @@ class RewritePipeline:
                 transient_step(
                     "Scanning for leaked secrets...",
                     self.global_context.config.silent,
-                ),
+                ) as pbar,
                 time_block("secret_scanning"),
             ):
                 (
@@ -254,6 +258,7 @@ class RewritePipeline:
                     semantic_chunks,
                     immutable_chunks,
                     config=None,
+                    pbar=pbar,
                 )
 
             if rejected_chunks:
@@ -496,9 +501,14 @@ class RewritePipeline:
             groups=num_acc,
         )
 
-        with time_block("Executing Synthesizer Pipeline"):
+        with (
+            transient_step(
+                "Synthesizing Git History", self.global_context.config.silent
+            ) as pbar,
+            time_block("Executing Synthesizer Pipeline"),
+        ):
             new_commit_hash = self.synthesizer.execute_plan(
-                accepted_groups, self.base_commit_hash
+                accepted_groups, self.base_commit_hash, pbar=pbar
             )
 
         # Final pipeline summary

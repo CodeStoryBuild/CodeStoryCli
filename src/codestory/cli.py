@@ -362,6 +362,13 @@ def create_global_callback():
                 ctx.invoked_subcommand, debug=config.verbose, silent=config.silent
             )
 
+            if config.model == "no-model":
+                from loguru import logger
+
+                logger.warning(
+                    "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
+                )
+
             global_context = GlobalContext.from_global_config(config, Path(repo_path))
             validate_git_repository(
                 global_context.git_interface
