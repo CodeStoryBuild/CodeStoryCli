@@ -57,6 +57,8 @@ jobs:
             dist/dslate-*
 
   release:
+    permissions:
+        contents: write
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
