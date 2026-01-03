@@ -11,6 +11,7 @@ from vibe.core.data.r_diff_chunk import RenameDiffChunk
 
 ## Fixtures
 
+
 @pytest.fixture
 def git_repo() -> tuple[Path, str]:
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -37,6 +38,7 @@ def git_repo() -> tuple[Path, str]:
         ).stdout.strip()
 
         yield repo_path, base_hash
+
 
 ## Test Cases
 

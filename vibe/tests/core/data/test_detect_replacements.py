@@ -12,6 +12,7 @@ def test_detect_replacements_simple_replacement():
     assert output[0].new_content == "new line content"
     assert output[0].line_number == 1
 
+
 def test_detect_replacements_no_replacements_only_additions():
     """No removals: only additions."""
     input_changes = [Addition(1, "line A"), Addition(2, "line B")]
@@ -22,6 +23,7 @@ def test_detect_replacements_no_replacements_only_additions():
     assert output[0].content == "line A"
     assert output[1].content == "line B"
 
+
 def test_detect_replacements_no_replacements_only_removals():
     """No additions: only removals."""
     input_changes = [Removal(1, "line A"), Removal(2, "line B")]
@@ -31,6 +33,7 @@ def test_detect_replacements_no_replacements_only_removals():
     assert isinstance(output[1], Removal)
     assert output[0].content == "line A"
     assert output[1].content == "line B"
+
 
 def test_detect_replacements_multiple_replacements():
     """Detect multiple consecutive replacements."""
@@ -51,6 +54,7 @@ def test_detect_replacements_multiple_replacements():
     assert output[1].new_content == "new 2"
     assert output[1].line_number == 2
 
+
 def test_detect_replacements_intervening_move():
     """Move between removal and addition prevents replacement."""
     input_changes = [
@@ -63,6 +67,7 @@ def test_detect_replacements_intervening_move():
     assert isinstance(output[0], Removal) and output[0].content == "line A"
     assert isinstance(output[1], Move) and output[1].content == "line M"
     assert isinstance(output[2], Addition) and output[2].content == "line A"
+
 
 def test_detect_replacements_mixed_changes():
     """Complex mix of additions, removals, moves, replacements."""
@@ -123,6 +128,7 @@ def test_detect_replacements_end_of_list_removal():
     assert isinstance(output[0], Addition) and output[0].content == "line A"
     assert isinstance(output[1], Removal) and output[1].content == "line B"
 
+
 def test_detect_replacements_start_of_list_addition():
     """An addition at the start should not be part of a replacement unless preceded by a removal."""
     input_changes = [Addition(1, "line A"), Removal(2, "line B")]
@@ -131,11 +137,13 @@ def test_detect_replacements_start_of_list_addition():
     assert isinstance(output[0], Addition) and output[0].content == "line A"
     assert isinstance(output[1], Removal) and output[1].content == "line B"
 
+
 def test_detect_replacements_empty_input():
     """Handles an empty list of changes."""
     input_changes = []
     output = detect_replacements(input_changes)
     assert output == []
+
 
 def test_detect_replacements_replacement_with_same_content():
     """If content is technically "replaced" with itself, it's still a Replacement by the function's logic."""
@@ -146,6 +154,7 @@ def test_detect_replacements_replacement_with_same_content():
     assert output[0].old_content == "same content"
     assert output[0].new_content == "same content"
     assert output[0].line_number == 1
+
 
 def test_detect_replacements_multiple_removals_then_addition():
     """
@@ -158,6 +167,7 @@ def test_detect_replacements_multiple_removals_then_addition():
     assert isinstance(output[0], Removal) and output[0].content == "old 1"
     assert isinstance(output[1], Removal) and output[1].content == "old 2"
     assert isinstance(output[2], Addition) and output[2].content == "new"
+
 
 def test_detect_replacements_removal_then_addition_then_other():
     """Ensures a replacement is correctly identified and the following items are processed."""
@@ -177,6 +187,7 @@ def test_detect_replacements_removal_then_addition_then_other():
     assert isinstance(output[1], Removal) and output[1].content == "R2"
     assert isinstance(output[2], Addition) and output[2].content == "A3_standalone"
 
+
 def test_detect_replacements_only_move():
     """A list containing only moves should pass through unchanged."""
     input_changes = [
@@ -187,6 +198,7 @@ def test_detect_replacements_only_move():
     assert len(output) == 2
     assert isinstance(output[0], Move) and output[0].content == "M1"
     assert isinstance(output[1], Move) and output[1].content == "M2"
+
 
 def test_detect_replacements_last_element_removal():
     """Tests when the list ends with a Removal, which cannot form a replacement."""

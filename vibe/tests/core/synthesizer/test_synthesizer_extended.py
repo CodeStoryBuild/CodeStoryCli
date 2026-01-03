@@ -10,6 +10,7 @@ from vibe.core.data.s_diff_chunk import StandardDiffChunk
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
+
 # Helper fixture to create a repo with two files
 @pytest.fixture
 def multi_file_git_repo(tmp_path):
