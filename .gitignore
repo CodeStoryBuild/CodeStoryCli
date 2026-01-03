@@ -208,6 +208,5 @@ __marimo__/
 
 # Project-specific
 vibe_playground/
-build_exe.py
 *.exe
 *.dmg
