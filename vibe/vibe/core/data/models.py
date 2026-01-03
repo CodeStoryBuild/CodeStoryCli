@@ -2,17 +2,104 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 
 @dataclass
-class Addition:
-    """Represents a single added line of code."""
-    content: str
+class LineNumbered:
     line_number: int
 
 
 @dataclass
-class Removal:
-    """Represents a single removed line of code."""
+class Addition(LineNumbered):
+    """ Represents a single added line of code."""
     content: str
-    line_number: int
+
+@dataclass
+class Removal(LineNumbered):
+    """ Represents a single removed line of code."""
+    content: str
+
+@dataclass(init=False)
+class Move(LineNumbered):
+    content: str
+    from_line: int
+    to_line: int
+
+    def __init__(self, content: str, from_line: int, to_line: int):
+        self.content = content
+        self.from_line = from_line
+        self.to_line = to_line
+        # line number will be the to_line in this case
+        self.line_number = to_line
+
+
+@dataclass
+class Replacement(LineNumbered):
+    """ Represents a line of code replaced with another, on the same line"""
+    old_content: str
+    new_content: str
+
+
+def detect_moves(ai_content: List[Union[Addition, Removal]]) -> List[Union[Addition, Removal, Move]]:
+    # Map to store removals by content. The value will be a list of line numbers
+    # associated with that content, allowing us to pick the lowest.
+    removal_map = {}
+
+
+    out: List[Union[Addition, Removal, Move]] = ai_content.copy()
+    
+    for i, item in enumerate(out):
+        if isinstance(item, Removal):
+            removal_map.setdefault(item.content, []).append((item.line_number, i))
+
+    removals = []
+
+    additions = []
+    
+    for i, item in enumerate(out): 
+        if isinstance(item, Addition):
+            # If there's a matching removal and it hasn't been used yet
+            if item.content in removal_map and removal_map[item.content]:
+                from_line, from_idx = removal_map[item.content].pop(0) # Get and remove the lowest line number
+
+                # since a match was found, remove this addition and the associated removal from the list
+                removals.append(from_idx)
+                removals.append(i)
+
+                # add a new move object
+                additions.append(Move(content=item.content, 
+                                      from_line=from_line,
+                                      to_line=item.line_number))
+                
+    for rem in sorted(removals, reverse=True):
+        del out[rem]
+
+    for add in additions:
+        out.append(add)
+
+    return sorted(out, key=lambda x : x.line_number)
+
+def detect_replacements(content: List[Union[Addition, Removal, Move]]) -> List[Union[Addition, Removal, Move, Replacement]]:
+    clarified: List[Union[Addition, Removal, Move, Replacement]] = []
+    i = 0
+    while i < len(content):
+        curr = content[i]
+        nxt = content[i + 1] if i + 1 < len(content) else None
+
+        if isinstance(curr, Removal) and isinstance(nxt, Addition):
+            if curr.line_number == nxt.line_number:
+                # Replacement detected
+                clarified.append(Replacement(
+                    old_content=curr.content,
+                    new_content=nxt.content,
+                    line_number=curr.line_number
+                ))
+                i += 2  # skip the next one
+                continue
+
+        # Otherwise keep the item as-is
+        clarified.append(curr)
+        i += 1
+
+    return clarified
+
 
 @dataclass
 class DiffChunk:
@@ -36,22 +123,19 @@ class DiffChunk:
         new_end: Optional end line in new version
     """
     file_path: str
-    start_line: int
-    end_line: int
     content: str
     ai_content: List[Union[Addition, Removal]]
-    old_start: Optional[int] = None
-    old_end: Optional[int] = None
-    new_start: Optional[int] = None
-    new_end: Optional[int] = None
+    old_start: int
+    old_end: int
+    new_start: int
+    new_end: int
 
-    def to_patch(self) -> str:
-        """
-        Convert this chunk into a unified diff string suitable for `git apply`.
-        This is critical for committing chunks independently or creating patches.
-        """
+    def to_patch(self) -> str: 
+        """ Convert this chunk into a unified diff string suitable for git apply. This is critical for committing chunks independently or creating patches. """ 
         header = f"--- a/{self.file_path}\n+++ b/{self.file_path}\n"
-        hunk_range = f"@@ -{self.old_start},{self.old_end - self.old_start + 1} +{self.new_start},{self.new_end - self.new_start + 1} @@\n"
+        old_len = self.old_end - self.old_start + 1
+        new_len = self.new_end - self.new_start + 1
+        hunk_range = f"@@ -{self.old_start}{',' + str(old_len) if old_len > 0 else ''} +{self.new_start}{',' + str(new_len) if new_len > 0 else ''} @@\n" 
         return header + hunk_range + self.content
 
     def split(self, split_indices: List[int]) -> List['DiffChunk']:
@@ -91,15 +175,22 @@ class DiffChunk:
                     old_lines.append(item.line_number)
 
             # Recalculate start and end line numbers for the patch
-            new_old_start = min(old_lines) if old_lines else self.old_start
-            new_old_end = max(old_lines) if old_lines else self.old_start - 1
-            new_new_start = min(new_lines) if new_lines else self.new_start
-            new_new_end = max(new_lines) if new_lines else self.new_start - 1
+            if old_lines:
+                new_old_start = min(old_lines)
+                new_old_end = max(old_lines)
+            else:
+                new_old_start = 0 
+                new_old_end = 0  # indicate no old lines
+
+            if new_lines:
+                new_new_start = min(new_lines)
+                new_new_end = max(new_lines)
+            else:
+                new_new_start = 0
+                new_new_end = 0  # indicate no new lines
             
             new_chunks.append(DiffChunk(
                 file_path=self.file_path,
-                start_line=new_new_start,
-                end_line=new_new_end,
                 content=new_content.strip(),
                 ai_content=new_ai_content,
                 old_start=new_old_start,
@@ -122,6 +213,9 @@ class DiffChunk:
         Returns:
             A new DiffChunk object, representing a valid sub-chunk.
         """
+
+        if start < 0 or end > len(self.ai_content):
+            raise ValueError("Start and End must define a valid range between 0 - chunk length!")
     
         
         # Create the ai_content slice for the new chunk
@@ -143,15 +237,22 @@ class DiffChunk:
                 old_lines.append(item.line_number)
 
         # Recalculate start and end line numbers for the patch
-        new_old_start = min(old_lines) if old_lines else self.old_start
-        new_old_end = max(old_lines) if old_lines else self.old_start - 1
-        new_new_start = min(new_lines) if new_lines else self.new_start
-        new_new_end = max(new_lines) if new_lines else self.new_start - 1
+        if old_lines:
+            new_old_start = min(old_lines)
+            new_old_end = max(old_lines)
+        else:
+            new_old_start = self.old_start  # or 0
+            new_old_end = 0  # indicate no old lines
+
+        if new_lines:
+            new_new_start = min(new_lines)
+            new_new_end = max(new_lines)
+        else:
+            new_new_start = self.new_start  # or 0
+            new_new_end = 0  # indicate no new lines
         
         return DiffChunk(
             file_path=self.file_path,
-            start_line=new_new_start,
-            end_line=new_new_end,
             content=new_content.strip(),
             ai_content=new_ai_content,
             old_start=new_old_start,

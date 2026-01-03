@@ -40,7 +40,7 @@ def main(
             git.track_untracked(target)
         
         # The extractChunks function is now called directly from the main function.
-        print("\n".join(map(lambda x : x, extractChunks(target))))
+        print("\n".join(map(str, extractChunks(target))))
     else:
         typer.echo(ctx.get_help())
         raise typer.Exit()
