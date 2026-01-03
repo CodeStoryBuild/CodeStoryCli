@@ -65,31 +65,41 @@ class CleanRunner:
             if options.min_size is not None:
                 changes = self._count_line_changes(commit)
                 if changes is None:
-                    logger.debug("Skipping {commit}: unable to count changes", commit=short)
+                    logger.debug(
+                        "Skipping {commit}: unable to count changes", commit=short
+                    )
                     skipped += 1
                     continue
                 if changes < options.min_size:
                     logger.debug(
                         "Skipping {commit}: {changes} < min-size {min_size}",
-                        commit=short, changes=changes, min_size=options.min_size
+                        commit=short,
+                        changes=changes,
+                        min_size=options.min_size,
                     )
                     skipped += 1
                     continue
 
-            logger.info("Expanding commit {commit} ({idx}/{total})", commit=short, idx=idx, total=total)
+            logger.info(
+                "Expanding commit {commit} ({idx}/{total})",
+                commit=short,
+                idx=idx,
+                total=total,
+            )
             ok = self.expand_service.expand_commit(
-                commit,
-                console=console,
-                auto_yes=options.auto_yes
+                commit, console=console, auto_yes=options.auto_yes
             )
             if not ok:
-                logger.error("Expansion failed or declined at {commit}. Stopping", commit=short)
+                logger.error(
+                    "Expansion failed or declined at {commit}. Stopping", commit=short
+                )
                 return False
             expanded += 1
 
         logger.info(
             "Clean operation complete: expanded={expanded}, skipped={skipped}",
-            expanded=expanded, skipped=skipped
+            expanded=expanded,
+            skipped=skipped,
         )
         return True
 
