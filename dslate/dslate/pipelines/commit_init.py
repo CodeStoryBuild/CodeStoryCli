@@ -1,4 +1,3 @@
-
 from dslate.context import CommitContext, GlobalContext
 from dslate.core.chunker.atomic_chunker import AtomicChunker
 from dslate.core.exceptions import GitError
