@@ -74,7 +74,10 @@ UNSUPPORTED_PROVIDERS = {"deepgram", "googlevertexai"}
 
 
 def get_cloud_providers() -> set[str]:
-    """Get supported cloud providers. Lazy-loaded to avoid expensive imports at startup."""
+    """Get supported cloud providers.
+
+    Lazy-loaded to avoid expensive imports at startup.
+    """
     from aisuite.provider import ProviderFactory
 
     return {

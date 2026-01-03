@@ -37,8 +37,8 @@ from codestory.core.semantic_grouper.symbol_mapper import SymbolMapper
 
 @pytest.fixture(scope="module")
 def tools():
-    """
-    Initializes the heavy components once per module.
+    """Initializes the heavy components once per module.
+
     Returns a tuple of (FileParser, SymbolExtractor, SymbolMapper).
     """
     qm = QueryManager.get_instance()

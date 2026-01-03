@@ -47,7 +47,7 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-codestory = ["resources/*"]
+codestory = ["resources/**"]
 
 [tool.mypy]
 python_version = "3.13"

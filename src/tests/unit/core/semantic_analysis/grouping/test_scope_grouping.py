@@ -36,8 +36,8 @@ from codestory.core.semantic_grouper.scope_mapper import ScopeMapper
 
 @pytest.fixture(scope="module")
 def tools():
-    """
-    Initializes the heavy components once per module.
+    """Initializes the heavy components once per module.
+
     Returns a tuple of (FileParser, ScopeMapper).
     """
     qm = QueryManager.get_instance()

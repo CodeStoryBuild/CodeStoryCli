@@ -103,8 +103,7 @@ def get_fallback_signature(
         "all_together", "by_file_path", "by_file_name", "by_file_extension"
     ],
 ) -> str:
-    """
-    Get a signature for a file path based on the fallback grouping strategy.
+    """Get a signature for a file path based on the fallback grouping strategy.
 
     Args:
         path: The file path as bytes
