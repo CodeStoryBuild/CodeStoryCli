@@ -188,8 +188,8 @@ class SemanticDiffGenerator(DiffGenerator):
         analysis_context = self.context_manager.get_context(
             file_path, is_old_version=True
         )
-        if analysis_context and analysis_context.parsed_file:
-            return analysis_context.parsed_file.content_bytes.decode(
+        if analysis_context and analysis_context.content_bytes:
+            return analysis_context.content_bytes.decode(
                 "utf-8", errors="replace"
             ).splitlines()
         return []

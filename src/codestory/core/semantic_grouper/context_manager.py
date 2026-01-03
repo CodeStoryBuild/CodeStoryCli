@@ -36,7 +36,9 @@ class AnalysisContext:
     """Contains the analysis context for a specific file version."""
 
     file_path: bytes
-    parsed_file: ParsedFile
+    detected_language: str
+    content_bytes: bytes
+    line_ranges: list[tuple[int, int]]
     scope_map: ScopeMap
     symbol_map: SymbolMap
     comment_map: CommentMap
@@ -204,7 +206,7 @@ class ContextManagerBuilder:
         files_with_context = {fp for fp, _ in self._context_cache}
         languages: dict[str, int] = {}
         for ctx in self._context_cache.values():
-            lang = ctx.parsed_file.detected_language or "unknown"
+            lang = ctx.detected_language or "unknown"
             languages[lang] = languages.get(lang, 0) + 1
 
         missing = set(self._required_contexts.keys()) - set(self._context_cache.keys())
@@ -552,7 +554,9 @@ class ContextManagerBuilder:
 
         context = AnalysisContext(
             file_path=file_path,
-            parsed_file=parsed_file,
+            detected_language=parsed_file.detected_language,
+            content_bytes=parsed_file.content_bytes,
+            line_ranges=parsed_file.line_ranges,
             scope_map=scope_map,
             symbol_map=symbol_map,
             comment_map=comment_map,
