@@ -4,13 +4,15 @@ from typing import Union
 
 from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..data.diff_chunk import DiffChunk
+from ..data.chunk import Chunk
+from ..data.immutable_chunk import ImmutableChunk
 from ..data.hunk_wrapper import HunkWrapper
+from ..data.immutable_hunk_wrapper import ImmutableHunkWrapper
 from ..git_interface.interface import GitInterface
 
 
 # In GitCommands file, update or replace HunkWrapper
 class GitCommands:
-
     def __init__(self, git: GitInterface):
         self.git = git
 
@@ -25,13 +27,13 @@ class GitCommands:
     _NEW_PATH_RE = re.compile(rb"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
     _A_B_PATHS_RE = re.compile(rb".*a/(.+?) b/(.+)")
 
-    def get_working_diff_with_renames(
+    def get_full_working_diff(
         self,
         base_hash: str,
         new_hash: str,
         target: str | None = None,
         similarity: int = 50,
-    ) -> list[HunkWrapper]:
+    ) -> list[HunkWrapper | ImmutableHunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
         This is the authoritative source of diff information.
@@ -39,33 +41,80 @@ class GitCommands:
         """
         path_args = ["--"] + ([target] if target else [])
         diff_output_bytes = self.git.run_git_binary(
-            ["diff", base_hash, new_hash, "--unified=0", f"-M{similarity}"] + path_args
+            ["diff", base_hash, new_hash, "--binary", "--unified=0", f"-M{similarity}"]
+            + path_args
         )
-        return self._parse_hunks_with_renames(diff_output_bytes)
+        binary_files = self._get_binary_files(base_hash, new_hash)
+        return self._parse_hunks_with_renames(diff_output_bytes, binary_files)
 
-    def get_file_diff_with_renames(
-        self, fileA: str, fileB: str, similarity: int = 50
-    ) -> list[HunkWrapper]:
+    def _get_binary_files(self, base: str, new: str) -> set[bytes]:
         """
-        Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
-        This is the authoritative source of diff information.
-        Uses binary mode to avoid encoding issues with Unicode characters in diffs.
+        Generates a set of file paths that are identified as binary by
+        `git diff --numstat`.
         """
-        # Use binary mode to properly handle Unicode characters (€, £, etc.)
-        diff_output_bytes = self.git.run_git_binary(
-            ["diff", "--no-index", "--unified=0", f"-M{similarity}", "--", fileA, fileB]
-        )
-        return self._parse_hunks_with_renames(diff_output_bytes)
+        binary_files: set[bytes] = set()
+        cmd = ["diff", "--numstat", base, new]
+        try:
+            numstat_output = self.git.run_git_binary(cmd)
+        except Exception:
+            return binary_files
+
+        if not numstat_output:
+            return binary_files
+
+        for line in numstat_output.splitlines():
+            parts = line.split(b"\t")
+            if len(parts) == 3 and parts[0] == b"-" and parts[1] == b"-":
+                path_part = parts[2]
+                if b" => " in path_part:
+                    # Handle rename syntax `old => new` or `prefix/{old=>new}/suffix`
+                    # by extracting the new path.
+                    pre, _, post = path_part.partition(b"{")
+                    if post:
+                        rename_part, _, suffix = post.partition(b"}")
+                        _, _, new_name = rename_part.partition(b" => ")
+                        binary_files.add(pre + new_name + suffix)
+                    else:
+                        _, _, new_path = path_part.partition(b" => ")
+                        binary_files.add(new_path)
+                else:
+                    binary_files.add(path_part)
+        return binary_files
+
+    def _is_binary_or_unparsable(
+        self,
+        diff_lines: list[bytes],
+        file_mode: bytes | None,
+        file_path: bytes | None,
+        binary_files_from_numstat: set[bytes],
+    ) -> bool:
+        """
+        Detects if a diff block is for a binary file, submodule, symlink,
+        or other format that cannot be represented by standard hunk chunks.
+        """
+        # 1. Check against the set of binary files from `git diff --numstat`.
+        if file_path and file_path in binary_files_from_numstat:
+            return True
+
+        # 2. File modes for submodules (160000) and symlinks (120000) are unparsable.
+        if file_mode in {b"160000", b"120000"}:
+            return True
+
+        # 3. Check for explicit statements in the diff output as a fallback.
+        for line in diff_lines:
+            if line.startswith(b"Binary files ") or b"Subproject commit" in line:
+                return True
+        return False
 
     def _parse_hunks_with_renames(
-        self, diff_output: bytes | None
-    ) -> list[HunkWrapper]:
+        self, diff_output: bytes | None, binary_files: set[bytes]
+    ) -> list[HunkWrapper | ImmutableHunkWrapper]:
         """
-        Parses a unified diff output that may contain rename blocks.
-        Extracts metadata about file operations (additions, deletions, renames).
+        Parses a unified diff output, detects binary/unparsable files,
+        and creates appropriate HunkWrapper or ImmutableHunkWrapper objects.
         """
-        hunks: list[HunkWrapper] = []
-        if not diff_output or diff_output is None:
+        hunks: list[Union[HunkWrapper, ImmutableHunkWrapper]] = []
+        if not diff_output:
             return hunks
 
         file_blocks = diff_output.split(b"\ndiff --git ")
@@ -74,11 +123,14 @@ class GitCommands:
             if not block.strip():
                 continue
 
+            # the first block will still have a diff --git, otherwise we need to add one
+            if not block.startswith(b"diff --git "):
+                block = b"diff --git " + block
+
             lines = block.splitlines()
             if not lines:
                 continue
 
-            # Parse file operation metadata
             old_path, new_path, file_mode = self._parse_file_metadata(lines)
 
             if old_path is None and new_path is None:
@@ -88,12 +140,21 @@ class GitCommands:
             elif not old_path and not new_path:
                 raise ValueError("Could not parse file paths from diff block!")
 
-            # Parse hunks within the block
+            path_to_check = new_path if new_path is not None else old_path
+
+            if self._is_binary_or_unparsable(
+                lines, file_mode, path_to_check, binary_files
+            ):
+                # add back the "diff -git"
+                hunks.append(
+                    ImmutableHunkWrapper(canonical_path=path_to_check, file_patch=block)
+                )
+                continue
+
             hunk_start_indices = [
                 i for i, line in enumerate(lines) if line.startswith(b"@@ ")
             ]
 
-            # Handle files with no hunks (pure operations)
             if not hunk_start_indices:
                 hunks.append(
                     HunkWrapper.create_empty_content(
@@ -103,7 +164,6 @@ class GitCommands:
                     )
                 )
             else:
-                # Process each hunk in the file
                 for i, start_idx in enumerate(hunk_start_indices):
                     end_idx = (
                         hunk_start_indices[i + 1]
@@ -287,29 +347,33 @@ class GitCommands:
 
     def get_processed_working_diff(
         self, base_hash: str, new_hash: str, target: str | None = None
-    ) -> list[DiffChunk]:
+    ) -> tuple[list[Chunk], list[ImmutableChunk]]:
         """
         Parses the git diff once and converts each hunk directly into an
         atomic DiffChunk object (DiffChunk).
         """
         # Parse ONCE to get a list of HunkWrapper objects.
-        hunks = self.get_working_diff_with_renames(base_hash, new_hash, target)
+        hunks = self.get_full_working_diff(base_hash, new_hash, target)
         return self.parse_and_merge_hunks(hunks)
 
     def parse_and_merge_hunks(
-        self, hunks: list[HunkWrapper]
-    ) -> list[Union[DiffChunk, "CompositeDiffChunk"]]:
+        self, hunks: list[HunkWrapper | ImmutableHunkWrapper]
+    ) -> tuple[list[Chunk], list[ImmutableChunk]]:
         chunks: list[DiffChunk] = []
+        immut_chunks: list[DiffChunk] = []
         for hunk in hunks:
-            chunks.append(DiffChunk.from_hunk(hunk))
+            if isinstance(hunk, ImmutableHunkWrapper):
+                immut_chunks.append(
+                    ImmutableChunk(hunk.canonical_path, hunk.file_patch)
+                )
+            else:
+                chunks.append(DiffChunk.from_hunk(hunk))
 
         # Merge overlapping or touching chunks into CompositeDiffChunks
         merged = self.merge_overlapping_chunks(chunks)
-        return merged
+        return merged, immut_chunks
 
-    def merge_overlapping_chunks(
-        self, chunks: list[DiffChunk]
-    ) -> list[Union[DiffChunk, "CompositeDiffChunk"]]:
+    def merge_overlapping_chunks(self, chunks: list[DiffChunk]) -> list[Chunk]:
         """
         Merge DiffChunks that are not disjoint (i.e., overlapping or touching)
         into CompositeDiffChunks, grouped per canonical path (file).
@@ -324,6 +388,8 @@ class GitCommands:
         if not chunks:
             return []
 
+        merged_results = []
+
         # Sort once globally by canonical path, then by sort key (old_start, abs_new_line)
         chunks_sorted = sorted(
             chunks,
@@ -332,8 +398,6 @@ class GitCommands:
                 c.get_sort_key(),
             ),
         )
-
-        merged_results: list[DiffChunk | CompositeDiffChunk] = []
 
         # Helper for overlap/touch logic
         # Chunks are disjoint if they don't overlap in old file coordinates

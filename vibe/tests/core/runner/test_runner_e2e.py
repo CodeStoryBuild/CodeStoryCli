@@ -120,9 +120,9 @@ def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_a
 
     # Verify file content matches exactly line-by-line
     actual_content = main_file.read_text()
-    assert (
-        actual_content == expected_content
-    ), f"File content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    assert actual_content == expected_content, (
+        f"File content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    )
 
 
 def test_runner_multiple_files_complex_changes(
@@ -234,15 +234,15 @@ def test_runner_with_file_deletion_and_addition(
     # Verify all file contents match exactly line-by-line
     for file_path, expected_content in new_files.items():
         actual_content = (repo_path / file_path).read_text()
-        assert (
-            actual_content == expected_content
-        ), f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        assert actual_content == expected_content, (
+            f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        )
 
     # Verify modified utils.py content matches exactly
     actual_utils_content = utils_file.read_text()
-    assert (
-        actual_utils_content == expected_utils_content
-    ), f"File src/utils.py content mismatch:\nExpected:\n{expected_utils_content}\n\nActual:\n{actual_utils_content}"
+    assert actual_utils_content == expected_utils_content, (
+        f"File src/utils.py content mismatch:\nExpected:\n{expected_utils_content}\n\nActual:\n{actual_utils_content}"
+    )
 
 
 def test_runner_with_file_deletion(complex_git_repo, mock_inquirer_accept_all):
@@ -326,9 +326,9 @@ def test_runner_with_file_rename(complex_git_repo):
 
     # Verify content matches exactly line-by-line
     actual_content = renamed_file.read_text()
-    assert (
-        actual_content == expected_content
-    ), f"File src/utilities.py content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    assert actual_content == expected_content, (
+        f"File src/utilities.py content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    )
 
 
 def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_all):
@@ -381,9 +381,9 @@ def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_al
     # Verify all file contents match exactly line-by-line
     for file_path, expected_content in changes.items():
         actual_content = (repo_path / file_path).read_text()
-        assert (
-            actual_content == expected_content
-        ), f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        assert actual_content == expected_content, (
+            f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        )
 
 
 def test_runner_handles_no_changes(complex_git_repo):
@@ -496,9 +496,9 @@ if __name__ == '__main__':
 
     # Verify final file content matches exactly line-by-line
     actual_content = (repo_path / "src" / "main.py").read_text()
-    assert (
-        actual_content == expected_content
-    ), f"File src/main.py content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    assert actual_content == expected_content, (
+        f"File src/main.py content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+    )
 
 
 # --- Complex Real-Life Scenario Tests ---
@@ -829,9 +829,9 @@ settings = Settings()
     # Verify all file contents match exactly line-by-line
     for file_path, expected_content in changes.items():
         actual_content = (repo_path / file_path).read_text()
-        assert (
-            actual_content == expected_content
-        ), f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        assert actual_content == expected_content, (
+            f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        )
 
     # Verify migrate.py script
     expected_migrate = """#!/usr/bin/env python3
@@ -850,9 +850,9 @@ if __name__ == '__main__':
     run_migrations()
 """
     actual_migrate = (repo_path / "scripts" / "migrate.py").read_text()
-    assert (
-        actual_migrate == expected_migrate
-    ), f"File scripts/migrate.py content mismatch:\nExpected:\n{expected_migrate}\n\nActual:\n{actual_migrate}"
+    assert actual_migrate == expected_migrate, (
+        f"File scripts/migrate.py content mismatch:\nExpected:\n{expected_migrate}\n\nActual:\n{actual_migrate}"
+    )
 
     # Verify settings.py
     expected_settings = """import os
@@ -878,9 +878,9 @@ class Settings:
 settings = Settings()
 """
     actual_settings = (repo_path / "config" / "settings.py").read_text()
-    assert (
-        actual_settings == expected_settings
-    ), f"File config/settings.py content mismatch:\nExpected:\n{expected_settings}\n\nActual:\n{actual_settings}"
+    assert actual_settings == expected_settings, (
+        f"File config/settings.py content mismatch:\nExpected:\n{expected_settings}\n\nActual:\n{actual_settings}"
+    )
 
     assert (repo_path / "scripts" / "migrate.py").exists()
     assert not (repo_path / "src" / "models" / "order.py").exists()
@@ -1165,29 +1165,29 @@ bcrypt==3.2.0
     # Verify all new file contents match exactly line-by-line
     for file_path, expected_content in new_files.items():
         actual_content = (repo_path / file_path).read_text()
-        assert (
-            actual_content == expected_content
-        ), f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        assert actual_content == expected_content, (
+            f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        )
 
     # Verify user_controller.py content
     actual_user_controller = (
         repo_path / "src" / "controllers" / "user_controller.py"
     ).read_text()
-    assert (
-        actual_user_controller == user_controller_new
-    ), f"File src/controllers/user_controller.py content mismatch:\nExpected:\n{user_controller_new}\n\nActual:\n{actual_user_controller}"
+    assert actual_user_controller == user_controller_new, (
+        f"File src/controllers/user_controller.py content mismatch:\nExpected:\n{user_controller_new}\n\nActual:\n{actual_user_controller}"
+    )
 
     # Verify middleware/auth.py content
     actual_middleware = (repo_path / "src" / "middleware" / "auth.py").read_text()
-    assert (
-        actual_middleware == middleware_new
-    ), f"File src/middleware/auth.py content mismatch:\nExpected:\n{middleware_new}\n\nActual:\n{actual_middleware}"
+    assert actual_middleware == middleware_new, (
+        f"File src/middleware/auth.py content mismatch:\nExpected:\n{middleware_new}\n\nActual:\n{actual_middleware}"
+    )
 
     # Verify requirements.txt content
     actual_requirements = (repo_path / "requirements.txt").read_text()
-    assert (
-        actual_requirements == requirements_new
-    ), f"File requirements.txt content mismatch:\nExpected:\n{requirements_new}\n\nActual:\n{actual_requirements}"
+    assert actual_requirements == requirements_new, (
+        f"File requirements.txt content mismatch:\nExpected:\n{requirements_new}\n\nActual:\n{actual_requirements}"
+    )
 
 
 def test_runner_bug_fix_cascade(large_codebase_repo, mock_inquirer_accept_all):
@@ -1807,35 +1807,35 @@ with Database('sqlite:///app.db') as db:
 
     # Verify all file contents match exactly line-by-line
     actual_database = (repo_path / "src" / "utils" / "database.py").read_text()
-    assert (
-        actual_database == expected_database_py
-    ), f"File src/utils/database.py content mismatch:\nExpected:\n{expected_database_py}\n\nActual:\n{actual_database}"
+    assert actual_database == expected_database_py, (
+        f"File src/utils/database.py content mismatch:\nExpected:\n{expected_database_py}\n\nActual:\n{actual_database}"
+    )
 
     actual_connection_pool = (
         repo_path / "src" / "utils" / "connection_pool.py"
     ).read_text()
-    assert (
-        actual_connection_pool == expected_connection_pool_py
-    ), f"File src/utils/connection_pool.py content mismatch:\nExpected:\n{expected_connection_pool_py}\n\nActual:\n{actual_connection_pool}"
+    assert actual_connection_pool == expected_connection_pool_py, (
+        f"File src/utils/connection_pool.py content mismatch:\nExpected:\n{expected_connection_pool_py}\n\nActual:\n{actual_connection_pool}"
+    )
 
     actual_product_controller = (
         repo_path / "src" / "controllers" / "product_controller.py"
     ).read_text()
-    assert (
-        actual_product_controller == expected_product_controller_py
-    ), f"File src/controllers/product_controller.py content mismatch:\nExpected:\n{expected_product_controller_py}\n\nActual:\n{actual_product_controller}"
+    assert actual_product_controller == expected_product_controller_py, (
+        f"File src/controllers/product_controller.py content mismatch:\nExpected:\n{expected_product_controller_py}\n\nActual:\n{actual_product_controller}"
+    )
 
     actual_test_db_connections = (
         repo_path / "tests" / "integration" / "test_database_connections.py"
     ).read_text()
-    assert (
-        actual_test_db_connections == expected_test_database_connections_py
-    ), f"File tests/integration/test_database_connections.py content mismatch:\nExpected:\n{expected_test_database_connections_py}\n\nActual:\n{actual_test_db_connections}"
+    assert actual_test_db_connections == expected_test_database_connections_py, (
+        f"File tests/integration/test_database_connections.py content mismatch:\nExpected:\n{expected_test_database_connections_py}\n\nActual:\n{actual_test_db_connections}"
+    )
 
     actual_database_md = (repo_path / "docs" / "database.md").read_text()
-    assert (
-        actual_database_md == expected_database_md
-    ), f"File docs/database.md content mismatch:\nExpected:\n{expected_database_md}\n\nActual:\n{actual_database_md}"
+    assert actual_database_md == expected_database_md, (
+        f"File docs/database.md content mismatch:\nExpected:\n{expected_database_md}\n\nActual:\n{actual_database_md}"
+    )
 
 
 def test_runner_mixed_operations_chaos(large_codebase_repo, mock_inquirer_accept_all):
@@ -2298,24 +2298,24 @@ python -m pytest tests/
     # Verify all new file contents match exactly line-by-line
     for file_path, expected_content in new_files.items():
         actual_content = (repo_path / file_path).read_text(encoding="utf-8")
-        assert (
-            actual_content == expected_content
-        ), f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        assert actual_content == expected_content, (
+            f"File {file_path} content mismatch:\nExpected:\n{expected_content}\n\nActual:\n{actual_content}"
+        )
 
     # Verify renamed/modified file contents match exactly
     actual_formatters = (repo_path / "src" / "utils" / "formatters.py").read_text(
         encoding="utf-8"
     )
-    assert (
-        actual_formatters == expected_formatters
-    ), f"File src/utils/formatters.py content mismatch:\nExpected:\n{expected_formatters}\n\nActual:\n{actual_formatters}"
+    assert actual_formatters == expected_formatters, (
+        f"File src/utils/formatters.py content mismatch:\nExpected:\n{expected_formatters}\n\nActual:\n{actual_formatters}"
+    )
 
     actual_user = (repo_path / "src" / "models" / "user.py").read_text(encoding="utf-8")
-    assert (
-        actual_user == expected_user_py
-    ), f"File src/models/user.py content mismatch:\nExpected:\n{expected_user_py}\n\nActual:\n{actual_user}"
+    assert actual_user == expected_user_py, (
+        f"File src/models/user.py content mismatch:\nExpected:\n{expected_user_py}\n\nActual:\n{actual_user}"
+    )
 
     actual_readme = (repo_path / "README.md").read_text(encoding="utf-8")
-    assert (
-        actual_readme == expected_readme
-    ), f"File README.md content mismatch:\nExpected:\n{expected_readme}\n\nActual:\n{actual_readme}"
+    assert actual_readme == expected_readme, (
+        f"File README.md content mismatch:\nExpected:\n{expected_readme}\n\nActual:\n{actual_readme}"
+    )

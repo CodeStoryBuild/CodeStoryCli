@@ -66,21 +66,20 @@ app.command(name="clean")(clean.main)
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
-        False, "--version", "-V",
+        False,
+        "--version",
+        "-V",
         callback=version_callback,
-        help="Show version and exit"
+        help="Show version and exit",
     ),
     model: Optional[str] = typer.Option(
         None,
         "--model",
         "-m",
-        help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.0-flash-exp)"
+        help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.0-flash-exp)",
     ),
     api_key: Optional[str] = typer.Option(
-        None,
-        "--api-key",
-        "-k",
-        help="API key for the model provider"
+        None, "--api-key", "-k", help="API key for the model provider"
     ),
 ) -> None:
     """

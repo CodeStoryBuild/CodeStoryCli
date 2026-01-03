@@ -36,9 +36,9 @@ def assert_is_atomic(chunk: DiffChunk):
         return True
     elif total_items == 2:
         # Must be exactly 1 removal and 1 addition at matching relative positions
-        assert (
-            len(removals) == 1 and len(additions) == 1
-        ), f"Atomic chunk with 2 items must have 1 removal and 1 addition, got {len(removals)} removals and {len(additions)} additions"
+        assert len(removals) == 1 and len(additions) == 1, (
+            f"Atomic chunk with 2 items must have 1 removal and 1 addition, got {len(removals)} removals and {len(additions)} additions"
+        )
 
         # Check that they're at matching relative positions in old file
         removal = removals[0]
@@ -46,9 +46,9 @@ def assert_is_atomic(chunk: DiffChunk):
         rel_removal = removal.old_line - chunk.old_start
         rel_addition = addition.old_line - chunk.old_start
 
-        assert (
-            rel_removal == rel_addition
-        ), f"Modification atomic chunk has mismatched positions: removal at rel {rel_removal}, addition at rel {rel_addition}"
+        assert rel_removal == rel_addition, (
+            f"Modification atomic chunk has mismatched positions: removal at rel {rel_removal}, addition at rel {rel_addition}"
+        )
         return True
     else:
         pytest.fail(
@@ -209,12 +209,12 @@ def test_atomic_mixed_pattern():
         for c in atomic_chunks
         if len(c.parsed_content) == 1 and isinstance(c.parsed_content[0], Addition)
     ]
-    assert (
-        len(modifications) == 2
-    ), f"Expected 2 modifications, got {len(modifications)}"
-    assert (
-        len(pure_additions) == 1
-    ), f"Expected 1 pure addition, got {len(pure_additions)}"
+    assert len(modifications) == 2, (
+        f"Expected 2 modifications, got {len(modifications)}"
+    )
+    assert len(pure_additions) == 1, (
+        f"Expected 1 pure addition, got {len(pure_additions)}"
+    )
 
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
@@ -441,9 +441,9 @@ def test_atomic_non_matching_line_numbers():
         for c in atomic_chunks
         if len(c.parsed_content) == 1 and isinstance(c.parsed_content[0], Removal)
     ]
-    assert (
-        len(modifications) == 2
-    ), f"Expected 2 modifications, got {len(modifications)}"
+    assert len(modifications) == 2, (
+        f"Expected 2 modifications, got {len(modifications)}"
+    )
     assert len(pure_removals) == 1, f"Expected 1 pure removal, got {len(pure_removals)}"
 
     # Should preserve input

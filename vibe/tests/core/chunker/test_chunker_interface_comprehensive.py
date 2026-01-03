@@ -217,7 +217,9 @@ class TestChunkerErrorHandling:
             chunker.chunk([1, 2, 3])  # Not chunk objects
 
     @pytest.mark.parametrize("name,chunker_class,chunker_kwargs", CHUNKERS_TO_TEST)
-    def test_chunker_handles_malformed_chunks(self, name, chunker_class, chunker_kwargs):
+    def test_chunker_handles_malformed_chunks(
+        self, name, chunker_class, chunker_kwargs
+    ):
         """Test chunkers with malformed chunk objects."""
         chunker = chunker_class(**chunker_kwargs)
 
