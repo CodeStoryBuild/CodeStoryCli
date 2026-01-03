@@ -55,6 +55,7 @@ class GlobalConfig:
     display_diff_type: Literal["semantic", "git"] = "semantic"
     custom_language_config: str | None = None
     batching_strategy: Literal["auto", "requests", "prompt"] = "auto"
+    custom_embedding_model: str | None = None
 
     constraints = {
         "model": StringConstraint(),
@@ -87,6 +88,7 @@ class GlobalConfig:
         "batching_strategy": LiteralTypeConstraint(
             allowed=["auto", "requests", "prompt"]
         ),
+        "custom_embedding_model": StringConstraint(),
     }
 
     descriptions = {
@@ -106,6 +108,7 @@ class GlobalConfig:
         "display_diff_type": "Type of diff to display when showing diffs (semantic or git)",
         "custom_language_config": "Path to custom language configuration JSON file to override built-in language configs",
         "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
+        "custom_embedding_model": "FastEmbed supported text embedding model (will download on first run if not cached)",
     }
 
     arg_options = {
@@ -125,6 +128,7 @@ class GlobalConfig:
         "display_diff_type": ["--display-diff-type"],
         "custom_language_config": ["--custom-language-config"],
         "batching_strategy": ["--batching-strategy"],
+        "custom_embedding_model": ["--custom-embedding-model"],
     }
 
     @classmethod

@@ -91,6 +91,17 @@ class AIServiceError(CodestoryError):
     pass
 
 
+class EmbeddingModelError(CodestoryError):
+    """
+    Custom embedding model errors.
+
+    Raised when custom embedding model fails to download,
+    is invalid, or encounters errors during initialization.
+    """
+
+    pass
+
+
 class FileSystemError(CodestoryError):
     """
     File system operation errors.

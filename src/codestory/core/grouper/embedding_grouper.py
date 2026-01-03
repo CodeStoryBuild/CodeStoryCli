@@ -139,10 +139,11 @@ class EmbeddingGrouper(LogicalGrouper):
         model: CodeStoryAdapter,
         batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
         max_tokens: int = 4096,
+        custom_embedding_model: str | None = None,
     ):
         self.model = model
         self.batching_strategy = batching_strategy
-        self.embedder = Embedder()
+        self.embedder = Embedder(custom_embedding_model)
         self.clusterer = Clusterer()
         self.patch_cutoff_chars = 1000
         self.max_tokens = max_tokens

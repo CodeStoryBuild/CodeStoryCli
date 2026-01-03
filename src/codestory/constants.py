@@ -76,3 +76,7 @@ CLOUD_PROVIDERS = {
     for provider in ProviderFactory.get_supported_providers()
     if provider not in LOCAL_PROVIDERS and provider not in UNSUPPORTED_PROVIDERS
 }
+
+# Embedding model constants
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+CUSTOM_EMBEDDING_CACHE_DIR = Path(user_config_dir(APP_NAME)) / "embeddings_cache"
