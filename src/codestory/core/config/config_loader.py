@@ -19,12 +19,17 @@
 import os
 from dataclasses import fields
 from pathlib import Path
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any
 
 import tomllib
+from loguru import logger
 
 from codestory.constants import ENV_APP_PREFIX, GLOBAL_CONFIG_FILE, LOCAL_CONFIG_FILE
+from codestory.core.config.type_constraints import TypeConstraint
 from codestory.core.exceptions import ConfigurationError
+
+if TYPE_CHECKING:
+    from codestory.context import CodeStoryConfig
 
 
 class ConfigLoader:
@@ -32,7 +37,7 @@ class ConfigLoader:
 
     @staticmethod
     def get_full_config(
-        config_model: type[Any],
+        config_model: "CodeStoryConfig",
         input_args: dict,
         local_config_path: Path = LOCAL_CONFIG_FILE,
         env_app_prefix: str = ENV_APP_PREFIX,
@@ -98,7 +103,7 @@ class ConfigLoader:
 
     @staticmethod
     def build(
-        config_model: type[Any],
+        config_model: "CodeStoryConfig",
         sources: list[dict],
     ):
         """Builds the configuration model by merging data from sources in priority order, filling in defaults where needed."""
@@ -129,17 +134,22 @@ class ConfigLoader:
                 remaining_keys -= contributions
 
         coerced_data = {}
-        # If the model provides a __constraints__ mapping, use it
-        constraints_map = getattr(config_model, "__constraints__", {})
+        constraints_map = config_model.constraints
 
         for field in fields(config_model):
             name = field.name
             if name in final_data:
                 value = final_data[name]
-                coerced_value = ConfigLoader.coerce_value(
-                    value, field.type, field_name=name, constraints_map=constraints_map
-                )
-                coerced_data[name] = coerced_value
+                constraint = constraints_map.get(name)
+
+                try:
+                    coerced_value = ConfigLoader.coerce_value(value, constraint)
+                    coerced_data[name] = coerced_value
+                except ConfigurationError as e:
+                    logger.error(
+                        f"Failed to coerce config value for field {name!r} with value {value!r}: {e}. Skipping field."
+                    )
+                    continue
 
         model = config_model(**coerced_data)
 
@@ -149,58 +159,16 @@ class ConfigLoader:
     @staticmethod
     def coerce_value(
         value: Any,
-        typ: Any,
-        field_name: str | None = None,
-        constraints_map: dict | None = None,
+        constraint: TypeConstraint | None = None,
     ) -> Any:
-        """Coerce a value to the given type with manual validation.
+        """Coerce a value using the constraint from constraints_map.
 
-        If a `constraints_map` is provided and contains a constraint for
-        `field_name`, use that constraint's `coerce` method.
+        Type is determined solely by constraints[field_name], not by type annotations.
         """
 
-        # If we have a constraint for this field, prefer it
-        if constraints_map and field_name and field_name in constraints_map:
-            constraint = constraints_map[field_name]
+        # Use constraint if available
+        if constraint:
             return constraint.coerce(value)
 
-        origin = get_origin(typ)
-        args = get_args(typ)
-
-        if origin is Union:
-            # Handle Optional types like str | None
-            non_none_types = [arg for arg in args if arg is not type(None)]
-            if value is None:
-                if type(None) in args:
-                    return None
-                else:
-                    raise ConfigurationError(f"None not allowed for type {typ}")
-            for subtyp in non_none_types:
-                try:
-                    return ConfigLoader.coerce_value(value, subtyp)
-                except ConfigurationError:
-                    continue
-            raise ConfigurationError(f"Cannot coerce {value} to {typ}")
-        elif origin is Literal:
-            if value in args:
-                return value
-            raise ConfigurationError(f"{value} not in allowed values {args} for {typ}")
-        elif typ is str:
-            return str(value)
-        elif typ is int:
-            try:
-                return int(value)
-            except Exception as e:
-                raise ConfigurationError() from e
-        elif typ is float:
-            try:
-                return float(value)
-            except Exception as e:
-                raise ConfigurationError() from e
-        elif typ is bool:
-            if isinstance(value, str):
-                return value.lower() in ("true", "1", "yes", "on")
-            return bool(value)
-        else:
-            # For other types, assume it's already correct or str
-            return value
+        # No constraint - return value as-is
+        return value

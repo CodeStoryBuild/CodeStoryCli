@@ -36,6 +36,12 @@ class TestConfig:
     number: int = 0
     flag: bool = False
 
+    constraints = {}
+
+    descriptions = {}
+
+    arg_options = {}
+
 
 # -----------------------------------------------------------------------------
 # ConfigLoader Tests
