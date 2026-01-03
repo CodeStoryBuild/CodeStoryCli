@@ -1,8 +1,8 @@
-# vibecommit
+# vibe
 
-**vibecommit** is a smart CLI wrapper around Git, designed to let developers focus on vibecoding while it handles the rest.  
+**vibe** is a smart CLI wrapper around Git, designed to let developers focus on vibecoding while it handles the rest.  
 It analyzes your diffs, groups changes into meaningful commits, and generates descriptive commit messages using local or remote LLMs.  
-Beyond commits, vibecommit can help manage branches, PRs, protected branches, and linters — so your workflow stays smooth.
+Beyond commits, vibe can help manage branches, PRs, protected branches, and linters — so your workflow stays smooth.
 
 ---
 
