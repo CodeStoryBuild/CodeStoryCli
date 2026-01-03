@@ -52,7 +52,8 @@ def setup_signal_handlers(global_context=None):
 
 def version_callback(value: bool):
     """Show version and exit."""
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, version
+
     if value:
         try:
             version = version("codestory")
