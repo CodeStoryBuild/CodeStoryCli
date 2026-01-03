@@ -131,16 +131,9 @@ def test_precedence_order():
     config, _ = run_config({}, "custom.toml")
     assert config.val == "custom"
 
-    # 3. Local should win if no custom/args
-    # Note: In get_full_config, sources list is: [args, local, env, global]
-    # If custom is present: [args, custom, local, env, global]
-    # Wait, let's check the code in Step 123.
-    # Line 52: sources = [input_args, load_toml(local), load_env, load_toml(global)]
-    # Line 62: sources.insert(1, custom)
-    # So order is: Args, Custom, Local, Env, Global.
+    # order is: Args, Custom, Local, Env, Global.
 
     # Test Local wins over Env/Global (no custom provided)
-    # We need to modify our helper or just run it without custom
     with (
         patch.object(ConfigLoader, "load_toml") as mock_load_toml,
         patch.object(ConfigLoader, "load_env") as mock_load_env,

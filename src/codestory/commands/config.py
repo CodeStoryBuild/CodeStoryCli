@@ -111,9 +111,7 @@ def print_describe_options():
 
     table_data = []
     for config_key, info in sorted(schema.items()):
-        default_str = (
-            str(info["default"]) if info["default"] is not None else "None"
-        )
+        default_str = str(info["default"]) if info["default"] is not None else "None"
         description = _truncate_text(info["description"], 100)
         table_data.append(
             {
@@ -349,9 +347,10 @@ def get_config(key: str | None, scope: str | None) -> None:
 def describe_callback(ctx: typer.Context, param, value: bool):
     if not value or ctx.resilient_parsing:
         return
-    
+
     print_describe_options()
     raise typer.Exit()
+
 
 def main(
     ctx: typer.Context,
