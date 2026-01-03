@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from loguru import logger
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
+
 from .language_mapper import detect_tree_sitter_language
 
 

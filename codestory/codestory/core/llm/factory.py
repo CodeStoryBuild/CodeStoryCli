@@ -1,7 +1,7 @@
 import os
-import httpx
 from dataclasses import dataclass
-from typing import List, Dict, Union, Tuple
+
+import httpx
 from loguru import logger
 
 from ..exceptions import ConfigurationError
@@ -34,7 +34,7 @@ class CodeStoryAdapter:
         # Shared client for connection pooling
         self.client = httpx.Client(timeout=60.0)
 
-    def _parse_model_string(self, model_string: str) -> Tuple[str, str]:
+    def _parse_model_string(self, model_string: str) -> tuple[str, str]:
         """
         Parses 'provider:model' string.
         """
@@ -57,7 +57,7 @@ class CodeStoryAdapter:
         env_var = key_map.get(self.provider)
         return os.getenv(env_var) if env_var else None
 
-    def invoke(self, messages: Union[str, List[Dict[str, str]]]) -> str:
+    def invoke(self, messages: str | list[dict[str, str]]) -> str:
         """
         Unified invoke method. Returns the content string.
         """
@@ -88,7 +88,7 @@ class CodeStoryAdapter:
 
     # --- Provider Implementations ---
 
-    def _call_openai(self, messages: List[Dict[str, str]]) -> str:
+    def _call_openai(self, messages: list[dict[str, str]]) -> str:
         if not self.api_key:
             raise ConfigurationError("Missing OPENAI_API_KEY")
 
@@ -108,7 +108,7 @@ class CodeStoryAdapter:
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
 
-    def _call_anthropic(self, messages: List[Dict[str, str]]) -> str:
+    def _call_anthropic(self, messages: list[dict[str, str]]) -> str:
         if not self.api_key:
             raise ConfigurationError("Missing ANTHROPIC_API_KEY")
 
@@ -142,7 +142,7 @@ class CodeStoryAdapter:
         response.raise_for_status()
         return response.json()["content"][0]["text"]
 
-    def _call_gemini(self, messages: List[Dict[str, str]]) -> str:
+    def _call_gemini(self, messages: list[dict[str, str]]) -> str:
         if not self.api_key:
             raise ConfigurationError("Missing GEMINI_API_KEY")
 
@@ -181,7 +181,7 @@ class CodeStoryAdapter:
                 "Gemini refused to generate content (likely safety filter)."
             )
 
-    def _call_ollama(self, messages: List[Dict[str, str]]) -> str:
+    def _call_ollama(self, messages: list[dict[str, str]]) -> str:
         base_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
         # Using Ollama's /api/chat endpoint

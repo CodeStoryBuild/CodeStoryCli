@@ -5,7 +5,8 @@
 
 import json
 import re
-from typing import Callable, List, Dict, Any, Optional
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
@@ -81,7 +82,7 @@ class LLMGrouper(LogicalGrouper):
 
         return json.dumps({"changes": changes}, indent=2)
 
-    def _validate_response(self, data: Any) -> List[Dict[str, Any]]:
+    def _validate_response(self, data: Any) -> list[dict[str, Any]]:
         """
         Manually validates the JSON structure.
         Expected: { "groups": [ { "group_id":..., "changes":... } ] }
@@ -127,7 +128,7 @@ class LLMGrouper(LogicalGrouper):
 
         return valid_groups
 
-    def _clean_and_parse_json(self, raw_content: str) -> List[Dict[str, Any]]:
+    def _clean_and_parse_json(self, raw_content: str) -> list[dict[str, Any]]:
         """
         Extracts JSON from text and returns the validated list of groups.
         """
@@ -158,7 +159,7 @@ class LLMGrouper(LogicalGrouper):
 
     def _create_commit_groups(
         self,
-        groups_data: List[Dict[str, Any]],
+        groups_data: list[dict[str, Any]],
         all_chunks: list[Chunk | ImmutableChunk],
     ) -> list[CommitGroup]:
         """

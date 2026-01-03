@@ -20,12 +20,12 @@
 # -----------------------------------------------------------------------------
 
 import os
-import tomllib
 from dataclasses import fields
 from pathlib import Path
 from textwrap import shorten
 from typing import Any, Literal
 
+import tomllib
 import typer
 from colorama import Fore, Style, init
 from platformdirs import user_config_dir
