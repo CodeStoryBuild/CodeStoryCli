@@ -52,6 +52,7 @@ class GlobalConfig:
     silent: bool = False
     ask_for_commit_message: bool = False
     display_diff_type: Literal["semantic", "git"] = "semantic"
+    custom_language_config: str | None = None
 
     constraints = {
         "model": StringConstraint(),
@@ -81,6 +82,7 @@ class GlobalConfig:
         "silent": BoolConstraint(),
         "ask_for_commit_message": BoolConstraint(),
         "display_diff_type": LiteralTypeConstraint(allowed=["semantic", "git"]),
+        "custom_language_config": StringConstraint(),
     }
 
     descriptions = {
@@ -97,6 +99,7 @@ class GlobalConfig:
         "silent": "Do not output any text to the console, except for prompting acceptance",
         "ask_for_commit_message": "Allow asking you to provide commit messages to optionally override the auto generated ones",
         "display_diff_type": "Type of diff to display when showing diffs (semantic or git)",
+        "custom_language_config": "Path to custom language configuration JSON file to override built-in language configs",
     }
 
     arg_options = {
@@ -113,6 +116,7 @@ class GlobalConfig:
         "silent": ["--silent", "-s"],
         "ask_for_commit_message": ["--ask-for-commit-message"],
         "display_diff_type": ["--display-diff-type"],
+        "custom_language_config": ["--custom-language-config"],
     }
 
     @classmethod
