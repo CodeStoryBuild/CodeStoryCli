@@ -134,10 +134,7 @@ class CleanRunner:
     def _is_ignored(self, commit: str, ignore: Sequence[str] | None) -> bool:
         if not ignore:
             return False
-        for token in ignore:
-            if commit.startswith(token):
-                return True
-        return False
+        return any(commit.startswith(token) for token in ignore)
 
     def _count_line_changes(self, commit: str) -> int | None:
         # Sum additions + deletions between parent and commit.
