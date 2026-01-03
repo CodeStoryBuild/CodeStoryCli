@@ -101,7 +101,9 @@ class ExpandPipeline:
                     lines = meta.splitlines()
                     # Safety check on output format
                     if len(lines) < 7:
-                        raise ExpansionError(f"Failed to parse metadata for commit {commit}")
+                        raise ExpansionError(
+                            f"Failed to parse metadata for commit {commit}"
+                        )
 
                     tree_hash = lines[0]
                     author_name = lines[1]
@@ -131,7 +133,7 @@ class ExpandPipeline:
                         ["commit-tree", tree_hash, "-p", current_parent],
                         input_text=message,
                         env=env,
-                    ).strip() # git commit tree add trailing newline
+                    ).strip()  # git commit tree add trailing newline
 
                 final_head = current_parent
 
