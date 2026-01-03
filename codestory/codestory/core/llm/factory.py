@@ -5,9 +5,7 @@ import httpx
 from dataclasses import dataclass
 from typing import List, Dict, Union, Tuple
 from loguru import logger
-
 from ..exceptions import ConfigurationError
-
 
 @dataclass
 class ModelConfig:
