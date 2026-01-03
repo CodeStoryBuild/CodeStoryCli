@@ -227,11 +227,12 @@ def main(
 
 def load_env(path=".env"):
     try:
-        for line in open(path):
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            key, _, value = line.partition("=")
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                key, _, value = line.partition("=")
             os.environ[key] = value
     except FileNotFoundError:
         pass

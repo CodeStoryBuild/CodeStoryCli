@@ -29,10 +29,7 @@ class RangeTypeConstraint(TypeConstraint):
         try:
             if isinstance(value, str):
                 # allow numeric strings
-                if "." in value:
-                    v = float(value)
-                else:
-                    v = int(value)
+                v = float(value) if "." in value else int(value)
             else:
                 v = value
 

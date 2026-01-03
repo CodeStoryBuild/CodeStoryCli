@@ -137,9 +137,7 @@ class SecretScanner:
         if file_path is None:
             return False
         name_str = self._decode_bytes(file_path)
-        if self.file_blocklist_regex.match(name_str):
-            return True
-        return False
+        return bool(self.file_blocklist_regex.match(name_str))
 
     def is_extension_ignored(self, file_path: bytes | None) -> bool:
         if file_path is None:
