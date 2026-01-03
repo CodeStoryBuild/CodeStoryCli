@@ -4,7 +4,7 @@
 #
 # This file is part of DSLATE.
 #
-# DSLATE is available under a dual-license:
+# codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
 #      - See LICENSE.txt and LICENSE-AGPL.txt
 #      - Online: https://www.gnu.org/licenses/agpl-3.0.html
@@ -109,8 +109,8 @@ def test_version_callback_installed(mock_version, mock_echo):
     with pytest.raises(typer.Exit):
         version_callback(True)
 
-    mock_version.assert_called_once_with("dslate")
-    mock_echo.assert_called_once_with("dslate version 1.2.3")
+    mock_version.assert_called_once_with("codestory")
+    mock_echo.assert_called_once_with("codestory version 1.2.3")
 
 
 @patch("typer.echo")
@@ -122,4 +122,4 @@ def test_version_callback_development(mock_version, mock_echo):
     with pytest.raises(typer.Exit):
         version_callback(True)
 
-    mock_echo.assert_called_once_with("dslate version: development")
+    mock_echo.assert_called_once_with("codestory version: development")

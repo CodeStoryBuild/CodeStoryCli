@@ -4,7 +4,7 @@
 #
 # This file is part of DSLATE.
 #
-# DSLATE is available under a dual-license:
+# codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
 #      - See LICENSE.txt and LICENSE-AGPL.txt
 #      - Online: https://www.gnu.org/licenses/agpl-3.0.html
@@ -78,19 +78,19 @@ def mocks():
 def context_manager_deps(mocks):
     with (
         patch(
-            "dslate.core.semantic_grouper.context_manager.ScopeMapper",
+            "codestory.core.semantic_grouper.context_manager.ScopeMapper",
             return_value=mocks["scope_mapper"],
         ),
         patch(
-            "dslate.core.semantic_grouper.context_manager.SymbolMapper",
+            "codestory.core.semantic_grouper.context_manager.SymbolMapper",
             return_value=mocks["symbol_mapper"],
         ),
         patch(
-            "dslate.core.semantic_grouper.context_manager.SymbolExtractor",
+            "codestory.core.semantic_grouper.context_manager.SymbolExtractor",
             return_value=mocks["symbol_extractor"],
         ),
         patch(
-            "dslate.core.semantic_grouper.context_manager.CommentMapper",
+            "codestory.core.semantic_grouper.context_manager.CommentMapper",
             return_value=mocks["comment_mapper"],
         ),
     ):

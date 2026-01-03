@@ -1,8 +1,8 @@
-DSLATE — Dual License Agreement
+codestory — Dual License Agreement
 Copyright (c) 2025 Adem Can
 All Rights Reserved.
 
-This software, "dslate", is offered under a dual licensing model. You may use this software under the terms of EITHER:
+This software, "codestory", is offered under a dual licensing model. You may use this software under the terms of EITHER:
 
     (1) The Affero General Public License (AGPL) Version 3, OR
     (2) A Commercial License granted by the copyright holder, Adem Can.
@@ -13,7 +13,7 @@ You must choose ONE license to operate under.
 1. Open Source License Option (AGPLv3)
 -------------------------------------------------------------------
 
-If you choose to use dslate under the terms of the AGPLv3, the following applies:
+If you choose to use codestory under the terms of the AGPLv3, the following applies:
 
 1.1 License Terms  
 The complete license terms of the GNU Affero General Public License Version 3 (AGPLv3) are included in the file:
@@ -38,7 +38,7 @@ Use the Commercial License instead.
 2. Commercial License Option
 -------------------------------------------------------------------
 
-If your use of dslate is ANY of the following, you MUST obtain a commercial license:
+If your use of codestory is ANY of the following, you MUST obtain a commercial license:
 
     - Use in a company, organization, enterprise, or government.
     - Use in any product, service, or workflow that generates revenue.
@@ -54,7 +54,7 @@ To purchase a commercial license, contact:
 The commercial license overrides the AGPLv3 terms and grants rights for proprietary use, closed-source development, internal enterprise use, SaaS deployment, and other non-AGPL-compliant use cases.
 
 2.2 Unlicensed Commercial Use  
-Any commercial usage of dslate without a valid Commercial License is strictly prohibited and constitutes copyright infringement.  
+Any commercial usage of codestory without a valid Commercial License is strictly prohibited and constitutes copyright infringement.  
 The Licensor reserves the right to pursue legal remedies for unauthorized use.
 
 -------------------------------------------------------------------
@@ -62,11 +62,11 @@ The Licensor reserves the right to pursue legal remedies for unauthorized use.
 -------------------------------------------------------------------
 
 3.1 Ownership  
-dslate is the exclusive property of Adem Can.  
+codestory is the exclusive property of Adem Can.  
 All rights not expressly granted under the AGPLv3 or Commercial License are reserved.
 
 3.2 No Warranty  
-dslate is provided “AS IS”, without any warranty of any kind, express or implied.  
+codestory is provided “AS IS”, without any warranty of any kind, express or implied.  
 The Licensor is not liable for any damages arising out of the use or inability to use the software.
 
 3.3 Governing Law  
@@ -74,4 +74,4 @@ This license agreement is governed by the laws of the United States, without reg
 
 -------------------------------------------------------------------
 
-By installing, running, modifying, or using dslate, you acknowledge that you have read this document and agree to abide by the terms of EITHER the AGPLv3 or the Commercial License.
+By installing, running, modifying, or using codestory, you acknowledge that you have read this document and agree to abide by the terms of EITHER the AGPLv3 or the Commercial License.

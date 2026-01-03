@@ -1,10 +1,10 @@
 # -----------------------------------------------------------------------------
-# dslate - Dual Licensed Software
+# codestory - Dual Licensed Software
 # Copyright (c) 2025 Adem Can
 #
 # This file is part of DSLATE.
 #
-# DSLATE is available under a dual-license:
+# codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
 #      - See LICENSE.txt and LICENSE-AGPL.txt
 #      - Online: https://www.gnu.org/licenses/agpl-3.0.html

@@ -4,7 +4,7 @@
 #
 # This file is part of DSLATE.
 #
-# DSLATE is available under a dual-license:
+# codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
 #      - See LICENSE.txt and LICENSE-AGPL.txt
 #      - Online: https://www.gnu.org/licenses/agpl-3.0.html
@@ -32,7 +32,7 @@ from codestory.core.validation import (
     validate_git_repository,
     sanitize_user_input,
 )
-from dslate.core.exceptions import (
+from codestory.core.exceptions import (
     ValidationError,
     GitError,
     DetachedHeadError,

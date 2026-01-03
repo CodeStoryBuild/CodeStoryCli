@@ -4,7 +4,7 @@
 #
 # This file is part of DSLATE.
 #
-# DSLATE is available under a dual-license:
+# codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
 #      - See LICENSE.txt and LICENSE-AGPL.txt
 #      - Online: https://www.gnu.org/licenses/agpl-3.0.html
@@ -30,7 +30,7 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 # -----------------------------------------------------------------------------
 
 
-@patch("dslate.core.semantic_grouper.symbol_extractor.QueryManager")
+@patch("codestory.core.semantic_grouper.symbol_extractor.QueryManager")
 def test_extract_defined_symbols(MockQueryManager):
     # Setup QueryManager mock
     qm = MockQueryManager.return_value
@@ -69,7 +69,7 @@ def test_extract_defined_symbols(MockQueryManager):
     assert kwargs["query_type"] == "token_definition"
 
 
-@patch("dslate.core.semantic_grouper.symbol_extractor.QueryManager")
+@patch("codestory.core.semantic_grouper.symbol_extractor.QueryManager")
 def test_extract_defined_symbols_empty(MockQueryManager):
     qm = MockQueryManager.return_value
     qm.run_query.return_value = {}

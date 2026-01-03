@@ -210,7 +210,7 @@ __marimo__/
 vibe_playground/
 *.exe
 *.dmg
-dslateconfig.toml
+codestoryconfig.toml
 
 # docs
-dslate/site
+codestory/site
