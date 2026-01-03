@@ -251,12 +251,18 @@ def detect_tree_sitter_language(file_path: str, file_content: str = "") -> str |
     path_obj = Path(file_path)
     filename = path_obj.name.lower()
 
+    name_with_spaces = path_obj.name.strip().lower()
+
+    # b. Normalize by removing all internal whitespace
+    # This turns 'my go. mod' or 'pack age.json' into 'mygo.mod' or 'package.json'
+    filename_normalized = re.sub(r"\s+", "", name_with_spaces)
+
     # 1. Check Exact Filenames (Highest Priority)
-    if filename in FILENAME_MAP:
-        return FILENAME_MAP[filename]
+    if filename_normalized in FILENAME_MAP:
+        return FILENAME_MAP[filename_normalized]
 
     # 2. Check Extension
-    extension = path_obj.suffix.lower()
+    extension = path_obj.suffix.lower().strip()
     lang_candidate = EXTENSION_MAP.get(extension)
 
     # 3. Handle Ambiguous Extensions
