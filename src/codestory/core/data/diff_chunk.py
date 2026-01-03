@@ -170,6 +170,9 @@ class DiffChunk:
 
         Two chunks are disjoint if their old file ranges don't overlap.
         This is the key property that allows chunks to be applied in any order.
+        
+        For pure insertions at the same old_start, we use abs_new_line to determine
+        if they're at different insertion points.
         """
         if not other or self.canonical_path() != other.canonical_path():
             # Different files are always disjoint
@@ -179,6 +182,11 @@ class DiffChunk:
         self_end = self_start + self.old_len()
         other_start = other.old_start or 0
         other_end = other_start + other.old_len()
+
+        # Special case: Two pure insertions at the same old_start
+        # Compare insertion points (min abs_new_line) to determine if disjoint
+        if self.old_len() == 0 and other.old_len() == 0 and self_start == other_start:
+            return self.get_min_abs_line() != other.get_min_abs_line()
 
         # Disjoint if one ends before the other starts
         return self_end <= other_start or other_end <= self_start
