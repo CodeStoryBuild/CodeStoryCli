@@ -110,7 +110,7 @@ def git_not_found() -> GitError:
     """Create a GitError for when git is not available."""
     return GitError(
         "Git is not installed or not in PATH",
-        "Please install git and ensure it's available in your PATH environment variable"
+        "Please install git and ensure it's available in your PATH environment variable",
     )
 
 
@@ -118,7 +118,7 @@ def not_git_repository(path: str = ".") -> GitError:
     """Create a GitError for when not in a git repository."""
     return GitError(
         f"Not a git repository: {path}",
-        "Run 'git init' to initialize a git repository or navigate to an existing repository"
+        "Run 'git init' to initialize a git repository or navigate to an existing repository",
     )
 
 
@@ -126,7 +126,7 @@ def invalid_commit_hash(commit_hash: str) -> ValidationError:
     """Create a ValidationError for invalid commit hashes."""
     return ValidationError(
         f"Invalid commit hash: {commit_hash}",
-        "Commit hashes must be 4-40 hexadecimal characters"
+        "Commit hashes must be 4-40 hexadecimal characters",
     )
 
 
@@ -141,7 +141,7 @@ def api_key_missing(service: str) -> ConfigurationError:
     """Create a ConfigurationError for missing API keys."""
     return ConfigurationError(
         f"Missing API key for {service}",
-        "Set the API key using environment variable or run setup command"
+        "Set the API key using environment variable or run setup command",
     )
 
 
@@ -149,5 +149,5 @@ def ai_service_timeout(service: str, timeout: int) -> AIServiceError:
     """Create an AIServiceError for API timeouts."""
     return AIServiceError(
         f"AI service '{service}' timed out after {timeout} seconds",
-        "Try again or increase the timeout setting in configuration"
+        "Try again or increase the timeout setting in configuration",
     )
