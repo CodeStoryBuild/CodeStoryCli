@@ -45,6 +45,7 @@ class UnionFind:
         if root_i != root_j:
             self.parent[root_j] = root_i
 
+
 @dataclass
 class Scope:
     """Represents a structural scope like a function or class."""
@@ -65,6 +66,7 @@ class Symbol:
     type: str
     definition_scope_id: str
 
+
 @dataclass
 class AnalysedHunk:
     """An internal representation of a single, continuous hunk range."""
@@ -76,15 +78,17 @@ class AnalysedHunk:
     structural_scope_id: str = ""
     used_definition_scope_ids: set[str] = field(default_factory=set)
 
+
 @dataclass
 class AnalysisContext:
     """Holds all necessary analysis artifacts for a single file."""
+
     # 'Before' state artifacts
     before_ast: Node | None = None
     before_scope_tree: Scope | None = None
     before_symbol_table: dict[str, Symbol] = field(default_factory=dict)
     before_all_scopes: dict[str, Scope] = field(default_factory=dict)
-    
+
     # 'After' state artifacts
     after_ast: Node | None = None
     after_scope_tree: Scope | None = None

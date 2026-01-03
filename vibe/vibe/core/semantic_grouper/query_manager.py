@@ -79,11 +79,15 @@ class QueryManager:
     """
 
     def __init__(self, language_config_path: Traversable):
-        self.language_configs: Dict[str, LanguageConfig] = self._init_configs(language_config_path)
+        self.language_configs: Dict[str, LanguageConfig] = self._init_configs(
+            language_config_path
+        )
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
         self._cursor_cache: Dict[str, Tuple[Query, QueryCursor]] = {}
 
-    def _init_configs(self, language_config_path: Traversable) -> Dict[str, LanguageConfig]:
+    def _init_configs(
+        self, language_config_path: Traversable
+    ) -> Dict[str, LanguageConfig]:
         try:
             with language_config_path.open("r", encoding="utf-8") as fh:
                 config = json.load(fh)
@@ -91,7 +95,9 @@ class QueryManager:
             configs: Dict[str, LanguageConfig] = {}
             # iterate .items() to get (name, config)
             for language_name, language_config in config.items():
-                configs[language_name] = LanguageConfig.from_json_dict(language_name, language_config)
+                configs[language_name] = LanguageConfig.from_json_dict(
+                    language_name, language_config
+                )
             return configs
 
         except OSError as e:
@@ -152,7 +158,7 @@ class QueryManager:
                 return []
 
             query = Query(language, query_src)
-            cursor = QueryCursor(query) 
+            cursor = QueryCursor(query)
             self._cursor_cache[key] = (query, cursor)
         else:
             query, cursor = self._cursor_cache[key]

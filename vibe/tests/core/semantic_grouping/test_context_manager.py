@@ -13,18 +13,24 @@ from vibe.core.semantic_grouper.query_manager import QueryManager
 
 class MockFileReader:
     """Mock file reader for testing."""
-    
+
     def __init__(self):
         # Mock file contents for testing
         self.files = {
-            ("test.py", False): """def hello():
+            (
+                "test.py",
+                False,
+            ): """def hello():
     print("Hello, World!")
 
 class Calculator:
     def add(self, a, b):
         return a + b
 """,
-            ("test.py", True): """def hello():
+            (
+                "test.py",
+                True,
+            ): """def hello():
     print("Hello, World!")
 
 class Calculator:
@@ -34,11 +40,14 @@ class Calculator:
     def subtract(self, a, b):
         return a - b
 """,
-            ("new_file.py", False): """def new_function():
+            (
+                "new_file.py",
+                False,
+            ): """def new_function():
     return "This is new"
 """,
         }
-    
+
     def read(self, path: str, old_content: bool = False) -> Optional[str]:
         """Read file content based on path and version."""
         return self.files.get((path, old_content))

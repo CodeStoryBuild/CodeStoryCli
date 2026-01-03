@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class SymbolMap:
     """Maps line number to symbol classes, to the specific symbols
@@ -12,6 +13,7 @@ class SymbolMap:
     """
 
     line_classes: dict[int, dict[str, set[str]]]
+
 
 @dataclass(frozen=True)
 class ScopeMap:
@@ -46,9 +48,9 @@ with open("language_config.json") as config:
 
 python_config = json_config.get("python")
 
-shared_token_queries : dict = python_config.get("shared_token_queries")
+shared_token_queries: dict = python_config.get("shared_token_queries")
 
-queries : list[str] = []
+queries: list[str] = []
 
 for token_class, token_class_queries in shared_token_queries.items():
     print(token_class_queries)

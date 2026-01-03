@@ -26,6 +26,7 @@ app = typer.Typer(
 # attach commands
 app.command(name="commit")(commit.main)
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """

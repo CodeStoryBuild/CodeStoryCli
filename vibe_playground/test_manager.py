@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from query_manager import QueryManager
 
+
 @dataclass(frozen=True)
 class SymbolMap:
     """Maps line number to symbol classes, to the specific symbols
