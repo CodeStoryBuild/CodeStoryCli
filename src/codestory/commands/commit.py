@@ -74,7 +74,7 @@ def run_commit(
     global_context: GlobalContext,
     target: str | None,
     message: str | None,
-    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"],
+    secret_scanner_aggression: Literal["safe", "standard", "strict", "none"],
     relevance_filter_level: Literal["safe", "standard", "strict", "none"],
     intent: str | None,
     fail_on_syntax_errors: bool,
@@ -101,7 +101,7 @@ def run_commit(
     verify_repo_state(
         global_context.git_commands,
         str(commit_context.target),
-        global_context.auto_accept,
+        global_context.config.auto_accept,
     )
 
     # Create a backup branch for the current working tree state.
@@ -169,18 +169,6 @@ def main(
         "-m",
         help="Context or instructions for the AI to generate the commit message",
     ),
-    secret_scanner_aggression: Literal[
-        "safe", "balanced", "paranoid", "none"
-    ] = typer.Option(
-        "safe", "--secrets-aggression", help="Aggression level for secret scanning."
-    ),
-    relevance_filter_level: Literal[
-        "safe", "standard", "strict", "none"
-    ] = typer.Option(
-        "none",
-        "--relevance-level",
-        help="Relevance filter level for commit generation.",
-    ),
     intent: str | None = typer.Option(
         None,
         "--intent",
@@ -206,18 +194,18 @@ def main(
         # Commit changes with an intent filter
         cst commit --relevance-level safe --intent "refactor abc into a class"
     """
-
+    global_context: GlobalContext = ctx.obj
     with handle_codestory_exception():
-        if relevance_filter_level != "none" and intent is None:
+        if global_context.config.relevance_filter_level != "none" and intent is None:
             raise ValidationError(
-                "Relevance filter intent must be provided when relevance filter is active. (relevance-level != none)",
+                "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
             )
         run_commit(
             ctx.obj,
             target,
             message,
-            secret_scanner_aggression,
-            relevance_filter_level,
+            global_context.config.secret_scanner_aggression,
+            global_context.config.relevance_filter_level,
             intent,
             fail_on_syntax_errors,
         )

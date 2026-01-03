@@ -35,7 +35,7 @@ from codestory.core.data.line_changes import Addition
 
 @dataclass
 class ScannerConfig:
-    aggression: Literal["safe", "balanced", "paranoid"] = "balanced"
+    aggression: Literal["safe", "standard", "strict"] = "safe"
 
     # Entropy threshold (0-8). Standard random base64 keys usually sit > 4.5
     entropy_threshold: float = 4.5
@@ -91,7 +91,7 @@ PATTERNS_BALANCED = [
     r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@",
 ]
 
-PATTERNS_PARANOID = [r"(?i)secret"]
+PATTERNS_STRICT = [r"(?i)secret"]
 
 # -----------------------------------------------------------------------------
 # Entropy Calculation
@@ -126,11 +126,11 @@ class SecretScanner:
     def _compile_content_patterns(self) -> list[Pattern]:
         regex_list = list(PATTERNS_SAFE)
 
-        if self.config.aggression in ["balanced", "paranoid"]:
+        if self.config.aggression in ["balanced", "STRICT"]:
             regex_list.extend(PATTERNS_BALANCED)
 
-        if self.config.aggression == "paranoid":
-            regex_list.extend(PATTERNS_PARANOID)
+        if self.config.aggression == "strict":
+            regex_list.extend(PATTERNS_STRICT)
 
         for block_str in self.config.custom_blocklist:
             regex_list.append(re.escape(block_str))
