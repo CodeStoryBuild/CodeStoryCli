@@ -1,6 +1,6 @@
 import importlib
-import sys
 import signal
+import sys
 
 import typer
 

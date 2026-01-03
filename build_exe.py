@@ -3,11 +3,10 @@
 Build script to create executable for dslate CLI tool.
 """
 
-import os
-import sys
+import importlib.util
 import platform
 import subprocess
-import shutil
+import sys
 from pathlib import Path
 
 

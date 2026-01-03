@@ -1,6 +1,5 @@
 import typer
 from loguru import logger
-from rich.console import Console
 
 from dslate.pipelines.fix_pipeline import FixPipeline
 from dslate.pipelines.commit_init import create_commit_pipeline

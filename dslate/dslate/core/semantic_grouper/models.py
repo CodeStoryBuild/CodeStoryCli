@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from tree_sitter import Node
 from dslate.core.data.chunk import Chunk
+from tree_sitter import Node
 
 
 @dataclass

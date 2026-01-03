@@ -3,7 +3,6 @@ from typing import Optional
 
 import inquirer
 from loguru import logger
-from rich.console import Console
 from rich.progress import Progress
 
 from ..core.chunker.interface import MechanicalChunker

@@ -3,10 +3,8 @@ from typing import Optional
 
 import typer
 from dotenv import load_dotenv
-from platformdirs import user_config_dir
-
 from loguru import logger
-from rich.console import Console
+from platformdirs import user_config_dir
 from rich.traceback import install
 
 from dslate.commands import clean, commit, fix

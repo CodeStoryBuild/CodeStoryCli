@@ -231,7 +231,7 @@ class LangChainGrouper(LogicalGrouper):
                         progress = self._estimate_progress(accumulated_content)
                         on_progress(progress)
         except Exception as e:
-            raise ValueError(f"Error during LLM streaming: {str(e)}")
+            raise ValueError("Error during LLM streaming") from e
 
         if on_progress:
             on_progress(95)
@@ -240,7 +240,7 @@ class LangChainGrouper(LogicalGrouper):
         try:
             parsed_response = self.output_parser.parse(accumulated_content)
         except Exception as e:
-            raise ValueError(f"Failed to parse LLM response: {str(e)}")
+            raise ValueError("Failed to parse LLM response") from e
 
         if on_progress:
             on_progress(100)
