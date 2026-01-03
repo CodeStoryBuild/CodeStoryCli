@@ -143,7 +143,7 @@ class SemanticGrouper:
         elif self.fallback_grouping_strategy == "by_file_extension":
             return Path(path_str).suffix or "(no extension)"
         else:
-            logger.warning(
+            logger.debug(
                 f"Unknown fallback_grouping_strategy '{self.fallback_grouping_strategy}', using 'all_together'"
             )
             return "all"
