@@ -14,7 +14,7 @@ from platformdirs import user_log_path
 from rich.console import Console
 from rich.text import Text
 
-LOG_DIR = user_log_path(appname="VibeCommit")
+LOG_DIR = user_log_path(appname="dslate")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -32,12 +32,12 @@ class StructuredLogger:
         logger.remove()
 
         # Determine log level from environment
-        log_level = os.getenv("VIBE_LOG_LEVEL", "INFO").upper()
-        console_level = os.getenv("VIBE_CONSOLE_LOG_LEVEL", log_level).upper()
+        log_level = os.getenv("DSLATE_LOG_LEVEL", "INFO").upper()
+        console_level = os.getenv("DSLATE_CONSOLE_LOG_LEVEL", log_level).upper()
 
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logfile = LOG_DIR / f"vibe_{timestamp}.log"
+        logfile = LOG_DIR / f"dslate_{timestamp}.log"
 
         # Console sink with Rich formatting
         def console_sink(message):
@@ -115,8 +115,8 @@ def setup_logger(command_name: str, debug: bool = False) -> Path:
     """
     # Override log level if debug is requested
     if debug:
-        os.environ["VIBE_LOG_LEVEL"] = "DEBUG"
-        os.environ["VIBE_CONSOLE_LOG_LEVEL"] = "DEBUG"
+        os.environ["DSLATE_LOG_LEVEL"] = "DEBUG"
+        os.environ["DSLATE_CONSOLE_LOG_LEVEL"] = "DEBUG"
 
     structured_logger = StructuredLogger(command_name)
     return structured_logger.get_logfile()
@@ -168,8 +168,8 @@ def log_user_action(action: str, **context) -> None:
 
 def setup_debug_logging() -> None:
     """Enable debug logging for troubleshooting."""
-    os.environ["VIBE_LOG_LEVEL"] = "DEBUG"
-    os.environ["VIBE_CONSOLE_LOG_LEVEL"] = "DEBUG"
+    os.environ["DSLATE_LOG_LEVEL"] = "DEBUG"
+    os.environ["DSLATE_CONSOLE_LOG_LEVEL"] = "DEBUG"
 
 
 def get_log_directory() -> Path:

@@ -2,7 +2,7 @@ from typing import Optional
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from .factory import ModelConfig, create_llm_model
-from ..config.vibe_config import load_config
+from ..config.dslate_config import load_config
 from loguru import logger
 
 

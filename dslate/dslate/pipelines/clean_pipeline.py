@@ -9,7 +9,7 @@ from rich.console import Console
 from dslate.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
-from vibe.context import GlobalContext, CleanContext
+from dslate.context import GlobalContext, CleanContext
 
 
 class CleanPipeline:

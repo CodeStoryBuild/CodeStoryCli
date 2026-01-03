@@ -10,8 +10,8 @@ from loguru import logger
 
 
 @dataclass
-class VibeConfig:
-    """Configuration for vibe application."""
+class dslateConfig:
+    """Configuration for dslate application."""
 
     model_provider: Optional[str] = None  # e.g., "openai", "gemini", "anthropic"
     model_name: Optional[str] = None  # e.g., "gpt-4", "gemini-2.5-flash"
@@ -24,7 +24,7 @@ class VibeConfig:
         return {k: v for k, v in asdict(self).items() if v is not None}
 
     @classmethod
-    def from_dict(cls, data: dict) -> "VibeConfig":
+    def from_dict(cls, data: dict) -> "dslateConfig":
         """Create config from dictionary."""
         return cls(
             model_provider=data.get("model_provider"),
@@ -37,21 +37,21 @@ class VibeConfig:
 
 def find_config_file(start_path: str = ".") -> Optional[Path]:
     """
-    Find .vibeconfig file by searching up the directory tree from start_path.
+    Find .dslateconfig file by searching up the directory tree from start_path.
 
     Args:
         start_path: Path to start searching from (defaults to current directory)
 
     Returns:
-        Path to .vibeconfig if found, None otherwise
+        Path to .dslateconfig if found, None otherwise
     """
     current = Path(start_path).resolve()
 
     # Search up to root directory
     while True:
-        config_path = current / ".vibeconfig"
+        config_path = current / ".dslateconfig"
         if config_path.exists():
-            logger.debug(f"Found .vibeconfig at {config_path}")
+            logger.debug(f"Found .dslateconfig at {config_path}")
             return config_path
 
         # Check if we've reached the root
@@ -60,19 +60,19 @@ def find_config_file(start_path: str = ".") -> Optional[Path]:
             break
         current = parent
 
-    logger.debug("No .vibeconfig file found")
+    logger.debug("No .dslateconfig file found")
     return None
 
 
-def load_config(start_path: str = ".") -> Optional[VibeConfig]:
+def load_config(start_path: str = ".") -> Optional[dslateConfig]:
     """
-    Load configuration from .vibeconfig file.
+    Load configuration from .dslateconfig file.
 
     Args:
         start_path: Path to start searching for config file
 
     Returns:
-        VibeConfig if file found and valid, None otherwise
+        dslateConfig if file found and valid, None otherwise
     """
     config_path = find_config_file(start_path)
     if not config_path:
@@ -82,21 +82,21 @@ def load_config(start_path: str = ".") -> Optional[VibeConfig]:
         with open(config_path, "r") as f:
             data = json.load(f)
         logger.info(f"Loaded configuration from {config_path}")
-        return VibeConfig.from_dict(data)
+        return dslateConfig.from_dict(data)
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in .vibeconfig: {e}")
+        logger.error(f"Invalid JSON in .dslateconfig: {e}")
         return None
     except Exception as e:
-        logger.error(f"Error loading .vibeconfig: {e}")
+        logger.error(f"Error loading .dslateconfig: {e}")
         return None
 
 
-def save_config(config: VibeConfig, path: str = ".vibeconfig") -> bool:
+def save_config(config: dslateConfig, path: str = ".dslateconfig") -> bool:
     """
-    Save configuration to .vibeconfig file.
+    Save configuration to .dslateconfig file.
 
     Args:
-        config: VibeConfig to save
+        config: dslateConfig to save
         path: Path where to save the config file
 
     Returns:
@@ -108,7 +108,7 @@ def save_config(config: VibeConfig, path: str = ".vibeconfig") -> bool:
         logger.info(f"Saved configuration to {path}")
         return True
     except Exception as e:
-        logger.error(f"Error saving .vibeconfig: {e}")
+        logger.error(f"Error saving .dslateconfig: {e}")
         return False
 
 

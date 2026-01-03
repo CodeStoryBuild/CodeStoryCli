@@ -3,17 +3,17 @@ import typer
 import inquirer
 from loguru import logger
 
-from vibe.context import GlobalContext, CommitContext
-from vibe.pipelines.commit_init import create_commit_pipeline
-from vibe.core.validation import (
+from dslate.context import GlobalContext, CommitContext
+from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
 )
-from vibe.core.exceptions import ValidationError
-from vibe.core.logging.utils import time_block
-from vibe.core.branch_saver.branch_saver import BranchSaver
-from vibe.core.commands.git_commands import GitCommands
+from dslate.core.exceptions import ValidationError
+from dslate.core.logging.utils import time_block
+from dslate.core.branch_saver.branch_saver import BranchSaver
+from dslate.core.commands.git_commands import GitCommands
 
 
 def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:

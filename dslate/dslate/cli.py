@@ -9,19 +9,19 @@ from loguru import logger
 from rich.console import Console
 from rich.traceback import install
 
-from vibe.commands import clean, commit, expand
-from vibe.core.exceptions import GitError, ValidationError, VibeError
-from vibe.core.validation import validate_git_repository
-from vibe.core.logging.logging import setup_logger
+from dslate.commands import clean, commit, expand
+from dslate.core.exceptions import GitError, ValidationError, dslateError
+from dslate.core.validation import validate_git_repository
+from dslate.core.logging.logging import setup_logger
 
 
-from vibe.core.config.config_loader import ConfigLoader
-from vibe.runtimeutil import (
+from dslate.core.config.config_loader import ConfigLoader
+from dslate.runtimeutil import (
     ensure_utf8_output,
     setup_signal_handlers,
     version_callback,
 )
-from vibe.context import GlobalConfig, GlobalContext
+from dslate.context import GlobalConfig, GlobalContext
 
 
 # create app
@@ -95,38 +95,38 @@ def main(
     """
     # default behavior
     if ctx.invoked_subcommand is None:
-        logger.info(ctx.get_help())
-        print("\n[dim]Run 'vibe --help' for more information.[/dim]")
+        print(ctx.get_help())
         raise typer.Exit()
+    else:
 
-    setup_logger(ctx.invoked_subcommand)
+        setup_logger(ctx.invoked_subcommand)
 
-    config_args = setup_config_args(
-        model=model,
-        api_key=api_key,
-        model_temperature=model_temperature,
-        verbose=verbose,
-        auto_accept=auto_accept,
-    )
+        config_args = setup_config_args(
+            model=model,
+            api_key=api_key,
+            model_temperature=model_temperature,
+            verbose=verbose,
+            auto_accept=auto_accept,
+        )
 
-    local_config_path = Path("vibeconfig.toml")
-    env_prefix = "VIBE_"
-    global_config_path = Path(user_config_dir("Vibe")) / "vibeconfig.toml"
-    custom_config_path = Path(custom_config) if custom_config else None
+        local_config_path = Path("dslateconfig.toml")
+        env_prefix = "dslate_"
+        global_config_path = Path(user_config_dir("dslate")) / "dslateconfig.toml"
+        custom_config_path = Path(custom_config) if custom_config else None
 
-    config, used_configs = ConfigLoader.get_full_config(
-        GlobalConfig,
-        config_args,
-        local_config_path,
-        env_prefix,
-        global_config_path,
-        custom_config_path,
-    )
-    logger.info(f"Used {used_configs} to build global context.")
-    global_context = GlobalContext.from_global_config(config, Path(repo_path))
-    ctx.obj = global_context
+        config, used_configs = ConfigLoader.get_full_config(
+            GlobalConfig,
+            config_args,
+            local_config_path,
+            env_prefix,
+            global_config_path,
+            custom_config_path,
+        )
+        logger.info(f"Used {used_configs} to build global context.")
+        global_context = GlobalContext.from_global_config(config, Path(repo_path))
+        ctx.obj = global_context
 
-    validate_git_repository(global_context.git_interface)
+        validate_git_repository(global_context.git_interface)
 
 
 def run_app():
@@ -141,7 +141,7 @@ def run_app():
         # load any .env files
         load_dotenv()
         # launch cli
-        app(prog_name="vibe")
+        app(prog_name="dslate")
 
     except ValidationError as e:
         logger.error(f"[red]Validation Error:[/red] {e.message}")
@@ -156,11 +156,11 @@ def run_app():
         logger.error(f"Git operation failed: {e.message}")
         raise typer.Exit(1)
 
-    except VibeError as e:
+    except dslateError as e:
         logger.error(f"[red]Error:[/red] {e.message}")
         if e.details:
             logger.error(f"[dim]Details: {e.details}[/dim]")
-        logger.error(f"Vibe operation failed: {e.message}")
+        logger.error(f"dslate operation failed: {e.message}")
         raise typer.Exit(1)
 
     except KeyboardInterrupt:

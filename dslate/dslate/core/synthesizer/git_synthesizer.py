@@ -1,5 +1,3 @@
-# vibe/core/synthesizer/synthesizer.py
-
 import os
 import tempfile
 from pathlib import Path

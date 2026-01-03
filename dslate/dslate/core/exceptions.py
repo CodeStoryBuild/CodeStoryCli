@@ -7,17 +7,17 @@ error handling and user experience.
 """
 
 
-class VibeError(Exception):
+class dslateError(Exception):
     """
-    Base exception for all vibe-related errors.
+    Base exception for all dslate-related errors.
 
-    All vibe-specific exceptions should inherit from this class
+    All dslate-specific exceptions should inherit from this class
     to enable consistent error handling throughout the application.
     """
 
     def __init__(self, message: str, details: str = None):
         """
-        Initialize a VibeError.
+        Initialize a dslateError.
 
         Args:
             message: Main error message for the user
@@ -28,7 +28,7 @@ class VibeError(Exception):
         super().__init__(message)
 
 
-class GitError(VibeError):
+class GitError(dslateError):
     """
     Errors related to git operations.
 
@@ -45,7 +45,7 @@ class DetachedHeadError(GitError):
     pass
 
 
-class ValidationError(VibeError):
+class ValidationError(dslateError):
     """
     Input validation errors.
 
@@ -56,7 +56,7 @@ class ValidationError(VibeError):
     pass
 
 
-class ConfigurationError(VibeError):
+class ConfigurationError(dslateError):
     """
     Configuration-related errors.
 
@@ -67,7 +67,7 @@ class ConfigurationError(VibeError):
     pass
 
 
-class AIServiceError(VibeError):
+class AIServiceError(dslateError):
     """
     AI service related errors.
 
@@ -78,7 +78,7 @@ class AIServiceError(VibeError):
     pass
 
 
-class FileSystemError(VibeError):
+class FileSystemError(dslateError):
     """
     File system operation errors.
 
@@ -89,7 +89,7 @@ class FileSystemError(VibeError):
     pass
 
 
-class ChunkingError(VibeError):
+class ChunkingError(dslateError):
     """
     Errors during diff chunking operations.
 
@@ -100,7 +100,7 @@ class ChunkingError(VibeError):
     pass
 
 
-class SynthesizerError(VibeError):
+class SynthesizerError(dslateError):
     """
     Errors during commit synthesis.
 
@@ -111,7 +111,7 @@ class SynthesizerError(VibeError):
     pass
 
 
-class ExpansionError(VibeError):
+class ExpansionError(dslateError):
     """
     Errors during expand command run
     """

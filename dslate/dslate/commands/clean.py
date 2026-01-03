@@ -7,8 +7,8 @@ from dslate.core.validation import (
     validate_ignore_patterns,
     validate_min_size,
 )
-from vibe.core.logging.utils import time_block
-from vibe.context import CleanContext
+from dslate.core.logging.utils import time_block
+from dslate.context import CleanContext
 
 from .expand import main as expand_main
 

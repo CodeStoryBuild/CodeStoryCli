@@ -2,13 +2,13 @@ import typer
 from loguru import logger
 from rich.console import Console
 
-from vibe.pipelines.expand_pipeline import ExpandPipeline
-from vibe.pipelines.commit_init import create_commit_pipeline
-from vibe.core.git_interface.interface import GitInterface
-from vibe.core.validation import validate_commit_hash
-from vibe.core.exceptions import GitError, DetachedHeadError
-from vibe.core.logging.utils import time_block
-from vibe.context import GlobalContext, ExpandContext, CommitContext
+from dslate.pipelines.expand_pipeline import ExpandPipeline
+from dslate.pipelines.commit_init import create_commit_pipeline
+from dslate.core.git_interface.interface import GitInterface
+from dslate.core.validation import validate_commit_hash
+from dslate.core.exceptions import GitError, DetachedHeadError
+from dslate.core.logging.utils import time_block
+from dslate.context import GlobalContext, ExpandContext, CommitContext
 
 
 def get_info(git_interface: GitInterface, expand_context: ExpandContext):

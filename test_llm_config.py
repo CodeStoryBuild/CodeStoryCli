@@ -3,11 +3,11 @@
 import os
 import sys
 
-# Add the vibe module to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vibe"))
+# Add the dslate module to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "dslate"))
 
-from vibe.core.llm import ModelConfig, create_llm_model
-from vibe.core.config import VibeConfig, load_config, save_config
+from dslate.core.llm import ModelConfig, create_llm_model
+from dslate.core.config import dslateConfig, load_config, save_config
 
 
 def test_model_creation():
@@ -64,19 +64,19 @@ def test_model_creation():
 
 
 def test_config_file():
-    """Test .vibeconfig file operations."""
-    print("\nTesting .vibeconfig File Operations...")
+    """Test .dslateconfig file operations."""
+    print("\nTesting .dslateconfig File Operations...")
     print("=" * 60)
 
     # Test creating a config
-    print("\n1. Creating sample .vibeconfig...")
-    test_config = VibeConfig(
+    print("\n1. Creating sample .dslateconfig...")
+    test_config = dslateConfig(
         model_provider="gemini",
         model_name="gemini-2.0-flash-exp",
         temperature=0.7,
     )
 
-    test_file = ".vibeconfig"
+    test_file = ".dslateconfig"
     if save_config(test_config, test_file):
         print(f"✓ Successfully saved {test_file}")
     else:
@@ -134,7 +134,7 @@ def test_model_inference():
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("VIBE MULTI-LLM CONFIGURATION TEST")
+    print("dslate MULTI-LLM CONFIGURATION TEST")
     print("=" * 60)
 
     test_model_creation()
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("TESTS COMPLETED")
     print("=" * 60)
-    print("\nTo use vibe with different models:")
-    print("  vibe --model openai:gpt-4 commit")
-    print("  vibe --model gemini:gemini-2.0-flash-exp expand abc123")
-    print("  vibe --model anthropic:claude-3-5-sonnet-20241022 commit")
+    print("\nTo use dslate with different models:")
+    print("  dslate --model openai:gpt-4 commit")
+    print("  dslate --model gemini:gemini-2.0-flash-exp expand abc123")
+    print("  dslate --model anthropic:claude-3-5-sonnet-20241022 commit")
     print("\nSee LLM_SETUP.md for full documentation.")
     print()
