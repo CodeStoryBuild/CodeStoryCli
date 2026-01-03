@@ -1,5 +1,3 @@
-from importlib.resources import files
-
 from rich.console import Console
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -46,8 +44,7 @@ def create_expand_pipeline(
     file_reader = GitFileReader(git_interface, base_commit_hash, new_commit_hash)
     file_parser = FileParser()
 
-    config_path = files("vibe") / "resources" / "language_config.json"
-    query_manager = QueryManager(config_path)
+    query_manager = QueryManager()
 
     semantic_grouper = SemanticGrouper()
 

@@ -72,7 +72,6 @@ class LangChainGrouper(LogicalGrouper):
             changes.append(data)
         return json.dumps({"changes": changes}, indent=2)
 
-
     def _create_commit_groups(
         self, response: GroupingResponse, original_chunks: List[Chunk]
     ) -> List[CommitGroup]:
@@ -84,7 +83,7 @@ class LangChainGrouper(LogicalGrouper):
         chunk_map = {i: chunk for i, chunk in enumerate(original_chunks)}
 
         commit_groups: List[CommitGroup] = []
-        assigned_chunk_ids: Set[int] = set() # Track chunks that have been assigned
+        assigned_chunk_ids: Set[int] = set()  # Track chunks that have been assigned
 
         for group_response in response.groups:
             group_chunks: List[Chunk] = []
@@ -100,7 +99,7 @@ class LangChainGrouper(LogicalGrouper):
                         f"LLM assigned chunk_id {chunk_id} to multiple groups. "
                         f"It was already assigned. Assigning to the first encountered group."
                     )
-                    continue # Skip duplicate assignment
+                    continue  # Skip duplicate assignment
 
                 # Assign the chunk to this group
                 group_chunks.append(chunk_map[chunk_id])
@@ -135,7 +134,7 @@ class LangChainGrouper(LogicalGrouper):
                     group_id="fallback-unassigned-changes",
                     commit_message="chore: Fallback for unassigned changes",
                     extended_message="These changes were not assigned to a specific group by the AI. "
-                                     "Review them manually."
+                    "Review them manually.",
                 )
             )
 

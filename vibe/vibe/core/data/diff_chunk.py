@@ -27,7 +27,7 @@ class DiffChunk:
     old_file_path: Optional[bytes] = None
     new_file_path: Optional[bytes] = None
 
-    def canonical_path(self):
+    def canonical_path(self) -> bytes | None:
         """
         Returns the relevant path for the chunk.
         For renames or standard chunks, this is new_file_path
@@ -72,7 +72,7 @@ class DiffChunk:
 
     @property
     def has_content(self) -> bool:
-        return len(self.parsed_content) > 0
+        return self.parsed_content is not None and len(self.parsed_content) > 0
 
     # starting line number in the old file (for patch)
     old_start: Optional[int] = None
@@ -80,18 +80,18 @@ class DiffChunk:
     new_start: Optional[int] = None
 
     @property
-    def line_anchor(self):
+    def line_anchor(self) -> tuple[int | None, int | None]:
         """Return some value to get an idea of where the chunk is anchored."""
 
         return (self.old_start, self.new_start)
 
     def old_len(self) -> int:
-        if not self.parsed_content:
+        if self.parsed_content is None:
             return 0
         return sum(1 for c in self.parsed_content if isinstance(c, Removal))
 
     def new_len(self) -> int:
-        if not self.parsed_content:
+        if self.parsed_content is None:
             return 0
         return sum(1 for c in self.parsed_content if isinstance(c, Addition))
 
@@ -122,16 +122,17 @@ class DiffChunk:
 
         final_chunks = []
 
-        for line in self.parsed_content:
-            atomic_chunk = DiffChunk.from_parsed_content_slice(
-                old_file_path=self.old_file_path,
-                new_file_path=self.new_file_path,
-                file_mode=self.file_mode,
-                contains_newline_fallback=self.contains_newline_fallback,
-                contains_newline_marker=self.contains_newline_marker,
-                parsed_slice=[line],
-            )
-            final_chunks.append(atomic_chunk)
+        if self.parsed_content is not None:
+            for line in self.parsed_content:
+                atomic_chunk = DiffChunk.from_parsed_content_slice(
+                    old_file_path=self.old_file_path,
+                    new_file_path=self.new_file_path,
+                    file_mode=self.file_mode,
+                    contains_newline_fallback=self.contains_newline_fallback,
+                    contains_newline_marker=self.contains_newline_marker,
+                    parsed_slice=[line],
+                )
+                final_chunks.append(atomic_chunk)
 
         return final_chunks
 
@@ -241,10 +242,10 @@ class DiffChunk:
 
     # chunk protocol
 
-    def get_chunks(self):
+    def get_chunks(self) -> list["DiffChunk"]:
         return [self]
 
-    def canonical_paths(self):
+    def canonical_paths(self) -> list[bytes | None]:
         """
         Returns the relevant path for the chunk.
         For renames or standard chunks, this is new_file_path

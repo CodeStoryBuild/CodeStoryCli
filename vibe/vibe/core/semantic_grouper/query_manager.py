@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from importlib.abc import Traversable
+from importlib.resources import files
 import json
+from pathlib import Path
 from typing import Dict, List, Tuple, Literal
 from loguru import logger
 
@@ -103,9 +104,12 @@ class QueryManager:
     constructor and cursor.captures(node, predicates=...).
     """
 
-    def __init__(self, language_config_path: Traversable):
+    def __init__(self):
+
+        resource = files("vibe").joinpath("resources/language_config.json")
+        content_text = resource.read_text(encoding="utf-8")
         self._language_configs: Dict[str, LanguageConfig] = self._init_configs(
-            language_config_path
+            content_text
         )
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
         self._cursor_cache: Dict[str, Tuple[Query, QueryCursor]] = {}
@@ -128,12 +132,9 @@ class QueryManager:
             details=lang_summaries,
         )
 
-    def _init_configs(
-        self, language_config_path: Traversable
-    ) -> Dict[str, LanguageConfig]:
+    def _init_configs(self, config_content: str) -> Dict[str, LanguageConfig]:
         try:
-            with language_config_path.open("r", encoding="utf-8") as fh:
-                config = json.load(fh)
+            config = json.loads(config_content)
 
             configs: Dict[str, LanguageConfig] = {}
             # iterate .items() to get (name, config)
@@ -143,8 +144,6 @@ class QueryManager:
                 )
             return configs
 
-        except OSError as e:
-            raise ValueError(f"Failed to read from {language_config_path}") from e
         except Exception as e:
             raise RuntimeError("Failed to parse language configs!") from e
 

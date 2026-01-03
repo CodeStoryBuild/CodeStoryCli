@@ -1,5 +1,3 @@
-from importlib.resources import files
-
 import inquirer
 from rich.console import Console
 
@@ -68,7 +66,7 @@ def createPipeline(
 
     chunker = AtomicChunker()
     # chunker = SimpleChunker()
-    logical_grouper = SingleGrouper()
+    # logical_grouper = SingleGrouper()
     logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
 
     branch_saver = BranchSaver(git_interface)
@@ -92,8 +90,7 @@ def createPipeline(
     file_reader = GitFileReader(git_interface, base_commit_hash, new_commit_hash)
     file_parser = FileParser()
 
-    config_path = files("vibe") / "resources" / "language_config.json"
-    query_manager = QueryManager(config_path)
+    query_manager = QueryManager()
 
     semantic_grouper = SemanticGrouper()
 
