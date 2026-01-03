@@ -113,10 +113,13 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
         print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
 
 
-def describe_chunk(chunk: Chunk | ImmutableChunk) -> str:
-    if isinstance(chunk, Chunk):
+def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
+    if isinstance(data, CommitGroup):
+        return "\n".join([describe_chunk(chunk) for chunk in data.chunks])
+    
+    if isinstance(data, Chunk):
         files: dict[str, int] = {}
-        for diff_c in chunk.get_chunks():
+        for diff_c in data.get_chunks():
             path = diff_c.canonical_path().decode("utf-8", errors="replace")
             files[path] = files.get(path, 0) + 1
 
@@ -155,6 +158,7 @@ class RewritePipeline:
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
         self.source = source
+        self.can_reject_changes = source == "commit"
 
     def run(self) -> str | None:
         # Initial invocation summary
@@ -231,7 +235,7 @@ class RewritePipeline:
             semantic_chunks = []
 
         # first optionally filter secrets
-        if self.commit_context.secret_scanner_aggression != "none":
+        if self.commit_context.secret_scanner_aggression != "none" and self.can_reject_changes:
             with (
                 transient_step(
                     "Scanning for leaked secrets...",
@@ -253,14 +257,15 @@ class RewritePipeline:
                 logger.info(
                     f"Rejected {len(rejected_chunks)} chunks due to potental hardcoded secrets"
                 )
-                logger.info("These chunks will simply stay as uncommited changes")
                 for chunk in rejected_chunks:
-                    logger.info("---------- chunk ----------")
+                    logger.info("---------- affected chunks ----------")
                     logger.info(describe_chunk(chunk))
+                logger.info("These groups will simply stay as uncommited changes\n")
 
         # then filter for relevance if configured
         if (
-            self.commit_context.relevance_filter_level != "none"
+            self.can_reject_changes
+            and self.commit_context.relevance_filter_level != "none"
             and self.global_context.model is not None
         ):
             with (
@@ -291,17 +296,17 @@ class RewritePipeline:
                 logger.info(
                     f"Rejected {len(rejected_relevance)} chunks due to not being relevant for the commit"
                 )
-                logger.info("These chunks will simply stay as uncommited changes")
                 for chunk in rejected_relevance:
-                    logger.info("---------- chunk ----------")
+                    logger.info("---------- affected chunks ----------")
                     logger.info(describe_chunk(chunk))
-
+                logger.info("These chunks will simply stay as uncommited changes\n")
+        
         if (
             self.commit_context.relevance_filter_level != "none"
-            and self.global_context.model is None
+            and (self.global_context.model is None or not self.can_reject_changes)
         ):
             logger.warning(
-                "Relevance filter level is set to '{level}' but no model is configured. Skipping relevance filtering.",
+                "Relevance filter level is set to '{level}' but not currently able to reject changes",
                 level=self.commit_context.relevance_filter_level,
             )
 
@@ -318,14 +323,14 @@ class RewritePipeline:
                 if pbar is not None:
                     pbar.update(1)
 
-            ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
+            logical_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
                 semantic_chunks,
                 immutable_chunks,
                 self.commit_context.message,
                 on_progress=on_progress,
             )
 
-        if not ai_groups:
+        if not logical_groups:
             logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
             return None
@@ -334,12 +339,15 @@ class RewritePipeline:
 
         # Prepare pretty diffs for each proposed group
         all_affected_files = set()
-        patch_map = get_patches(ai_groups)
+        patch_map = get_patches(logical_groups)
 
-        for idx, group in enumerate(ai_groups):
+        accepted_groups = []
+        user_rejected_groups = []
+
+        for idx, group in enumerate(logical_groups):
             num = idx + 1
             logger.info(
-                "\nProposed commit #{num}: {message}",
+                "\n------------- Proposed commit #{num}: {message} -------------",
                 num=num,
                 message=group.commit_message,
             )
@@ -408,36 +416,80 @@ class RewritePipeline:
                 chunk_count=len(group.chunks),
                 files=len(affected_files),
             )
-            logger.info("")
 
-        # Single confirmation for all groups
+
+            # Acceptance/modification of groups:
+            if not self.global_context.config.auto_accept:
+                # TODO not the cleanest way of handling this, but auto_accept is like the override just to go for it
+                if self.global_context.config.ask_for_commit_message:
+                    if self.can_reject_changes:
+                        custom_message = typer.prompt("Would you like to optionally override this commit message with a custom message? (type N/n if you wish to reject this change)", default="", type=str).strip()
+                        # possible rejection of group
+                        if custom_message.lower() == "n":
+                            user_rejected_groups.append(group)
+                            continue
+                    else:
+                        custom_message = typer.prompt("Would you like to optionally override this commit message with a custom message?", default="", type=str).strip()
+
+                    if custom_message:
+                        # TODO how should we handle extended message
+                        group = CommitGroup(group.chunks, group.group_id, commit_message=custom_message)
+                    
+                    accepted_groups.append(group)
+                else:
+                    if self.can_reject_changes:
+                        keep = typer.confirm("Do you want to commit this change?", default=True)
+                        if keep:
+                            accepted_groups.append(group)
+                        else:
+                            user_rejected_groups.append(group)
+                    else:
+                        accepted_groups.append(group)
+
+        if user_rejected_groups:
+            logger.info(
+                    f"Rejected {len(user_rejected_groups)} commits due to user input"
+            )
+            for group in user_rejected_groups:
+                logger.info("---------- affected chunks ----------")
+                logger.info(describe_chunk(group))
+            logger.info("These chunks will simply stay as uncommited changes\n")
+
+            
+        num_acc = len(accepted_groups)
+        if num_acc == 0:
+            logger.info("No changes applied")
+            logger.info("User did not accept any commits")
+            return None
+
+
         if self.global_context.config.auto_accept:
-            apply_all = True
-            logger.debug("Auto-confirm: Applying all proposed commits")
+            apply_final = True
+            logger.info(f"Auto-confirm: Applying {num_acc} proposed commits")
         else:
-            apply_all = typer.confirm(
-                "Apply all proposed commits?",
+            apply_final = typer.confirm(
+                f"Apply {num_acc} proposed commits?",
                 default=False,
             )
 
-        if not apply_all:
+        if not apply_final:
             logger.info("No changes applied")
             logger.info("User declined applying commits")
             return None
 
         logger.debug(
             "Num accepted groups: {groups}",
-            groups=len(ai_groups),
+            groups=num_acc,
         )
 
         with time_block("Executing Synthesizer Pipeline"):
             new_commit_hash = self.synthesizer.execute_plan(
-                ai_groups, self.base_commit_hash
+                accepted_groups, self.base_commit_hash
             )
 
         # Final pipeline summary
         logger.debug(
-            "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} final_groups={acc} files_changed={files}",
+            "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} logical_groups={log} final_groups={acc} files_changed={files}",
             raw=len(raw_chunks) + len(immutable_chunks),
             mech=len(
                 mechanical_chunks if raw_chunks else []
@@ -445,7 +497,8 @@ class RewritePipeline:
             sem=len(
                 semantic_chunks if raw_chunks else []
             ),  # if only immutable chunks, there are no semantic chunks
-            acc=len(ai_groups),
+            log=len(logical_groups),
+            acc=len(accepted_groups),
             files=len(all_affected_files),
         )
 

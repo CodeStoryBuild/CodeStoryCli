@@ -68,6 +68,14 @@ class RangeTypeConstraint(TypeConstraint):
                 return v
         return v
 
+    def __str__(self) -> str:
+        parts = []
+        if self.min_value is not None:
+            parts.append(f"min={self.min_value}")
+        if self.max_value is not None:
+            parts.append(f"max={self.max_value}")
+        return f"range({', '.join(parts)})"
+
 
 @dataclass
 class LiteralTypeConstraint(TypeConstraint):
@@ -85,6 +93,9 @@ class LiteralTypeConstraint(TypeConstraint):
             f"{value!r} not one of allowed values: {list(self.allowed)}"
         )
 
+    def __str__(self) -> str:
+        return f"literal({list(self.allowed)})"
+
 
 class BoolConstraint(TypeConstraint):
     def coerce(self, value: Any) -> bool:
@@ -99,6 +110,9 @@ class BoolConstraint(TypeConstraint):
             return bool(value)
         raise ConfigurationError(f"Cannot coerce {value!r} to bool")
 
+    def __str__(self) -> str:
+        return "bool"
+
 
 class IntConstraint(TypeConstraint):
     def coerce(self, value: Any) -> int:
@@ -106,6 +120,9 @@ class IntConstraint(TypeConstraint):
             return int(value)
         except Exception:
             raise ConfigurationError(f"Cannot coerce {value!r} to int")
+
+    def __str__(self) -> str:
+        return "int"
 
 
 class FloatConstraint(TypeConstraint):
@@ -115,9 +132,15 @@ class FloatConstraint(TypeConstraint):
         except Exception:
             raise ConfigurationError(f"Cannot coerce {value!r} to float")
 
+    def __str__(self) -> str:
+        return "float"
+
 
 class StringConstraint(TypeConstraint):
     def coerce(self, value: Any) -> str:
         if value is None:
             return ""
         return str(value)
+
+    def __str__(self) -> str:
+        return "str"
