@@ -181,15 +181,11 @@ class CommitPipeline:
 
         # init context_manager
         if raw_chunks:
-            flat_chunks = [
-                diff_chunk for chunk in raw_chunks for diff_chunk in chunk.get_chunks()
-            ]
-
             context_manager = ContextManager(
+                raw_chunks,
                 self.file_parser,
                 self.file_reader,
                 self.query_manager,
-                flat_chunks,
                 self.commit_context.fail_on_syntax_errors,
             )
 

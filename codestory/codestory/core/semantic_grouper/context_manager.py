@@ -20,6 +20,7 @@
 
 from dataclasses import dataclass
 
+from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.exceptions import SyntaxErrorDetected
 from codestory.core.file_reader.file_parser import FileParser, ParsedFile
@@ -63,16 +64,18 @@ class ContextManager:
 
     def __init__(
         self,
+        chunks: list[Chunk],
         file_parser: FileParser,
         file_reader: FileReader,
         query_manager: QueryManager,
-        diff_chunks: list[DiffChunk],
-        fail_on_syntax_errors: bool,
+        fail_on_syntax_errors: bool = False,
     ):
         self.file_parser = file_parser
         self.file_reader = file_reader
         self.query_manager = query_manager
-        self.diff_chunks = diff_chunks
+        self.diff_chunks = [
+                diff_chunk for chunk in chunks for diff_chunk in chunk.get_chunks()
+        ]
         self.fail_on_syntax_errors = fail_on_syntax_errors
 
         # Initialize mappers

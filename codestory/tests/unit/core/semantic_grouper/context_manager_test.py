@@ -177,6 +177,7 @@ def test_build_context_success(context_manager_deps):
 
     parsed_file = Mock()
     parsed_file.root_node.has_error = False
+    parsed_file.root_node.children = []
     parsed_file.detected_language = "python"
     parsed_file.content_bytes = b"content"
     parsed_file.line_ranges = []
@@ -196,10 +197,11 @@ def test_build_context_success(context_manager_deps):
     context_manager_deps["comment_mapper"].build_comment_map.return_value = Mock()
 
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     assert cm.has_context(b"file.txt", True)
@@ -223,10 +225,11 @@ def test_build_context_syntax_error(context_manager_deps):
     context_manager_deps["parser"].parse_file.return_value = parsed_file
 
     cm = ContextManager(
+        [chunk],
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk],
+        False
     )
 
     # Should not have context due to syntax error
