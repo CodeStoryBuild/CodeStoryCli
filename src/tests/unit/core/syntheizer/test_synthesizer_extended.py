@@ -40,7 +40,7 @@ def multi_file_git_repo(tmp_path):
     repo_path.mkdir()
 
     # Initialize Git repo
-    subprocess.run(["git", "init"], cwd=repo_path, check=True)
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo_path, check=True)
     subprocess.run(
         ["git", "config", "user.name", "Test User"], cwd=repo_path, check=True
     )

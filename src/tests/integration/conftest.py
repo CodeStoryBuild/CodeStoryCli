@@ -58,7 +58,7 @@ def temp_dir():
 
 @pytest.fixture
 def git_repo(temp_dir):
-    subprocess.run(["git", "init"], cwd=temp_dir, check=True)
+    subprocess.run(["git", "init", "-b", "main"], cwd=temp_dir, check=True)
     subprocess.run(
         ["git", "config", "user.email", "test@example.com"], cwd=temp_dir, check=True
     )
