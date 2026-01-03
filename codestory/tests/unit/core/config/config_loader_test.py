@@ -46,10 +46,12 @@ class TestConfig(BaseModel):
 def test_load_toml_exists():
     """Test loading a valid TOML file."""
     toml_content = b'val = "test"\nnumber = 42'
-    with patch("builtins.open", mock_open(read_data=toml_content)):
-        with patch("pathlib.Path.exists", return_value=True):
-            data = ConfigLoader.load_toml(Path("config.toml"))
-            assert data == {"val": "test", "number": 42}
+    with (
+        patch("builtins.open", mock_open(read_data=toml_content)),
+        patch("pathlib.Path.exists", return_value=True),
+    ):
+        data = ConfigLoader.load_toml(Path("config.toml"))
+        assert data == {"val": "test", "number": 42}
 
 
 def test_load_toml_not_exists():
@@ -61,10 +63,12 @@ def test_load_toml_not_exists():
 
 def test_load_toml_invalid():
     """Test loading an invalid TOML file handles exception."""
-    with patch("builtins.open", mock_open(read_data=b"invalid toml content")):
-        with patch("pathlib.Path.exists", return_value=True):
-            data = ConfigLoader.load_toml(Path("bad.toml"))
-            assert data == {}
+    with (
+        patch("builtins.open", mock_open(read_data=b"invalid toml content")),
+        patch("pathlib.Path.exists", return_value=True),
+    ):
+        data = ConfigLoader.load_toml(Path("bad.toml"))
+        assert data == {}
 
 
 def test_load_env():
@@ -85,7 +89,6 @@ def test_precedence_order():
     """Test the precedence order: Args > Custom > Local > Env > Global."""
 
     # Setup sources
-    args = {"val": "args"}
     custom = {"val": "custom"}
     local = {"val": "local"}
     env = {"val": "env"}
@@ -188,8 +191,8 @@ def test_validation_error():
     with (
         patch.object(ConfigLoader, "load_toml", return_value={}),
         patch.object(ConfigLoader, "load_env", return_value={}),
+        pytest.raises(ValidationError),
     ):
-        with pytest.raises(ValidationError):
-            ConfigLoader.get_full_config(
-                TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")
-            )
+        ConfigLoader.get_full_config(
+            TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")
+        )

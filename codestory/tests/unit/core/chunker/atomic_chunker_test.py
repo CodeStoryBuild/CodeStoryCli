@@ -103,9 +103,9 @@ def test_group_whitespace_context(context_manager):
     chunker = AtomicChunker(split_hunks=True)
 
     # 3 chunks: code, whitespace, code
-    c1 = create_chunk([b"+code1"])
-    c2 = create_chunk([b"+   "])  # Whitespace
-    c3 = create_chunk([b"+code2"])
+    create_chunk([b"+code1"])
+    create_chunk([b"+   "])  # Whitespace
+    create_chunk([b"+code2"])
 
     # Pass them as a single chunk to be split
     # Note: AtomicChunker splits the input chunk first
