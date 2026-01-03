@@ -14,7 +14,7 @@ class VibeError(Exception):
     All vibe-specific exceptions should inherit from this class
     to enable consistent error handling throughout the application.
     """
-    
+
     def __init__(self, message: str, details: str = None):
         """
         Initialize a VibeError.

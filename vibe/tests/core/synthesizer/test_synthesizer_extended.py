@@ -1,4 +1,5 @@
 import subprocess
+
 import pytest
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal

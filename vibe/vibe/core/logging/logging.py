@@ -122,7 +122,7 @@ def setup_logger(command_name: str, console: Console, debug: bool = False) -> Pa
     if debug:
         os.environ["VIBE_LOG_LEVEL"] = "DEBUG"
         os.environ["VIBE_CONSOLE_LOG_LEVEL"] = "DEBUG"
-    
+
     structured_logger = StructuredLogger(command_name, console)
     return structured_logger.get_logfile()
 

@@ -71,7 +71,7 @@ def main(
     """
     # Set up signal handlers for graceful shutdown
     setup_signal_handlers()
-    
+
     # default behavior
     if ctx.invoked_subcommand is None:
         console = Console()

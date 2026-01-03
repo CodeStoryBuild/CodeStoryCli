@@ -7,12 +7,12 @@ follow code on the same line are excluded. Multi-line comment nodes are
 handled by splitting their covered span per line.
 """
 
-from dataclasses import dataclass
-from tree_sitter import Node
 import string
+from dataclasses import dataclass
+
+from tree_sitter import Node
 
 from .query_manager import QueryManager
-
 
 # Pre-build a translation table for efficiently stripping all whitespace.
 # This is much faster than list comprehensions or repeated .isspace() checks.
