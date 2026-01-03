@@ -28,7 +28,10 @@ from codestory.core.exceptions import (
 )
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.logging.utils import time_block
-from codestory.core.validation import validate_commit_hash
+from codestory.core.validation import (
+    validate_commit_hash,
+    validate_no_merge_commits_in_range,
+)
 
 
 def get_info(git_interface: GitInterface, fix_context: FixContext):
@@ -90,6 +93,9 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         if not base_hash:
             raise GitError("Fixing the root commit is not supported yet!")
 
+    # Validate that there are no merge commits in the range to be fixed
+    validate_no_merge_commits_in_range(git_interface, base_hash, head_hash)
+
     return base_hash, end_resolved, current_branch
 
 
@@ -147,8 +153,8 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
 
         # Sync the working directory to the new head
         global_context.git_interface.run_git_text_out(["read-tree", "HEAD"])
-        logger.info("Fix command completed successfully")
 
+        logger.info("Fix command completed successfully")
     else:
         logger.error(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
 

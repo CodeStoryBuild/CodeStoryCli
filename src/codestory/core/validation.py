@@ -275,6 +275,49 @@ def validate_git_repository(git_interface: GitInterface) -> None:
         raise GitError(f"Failed to check git branch status: {e}") from e
 
 
+def validate_no_merge_commits_in_range(
+    git_interface: GitInterface, start_commit: str, end_ref: str = "HEAD"
+) -> None:
+    """
+    Validate that there are no merge commits in the range from start_commit to end_ref.
+
+    Args:
+        git_interface: Git interface to run commands
+        start_commit: The starting commit hash (exclusive)
+        end_ref: The ending reference (inclusive), defaults to HEAD
+
+    Raises:
+        ValidationError: If any merge commits are found in the range
+    """
+    # Get all commits in the range
+    commits_out = git_interface.run_git_text_out(
+        ["rev-list", f"{start_commit}..{end_ref}"]
+    )
+
+    if not commits_out:
+        return  # No commits in range
+
+    commits = [line.strip() for line in commits_out.splitlines() if line.strip()]
+
+    # Check each commit for multiple parents
+    for commit in commits:
+        line = git_interface.run_git_text_out(
+            ["rev-list", "--parents", "-n", "1", commit]
+        )
+        if not line:
+            continue
+
+        parts = line.strip().split()
+        # Format: <commit> <parent1> [<parent2> ...]
+        if len(parts) > 2:
+            # This is a merge commit
+            raise ValidationError(
+                f"Merge commit detected: {commit[:7]}",
+                f"Cannot rewrite history that contains merge commits. "
+                f"The range {start_commit[:7]}..{end_ref[:7]} contains merge commits.",
+            )
+
+
 def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
     """
     Sanitize user input to prevent security issues.
