@@ -165,16 +165,18 @@ def _format_value_for_display(value: Any) -> str:
 
 def _print_env_instructions(key: str, value: str, is_delete: bool = False) -> None:
     """Print instructions for setting/deleting environment variables.
-    
+
     Args:
         key: Configuration key
         value: Configuration value (only used for set operations)
         is_delete: Whether this is a delete operation
     """
     env_var = f"{ENV_APP_PREFIX}{key.upper()}"
-    
+
     if is_delete:
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.")
+        print(
+            f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst."
+        )
         print("Please delete them through your terminal/OS:")
         print(f"  Windows (PowerShell): Remove-Item Env:\\{env_var}")
         print(f"  Windows (CMD): set {env_var}=")
@@ -188,53 +190,57 @@ def _print_env_instructions(key: str, value: str, is_delete: bool = False) -> No
 
 def _delete_key_from_config(config_path: Path, key: str, scope: str) -> bool:
     """Delete a specific key from a configuration file.
-    
+
     Args:
         config_path: Path to the config file
         key: The key to delete
         scope: The scope name (for display purposes)
-        
+
     Returns:
         True if the key was deleted, False if it wasn't found
     """
     config_data = _load_toml_config(config_path)
-    
+
     if not config_data:
         print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found")
         return False
-    
+
     if key not in config_data:
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config")
+        print(
+            f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config"
+        )
         return False
-    
+
     del config_data[key]
-    
+
     if config_data:
         _write_toml_config(config_path, config_data)
     else:
         config_path.unlink()
         print(f"Removed empty config file: {config_path}")
-    
+
     print(f"{Fore.GREEN}Deleted {key} from {scope} config{Style.RESET_ALL}")
     return True
 
 
 def _delete_all_from_config(config_path: Path, scope: str) -> bool:
     """Delete all keys from a configuration file.
-    
+
     Args:
         config_path: Path to the config file
         scope: The scope name (for display purposes)
-        
+
     Returns:
         True if config was deleted, False if file didn't exist or was already empty
     """
     config_data = _load_toml_config(config_path)
-    
+
     if not config_data:
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty")
+        print(
+            f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty"
+        )
         return False
-    
+
     config_path.unlink()
     print(f"{Fore.GREEN}Deleted all config from {scope} scope{Style.RESET_ALL}")
     return True
@@ -481,7 +487,7 @@ def get_config(key: str | None, scope: str | None) -> None:
 
 def delete_config(key: str | None, scope: str) -> None:
     """Delete configuration value(s) from the specified scope.
-    
+
     Args:
         key: Specific key to delete, or None to delete all
         scope: Scope to delete from (local, global, or env)
@@ -490,7 +496,9 @@ def delete_config(key: str | None, scope: str) -> None:
         if key is not None:
             _print_env_instructions(key, "", is_delete=True)
         else:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst.")
+            print(
+                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst."
+            )
             print("Please delete them through your terminal/OS:")
             print(f"  Windows (PowerShell): Remove-Item Env:\\{ENV_APP_PREFIX}*")
             print(f"  Windows (CMD): set {ENV_APP_PREFIX}*=")
@@ -500,7 +508,9 @@ def delete_config(key: str | None, scope: str) -> None:
     config_path = GLOBAL_CONFIG_FILE if scope == "global" else LOCAL_CONFIG_FILE
 
     if not config_path.exists():
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found at {config_path}")
+        print(
+            f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found at {config_path}"
+        )
         return
 
     # Load existing config
@@ -511,16 +521,22 @@ def delete_config(key: str | None, scope: str) -> None:
         raise typer.Exit(1)
 
     if not config_data:
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty")
+        print(
+            f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty"
+        )
         return
 
     if key is not None:
         # Delete specific key
         if key not in config_data:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config")
+            print(
+                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config"
+            )
             return
 
-        if not typer.confirm(f"Are you sure you want to delete '{key}' from {scope} config?"):
+        if not typer.confirm(
+            f"Are you sure you want to delete '{key}' from {scope} config?"
+        ):
             print("Delete cancelled.")
             return
 
@@ -549,13 +565,15 @@ def delete_config(key: str | None, scope: str) -> None:
 
 def deleteall_config(key: str | None) -> None:
     """Delete configuration value(s) from both global and local scopes.
-    
+
     Args:
         key: Specific key to delete, or None to delete all
     """
     if key is not None:
         # Confirmation prompt for specific key across all scopes
-        if not typer.confirm(f"Are you sure you want to delete '{key}' from BOTH global and local config?"):
+        if not typer.confirm(
+            f"Are you sure you want to delete '{key}' from BOTH global and local config?"
+        ):
             print("Delete cancelled.")
             return
 
@@ -578,7 +596,9 @@ def deleteall_config(key: str | None) -> None:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
     else:
         # Delete all from both scopes
-        if not typer.confirm("Are you sure you want to delete ALL config from BOTH global and local scopes?"):
+        if not typer.confirm(
+            "Are you sure you want to delete ALL config from BOTH global and local scopes?"
+        ):
             print("Delete cancelled.")
             return
 
