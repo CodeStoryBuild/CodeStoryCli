@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Build script to create executable for dslate CLI tool using Nuitka.
+Build script to create executable for codestory CLI tool using Nuitka.
 Usage:
     python build_exe_opt.py
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build dslate executable with Nuitka")
+    parser = argparse.ArgumentParser(description="Build codestory executable with Nuitka")
     parser.add_argument(
         "--clean",
         action="store_true",
@@ -29,7 +29,7 @@ def main():
     
     # Define output directory and filenames
     dist_path = Path("dist")
-    exe_name = "dslate.exe" if is_windows else "dslate"
+    exe_name = "cst.exe" if is_windows else "cst"
     
     if args.clean and dist_path.exists():
         print(f"Cleaning {dist_path}...")
@@ -43,7 +43,7 @@ def main():
         subprocess.check_call([sys.executable, "-m", "pip", "install", "nuitka", "zstandard"])
 
     # Entry point
-    entry_point = Path("dslate/dslate/cli.py")
+    entry_point = Path("codestory/codestory/cli.py")
     if not entry_point.exists():
         print(f"Error: Entry point {entry_point} not found.")
         sys.exit(1)
@@ -56,10 +56,23 @@ def main():
         "--standalone",
         "--onefile",
         "--assume-yes-for-downloads",
+        "--show-modules",
+        # --- FORCE INCLUSION ---
+        # 1. Include the root package
+        "--include-package=tree_sitter_language_pack",
+        
+        # 2. CRITICAL: Explicitly force the bindings subpackage
+        #    Nuitka usually only includes modules it sees imported in your code.
+        #    Since you dynamically load these languages, Nuitka won't "see" them.
+        #    This flag forces it to scan and include everything in that folder.
+        "--include-module=tree_sitter_language_pack.bindings",
+
+        # STANDARD ANTI BLOAT
+        "--enable-plugin=anti-bloat",
         
         # --- CORE INCLUDES ---
-        "--include-package=dslate",
-        "--include-package-data=dslate",
+        "--include-package=codestory",
+        "--include-package-data=codestory",
         
         # --- ESSENTIAL DEPENDENCIES ---
         "--include-package=platformdirs",
@@ -71,7 +84,8 @@ def main():
         
         # --- LANGCHAIN ---
         "--include-package=langchain",
-        "--nofollow-import-to=langsmith",
+        # LANGSMITH HAS A PYTEST IMPORT WE DONT WANT (idk why all caps lol)
+        "--nofollow-import-to=pytest",
         "--include-package=langchain_core",
         "--include-package=langchain_openai",
         "--include-package=langchain_anthropic",
@@ -88,33 +102,6 @@ def main():
         # Note: --include-package-data IGNORES .pyd/.so files by default!
         # We must manually force the bindings folder to be included as data directory.
     ]
-
-    try:
-        ts_spec = importlib.util.find_spec("tree_sitter_language_pack")
-        if ts_spec and ts_spec.submodule_search_locations:
-            ts_path = Path(ts_spec.submodule_search_locations[0])
-            bindings_path = ts_path / "bindings"
-            
-            if bindings_path.exists():
-                print(f"Found tree-sitter bindings at: {bindings_path}")
-                
-                # Determine the extension for the current OS
-                # Windows uses .pyd, Linux/Mac uses .so
-                ext_pattern = "*.pyd" if is_windows else "*.so"
-                
-                # FIX: Use --include-data-files with a wildcard. 
-                # This forces Nuitka to treat the binaries as raw data files 
-                # instead of ignoring them as "code extensions".
-                # Syntax: source_pattern=dest_folder_relative
-                source_dir = ts_path
-                dest_path = "tree_sitter_language_pack" 
-                
-                cmd.append(f"--include-data-dir={source_dir}={dest_path}")
-                
-            else:
-                print("Warning: tree_sitter_language_pack found but 'bindings' folder is missing.")
-    except ImportError:
-        print("Warning: tree_sitter_language_pack not found in environment.")
 
     # --- FINAL CONFIG ---
     cmd.extend([

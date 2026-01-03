@@ -18,13 +18,13 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            exe_name: dslate.exe
+            exe_name: codestory.exe
           - os: ubuntu-latest
             platform: linux
-            exe_name: dslate
+            exe_name: codestory
           - os: macos-latest
             platform: macos
-            exe_name: dslate
+            exe_name: codestory
 
     steps:
       - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
 
       - name: Create Integration Test Config
         shell: bash
-        run: echo "model = 'no-model'"> dslateconfig.toml
+        run: echo "model = 'no-model'"> codestoryconfig.toml
 
       - name: Test Built Executable
         shell: bash
@@ -73,7 +73,7 @@ jobs:
 
           # Set the env var for tests to use this specific binary
           export CLI_ARTIFACT_PATH="$EXE_PATH"
-          pytest -vv dslate/tests/integration
+          pytest -vv codestory/tests/integration
 
       # --- PACKAGING STEPS ---
 
@@ -89,14 +89,14 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Updated Source to "dist\dslate.exe"
+          # Updated Source to "dist\codestory.exe"
           $issContent = @"
           [Setup]
-          AppName=dslate
+          AppName=codestory
           AppVersion=1.0
-          DefaultDirName={autopf}\dslate
-          DefaultGroupName=dslate
-          OutputBaseFilename=dslate-windows-installer
+          DefaultDirName={autopf}\codestory
+          DefaultGroupName=codestory
+          OutputBaseFilename=codestory-windows-installer
           OutputDir=dist\installers
           Compression=lzma
           SolidCompression=yes
@@ -104,7 +104,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          Source: "dist\dslate.exe"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "dist\codestory.exe"; DestDir: "{app}"; Flags: ignoreversion
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -143,12 +143,12 @@ jobs:
           mkdir -p dist/installers
           
           # Copy binary directly to /usr/bin
-          cp dist/dslate dist/package/usr/bin/dslate
-          chmod +x dist/package/usr/bin/dslate
+          cp dist/codestory dist/package/usr/bin/codestory
+          chmod +x dist/package/usr/bin/codestory
           
           mkdir -p dist/package/DEBIAN
           cat > dist/package/DEBIAN/control <<EOF
-          Package: dslate
+          Package: codestory
           Version: $VERSION
           Section: utils
           Priority: optional
@@ -157,7 +157,7 @@ jobs:
           Description: An AI-powered abstraction layer above Git.
           EOF
           
-          dpkg-deb --build dist/package dist/installers/dslate-linux-installer.deb
+          dpkg-deb --build dist/package dist/installers/codestory-linux-installer.deb
 
       # 3. MACOS: Build .pkg
       - name: Create macOS Installer (.pkg)
@@ -171,14 +171,14 @@ jobs:
           
           # Prepare a root folder for pkgbuild
           mkdir -p dist/pkg_root/usr/local/bin
-          cp dist/dslate dist/pkg_root/usr/local/bin/
+          cp dist/codestory dist/pkg_root/usr/local/bin/
           
           # Generate PKG from the root folder
           pkgbuild --root dist/pkg_root \
-                   --identifier com.dslate.cli \
+                   --identifier com.codestory.cli \
                    --version "$VERSION" \
                    --install-location / \
-                   dist/installers/dslate-macos-installer.pkg
+                   dist/installers/codestory-macos-installer.pkg
 
       # --- PREPARE ARTIFACTS ---
 
@@ -189,9 +189,9 @@ jobs:
           
           # Copy the standalone executable with a clear name
           if [ "${{ matrix.platform }}" == "windows" ]; then
-            cp dist/dslate.exe dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone.exe
+            cp dist/codestory.exe dist/ready_for_upload/codestory-${{ matrix.platform }}-standalone.exe
           else
-            cp dist/dslate dist/ready_for_upload/dslate-${{ matrix.platform }}-standalone
+            cp dist/codestory dist/ready_for_upload/codestory-${{ matrix.platform }}-standalone
           fi
           
           # Copy installers

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Build script to create executable for dslate CLI tool.
+Build script to create executable for codestory CLI tool.
 Usage:
     python build_exe.py --mode folder
     python build_exe.py --mode file
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build dslate executable")
+    parser = argparse.ArgumentParser(description="Build codestory executable")
     parser.add_argument(
         "--mode",
         choices=["file", "folder"],
@@ -41,7 +41,7 @@ def main():
     cmd = [
         "pyinstaller",
         "--name",
-        "dslate",
+        "codestory",
         "--clean",
         "--noconfirm",
         "--distpath",
@@ -49,9 +49,9 @@ def main():
         "--collect-all",
         "readchar",
         "--collect-all",
-        "dslate",
+        "codestory",
         "--additional-hooks-dir=custom_hooks",
-        "dslate/dslate/cli.py",
+        "codestory/codestory/cli.py",
     ]
 
     if args.mode == "folder":
@@ -65,13 +65,13 @@ def main():
 
     # Validation check
     if args.mode == "folder":
-        # Folder mode: dist/folder/dslate/[exe]
+        # Folder mode: dist/folder/codestory/[exe]
         check_path = (
-            dist_path / "dslate" / ("dslate.exe" if system == "windows" else "dslate")
+            dist_path / "codestory" / ("codestory.exe" if system == "windows" else "codestory")
         )
     else:
         # File mode: dist/file/[exe]
-        check_path = dist_path / ("dslate.exe" if system == "windows" else "dslate")
+        check_path = dist_path / ("codestory.exe" if system == "windows" else "codestory")
 
     if check_path.exists():
         print(f"Build successful! Artifact located at: {check_path}")
