@@ -2,6 +2,7 @@ import typer
 from rich.traceback import install
 from dotenv import load_dotenv
 import sys
+import importlib.metadata
 
 from vibe.commands import commit
 from vibe.commands import expand
