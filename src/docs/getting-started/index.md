@@ -44,6 +44,14 @@ If you've already committed a large block of work and want to break it down into
 cst fix <COMMIT_HASH>
 ```
 
+### Clean Up Your Repository History
+
+If you have a complex history that you'd like to clean up:
+
+```bash
+cst clean
+```
+
 ## Next Steps
 
 - **[Usage Guide](../usage/index.md)**: Explore advanced commands like `clean` and `fix`.

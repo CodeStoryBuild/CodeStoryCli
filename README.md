@@ -14,36 +14,22 @@ Codestory provides powerful commands to enhance your version control workflow: c
 
 Think of this as a natural transition to a higher-level version control, where you can worry less about housekeeping and focus on building.
 
-## Quick Start
+## Getting Started
 
-```bash
-# Initialize and follow onboarding
-cst
-
-# Commit all changes into small, logical commits with AI-generated messages
-cst commit
-
-# Commit with specific instructions for the AI
-cst commit -m "Split this into 2 commits: refactor then feature"
-
-# Fix a specific past commit
-cst fix <commit-sha>
-
-# Clean entire repository history
-cst clean
-```
+For detailed instructions on how to install and use the Codestory CLI, visit our **[getting started](https://cli.codestory.build/docs/getting-started/)** page.
 
 ## Documentation
 
-For comprehensive guides, configuration priority, and supported languages, visit our documentation site:
-
-👉 **[docs](https://cli.codestory.build/docs)**
+For comprehensive guides, configuration priority, and supported languages, visit our **[docs](https://cli.codestory.build/docs)** page.
 
 The documentation site provides detailed information on:
-- [Installation and Setup](https://cli.codestory.build/docs/usage/)
-- [Configuration Scopes (Global vs. Local vs. Env)](https://cli.codestory.build/docs/#configuration)
-- [Supported Model Providers and Languages](https://cli.codestory.build/docs/#supported-providers-languages)
-- [Core Design and Architecture](https://cli.codestory.build/docs/#architecture-design)
+- [Usage Guides](https://cli.codestory.build/docs/usage/)
+- [Configuration Scopes (Global vs. Local vs. Env)](https://cli.codestory.build/docs/configuration/)
+- [Supported Model Providers and Languages](https://cli.codestory.build/docs/reference/supported/)
+- [Core Design and Architecture](https://cli.codestory.build/docs/design/)
+
+## Main-Cleaned
+For a real example of what codestory can do, checkout the `main-cleaned` branch of this repository. It is a cleaned up version of the main branch of this repository, created using the `cst clean` command.
 
 ## Contributing
 
