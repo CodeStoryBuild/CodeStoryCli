@@ -38,6 +38,7 @@ class AnalysedHunk:
     structural_scope_id: str = ""
     used_definition_scope_ids: set[str] = field(default_factory=set)
 
+
 @dataclass
 class AnalysisContext:
     """Holds all necessary analysis artifacts for a single file."""

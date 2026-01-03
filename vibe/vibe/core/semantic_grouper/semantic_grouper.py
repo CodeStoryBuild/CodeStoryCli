@@ -23,7 +23,6 @@ class ChunkSignature:
     scope: Optional[str] = None
 
 
-
 class SemanticGrouper:
     """
     Groups chunks semantically based on overlapping symbol signatures.

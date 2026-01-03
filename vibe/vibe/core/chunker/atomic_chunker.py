@@ -4,6 +4,7 @@ from ..data.chunk import Chunk
 from ..data.diff_chunk import DiffChunk
 from ..data.composite_diff_chunk import CompositeDiffChunk
 
+
 class AtomicChunker(MechanicalChunker):
 
     @staticmethod

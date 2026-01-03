@@ -26,6 +26,7 @@ class Chunk(Protocol):
 
 # --- 1. Core Data Structures ---
 
+
 class UnionFind:
     """A simple Union-Find data structure for grouping."""
     # (Implementation is the same as before)
@@ -96,6 +97,7 @@ from typing import Protocol
 
 
 # --- 2. The Semantic Analysis Engine ---
+
 
 class SemanticAnalyser:
     def __init__(self, language_config: dict, file_reader: FileReader):

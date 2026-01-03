@@ -3,6 +3,7 @@ def calculate(multiplier):
 
 print(calculate(2))
 
+
 class Greeter:
     def say_hello(self):
         # A friendly greeting

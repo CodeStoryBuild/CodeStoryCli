@@ -26,5 +26,3 @@ class Chunk(Protocol):
         Each tuple is structured (old_start, old_len, new_start, new_len)
         """
         ...
-
-
