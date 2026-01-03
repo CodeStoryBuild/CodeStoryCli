@@ -27,16 +27,16 @@ def validate_commit_hash(value: str) -> str:
     """
     if not value or not isinstance(value, str):
         raise ValidationError("Commit hash cannot be empty")
-    
+
     value = value.strip()
-    
+
     # Git accepts partial hashes (4-40 chars, hex only)
     if not re.match(r'^[a-fA-F0-9]{4,40}$', value):
         raise ValidationError(
             f"Invalid commit hash format: {value}",
             "Commit hashes must be 4-40 hexadecimal characters"
         )
-    
+
     return value.lower()
 
 
@@ -56,24 +56,24 @@ def validate_target_path(value: str) -> Path:
     """
     if not value or not isinstance(value, str):
         raise ValidationError("Target path cannot be empty")
-    
+
     try:
         path = Path(value).resolve()
     except (OSError, ValueError) as e:
         raise ValidationError(f"Invalid path format: {value}") from e
-    
+
     if not path.exists():
         raise ValidationError(
             f"Path does not exist: {value}",
             "Please check that the path is correct and accessible"
         )
-    
+
     if not (path.is_dir() or path.is_file()):
         raise ValidationError(
             f"Path is not a valid file or directory: {value}",
             "Please specify a valid file or directory path"
         )
-    
+
     # Check if we have read access
     try:
         if path.is_dir():
@@ -88,7 +88,7 @@ def validate_target_path(value: str) -> Path:
     except UnicodeDecodeError:
         # Binary files are OK, we just can't read them as text
         pass
-    
+
     return path
 
 
@@ -280,14 +280,14 @@ def sanitize_user_input(user_input: str, max_length: int = 1000) -> str:
     """
     if not isinstance(user_input, str):
         raise ValidationError("Input must be a string")
-    
+
     if len(user_input) > max_length:
         raise ValidationError(f"Input too long (max {max_length} characters)")
-    
+
     # Remove null bytes and non-printable control characters (except newlines/tabs)
     sanitized = ''.join(
-        char for char in user_input 
+        char for char in user_input
         if char.isprintable() or char in '\n\t\r'
     )
-    
+
     return sanitized.strip()
