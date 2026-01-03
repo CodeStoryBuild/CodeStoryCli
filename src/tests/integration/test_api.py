@@ -16,8 +16,18 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from tests.integration.conftest import run_cli
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+class TestBasicCLI:
+    def test_help(self, cli_exe):
+        result = run_cli(cli_exe, ["--help"])
+        assert result.returncode == 0
+        assert "codestory" in result.stdout
+        assert "Usage" in result.stdout
+
+    def test_version(self, cli_exe):
+        result = run_cli(cli_exe, ["--version"])
+        assert result.returncode == 0
+        # Version format might vary, but should contain version info
+        assert result.stdout.strip()

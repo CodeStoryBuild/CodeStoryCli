@@ -16,8 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from codestory.cli import run_app
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
-
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+if __name__ == "__main__":
+    run_app()

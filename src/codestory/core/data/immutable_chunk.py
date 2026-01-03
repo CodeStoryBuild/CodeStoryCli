@@ -16,8 +16,10 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from dataclasses import dataclass
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+@dataclass(frozen=True)
+class ImmutableChunk:
+    canonical_path: bytes
+    file_patch: bytes

@@ -16,8 +16,13 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from codestory.core.data.chunk import Chunk
+from codestory.core.semantic_grouper.context_manager import ContextManager
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+class SimpleChunker:
+    def chunk(
+        self, diff_chunks: list[Chunk], context_manager: ContextManager
+    ) -> list[Chunk]:
+        """Just returns as is"""
+        return diff_chunks

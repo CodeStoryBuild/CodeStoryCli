@@ -16,8 +16,12 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+import typer
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+def help_callback(ctx: typer.Context, param, value: bool):
+    # Typer/Click help callback: show help and exit when --help is provided
+    if not value or ctx.resilient_parsing:
+        return
+    typer.echo(ctx.get_help())
+    raise typer.Exit()

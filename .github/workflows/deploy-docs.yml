@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'codestory/**'
+      - 'src/**'
       - 'pyproject.toml'
   workflow_dispatch: # Allows manual trigger button
 
@@ -32,13 +32,13 @@ jobs:
       - name: Build MkDocs
         # 1. Build the site using the config in the subfolder
         # 2. Output to a temporary 'site' folder
-        run: mkdocs build -f codestory/mkdocs.yml -d site
+        run: mkdocs build -f src/mkdocs.yml -d site
 
       - name: Prepare Subdirectory Structure
         # We move 'site' into 'dist/codestorycli' so Cloudflare preserves the path
         run: |
           mkdir -p dist/codestorycli
-          mv codestory/site/* dist/codestorycli/
+          mv src/site/* dist/codestorycli/
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1

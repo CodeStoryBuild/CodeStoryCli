@@ -16,8 +16,24 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from typing import Protocol, runtime_checkable
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
+from codestory.core.data.diff_chunk import DiffChunk
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+
+@runtime_checkable
+class Chunk(Protocol):
+    def canonical_paths(self) -> list[bytes]:
+        """
+        List of affected file paths that this chunk touches (as bytes).
+        The canonical path is always the most relevant path for a chunk
+        For file_additions/modifications/renames, it is the new file path
+        For file_deletions it is the old file path
+        """
+        ...
+
+    def get_chunks(self) -> list[DiffChunk]:
+        """
+        Get all diff chunks inside the chunk
+        """
+        ...

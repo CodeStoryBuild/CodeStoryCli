@@ -34,7 +34,7 @@ from codestory.core.exceptions import (
     GitError,
     ValidationError,
 )
-from .git_interface.interface import GitInterface
+from codestory.core.git_interface.interface import GitInterface
 
 
 def validate_commit_hash(value: str) -> str:

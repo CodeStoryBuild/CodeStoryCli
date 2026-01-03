@@ -16,8 +16,17 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from pathlib import Path
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
+from platformdirs import user_config_dir, user_log_path
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+APP_NAME = "codestory"
+ENV_APP_PREFIX = APP_NAME.upper()
+LOG_DIR = Path(user_log_path(appname=APP_NAME))
+
+ONBOARDING_FLAG = Path(user_config_dir(APP_NAME)) / "onboarding_flag"
+
+CONFIG_FILENAME = "codestoryconfig.toml"
+
+GLOBAL_CONFIG_FILE = Path(user_config_dir(APP_NAME)) / CONFIG_FILENAME
+LOCAL_CONFIG_FILE = Path(CONFIG_FILENAME)

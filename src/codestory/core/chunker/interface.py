@@ -16,8 +16,15 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
+from abc import ABC, abstractmethod
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
+from codestory.core.data.chunk import Chunk
+from codestory.core.semantic_grouper.context_manager import ContextManager
 
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+
+class MechanicalChunker(ABC):
+    @abstractmethod
+    def chunk(
+        self, diff_chunks: list[Chunk], context_manager: ContextManager
+    ) -> list[Chunk]:
+        """Split hunks into smaller chunks or sub-hunks"""

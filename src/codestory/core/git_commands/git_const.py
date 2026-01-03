@@ -16,8 +16,5 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""LLM integration module for codestory."""
-
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
-
-__all__ = ["CodeStoryAdapter", "ModelConfig"]
+DEVNULLBYTES = b"/dev/null"
+EMPTYTREEHASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
