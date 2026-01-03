@@ -120,10 +120,10 @@ class LanguageConfig:
         return lines
 
     def __get_shared_token_source(self, is_general_query: bool) -> str:
-        """
-        Build query source for all shared tokens, injecting #not-eq? predicates
-        for each configured filter. Each predicate line uses the capture name so
-        the predicate has access to the node text.
+        """Build query source for all shared tokens, injecting #not-eq?
+
+        predicates for each configured filter. Each predicate line uses
+        the capture name so the predicate has access to the node text.
         """
         lines: list[str] = []
         for capture_class, capture_queries in self.shared_token_queries.items():
@@ -160,11 +160,11 @@ class LanguageConfig:
 
 
 class QueryManager:
-    """
-    Manages language configs and runs queries using the newer QueryCursor(query)
+    """Manages language configs and runs queries using the newer QueryCursor(query)
     constructor and cursor.captures(node, predicates=...).
 
-    This is a singleton class. Use QueryManager.get_instance() to access the instance.
+    This is a singleton class. Use QueryManager.get_instance() to access
+    the instance.
     """
 
     _instance: "QueryManager | None" = None
@@ -210,8 +210,7 @@ class QueryManager:
 
     @classmethod
     def get_instance(cls) -> "QueryManager":
-        """
-        Get or create the singleton instance of QueryManager.
+        """Get or create the singleton instance of QueryManager.
 
         Returns:
             The singleton QueryManager instance.
@@ -222,9 +221,8 @@ class QueryManager:
 
     @staticmethod
     def set_override(override_config_path: str | None) -> None:
-        """
-        Set the path to a custom language config file. Must be called before
-        the first call to get_instance() to have any effect.
+        """Set the path to a custom language config file. Must be called before the
+        first call to get_instance() to have any effect.
 
         Args:
             override_config_path: Path to custom language config JSON file,
@@ -251,10 +249,9 @@ class QueryManager:
             raise RuntimeError("Failed to parse language configs!") from e
 
     def _init_overrides(self, override_config_path: str) -> None:
-        """
-        Load custom language configs from the override path and merge them
-        with the existing configs. If a language key exists in the override
-        config, it replaces the built-in config for that language.
+        """Load custom language configs from the override path and merge them with the
+        existing configs. If a language key exists in the override config, it replaces
+        the built-in config for that language.
 
         Args:
             override_config_path: Path to the custom language config JSON file.
@@ -373,8 +370,8 @@ class QueryManager:
         ],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
-        """
-        Run either the scope or shared token query for the language on `tree_root`.
+        """Run either the scope or shared token query for the language on `tree_root`.
+
         If `line_ranges` is provided, only matches within those 0-indexed (start, end) line ranges are returned.
         Returns a list of matches from the query.
         """
@@ -434,8 +431,7 @@ class QueryManager:
         tree_root: Node,
         line_ranges: list[tuple[int, int]] | None = None,
     ) -> list[tuple[tuple[int, dict[str, list[Node]]], str]]:
-        """
-        Run named_scope queries individually to preserve type information.
+        """Run named_scope queries individually to preserve type information.
 
         Returns a list of (match, scope_type) tuples where:
         - match is a tuple from cursor.matches() containing (pattern_index, captures_dict)
