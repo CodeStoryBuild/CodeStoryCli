@@ -33,13 +33,11 @@ def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
             return False
 
     if commands.need_track_untracked(target):
-        track = inquirer.confirm(
-            f'Untracked files detected within "{target}"  Do you want to track these files?',
-            default=False,
+        console.print(
+            f'Untracked files detected within "{target}", temporarily staging changes',
         )
 
-        if track:
-            commands.track_untracked(target)
+        commands.track_untracked(target)
 
     return True
 

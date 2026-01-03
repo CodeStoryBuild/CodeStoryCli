@@ -20,7 +20,16 @@
         },
         "scope_queries": [
                 "((function_definition) @placeholder)",
-                "((class_definition) @placeholder)"
+                "((while_statement) @placeholder)",
+                "((class_definition) @placeholder)",
+                "((if_statement) @placeholder)",
+                "((for_statement) @placeholder)",
+                "((try_statement) @placeholder)",
+                "((with_statement) @placeholder)",
+                "((list_comprehension) @placeholder)",
+                "((generator_expression) @placeholder)",
+                "((set_comprehension) @placeholder)",
+                "((dictionary_comprehension) @placeholder)"
             ]
         ,
         "comment_queries": ["((comment) @placeholder)"],
