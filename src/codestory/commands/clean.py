@@ -15,12 +15,9 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-import typer
-from loguru import logger
 
-from codestory.commands.fix import run_fix
 from codestory.context import CleanContext, GlobalContext
-from codestory.core.exceptions import handle_codestory_exception
+from codestory.core.exceptions import GitError
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     validate_commit_hash,
@@ -36,10 +33,7 @@ def run_clean(
     min_size: int | None,
     start_from: str | None,
 ):
-    def fix_command(commit_hash: str):
-        run_fix(
-            global_context=global_context, commit_hash=commit_hash, start_commit=None
-        )
+    from loguru import logger
 
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
@@ -47,6 +41,32 @@ def run_clean(
 
     if start_from:
         validated_start_from = validate_commit_hash(start_from)
+
+        # Verify the commit exists
+        resolved_commit = global_context.git_interface.run_git_text_out(
+            ["rev-parse", validated_start_from]
+        )
+        if not resolved_commit or not resolved_commit.strip():
+            raise GitError(f"Commit not found: {validated_start_from}")
+
+        validated_start_from = resolved_commit.strip()
+
+        # Verify the commit is an ancestor of HEAD (exists in current branch history)
+        head_hash = global_context.git_interface.run_git_text_out(["rev-parse", "HEAD"])
+        if not head_hash or not head_hash.strip():
+            raise GitError("Failed to resolve HEAD")
+
+        head_hash = head_hash.strip()
+
+        is_ancestor = global_context.git_interface.run_git_text(
+            ["merge-base", "--is-ancestor", validated_start_from, head_hash]
+        )
+        if is_ancestor is None or is_ancestor.returncode != 0:
+            raise GitError(
+                f"Commit {validated_start_from[:7]} is not in the current branch history. "
+                "The start_from commit must be an ancestor of HEAD."
+            )
+
         # Validate that there are no merge commits in the range to be cleaned
         validate_no_merge_commits_in_range(
             global_context.git_interface, validated_start_from, "HEAD"
@@ -69,46 +89,10 @@ def run_clean(
     from codestory.pipelines.clean_pipeline import CleanPipeline
 
     with time_block("Clean Runner E2E"):
-        runner = CleanPipeline(global_context, clean_context, fix_command)
+        runner = CleanPipeline(global_context, clean_context)
         success = runner.run()
 
     if success:
         logger.success("Clean command completed successfully")
     else:
         logger.error("Clean operation failed")
-
-
-def main(
-    ctx: typer.Context,
-    ignore: list[str] | None = typer.Option(
-        None,
-        "--ignore",
-        help="Commit hashes or prefixes to ignore.",
-    ),
-    min_size: int | None = typer.Option(
-        None,
-        "--min-size",
-        help="Minimum change size (lines) to process.",
-    ),
-    start_from: str | None = typer.Argument(
-        None,
-        help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
-    ),
-) -> None:
-    """Fix your entire repository starting from the latest commit.
-
-    Note: This command will stop at the first merge commit encountered.
-    Merge commits cannot be rewritten and will mark the boundary of the clean operation.
-
-    Examples:
-        # Clean starting from the latest commit
-        cst clean
-
-        # Clean starting from a specific commit with a minimum line count of 5
-        cst clean abc123 --min-size 5
-
-        # Clean while ignoring certain commits
-        cst clean --ignore def456 --ignore ghi789
-    """
-    with handle_codestory_exception():
-        run_clean(ctx.obj, ignore, min_size, start_from)

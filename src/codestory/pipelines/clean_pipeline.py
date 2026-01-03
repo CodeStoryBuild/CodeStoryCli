@@ -16,132 +16,399 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from __future__ import annotations
+import contextlib
+import os
+import tempfile
+from collections.abc import Generator, Sequence
 
-from collections.abc import Callable, Sequence
 
-from loguru import logger
-
-from codestory.context import CleanContext, GlobalContext
+from codestory.context import CleanContext, CommitContext, GlobalContext
 from codestory.core.exceptions import CleanCommandError
+from codestory.pipelines.rewrite_init import create_rewrite_pipeline
 
 
 class CleanPipeline:
-    """Iteratively fix commits from HEAD down to the second commit.
+    """
+    Rewrites a linear segment of git history atomically and safely for bare repositories.
 
-    The pipeline stops at the first merge commit encountered (merge commits are not processed).
-
-    Filtering rules:
-    - ignore: any commit whose hash starts with any ignore token will be skipped
-    - min_size: if provided, skip commits whose (additions + deletions) < min_size
+    Mechanics:
+    - Uses Git plumbing commands (read-tree, commit-tree, update-ref) exclusively.
+    - Uses explicit temporary GIT_INDEX_FILE env vars for internal merge operations.
+    - Does NOT touch the working directory.
+    - Maintains a detached chain of commit hashes.
+    - Atomically updates the target branch reference only upon success.
     """
 
     def __init__(
         self,
         global_context: GlobalContext,
         clean_context: CleanContext,
-        fix_command: Callable[[str], str],
     ):
         self.global_context = global_context
         self.clean_context = clean_context
-        self.fix_command = fix_command
 
     def run(self) -> bool:
-        commits = self._get_first_parent_commits(self.clean_context.start_from)[
-            :-1
-        ]  # we skip root commit
+        from loguru import logger
 
-        if not commits:
+        # ------------------------------------------------------------------
+        # 1. Determine linear history window candidates
+        # ------------------------------------------------------------------
+        raw_commits = self._get_linear_history(self.clean_context.start_from)
+
+        if not raw_commits:
             logger.warning(
-                "No candidate commits to clean, please note cleaning root commit is not supported!"
+                "No commits eligible for cleaning (root or merge-only history)."
             )
             return False
 
-        total = len(commits)
+        # Process from Oldest -> Newest
+        commits_to_rewrite = list(reversed(raw_commits))
+
+        original_branch = self.global_context.git_commands.get_current_branch()
+
+        start_commit = commits_to_rewrite[0]
+        end_commit = commits_to_rewrite[-1]
 
         logger.debug(
-            "Starting codestory clean operation on {total} commits", total=total
+            "Starting index-only clean on {n} commits ({start}...{end})",
+            n=len(commits_to_rewrite),
+            start=start_commit[:7],
+            end=end_commit[:7],
         )
 
-        fixed = 0
-        skipped = 0
+        # ------------------------------------------------------------------
+        # 2. Establish initial base (parent of first window start)
+        # ------------------------------------------------------------------
+        current_base_hash = self.global_context.git_commands.try_get_parent_hash(
+            start_commit
+        )
 
-        for idx, commit in enumerate(commits):
-            short = commit[:7]
-
-            # Stop at the first merge commit
-            if self._is_merge(commit):
-                logger.debug(
-                    "Stopping at merge commit {commit}. Cleaned {fixed} commits.",
-                    commit=short,
-                    fixed=fixed,
-                )
-                break
-
-            # TODO implement sliding window to possibly group small commits together *before* fixing all together
-            # We will use symbols/changed etc to reason about this window size
-            # parent = self.global_context.git_commands.try_get_parent_hash(
-            #     commit, empty_on_fail=True
-            # )
-            # diff_chunks, immut_chunks = (
-            #     self.global_context.git_commands.get_processed_working_diff(
-            #         parent, commit
-            #     )
-            # )
-
-            # context_manager = ContextManager(
-            #     diff_chunks,
-            #     GitFileReader(self.global_context.git_interface, parent, commit),
-            #     fail_on_syntax_errors=False,
-            # )
-            # annotated_chunks = ChunkLabeler.annotate_chunks(
-            #     diff_chunks, context_manager
-            # )
-
-            if self._is_ignored(commit, self.clean_context.ignore):
-                logger.debug("Skipping ignored commit {commit}", commit=short)
-                skipped += 1
-                continue
-
-            if self.clean_context.min_size is not None:
-                changes = self._count_line_changes(commit)
-                if changes is None:
-                    logger.debug(
-                        "Skipping {commit}: unable to count changes",
-                        commit=short,
-                    )
-                    skipped += 1
-                    continue
-                if changes < self.clean_context.min_size:
-                    logger.debug(
-                        "Skipping {commit}: {changes} < min-size {min_size}",
-                        commit=short,
-                        changes=changes,
-                        min_size=self.clean_context.min_size,
-                    )
-                    skipped += 1
-                    continue
-
-            logger.debug(
-                "Fix commit {commit} ({idx}/{total})",
-                commit=short,
-                idx=idx,
-                total=total,
+        if not current_base_hash:
+            raise CleanCommandError(
+                f"Cannot clean history starting at root commit {start_commit}"
             )
-            self.fix_command(commit)
-            fixed += 1
 
-        logger.success(
-            "Clean operation complete: fixed={fixed}, skipped={skipped}",
-            fixed=fixed,
-            skipped=skipped,
+        rewritten_count = 0
+        skipped_count = 0
+        current_idx = 0
+
+        try:
+            # ------------------------------------------------------------------
+            # 3. Iterate through the history
+            # ------------------------------------------------------------------
+            while current_idx < len(commits_to_rewrite):
+                window_end_idx = current_idx
+
+                # Future: Grow window logic here
+                # while should_grow(window_end_idx): window_end_idx++
+
+                commit_hash = commits_to_rewrite[window_end_idx]
+                short = commit_hash[:7]
+
+                # Check filters
+                should_skip_clean = False
+                if self._is_ignored(commit_hash, self.clean_context.ignore):
+                    should_skip_clean = True
+                elif self.clean_context.min_size is not None:
+                    changes = self._count_line_changes(commit_hash)
+                    if changes is not None and changes < self.clean_context.min_size:
+                        should_skip_clean = True
+                        logger.debug(
+                            "Commit {commit} size {changes} < min {min_size}, skipping clean.",
+                            commit=short,
+                            changes=changes,
+                            min_size=self.clean_context.min_size,
+                        )
+
+                if should_skip_clean:
+                    logger.debug(
+                        "Copying (plumbing merge) ignored commit {commit}", commit=short
+                    )
+
+                    # Perform an in-memory 3-way merge/copy using a temporary index
+                    new_commit = self._copy_commit_index_only(
+                        commit_hash, current_base_hash
+                    )
+
+                    if not new_commit:
+                        raise CleanCommandError(
+                            f"Failed to copy commit {short} (likely merge conflict). Atomic clean aborted."
+                        )
+
+                    current_base_hash = new_commit
+                    skipped_count += 1
+                else:
+                    logger.debug(
+                        "Rewriting commit {commit} ({i}/{t})",
+                        commit=short,
+                        i=current_idx + 1,
+                        t=len(commits_to_rewrite),
+                    )
+
+                    original_msg = (
+                        self.global_context.git_interface.run_git_text_out(
+                            ["log", "-1", "--pretty=%B", commit_hash]
+                        )
+                        or "Update"
+                    )
+
+                    commit_ctx = CommitContext(
+                        target=None,
+                        message=original_msg.strip(),
+                        fail_on_syntax_errors=False,
+                        relevance_filter_level="none",
+                        secret_scanner_aggression="none",
+                    )
+
+                    pipeline = create_rewrite_pipeline(
+                        self.global_context,
+                        commit_ctx,
+                        base_commit_hash=current_base_hash,
+                        new_commit_hash=commit_hash,
+                        source="fix",
+                    )
+
+                    new_tip_hash = pipeline.run()
+
+                    if new_tip_hash:
+                        current_base_hash = new_tip_hash
+                        rewritten_count += 1
+                    else:
+                        logger.warning(
+                            f"Commit {short} resulted in empty change or was dropped."
+                        )
+                        # If dropped, current_base_hash stays same.
+
+                # Advance window
+                current_idx = window_end_idx + 1
+
+            # ------------------------------------------------------------------
+            # 4. Finalize: Atomic Update
+            # ------------------------------------------------------------------
+            logger.success("History rewrite complete. Updating references.")
+
+            # Check if there are downstream commits that need to be rebased
+            # This happens when start_from is not HEAD
+            original_head = self.global_context.git_interface.run_git_text_out(
+                ["rev-parse", "HEAD"]
+            )
+            if original_head:
+                original_head = original_head.strip()
+
+            # Check if there are commits after the cleaned range
+            downstream_commits = None
+            if end_commit != original_head:
+                # There are commits between end_commit and HEAD that need rebasing
+                downstream_check = self.global_context.git_interface.run_git_text_out(
+                    ["rev-list", f"{end_commit}..HEAD"]
+                )
+                if downstream_check and downstream_check.strip():
+                    downstream_commits = downstream_check.strip().splitlines()
+
+            if downstream_commits:
+                logger.info(
+                    f"Rebasing {len(downstream_commits)} downstream commit(s) onto new history..."
+                )
+
+                # Use merge-tree to rebase downstream commits (bare-repo friendly)
+                # Process commits from oldest to newest
+                downstream_commits.reverse()
+                new_parent = current_base_hash
+
+                for commit in downstream_commits:
+                    # Get commit metadata
+                    log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
+                    meta_out = self.global_context.git_interface.run_git_text_out(
+                        ["log", "-1", f"--format={log_format}", commit]
+                    )
+
+                    if not meta_out:
+                        raise CleanCommandError(
+                            f"Failed to get metadata for commit {commit[:7]}"
+                        )
+
+                    lines = meta_out.splitlines()
+                    if len(lines) < 7:
+                        raise CleanCommandError(
+                            f"Invalid metadata for commit {commit[:7]}"
+                        )
+
+                    author_name = lines[0]
+                    author_email = lines[1]
+                    author_date = lines[2]
+                    committer_name = lines[3]
+                    committer_email = lines[4]
+                    committer_date = lines[5]
+                    message = "\n".join(lines[6:])
+
+                    # Get the parent of the original commit
+                    original_parent = (
+                        self.global_context.git_commands.try_get_parent_hash(commit)
+                    )
+                    if not original_parent:
+                        raise CleanCommandError(
+                            f"Failed to get parent of commit {commit[:7]}"
+                        )
+
+                    # Use merge-tree to compute the new tree
+                    # merge-tree --write-tree --merge-base <base> <branch1> <branch2>
+                    # We want to replay commit's changes onto new_parent
+                    tree_out = self.global_context.git_interface.run_git_text_out(
+                        [
+                            "merge-tree",
+                            "--write-tree",
+                            "--merge-base",
+                            original_parent,
+                            new_parent,
+                            commit,
+                        ]
+                    )
+
+                    if not tree_out:
+                        raise CleanCommandError(
+                            f"Failed to merge-tree for commit {commit[:7]}. May have conflicts."
+                        )
+
+                    new_tree = tree_out.strip()
+
+                    # Create commit with the new tree
+                    cmd_env = os.environ.copy()
+                    cmd_env["GIT_AUTHOR_NAME"] = author_name
+                    cmd_env["GIT_AUTHOR_EMAIL"] = author_email
+                    cmd_env["GIT_AUTHOR_DATE"] = author_date
+                    cmd_env["GIT_COMMITTER_NAME"] = committer_name
+                    cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
+                    cmd_env["GIT_COMMITTER_DATE"] = committer_date
+
+                    new_commit = self.global_context.git_interface.run_git_text_out(
+                        ["commit-tree", new_tree, "-p", new_parent, "-m", message],
+                        env=cmd_env,
+                    )
+
+                    if not new_commit:
+                        raise CleanCommandError(
+                            f"Failed to create commit for {commit[:7]}"
+                        )
+
+                    new_parent = new_commit.strip()
+
+                logger.success("Downstream commits successfully rebased.")
+                current_base_hash = new_parent
+
+            if original_branch:
+                # Atomically move the branch pointer to the new chain tip
+                self.global_context.git_interface.run_git_text(
+                    ["update-ref", f"refs/heads/{original_branch}", current_base_hash]
+                )
+                # Sync the working directory to the new head (bare-repo friendly)
+                self.global_context.git_interface.run_git_text_out(
+                    ["read-tree", "HEAD"]
+                )
+            else:
+                # If detached, update HEAD
+                self.global_context.git_interface.run_git_text(
+                    ["update-ref", "HEAD", current_base_hash]
+                )
+
+            logger.success(
+                "Clean complete: fixed={fixed}, copied={skipped}",
+                fixed=rewritten_count,
+                skipped=skipped_count,
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Clean pipeline failed: {e}")
+            logger.warning("No references were updated. Repository state is unchanged.")
+            return False
+
+    def _copy_commit_index_only(
+        self, original_commit: str, new_base: str
+    ) -> str | None:
+        from loguru import logger
+
+        """
+        Replays 'original_commit' onto 'new_base' using index-only 3-way merge.
+        Does not touch the working tree or global index.
+        """
+        original_parent = self.global_context.git_commands.try_get_parent_hash(
+            original_commit
         )
-        return True
+        if not original_parent:
+            return None
 
-    def _get_first_parent_commits(self, start_from: str | None = None) -> list[str]:
+        # Gather metadata from the original commit
+        # Format: Name%nEmail%nDate%nBody
+        log_format = "%an%n%ae%n%aI%n%B"
+        meta_out = self.global_context.git_interface.run_git_text_out(
+            ["log", "-1", f"--format={log_format}", original_commit]
+        )
+
+        if not meta_out:
+            return None
+
+        lines = meta_out.splitlines()
+        if len(lines) < 4:
+            return None
+
+        author_name = lines[0]
+        author_email = lines[1]
+        author_date = lines[2]
+        message = "\n".join(lines[3:])
+
+        with tempfile.NamedTemporaryFile() as index_path:
+            # Prepare the environment for git commands
+            cmd_env = os.environ.copy()
+            cmd_env["GIT_INDEX_FILE"] = index_path
+
+            # 1. Read the 3-way merge into the TEMP index
+            # read-tree -i -m --aggressive <base> <current> <target>
+            res = self.global_context.git_interface.run_git_text_out(
+                [
+                    "read-tree",
+                    "-i",
+                    "-m",
+                    "--aggressive",
+                    original_parent,
+                    new_base,
+                    original_commit,
+                ],
+                env=cmd_env,
+            )
+
+            if res is None:
+                logger.error("Failed to read-tree for merge!")
+                return None
+
+            # 2. Write the temp index to a tree object
+            tree_hash = self.global_context.git_interface.run_git_text_out(
+                ["write-tree"], env=cmd_env
+            )
+            if not tree_hash:
+                logger.error("Failed to write-tree.")
+                return None
+            tree_hash = tree_hash.strip()
+
+            # 3. Create commit object from tree
+            # Add author info to the env for commit-tree
+            cmd_env["GIT_AUTHOR_NAME"] = author_name
+            cmd_env["GIT_AUTHOR_EMAIL"] = author_email
+            cmd_env["GIT_AUTHOR_DATE"] = author_date
+
+            new_commit_hash = self.global_context.git_interface.run_git_text_out(
+                ["commit-tree", tree_hash, "-p", new_base, "-m", message],
+                env=cmd_env,
+            )
+
+            return new_commit_hash.strip() if new_commit_hash else None
+
+    def _get_linear_history(self, start_from: str | None = None) -> list[str]:
+        """
+        Returns a list of commit hashes from HEAD down to (but excluding) the first merge
+        or the root. Order is HEAD -> Oldest.
+        """
         start_ref = start_from or "HEAD"
         if start_from:
-            # Resolve the commit hash first to ensure it exists
             resolved = self.global_context.git_interface.run_git_text_out(
                 ["rev-parse", start_from]
             )
@@ -149,24 +416,31 @@ class CleanPipeline:
                 raise CleanCommandError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
 
+        stop_commit_out = self.global_context.git_interface.run_git_text_out(
+            ["rev-list", "--merges", "-n", "1", start_ref]
+        )
+
+        range_spec = start_ref
+        if stop_commit_out and stop_commit_out.strip():
+            stop_commit = stop_commit_out.strip()
+            range_spec = f"{stop_commit}..{start_ref}"
+
         out = (
             self.global_context.git_interface.run_git_text_out(
-                ["rev-list", "--first-parent", start_ref]
+                ["rev-list", "--first-parent", range_spec]
             )
             or ""
         )
-        return [line.strip() for line in out.splitlines() if line.strip()]
 
-    def _is_merge(self, commit: str) -> bool:
-        line = (
-            self.global_context.git_interface.run_git_text_out(
-                ["rev-list", "--parents", "-n", "1", commit]
-            )
-            or ""
-        )
-        parts = line.strip().split()
-        # format: <commit> <p1> [<p2> ...]
-        return len(parts) > 2
+        commits = [line.strip() for line in out.splitlines() if line.strip()]
+
+        if commits:
+            last = commits[-1]
+            parents = self.global_context.git_commands.try_get_parent_hash(last)
+            if not parents:
+                commits.pop()
+
+        return commits
 
     def _is_ignored(self, commit: str, ignore: Sequence[str] | None) -> bool:
         if not ignore:
@@ -174,8 +448,6 @@ class CleanPipeline:
         return any(commit.startswith(token) for token in ignore)
 
     def _count_line_changes(self, commit: str) -> int | None:
-        # Sum additions + deletions between parent and commit.
-        # Use numstat for robust parsing; binary files show '-' which we treat as 0.
         out = self.global_context.git_interface.run_git_text_out(
             ["diff", "--numstat", f"{commit}^", commit]
         )
@@ -186,14 +458,10 @@ class CleanPipeline:
             parts = line.split("\t")
             if len(parts) < 3:
                 continue
-            a, d = parts[0], parts[1]
             try:
-                add = int(a)
+                add = int(parts[0]) if parts[0] != "-" else 0
+                dele = int(parts[1]) if parts[1] != "-" else 0
+                total += add + dele
             except ValueError:
-                add = 0
-            try:
-                dele = int(d)
-            except ValueError:
-                dele = 0
-            total += add + dele
+                continue
         return total

@@ -88,6 +88,68 @@ class DiffGenerator:
 
         return total_chunks_per_file
 
+    def get_completeness_map(
+        self, chunks: list[Chunk | ImmutableChunk | CommitGroup]
+    ) -> dict[bytes, bool]:
+        """
+        Computes a mapping from file path to whether all chunks for that file
+        are present in the provided subset.
+
+        This is used to determine if a file deletion should be treated as a
+        full deletion (all chunks present) or a partial modification (some chunks missing).
+
+        Args:
+            chunks: A subset of chunks (same format as __init__ accepts)
+
+        Returns:
+            Dict mapping file_path (bytes) to is_complete (bool)
+        """
+        # Flatten the provided chunks to get DiffChunks
+        diff_chunks: list[DiffChunk] = []
+        for chunk in chunks:
+            if isinstance(chunk, Chunk):
+                diff_chunks.extend(chunk.get_chunks())
+            elif isinstance(chunk, CommitGroup):
+                for group_chunk in chunk.chunks:
+                    if isinstance(group_chunk, Chunk):
+                        diff_chunks.extend(group_chunk.get_chunks())
+            # ImmutableChunks are always complete by definition, skip them here
+
+        # Count chunks per file in the provided subset
+        subset_counts: dict[bytes, int] = {}
+        for chunk in diff_chunks:
+            file_path = chunk.canonical_path()
+            subset_counts[file_path] = subset_counts.get(file_path, 0) + 1
+
+        # Compare against total_chunks_per_file to determine completeness
+        completeness_map: dict[bytes, bool] = {}
+        for file_path, subset_count in subset_counts.items():
+            total_expected = self.total_chunks_per_file.get(file_path, 0)
+            completeness_map[file_path] = subset_count >= total_expected
+
+        return completeness_map
+
+    def _get_completeness_map_from_diff_chunks(
+        self, diff_chunks: list[DiffChunk]
+    ) -> dict[bytes, bool]:
+        """
+        Internal helper to compute completeness map directly from DiffChunks.
+        Used by generate_diff implementations.
+        """
+        # Count chunks per file in the provided subset
+        subset_counts: dict[bytes, int] = {}
+        for chunk in diff_chunks:
+            file_path = chunk.canonical_path()
+            subset_counts[file_path] = subset_counts.get(file_path, 0) + 1
+
+        # Compare against total_chunks_per_file to determine completeness
+        completeness_map: dict[bytes, bool] = {}
+        for file_path, subset_count in subset_counts.items():
+            total_expected = self.total_chunks_per_file.get(file_path, 0)
+            completeness_map[file_path] = subset_count >= total_expected
+
+        return completeness_map
+
     @abstractmethod
     def generate_diff(
         self,

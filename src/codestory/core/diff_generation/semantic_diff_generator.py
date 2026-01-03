@@ -49,6 +49,9 @@ class SemanticDiffGenerator(DiffGenerator):
         if immutable_chunks is None:
             immutable_chunks = []
 
+        # Compute completeness map to determine if file deletions are complete
+        completeness_map = self._get_completeness_map_from_diff_chunks(diff_chunks)
+
         patches: dict[bytes, bytes] = {}
 
         # 1. Process Immutable Chunks
@@ -78,15 +81,15 @@ class SemanticDiffGenerator(DiffGenerator):
 
             # --- LOGIC MIRRORING GITDIFFGENERATOR STARTS HERE ---
 
-            current_count = len(file_chunks)
-            total_expected = self.total_chunks_per_file.get(file_path)
+            # Check if all chunks for this file are present
+            is_complete = completeness_map.get(file_path, False)
 
             single_chunk = file_chunks[0]
 
             # We need all chunks to mark as deletion
             file_deletion = (
                 all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and current_count >= total_expected
+                and is_complete
             )
             file_addition = all(
                 [file_chunk.is_file_addition for file_chunk in file_chunks]
@@ -96,7 +99,7 @@ class SemanticDiffGenerator(DiffGenerator):
                 [file_chunk.is_standard_modification for file_chunk in file_chunks]
             ) or (
                 all([file_chunk.is_file_deletion for file_chunk in file_chunks])
-                and current_count < total_expected
+                and not is_complete
             )
             file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
 
