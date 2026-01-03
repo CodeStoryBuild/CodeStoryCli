@@ -61,7 +61,6 @@ def main():
         "--standalone",
         "--onefile",
         "--assume-yes-for-downloads",
-        "--show-modules",
         # --- FORCE INCLUSION ---
         # 1. Include the root package
         "--include-package=tree_sitter_language_pack",
@@ -70,35 +69,15 @@ def main():
         #    Since you dynamically load these languages, Nuitka won't "see" them.
         #    This flag forces it to scan and include everything in that folder.
         "--include-module=tree_sitter_language_pack.bindings",
-        # STANDARD ANTI BLOAT
-        "--enable-plugin=anti-bloat",
-        # --- CORE INCLUDES ---
         "--include-package=codestory",
-        "--include-package-data=codestory",
-        # --- ESSENTIAL DEPENDENCIES ---
-        "--include-package=platformdirs",
-        "--include-package=typer",
-        "--include-package=rich",
-        "--include-package=loguru",
-        "--include-package=dotenv",
-        "--include-package=git",
         # --- LANGCHAIN ---
-        "--include-package=langchain",
         # LANGSMITH HAS A PYTEST IMPORT WE DONT WANT (idk why all caps lol)
         "--nofollow-import-to=pytest",
-        "--include-package=langchain_core",
-        "--include-package=langchain_openai",
-        "--include-package=langchain_anthropic",
-        "--include-package=langchain_google_genai",
-        "--include-package=langchain_ollama",
         # --- UTILS ---
         "--include-package=pygments",
         "--include-package=inquirer",
         "--include-package=readchar",
-        # --- TREE SITTER FIX ---
         "--include-package=tree_sitter",
-        # Note: --include-package-data IGNORES .pyd/.so files by default!
-        # We must manually force the bindings folder to be included as data directory.
     ]
 
     # --- FINAL CONFIG ---
