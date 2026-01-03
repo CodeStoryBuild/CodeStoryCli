@@ -26,13 +26,13 @@ from codestory.core.exceptions import (
 )
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.temp_commiter.temp_commiter import TempCommitCreator
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
     validate_target_path,
 )
-from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def verify_repo_state(commands: GitCommands, target: str) -> bool:

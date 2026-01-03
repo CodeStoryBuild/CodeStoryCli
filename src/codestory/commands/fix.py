@@ -24,12 +24,12 @@ from codestory.core.exceptions import (
     GitError,
 )
 from codestory.core.logging.utils import time_block
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 from codestory.core.validation import (
     is_root_commit,
     validate_commit_hash,
     validate_no_merge_commits_in_range,
 )
-from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def get_info(global_context: GlobalContext, fix_context: FixContext):

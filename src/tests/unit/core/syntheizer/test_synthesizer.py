@@ -25,11 +25,11 @@ import pytest
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper
+from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
-from codestory.core.git_commands.git_commands import GitCommands
 
 ## Fixtures
 
