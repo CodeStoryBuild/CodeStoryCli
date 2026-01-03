@@ -196,6 +196,7 @@ class SemanticGrouper:
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
                 return None  # Signal failure explicitly
+        print(f"{total_signature=} {chunk_scope=}")
 
         return (total_signature, chunk_scope)
 
@@ -406,6 +407,7 @@ class SemanticGrouper:
                 first_chunk_id = ids[0]
                 for i in range(1, len(ids)):
                     uf.union(first_chunk_id, ids[i])
+        print(f"{scope_to_chunks=}")
 
         # Step 5: Group chunks by their root in the Union-Find structure
         groups: Dict[int, List[Chunk]] = defaultdict(list)

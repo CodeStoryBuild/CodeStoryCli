@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from importlib.resources.abc import Traversable
+from importlib.abc import Traversable
 import json
 from typing import Dict, List, Tuple, Literal
 from loguru import logger
