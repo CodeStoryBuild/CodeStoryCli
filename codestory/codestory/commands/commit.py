@@ -23,9 +23,8 @@
 from typing import Literal
 
 import typer
+from colorama import Fore, Style
 from loguru import logger
-from colorama import Style, Fore
-
 
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.branch_saver.branch_saver import BranchSaver
