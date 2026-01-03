@@ -14,7 +14,6 @@ from vibe.core.chunker.simple_chunker import SimpleChunker
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
 
-
 # ============================================================================
 # Helper Functions
 # ============================================================================

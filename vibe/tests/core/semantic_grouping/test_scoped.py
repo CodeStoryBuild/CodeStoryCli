@@ -8,7 +8,7 @@ from vibe.core.semantic_grouper.symbol_mapper import SymbolMapper
 
 FILE_PATH = "fileA.py"
 
-with open(FILE_PATH, "r", encoding="utf8") as f:
+with open(FILE_PATH, encoding="utf8") as f:
     content = f.read()
 
 # Parse the file using FileParser

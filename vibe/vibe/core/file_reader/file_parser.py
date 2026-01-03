@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+
+from pygments.lexers import get_lexer_for_filename
 from pygments.util import ClassNotFound
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
-from pygments.lexers import guess_lexer_for_filename, get_lexer_for_filename
 
 
 @dataclass(frozen=True)

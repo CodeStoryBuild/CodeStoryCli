@@ -75,4 +75,3 @@ def main(
             console.print(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Expand operation failed: {e.message}")
         raise typer.Exit(1)
-        

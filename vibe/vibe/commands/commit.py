@@ -94,4 +94,3 @@ def main(
             console.print(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Vibe operation failed: {e.message}")
         raise typer.Exit(1)
-        
