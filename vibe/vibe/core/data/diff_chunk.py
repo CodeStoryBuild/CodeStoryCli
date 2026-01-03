@@ -33,10 +33,10 @@ class DiffChunk(ABC):
     def get_chunk_application_data(self) -> List["ChunkApplicationData"]:
         """
         Returns the chunk application data needed for applying this chunk's changes.
-        
+
         This encapsulates the logic for converting the chunk's internal representation
         into the format needed by the GitSynthesizer to apply changes to files.
-        
+
         Returns:
             A list of ChunkApplicationData objects representing the changes to apply.
         """

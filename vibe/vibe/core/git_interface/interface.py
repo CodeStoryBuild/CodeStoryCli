@@ -15,7 +15,7 @@ class GitInterface(ABC):
         args: List[str],
         input_text: Optional[str] = None,
         env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None
+        cwd: Optional[Union[str, Path]] = None,
     ) -> Optional[str]:
         """Run a git command with text input/output. Returns None on error."""
 
@@ -25,6 +25,6 @@ class GitInterface(ABC):
         args: List[str],
         input_bytes: Optional[bytes] = None,
         env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None
+        cwd: Optional[Union[str, Path]] = None,
     ) -> Optional[bytes]:
         """Run a git command with binary input/output. Returns None on error."""

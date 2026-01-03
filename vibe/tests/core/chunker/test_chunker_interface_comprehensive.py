@@ -24,6 +24,7 @@ from vibe.core.checks.chunk_checks import chunks_disjoint
 # Helper Functions
 # ============================================================================
 
+
 def flatten_chunk(chunk: DiffChunk) -> List[tuple]:
     """
     Flatten a chunk to (type, line_number, content) tuples for comparison.
