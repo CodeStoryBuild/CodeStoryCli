@@ -56,9 +56,9 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 def main(
     ctx: typer.Context,
     target: str | None = typer.Argument(
-        None, help="The target path to check for changes."
+        None, help="Path to file or directory to commit."
     ),
-    message: str | None = typer.Argument(None, help="Message to the AI model"),
+    message: str | None = typer.Argument(None, help="Context or instructions for the AI to generate the commit message"),
 ) -> None:
     """
     Commits changes with AI-powered messages.
@@ -82,7 +82,7 @@ def main(
     global_context: GlobalContext = ctx.obj
     commit_context = CommitContext(validated_target, validated_message)
 
-    logger.debug("[green] Verifying Repo State... [/green]")
+    logger.debug("[green] Checking repository status... [/green]")
     # verify repo state specifically for commit command
     if not verify_repo(
         global_context.git_commands,
@@ -94,7 +94,7 @@ def main(
     # next we create our base/new commits + backup branch for later
     branch_saver = BranchSaver(global_context.git_interface)
 
-    logger.debug("[green] Creating backup of working state... [/green]")
+    logger.debug("[green] Backing up current state... [/green]")
     base_commit_hash, new_commit_hash, current_branch = (
         branch_saver.save_working_state()
     )

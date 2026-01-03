@@ -52,7 +52,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
 def main(
     ctx: typer.Context,
-    commit_hash: str = typer.Argument(..., help="Commit hash to fix"),
+    commit_hash: str = typer.Argument(..., help="Hash of the commit to split or fix"),
 ) -> None:
     """Fix a past commit by splitting into smaller logical commits safely.
 
