@@ -3,6 +3,7 @@ from importlib.resources import files
 import inquirer
 from rich.console import Console
 
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.branch_saver.branch_saver import BranchSaver
@@ -14,6 +15,7 @@ from vibe.core.pipeline.runner import AIGitPipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.chunker.atomic_chunker import AtomicChunker
 from vibe.core.grouper.single_grouper import SingleGrouper
+from vibe.core.grouper.langchain_grouper import LangChainGrouper
 from vibe.core.file_reader.git_file_reader import GitFileReader
 
 
@@ -54,7 +56,8 @@ def createPipeline(repo_path: str, target: str, console: Console):
     commands = GitCommands(git_interface)
 
     chunker = AtomicChunker()
-    logical_grouper = SingleGrouper()
+    # logical_grouper = SingleGrouper()
+    logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
 
     branch_saver = BranchSaver(git_interface)
 
@@ -80,7 +83,7 @@ def createPipeline(repo_path: str, target: str, console: Console):
     config_path = files("vibe") / "resources" / "language_config.json"
     query_manager = QueryManager(config_path)
 
-    semantic_grouper = SemanticGrouper(file_parser, file_reader, query_manager)
+    semantic_grouper = SemanticGrouper()
 
     synthesizer = GitSynthesizer(git_interface)
 
@@ -93,6 +96,9 @@ def createPipeline(repo_path: str, target: str, console: Console):
         logical_grouper,
         synthesizer,
         branch_saver,
+        file_reader,
+        file_parser,
+        query_manager,
         base_branch,
         new_branch,
         base_commit_hash,

@@ -56,8 +56,9 @@ class GitSynthesizer:
         output_bytes = self._run_git_binary(*args, **kwargs)
         return output_bytes.decode("utf-8", errors="replace").strip()
 
+    @staticmethod
     def _generate_unified_diff(
-        self, chunks: List[DiffChunk], total_chunks_per_file: Dict[str, int]
+        chunks: List[DiffChunk], total_chunks_per_file: Dict[str, int]
     ) -> Dict[str, str]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file
@@ -206,7 +207,7 @@ class GitSynthesizer:
                     key=lambda c: c.line_anchor,
                 )
 
-                merged = self.merge_continous_same_type(sorted_file_chunks)
+                merged = GitSynthesizer.merge_continous_same_type(sorted_file_chunks)
 
                 # if single_chunk.is_file_addition:
                 #     # file additions are handled differently
@@ -270,7 +271,8 @@ class GitSynthesizer:
 
         return patches
 
-    def merge_continous_same_type(self, sorted_chunks: list[DiffChunk]):
+    @staticmethod
+    def merge_continous_same_type(sorted_chunks: list[DiffChunk]):
         new_chunks = []
         for chunk in sorted_chunks:
             sig = 1 if chunk.pure_addition() else (-1 if chunk.pure_deletion() else 0)
@@ -303,7 +305,7 @@ class GitSynthesizer:
 
                     if last_end + 1 == new_start:
                         # adjacent
-                        new_chunk = self.merge_two_single_type_chunks(last, chunk)
+                        new_chunk = GitSynthesizer.merge_two_single_type_chunks(last, chunk)
                         new_chunks[-1] = (new_chunk, sig)
                     elif last_end > new_start:
                         # overlapping, this is something that should not happen
@@ -320,7 +322,8 @@ class GitSynthesizer:
 
         return [chunk for (chunk, _) in new_chunks]
 
-    def merge_two_single_type_chunks(self, old: "DiffChunk", new: "DiffChunk"):
+    @staticmethod
+    def merge_two_single_type_chunks(old: "DiffChunk", new: "DiffChunk"):
         return DiffChunk(
             old_file_path=old.old_file_path,
             new_file_path=old.new_file_path,
@@ -352,7 +355,7 @@ class GitSynthesizer:
                     "worktree", "add", "--detach", str(worktree_path), base_commit_hash
                 )
 
-                patches = self._generate_unified_diff(
+                patches = GitSynthesizer._generate_unified_diff(
                     chunks_for_commit, total_chunks_per_file
                 )
                 logger.info(

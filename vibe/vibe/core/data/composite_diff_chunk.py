@@ -2,11 +2,10 @@ from dataclasses import dataclass
 from typing import List
 
 from .chunk import Chunk
-from ..grouper.interface import Groupable
 
 
 @dataclass(frozen=True)
-class CompositeDiffChunk(Groupable):
+class CompositeDiffChunk:
     """
     Represents a composite diff chunk that contains multiple DiffChunk instances.
 
@@ -35,10 +34,6 @@ class CompositeDiffChunk(Groupable):
     def canonical_paths(self):
         """
         Return the canonical paths for this composite chunk.
-
-        The composite chunk delegates to its first child chunk for the canonical
-        paths. This mirrors the behaviour in other composite/groupable types
-        where the first chunk is considered the representative.
         """
         paths = []
 

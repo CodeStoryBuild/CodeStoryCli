@@ -3,12 +3,12 @@ from typing import List
 
 from vibe.core.grouper.interface import LogicalGrouper
 from ..data.models import CommitGroup
-from .interface import Groupable
+from ..data.chunk import Chunk
 
 
 class SingleGrouper(LogicalGrouper):
     def group_chunks(
-        self, chunks: List[Groupable], message: str, on_progress=None
+        self, chunks: List[Chunk], message: str, on_progress=None
     ) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""
         groups: List[CommitGroup] = []
