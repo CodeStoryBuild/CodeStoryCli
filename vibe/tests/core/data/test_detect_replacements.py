@@ -1,4 +1,4 @@
-from vibe.core.data.models import Addition, Removal, Move, Replacement
+from vibe.core.data.line_changes import Addition, Removal, Move, Replacement
 from vibe.core.data.utils import detect_replacements
 
 

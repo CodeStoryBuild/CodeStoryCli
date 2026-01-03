@@ -1,5 +1,5 @@
 from typing import List, Union
-from .models import Addition, Removal, Move, Replacement
+from .line_changes import Addition, Removal, Move, Replacement
 
 
 def detect_moves(
@@ -90,9 +90,8 @@ def format_content_json(parsed_content) -> str:
     Returns:
         A JSON string representing the structured diff.
     """
-    # w_moves = detect_moves(parsed_content)
-    # simplified_diff = detect_replacements(w_moves)
-    simplified_diff = parsed_content
+    w_moves = detect_moves(parsed_content)
+    simplified_diff = detect_replacements(w_moves)
 
     structured_changes = []
 

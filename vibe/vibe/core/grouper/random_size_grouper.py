@@ -1,8 +1,8 @@
 import random
 from typing import List, Optional
 from ..data.models import CommitGroup, ProgressCallback
-from ..data.diff_chunk import DiffChunk
 from .interface import GrouperInterface
+from .interface import Groupable
 
 
 class RandomSizeGrouper(GrouperInterface):
@@ -11,7 +11,7 @@ class RandomSizeGrouper(GrouperInterface):
 
     def group_chunks(
         self,
-        chunks: List[DiffChunk],
+        chunks: List[Groupable],
         message: str,
         on_progress: Optional[ProgressCallback] = None,
     ) -> List[CommitGroup]:
@@ -24,7 +24,7 @@ class RandomSizeGrouper(GrouperInterface):
             group = CommitGroup(
                 chunks=group_chunks,
                 group_id=f"g{ct}",
-                commmit_message=f"random group #{ct}",
+                commit_message=f"random group #{ct}",
             )
             groups.append(group)
             if on_progress:

@@ -48,18 +48,6 @@ class SubprocessGitInterface(GitInterface):
 
             cmd = ["git"] + args
 
-            if "apply" in args:
-                if input_bytes:
-                    print(
-                        f"DEBUG_INTERFACE: run_git_binary received {len(input_bytes)} bytes for 'git apply'."
-                    )
-                else:
-                    print(
-                        "DEBUG_INTERFACE: WARNING! run_git_binary received NO input bytes for 'git apply'."
-                    )
-
-            # The debug print can be simplified now
-            print(f"DEBUG: Running command: {' '.join(cmd)}")
             result = subprocess.run(
                 cmd,
                 input=input_bytes,
@@ -70,20 +58,6 @@ class SubprocessGitInterface(GitInterface):
                 env=env,
                 cwd=effective_cwd,
             )
-            print(
-                f"DEBUG: Command succeeded, stdout length: {len(result.stdout)}, stderr length: {len(result.stderr)}"
-            )
-            if result.stderr:
-                # Limit stderr printing to avoid flooding logs
-                print(
-                    f"DEBUG: stderr: {result.stderr.decode('utf-8', 'replace').strip()}"
-                )
-            if result.stdout:
-                print(
-                    f"DEBUG: stdout: {result.stdout.decode('utf-8', 'replace').strip()}"
-                )
             return result.stdout
         except subprocess.CalledProcessError as e:
-            print(f"ERROR: Git command failed: {' '.join(e.cmd)}")
-            print(f"ERROR: stderr: {e.stderr.decode('utf-8', 'replace').strip()}")
             return None

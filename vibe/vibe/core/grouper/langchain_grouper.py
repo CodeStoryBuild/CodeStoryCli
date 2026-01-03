@@ -5,8 +5,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from vibe.core.data.diff_chunk import DiffChunk
-from .interface import GrouperInterface
+from .interface import GrouperInterface, Groupable
 from ..data.models import CommitGroup, ProgressCallback
 
 
@@ -56,7 +55,7 @@ class LangChainGrouper(GrouperInterface):
         self.chat_model = chat_model
         self.output_parser = PydanticOutputParser(pydantic_object=GroupingResponse)
 
-    def _prepare_changes(self, chunks: List[DiffChunk]) -> str:
+    def _prepare_changes(self, chunks: List[Groupable]) -> str:
         """Convert chunks to a structured format for LLM analysis."""
         changes = []
         for i, chunk in enumerate(chunks):
@@ -68,7 +67,7 @@ class LangChainGrouper(GrouperInterface):
         return json.dumps({"changes": changes}, indent=2)
 
     def _create_commit_groups(
-        self, response: GroupingResponse, chunks: List[DiffChunk]
+        self, response: GroupingResponse, chunks: List[Groupable]
     ) -> List[CommitGroup]:
         """Convert LLM's response into CommitGroup objects."""
         # Create a lookup map for chunks
@@ -91,7 +90,7 @@ class LangChainGrouper(GrouperInterface):
                 CommitGroup(
                     chunks=group_chunks,
                     group_id=group.group_id,
-                    commmit_message=group.commit_message,
+                    commit_message=group.commit_message,
                     extended_message=group.extended_message,
                 )
             )
@@ -117,7 +116,7 @@ class LangChainGrouper(GrouperInterface):
 
     def group_chunks(
         self,
-        chunks: List[DiffChunk],
+        chunks: List[Groupable],
         message: str,
         on_progress: Optional[ProgressCallback] = None,
     ) -> List[CommitGroup]:
@@ -125,7 +124,7 @@ class LangChainGrouper(GrouperInterface):
         Group chunks using LangChain chat model to analyze intentions and relationships.
 
         Args:
-            chunks: List of DiffChunks to analyze and group
+            chunks: List of Groupable objects to analyze and group
             message: Optional user guidance message
             on_progress: Optional callback for progress updates
 

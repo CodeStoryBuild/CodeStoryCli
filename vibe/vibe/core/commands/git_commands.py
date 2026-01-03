@@ -1,12 +1,11 @@
 import subprocess
 from typing import List, Optional, Tuple, Union
-from ..data.models import HunkWrapper
-from ..data.s_diff_chunk import StandardDiffChunk
-from ..data.r_diff_chunk import RenameDiffChunk
+import re
+
+from ..data.hunk_wrapper import HunkWrapper
 from ..data.diff_chunk import DiffChunk
-from ..data.empty_file_chunk import EmptyFileAdditionChunk
-from ..data.file_deletion_chunk import FileDeletionChunk
 from ..git_interface.interface import GitInterface
+from .git_const import DEVNULL
 
 
 # In GitCommands file, update or replace HunkWrapper
@@ -14,9 +13,16 @@ class GitCommands:
     def __init__(self, git: GitInterface):
         self.git = git
 
-    # -------------------------------
-    # Core methods
-    # -------------------------------
+    # Precompile diff regexes for performance
+    _MODE_RE = re.compile(
+        r"^(?:new file mode|deleted file mode|old mode|new mode) (\d{6})$"
+    )
+    _INDEX_RE = re.compile(r"^index [0-9a-f]{7,}\.\.[0-9a-f]{7,}(?: (\d{6}))?$")
+    _RENAME_FROM_RE = re.compile(r"^rename from (.+)$")
+    _RENAME_TO_RE = re.compile(r"^rename to (.+)$")
+    _OLD_PATH_RE = re.compile(r"^--- (?:(?:a/)?(.+)|/dev/null)$")
+    _NEW_PATH_RE = re.compile(r"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
+
 
     def get_working_diff_with_renames(
         self, target: Optional[str] = None, similarity: int = 50
@@ -59,9 +65,11 @@ class GitCommands:
                 continue
 
             # Parse file operation metadata
-            file_metadata = self._parse_file_metadata(block, lines)
-            if not file_metadata["canonical_path"]:
-                continue
+            old_path, new_path, file_mode = self._parse_file_metadata(lines)
+            if old_path is None and new_path is None:
+                raise ValueError("Both old and new file paths are None! Invalid /dev/null parsing!")
+            elif not old_path and not new_path:
+                raise ValueError("Could not parse file paths from diff block!")
 
             # Parse hunks within the block
             hunk_start_indices = [
@@ -70,7 +78,13 @@ class GitCommands:
 
             # Handle files with no hunks (pure operations)
             if not hunk_start_indices:
-                hunks.append(self._create_no_content_hunk(file_metadata))
+                hunks.append(
+                    HunkWrapper.create_empty_content(
+                        new_file_path=new_path,
+                        old_file_path=old_path,
+                        file_mode=file_mode,
+                    )
+                )
             else:
                 # Process each hunk in the file
                 for i, start_idx in enumerate(hunk_start_indices):
@@ -88,86 +102,87 @@ class GitCommands:
 
                     hunks.append(
                         HunkWrapper(
-                            new_file_path=file_metadata["canonical_path"],
+                            new_file_path=new_path,
+                            old_file_path=old_path,
+                            file_mode=file_mode,
                             hunk_lines=hunk_body_lines,
                             old_start=old_start,
                             new_start=new_start,
                             old_len=old_len,
                             new_len=new_len,
-                            old_file_path=(
-                                file_metadata["old_path"]
-                                if file_metadata["is_rename"]
-                                else None
-                            ),
-                            file_mode=file_metadata["file_mode"],
-                            is_file_addition=file_metadata["is_file_addition"],
-                            is_file_deletion=file_metadata["is_file_deletion"],
                         )
                     )
         return hunks
 
-    def _parse_file_metadata(self, block: str, lines: List[str]) -> dict:
+    def _parse_file_metadata(self, lines: List[str]) -> tuple:
         """
-        Extract file operation metadata from a diff block.
+        Extracts file operation metadata from a diff block by unifying the logic
+        around the '---' and '+++' file path lines.
+
         Returns a dictionary with file paths, operation flags, and mode information.
         """
-        old_path, new_path = None, None
-        is_rename = "rename from " in block
-        is_file_addition = "new file mode" in block
-        is_file_deletion = "deleted file mode" in block
+        old_path, new_path = "", ""
         file_mode = None
 
-        # Extract file mode if present (e.g., "new file mode 100755")
-        mode_line = next((l for l in lines if l.startswith("new file mode ")), None)
-        if mode_line:
-            file_mode = mode_line[14:].strip()  # Extract the mode number
+        # 1. First pass: Extract primary data (paths and mode)
+        for line in lines:
+            # Check for file mode (new, deleted, old, new)
+            mode_match = self._MODE_RE.match(line)
+            if mode_match:
+                # We only need one mode; Git diffs can show old and new.
+                # The one on the 'new file mode' or 'deleted file mode' line is most relevant.
+                if file_mode is None or "file mode" in line:
+                    file_mode = mode_match.group(1)
+                continue
 
-        if is_rename:
-            # Extract paths from rename lines
-            rename_from_line = next(
-                (l for l in lines if l.startswith("rename from ")), None
-            )
-            if rename_from_line:
-                old_path = rename_from_line[12:]
+            old_path_match = self._OLD_PATH_RE.match(line)
+            if old_path_match:
+                if line.strip() == "--- /dev/null":
+                    old_path = None
+                else:
+                    old_path = old_path_match.group(1)
+                continue
 
-            rename_to_line = next(
-                (l for l in lines if l.startswith("rename to ")), None
-            )
-            if rename_to_line:
-                new_path = rename_to_line[10:]
-        else:
-            # Extract paths from standard diff headers
-            rem_line = next((l for l in lines if l.startswith("--- a/")), None)
-            if rem_line:
-                old_path = rem_line[6:]
+            new_path_match = self._NEW_PATH_RE.match(line)
+            if new_path_match:
+                if line.strip() == "+++ /dev/null":
+                    new_path = None
+                else:
+                    new_path = new_path_match.group(1)
+                continue
 
-            add_line = next((l for l in lines if l.startswith("+++ b/")), None)
-            if add_line:
-                new_path = add_line[6:]
+        # fallback for cases like:
+        # a/src/api/__init__.py b/src/api/__init__.py
+        # new file mode 100644
+        # index 0000000..e69de29
+        # no --- or +++ lines
+        if not old_path and not new_path:
 
-        # Determine canonical path
-        canonical_path = new_path if new_path and new_path != "/dev/null" else old_path
+            # The first line should be in the format "a/path b/path"
+            first_line_parts = lines[0].split(' ')
+            if len(first_line_parts) < 2 or not first_line_parts[0].startswith('a/') or not first_line_parts[1].startswith('b/'):
+                return (None, None, file_mode) # Unrecognized format
 
-        # For files with no --- or +++ lines (like empty new files),
-        # parse the path from the first line "a/path b/path"
-        if not canonical_path and lines:
-            first_line = lines[0]
-            if " b/" in first_line:
-                # Extract "b/path" from "a/path b/path"
-                b_part = first_line.split(" b/")[1] if " b/" in first_line else None
-                if b_part:
-                    new_path = b_part
-                    canonical_path = new_path
+            path_a = first_line_parts[0][2:]
+            path_b = first_line_parts[1][2:]
 
-        return {
-            "canonical_path": canonical_path,
-            "old_path": old_path,
-            "new_path": new_path,
-            "is_rename": is_rename,
-            "is_file_addition": is_file_addition,
-            "is_file_deletion": is_file_deletion,
-            "file_mode": file_mode,
-        }
+            # Use other metadata clues from the block to determine the operation
+            block_text = "\n".join(lines)
+            if "new file mode" in block_text:
+                # This is an empty file addition.
+                return (None, path_b, file_mode)
+            elif "deleted file mode" in block_text:
+                # This is an empty file deletion (less common, but possible).
+                return (path_a, None, file_mode)
+            elif "rename from" in block_text:
+                # This is a pure rename with no content change.
+                return (path_a, path_b, file_mode)
+            else:
+                # Could be a pure mode change.
+                return (path_a, path_b, file_mode)
+
+        return (old_path, new_path, file_mode)
+
 
     def _create_no_content_hunk(self, file_metadata: dict) -> HunkWrapper:
         """
@@ -175,60 +190,26 @@ class GitCommands:
         """
         if file_metadata["is_rename"]:
             # Pure rename (no content change)
-            return HunkWrapper(
+            return HunkWrapper.create_empty_rename(
                 new_file_path=file_metadata["canonical_path"],
-                hunk_lines=[],
-                old_start=0,
-                new_start=0,
-                old_len=0,
-                new_len=0,
                 old_file_path=file_metadata["old_path"],
                 file_mode=file_metadata["file_mode"],
-                is_file_addition=False,
-                is_file_deletion=False,
             )
         elif file_metadata["is_file_addition"]:
             # Empty new file (no content)
-            return HunkWrapper(
+            return HunkWrapper.create_empty_addition(
                 new_file_path=file_metadata["canonical_path"],
-                hunk_lines=[],
-                old_start=0,
-                new_start=0,
-                old_len=0,
-                new_len=0,
-                old_file_path=None,
                 file_mode=file_metadata["file_mode"],
-                is_file_addition=True,
-                is_file_deletion=False,
             )
         elif file_metadata["is_file_deletion"]:
             # File deletion (deleted file mode)
-            return HunkWrapper(
-                new_file_path=file_metadata["canonical_path"],
-                hunk_lines=[],
-                old_start=1,  # Mark as deletion with old_start > 0
-                new_start=-1,  # Mark as deletion with new_start < 0
-                old_len=0,
-                new_len=0,
+            return HunkWrapper.create_empty_deletion(
                 old_file_path=file_metadata["canonical_path"],
                 file_mode=file_metadata["file_mode"],
-                is_file_addition=False,
-                is_file_deletion=True,
             )
+
         else:
-            # Fallback for unexpected cases
-            return HunkWrapper(
-                new_file_path=file_metadata["canonical_path"],
-                hunk_lines=[],
-                old_start=0,
-                new_start=0,
-                old_len=0,
-                new_len=0,
-                old_file_path=None,
-                file_mode=file_metadata["file_mode"],
-                is_file_addition=False,
-                is_file_deletion=False,
-            )
+            raise ValueError("Cannot create no-content hunk for unknown operation.")
 
     def _parse_hunk_start(self, header_line: str) -> Tuple[int, int, int, int]:
         """
@@ -285,31 +266,14 @@ class GitCommands:
     def get_processed_diff(self, target: Optional[str] = None) -> List[DiffChunk]:
         """
         Parses the git diff once and converts each hunk directly into an
-        atomic DiffChunk object (StandardDiffChunk, RenameDiffChunk,
-        EmptyFileAdditionChunk, or FileDeletionChunk).
+        atomic DiffChunk object (DiffChunk).
         """
         # Parse ONCE to get a list of HunkWrapper objects.
         hunks = self.get_working_diff_with_renames(target)
 
         chunks: List[DiffChunk] = []
         for hunk in hunks:
-            if hunk.is_rename:
-                # Create a chunk for the rename-and-modify hunk
-                chunks.append(RenameDiffChunk.from_hunk(hunk))
-            elif hunk.is_file_addition and len(hunk.hunk_lines) == 0:
-                # Empty new file (no content)
-                chunks.append(
-                    EmptyFileAdditionChunk(
-                        _file_path=hunk.new_file_path,
-                        file_mode=hunk.file_mode or "100644",
-                    )
-                )
-            elif hunk.is_file_deletion and len(hunk.hunk_lines) == 0:
-                # File deletion without content
-                chunks.append(FileDeletionChunk(_file_path=hunk.new_file_path))
-            else:
-                # Create a chunk for a standard hunk (including file additions/deletions with content)
-                chunks.append(StandardDiffChunk.from_hunk(hunk))
+            chunks.append(DiffChunk.from_hunk(hunk))
 
         return chunks
 
