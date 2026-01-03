@@ -17,7 +17,7 @@ class ChangeGroup(BaseModel):
     group_id: str
     commit_message: str
     extended_message: Optional[str]
-    changes: List[str]  # List of chunk IDs that belong to this group
+    changes: List[int]  # List of chunk IDs that belong to this group
     description: Optional[str]  # Brief description of why these changes are grouped
 
 

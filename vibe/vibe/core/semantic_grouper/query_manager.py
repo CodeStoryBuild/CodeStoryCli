@@ -153,7 +153,7 @@ class QueryManager:
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal["scope", "token_general", "token_definition"],
+        query_type: Literal["scope", "comment", "token_general", "token_definition"],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """
