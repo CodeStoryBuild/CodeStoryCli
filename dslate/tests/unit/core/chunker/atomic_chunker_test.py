@@ -41,6 +41,7 @@ def context_manager():
     cm.get_context.return_value = None
     return cm
 
+
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
@@ -49,12 +50,12 @@ def context_manager():
 def test_split_hunks_true(context_manager):
     """Test that chunks are split when split_hunks is True."""
     chunker = AtomicChunker(split_hunks=True)
-    
+
     # Chunk with 2 additions
     chunk = create_chunk([b"+line1", b"+line2"])
-    
+
     result = chunker.chunk([chunk], context_manager)
-    
+
     # Should be split into 2 chunks
     assert len(result) == 2
     assert isinstance(result[0], DiffChunk)
@@ -115,12 +116,12 @@ def test_group_whitespace_context(context_manager):
 def test_group_comment_context(context_manager):
     """Test grouping of comment lines via ContextManager."""
     chunker = AtomicChunker(split_hunks=True)
-    
+
     # Setup ContextManager to identify line 2 (index 1) as a comment
     file_ctx = Mock()
-    file_ctx.comment_map.pure_comment_lines = {1} # 0-indexed line 1 (second line)
+    file_ctx.comment_map.pure_comment_lines = {1}  # 0-indexed line 1 (second line)
     context_manager.get_context.return_value = file_ctx
-    
+
     # 3 lines: code, comment, code
     # Line indices: 0, 1, 2
     big_chunk = create_chunk([b"+code1", b"+// comment", b"+code2"], start_line=1)
@@ -129,9 +130,9 @@ def test_group_comment_context(context_manager):
     # Line 1: abs_new_line=1 -> idx=0
     # Line 2: abs_new_line=2 -> idx=1 (Match!)
     # Line 3: abs_new_line=3 -> idx=2
-    
+
     result = chunker.chunk([big_chunk], context_manager)
-    
+
     # Should group comment with next code chunk
     assert len(result) == 2
     assert isinstance(result[1], CompositeDiffChunk)
@@ -141,12 +142,12 @@ def test_group_comment_context(context_manager):
 def test_all_context(context_manager):
     """Test when all chunks are context."""
     chunker = AtomicChunker(split_hunks=True)
-    
+
     # All whitespace
     big_chunk = create_chunk([b"+ ", b"+  "])
-    
+
     result = chunker.chunk([big_chunk], context_manager)
-    
+
     # Should return a single group (Composite or list of chunks depending on implementation)
     # Implementation: returns [CompositeDiffChunk(all)] if > 1
     assert len(result) == 1

@@ -33,7 +33,7 @@ def test_sanitize_user_input_clipping():
 def test_sanitize_user_input_sanitization():
     # Null bytes and control characters should be removed
     dirty_input = "hello\x00world\x1b[31m"
-    # Note: The implementation keeps printable, newline, and tab. 
+    # Note: The implementation keeps printable, newline, and tab.
     # \x1b is escape, not printable. \x00 is null.
     # Expect "helloworld[31m" because [31m are printable chars.
     assert sanitize_user_input(dirty_input) == "helloworld[31m"
@@ -46,6 +46,7 @@ def test_sanitize_user_input_type_error():
         sanitize_user_input(123)
     with pytest.raises(ValidationError, match="Input must be a string"):
         sanitize_user_input(None)
+
 
 # -----------------------------------------------------------------------------
 # validate_git_repository
@@ -91,6 +92,7 @@ def test_validate_git_repository_detached_head(mock_git_interface):
     with pytest.raises(GitError, match="detached HEAD"):
         validate_git_repository(mock_git_interface)
 
+
 # -----------------------------------------------------------------------------
 # validate_commit_hash
 # -----------------------------------------------------------------------------
@@ -110,6 +112,7 @@ def test_validate_commit_hash_type_error():
         validate_commit_hash(None)
     with pytest.raises(ValidationError, match="Commit hash cannot be empty"):
         validate_commit_hash(123)
+
 
 # -----------------------------------------------------------------------------
 # validate_target_path
@@ -137,6 +140,7 @@ def test_validate_target_path_type_error():
         validate_target_path("")
     with pytest.raises(ValidationError, match="Target path cannot be empty"):
         validate_target_path(123)
+
 
 # -----------------------------------------------------------------------------
 # validate_message_length
@@ -168,6 +172,7 @@ def test_validate_message_length_null_bytes():
 def test_validate_message_length_type_error():
     with pytest.raises(ValidationError, match="Commit message must be a string"):
         validate_message_length(123)
+
 
 # -----------------------------------------------------------------------------
 # validate_ignore_patterns

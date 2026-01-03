@@ -13,6 +13,7 @@ from dslate.core.git_interface.SubprocessGitInterface import SubprocessGitInterf
 def git_interface():
     return SubprocessGitInterface(repo_path="/tmp/repo")
 
+
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------

@@ -20,6 +20,7 @@ def mock_git():
 def git_commands(mock_git):
     return GitCommands(mock_git)
 
+
 # -----------------------------------------------------------------------------
 # Regex Tests
 # -----------------------------------------------------------------------------
@@ -30,21 +31,22 @@ def test_regex_patterns(git_commands):
     # Mode
     assert git_commands._MODE_RE.match(b"new file mode 100644")
     assert git_commands._MODE_RE.match(b"deleted file mode 100644")
-    
+
     # Index
     assert git_commands._INDEX_RE.match(b"index 0000000..e69de29")
     assert git_commands._INDEX_RE.match(b"index 0000000..e69de29 100644")
-    
+
     # Paths
     assert git_commands._OLD_PATH_RE.match(b"--- a/file.txt")
     assert git_commands._OLD_PATH_RE.match(b"--- /dev/null")
     assert git_commands._NEW_PATH_RE.match(b"+++ b/file.txt")
     assert git_commands._NEW_PATH_RE.match(b"+++ /dev/null")
-    
+
     # A/B Paths fallback
     m = git_commands._A_B_PATHS_RE.match(b"diff --git a/foo.py b/bar.py")
     assert m.group(1) == b"foo.py"
     assert m.group(2) == b"bar.py"
+
 
 # -----------------------------------------------------------------------------
 # Parse File Metadata Tests
@@ -118,6 +120,7 @@ def test_parse_file_metadata_fallback(git_commands):
     assert new == b"empty.txt"
     assert mode == b"100644"
 
+
 # -----------------------------------------------------------------------------
 # Get Full Working Diff Tests (Mocked)
 # -----------------------------------------------------------------------------
@@ -160,6 +163,7 @@ def test_get_full_working_diff_binary(git_commands, mock_git):
     assert len(hunks) == 1
     assert isinstance(hunks[0], ImmutableHunkWrapper)
     assert hunks[0].canonical_path == b"bin.dat"
+
 
 # -----------------------------------------------------------------------------
 # Merge Overlapping Chunks Tests
@@ -227,6 +231,7 @@ def test_merge_overlapping_chunks_different_files(git_commands):
     # Order depends on sorting, likely a.txt then b.txt
     assert merged[0].canonical_path() == b"a.txt"
     assert merged[1].canonical_path() == b"b.txt"
+
 
 # -----------------------------------------------------------------------------
 # Binary Detection Tests

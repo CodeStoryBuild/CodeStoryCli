@@ -42,6 +42,7 @@ def test_global_config_custom_values():
     assert config.verbose is True
     assert config.auto_accept is True
 
+
 # -----------------------------------------------------------------------------
 # GlobalContext Tests
 # -----------------------------------------------------------------------------
@@ -117,6 +118,7 @@ def test_global_context_from_config_custom(
 
     # Verify calls
     mock_create_model.assert_called_once_with("claude-3", "sk-ant", 0.2)
+
 
 # -----------------------------------------------------------------------------
 # Other Context Tests
