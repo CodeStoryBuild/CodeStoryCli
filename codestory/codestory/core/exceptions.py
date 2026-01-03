@@ -155,6 +155,14 @@ class CleanCommandError(CodestoryError):
     """
 
 
+class SyntaxErrorDetected(CodestoryError):
+    """
+    Raised when syntax errors are detected in code files.
+    """
+
+    pass
+
+
 # codestory exception handler
 def handle_codestory_exception(func=None):
     if not func:
