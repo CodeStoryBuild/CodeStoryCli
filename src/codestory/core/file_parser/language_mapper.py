@@ -16,11 +16,11 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-language_detector.py
+"""language_detector.py.
 
 A lightweight, drop-in language detector for tree-sitter-language-pack.
-Detects language based on filename, extension, shebang, and content heuristics.
+Detects language based on filename, extension, shebang, and content
+heuristics.
 """
 
 import re
@@ -153,18 +153,18 @@ EXTENSION_MAP = {
 
 # Map Interpreter (Shebang) names to Language
 SHEBANG_MAP = {
-    "python": "python",
-    "python3": "python",
-    "node": "javascript",
-    "bash": "bash",
-    "sh": "bash",
-    "zsh": "bash",
-    "perl": "perl",
-    "ruby": "ruby",
-    "php": "php",
-    "lua": "lua",
-    "tcl": "tcl",
-    "make": "make",
+    b"python": "python",
+    b"python3": "python",
+    b"node": "javascript",
+    b"bash": "bash",
+    b"sh": "bash",
+    b"zsh": "bash",
+    b"perl": "perl",
+    b"ruby": "ruby",
+    b"php": "php",
+    b"lua": "lua",
+    b"tcl": "tcl",
+    b"make": "make",
 }
 
 # -----------------------------------------------------------------------------

@@ -15,10 +15,10 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""
-Utility functions for semantic grouping of chunks.
+"""Utility functions for semantic grouping of chunks.
 
-Extracted from SemanticGrouper for reuse in finalize_smart_merge and other contexts.
+Extracted from SemanticGrouper for reuse in finalize_smart_merge and
+other contexts.
 """
 
 from collections import defaultdict

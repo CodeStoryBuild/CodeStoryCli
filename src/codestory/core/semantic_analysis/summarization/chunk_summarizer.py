@@ -15,9 +15,7 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-"""
-Chunk summarizer for generating commit message summaries from code chunks.
-"""
+"""Chunk summarizer for generating commit message summaries from code chunks."""
 
 from __future__ import annotations
 
