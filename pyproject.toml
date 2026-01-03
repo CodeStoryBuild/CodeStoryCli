@@ -34,7 +34,10 @@ dev = [
   "pytest",
   "pytest-cov",
   "ruff",
-  "mypy"
+  "mypy",
+  "mkdocs",
+  "mkdocs-material",
+  "mkdocs-typer2"
 ]
 
 [tool.setuptools.package-data]
