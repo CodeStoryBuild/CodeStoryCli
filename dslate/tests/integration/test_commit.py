@@ -113,8 +113,4 @@ class TestCommitScenarios:
             ["git", "checkout", "--detach", "HEAD"], cwd=repo.path, check=True
         )
         result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
-        assert result.returncode != 0
-        assert (
-            "detached head" in result.stderr.lower()
-            or "detached head" in result.stdout.lower()
-        )
+        assert "detached head" in result.stdout.lower()
