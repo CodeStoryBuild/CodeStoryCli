@@ -16,7 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import importlib.metadata
 from unittest.mock import Mock, patch
 
 import pytest
@@ -78,4 +77,3 @@ def test_version_callback_installed(mock_version, mock_echo):
 
     mock_version.assert_called_once_with("codestory")
     mock_echo.assert_called_once_with("codestory version 1.2.3")
-
