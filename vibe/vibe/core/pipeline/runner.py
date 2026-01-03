@@ -3,7 +3,6 @@ from time import perf_counter
 
 from rich.progress import Progress
 from rich.console import Console
-from rich.syntax import Syntax
 
 from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..data.chunk import Chunk

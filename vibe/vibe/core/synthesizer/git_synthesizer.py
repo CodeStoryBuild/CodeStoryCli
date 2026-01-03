@@ -104,19 +104,31 @@ class GitSynthesizer:
             )
 
             if single_chunk.is_standard_modification:
-                patch_lines.append(b"diff --git a/" + new_file_path + b" b/" + new_file_path)
+                patch_lines.append(
+                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
+                )
             elif single_chunk.is_file_rename:
-                patch_lines.append(b"diff --git a/" + old_file_path + b" b/" + new_file_path)
+                patch_lines.append(
+                    b"diff --git a/" + old_file_path + b" b/" + new_file_path
+                )
                 patch_lines.append(b"rename from " + old_file_path)
                 patch_lines.append(b"rename to " + new_file_path)
             elif single_chunk.is_file_deletion:
                 # Treat partial deletions as a modification for the header
-                patch_lines.append(b"diff --git a/" + old_file_path + b" b/" + old_file_path)
+                patch_lines.append(
+                    b"diff --git a/" + old_file_path + b" b/" + old_file_path
+                )
                 if current_count >= total_expected:
-                    patch_lines.append(b"deleted file mode " + (single_chunk.file_mode or b"100644"))
+                    patch_lines.append(
+                        b"deleted file mode " + (single_chunk.file_mode or b"100644")
+                    )
             elif single_chunk.is_file_addition:
-                patch_lines.append(b"diff --git a/" + new_file_path + b" b/" + new_file_path)
-                patch_lines.append(b"new file mode " + (single_chunk.file_mode or b"100644"))
+                patch_lines.append(
+                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
+                )
+                patch_lines.append(
+                    b"new file mode " + (single_chunk.file_mode or b"100644")
+                )
 
             old_file_header = b"a/" + old_file_path if old_file_path else DEVNULL
             new_file_header = b"b/" + new_file_path if new_file_path else DEVNULL
@@ -149,11 +161,13 @@ class GitSynthesizer:
                     # The number of unchanged lines between the last hunk and this one is the key.
                     # This gap is calculated from the old file's perspective.
                     gap_since_last_hunk = chunk.old_start - last_hunk_end_old
-                    
+
                     # The new start line is where the last hunk ended in the new file, plus the gap.
                     recalculated_new_start = last_hunk_end_new + gap_since_last_hunk
 
-                    hunk_header = f"@@ -{chunk.old_start},{old_len} +{recalculated_new_start},{new_len} @@".encode("utf-8")
+                    hunk_header = f"@@ -{chunk.old_start},{old_len} +{recalculated_new_start},{new_len} @@".encode(
+                        "utf-8"
+                    )
                     patch_lines.append(hunk_header)
 
                     for item in chunk.parsed_content:
@@ -167,9 +181,11 @@ class GitSynthesizer:
                     last_hunk_end_new = recalculated_new_start + new_len
 
                 # Handle the no-newline marker for the last chunk in the file
-                if sorted_file_chunks and sorted_file_chunks[-1].contains_newline_marker:
-                     patch_lines.append(b"\\ No newline at end of file")
-
+                if (
+                    sorted_file_chunks
+                    and sorted_file_chunks[-1].contains_newline_marker
+                ):
+                    patch_lines.append(b"\\ No newline at end of file")
 
             file_patch = b"\n".join(patch_lines) + b"\n"
             patches[file_path] = file_patch
