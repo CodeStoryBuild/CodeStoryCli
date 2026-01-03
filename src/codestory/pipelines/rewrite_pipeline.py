@@ -46,7 +46,7 @@ from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
 
 
 @contextlib.contextmanager
-def transient_step(description: str, silent: bool):
+def transient_step(description: str, silent: bool, total: int | None = None):
     """
     Creates an indeterminate progress bar that animates while processing
     and cleans itself up immediately upon exit.
@@ -56,7 +56,14 @@ def transient_step(description: str, silent: bool):
     else:
         # total=None -> Indeterminate mode (scanner animation)
         # leave=False -> Clears the line when context exits
-        with tqdm(desc=description, total=None, leave=False, unit="it") as pbar:
+        # bar_format -> Removes the literal progress bar [###---] to reduce visual noise
+        with tqdm(
+            desc=description,
+            total=total,
+            leave=False,
+            unit="it",
+            bar_format="{desc}: {n_fmt}/{total_fmt} [{elapsed}{postfix}]",
+        ) as pbar:
             yield pbar
 
 
@@ -206,7 +213,9 @@ class RewritePipeline:
             # create smallest mechanically valid chunks
             with (
                 transient_step(
-                    "Creating Mechanical Chunks", self.global_context.config.silent
+                    "Creating Mechanical Chunks",
+                    self.global_context.config.silent,
+                    total=len(raw_chunks),
                 ) as pbar,
                 time_block("mechanical_chunking"),
             ):
@@ -222,7 +231,9 @@ class RewritePipeline:
 
             with (
                 transient_step(
-                    "Creating Semantic Groups", self.global_context.config.silent
+                    "Creating Semantic Groups",
+                    self.global_context.config.silent,
+                    total=len(mechanical_chunks),
                 ) as pbar,
                 time_block("semantic_grouping"),
             ):
@@ -247,6 +258,7 @@ class RewritePipeline:
                 transient_step(
                     "Scanning for leaked secrets...",
                     self.global_context.config.silent,
+                    total=len(semantic_chunks) + len(immutable_chunks),
                 ) as pbar,
                 time_block("secret_scanning"),
             ):
@@ -280,6 +292,7 @@ class RewritePipeline:
                 transient_step(
                     "Applying Relevance Filter...",
                     self.global_context.config.silent,
+                    total=len(semantic_chunks) + len(immutable_chunks),
                 ) as pbar,
                 time_block("relevance_filtering"),
             ):
@@ -323,6 +336,7 @@ class RewritePipeline:
             transient_step(
                 "Using AI to create meaningful commits...",
                 self.global_context.config.silent,
+                total=len(semantic_chunks) + len(immutable_chunks),
             ) as pbar,
             time_block("logical_grouping"),
         ):
@@ -503,7 +517,9 @@ class RewritePipeline:
 
         with (
             transient_step(
-                "Synthesizing Git History", self.global_context.config.silent
+                "Synthesizing Git History",
+                self.global_context.config.silent,
+                total=len(accepted_groups),
             ) as pbar,
             time_block("Executing Synthesizer Pipeline"),
         ):
