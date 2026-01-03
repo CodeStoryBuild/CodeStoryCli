@@ -96,9 +96,8 @@ def validate_commit_hash(
 
 
 def validate_target_path(value: str | list[str] | None) -> list[str] | None:
-    """
-    Validate that target paths are valid strings.
-    Git pathspecs are flexible, so we primarily ensure they are non-empty strings.
+    """Validate that target paths are valid strings. Git pathspecs are flexible, so we
+    primarily ensure they are non-empty strings.
 
     Args:
         value: The path string or list of path strings to validate
@@ -171,8 +170,7 @@ def validate_message_length(value: str | None) -> str | None:
 
 
 def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
-    """
-    Validate ignore patterns for commit hashes.
+    """Validate ignore patterns for commit hashes.
 
     Args:
         patterns: List of commit hash patterns to ignore
@@ -217,8 +215,7 @@ def validate_ignore_patterns(patterns: list[str] | None) -> list[str]:
 
 
 def validate_min_size(value: int | None) -> int | None:
-    """
-    Validate minimum size parameter.
+    """Validate minimum size parameter.
 
     Args:
         value: The minimum size value
