@@ -1,0 +1,96 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - '*release*'  # Triggers on any branch containing 'release' in its name
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }} executable
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build executable
+        run: python build_exe.py
+
+      - name: Rename executable for OS
+        run: |
+          $os_name = "${{ matrix.os }}"
+          if ($os_name -eq "windows-latest") {
+            mv dist/vibe.exe dist/vibe-windows.exe
+          } elseif ($os_name -eq "ubuntu-latest") {
+            mv dist/vibe dist/vibe-linux
+          } elseif ($os_name -eq "macos-latest") {
+            mv dist/vibe dist/vibe-macos
+          }
+        shell: pwsh
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-${{ matrix.os }}
+          path: |
+            dist/vibe-*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/') && contains(github.ref, 'release')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded artifacts
+        run: ls -R artifacts/
+        shell: bash
+
+      - name: Extract version from branch name
+        id: get_version
+        run: |
+          branch_name="${{ github.ref_name }}"
+          if [[ $branch_name =~ release[-/]?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            version="${BASH_REMATCH[1]}"
+          else
+            version="$(date +'%Y%m%d%H%M')"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.version }}
+          tag_name: v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/vibe-windows-latest/vibe-windows.exe
+            artifacts/vibe-ubuntu-latest/vibe-linux
+            artifacts/vibe-macos-latest/vibe-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
