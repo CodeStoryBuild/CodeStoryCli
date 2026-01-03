@@ -68,8 +68,8 @@ def context_manager():
 
 
 def test_split_hunks_true(context_manager):
-    """Test that chunks are split when split_hunks is True."""
-    chunker = AtomicChunker(split_hunks=True)
+    """Test that chunks are split when chunking is True."""
+    chunker = AtomicChunker(chunking_level="all_files")
 
     # Chunk with 2 additions
     chunk = create_chunk([b"+line1", b"+line2"])
@@ -84,8 +84,8 @@ def test_split_hunks_true(context_manager):
 
 
 def test_split_hunks_false(context_manager):
-    """Test that chunks are NOT split when split_hunks is False."""
-    chunker = AtomicChunker(split_hunks=False)
+    """Test that chunks are NOT split when chunking is False."""
+    chunker = AtomicChunker(chunking_level="none")
 
     chunk = create_chunk([b"+line1", b"+line2"])
 
@@ -97,7 +97,7 @@ def test_split_hunks_false(context_manager):
 
 def test_group_whitespace_context(context_manager):
     """Test grouping of whitespace-only chunks."""
-    chunker = AtomicChunker(split_hunks=True)
+    chunker = AtomicChunker(chunking_level="all_files")
 
     # 3 chunks: code, whitespace, code
     create_chunk([b"+code1"])
@@ -135,7 +135,7 @@ def test_group_whitespace_context(context_manager):
 
 def test_group_comment_context(context_manager):
     """Test grouping of comment lines via ContextManager."""
-    chunker = AtomicChunker(split_hunks=True)
+    chunker = AtomicChunker(chunking_level="all_files")
 
     # Setup ContextManager to identify line 2 (index 1) as a comment
     file_ctx = Mock()
@@ -161,7 +161,7 @@ def test_group_comment_context(context_manager):
 
 def test_all_context(context_manager):
     """Test when all chunks are context."""
-    chunker = AtomicChunker(split_hunks=True)
+    chunker = AtomicChunker(chunking_level="all_files")
 
     # All whitespace
     big_chunk = create_chunk([b"+ ", b"+  "])
@@ -177,7 +177,7 @@ def test_all_context(context_manager):
 
 def test_no_context(context_manager):
     """Test when no chunks are context."""
-    chunker = AtomicChunker(split_hunks=True)
+    chunker = AtomicChunker(chunking_level="all_files")
 
     big_chunk = create_chunk([b"+code1", b"+code2"])
 

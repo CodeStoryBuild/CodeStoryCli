@@ -101,7 +101,7 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
         model="anthropic/claude-3",
         api_key="sk-ant",
         temperature=0.2,
-        split_hunks="Conservative",
+        chunking_level="none",
         verbose=True,
         auto_accept=True,
         relevance_filter_level="none",
@@ -115,7 +115,7 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
     assert context.get_model() is not None
     assert context.config.verbose is True
     assert context.config.temperature == 0.2
-    assert context.config.split_hunks == "Conservative"
+    assert context.config.chunking_level == "none"
     assert context.config.auto_accept is True
     assert context.config.relevance_filter_level == "none"
     assert context.config.secret_scanner_aggression == "none"
