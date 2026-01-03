@@ -64,7 +64,9 @@ class ContextManager:
         self._context_cache: dict[tuple[str, bool], AnalysisContext] = {}
 
         # Determine which file versions need to be analyzed
-        self._required_contexts: dict[tuple[str, bool], list[tuple[int, int]]] = {}
+        self._required_contexts: dict[
+            tuple[str, bool], list[tuple[int, int]]
+        ] = {}
         self._analyze_required_contexts()
 
         self._parsed_files: dict[tuple[str, bool], ParsedFile] = {}
@@ -91,7 +93,9 @@ class ContextManager:
             lang = ctx.parsed_file.detected_language or "unknown"
             languages[lang] = languages.get(lang, 0) + 1
 
-        missing = set(self._required_contexts.keys()) - set(self._context_cache.keys())
+        missing = set(self._required_contexts.keys()) - set(
+            self._context_cache.keys()
+        )
 
         logger.info(
             "Context build summary: required={required} built={built} files={files}",
@@ -121,24 +125,32 @@ class ContextManager:
             if chunk.is_standard_modification:
                 # Standard modification: need both old and new versions of the same file
                 file_path = chunk.canonical_path()
-                self._required_contexts.setdefault((file_path, True), []).append(
+                self._required_contexts.setdefault(
+                    (file_path, True), []
+                ).append(
                     ContextManager._get_line_range(chunk, True)
                 )  # old version
-                self._required_contexts.setdefault((file_path, False), []).append(
+                self._required_contexts.setdefault(
+                    (file_path, False), []
+                ).append(
                     ContextManager._get_line_range(chunk, False)
                 )  # new version
 
             elif chunk.is_file_addition:
                 # File addition: only need new version
                 file_path = chunk.new_file_path
-                self._required_contexts.setdefault((file_path, False), []).append(
+                self._required_contexts.setdefault(
+                    (file_path, False), []
+                ).append(
                     ContextManager._get_line_range(chunk, False)
                 )  # new version only
 
             elif chunk.is_file_deletion:
                 # File deletion: only need old version
                 file_path = chunk.old_file_path
-                self._required_contexts.setdefault((file_path, True), []).append(
+                self._required_contexts.setdefault(
+                    (file_path, True), []
+                ).append(
                     ContextManager._get_line_range(chunk, True)
                 )  # old version only
 
@@ -149,12 +161,16 @@ class ContextManager:
                 self._required_contexts.setdefault((old_path, True), []).append(
                     ContextManager._get_line_range(chunk, True)
                 )  # old version with old name
-                self._required_contexts.setdefault((new_path, False), []).append(
+                self._required_contexts.setdefault(
+                    (new_path, False), []
+                ).append(
                     ContextManager._get_line_range(chunk, False)
                 )  # new version with new name
 
     @staticmethod
-    def _get_line_range(chunk: DiffChunk, is_old_range: bool) -> tuple[int, int]:
+    def _get_line_range(
+        chunk: DiffChunk, is_old_range: bool
+    ) -> tuple[int, int]:
         # Returns 0-indexed line range from chunk
         if is_old_range:
             return (chunk.old_start - 1, chunk.old_start + chunk.old_len() - 2)
@@ -169,7 +185,10 @@ class ContextManager:
             return (start - 1, end - 1)
 
     def _generate_parsed_files(self) -> None:
-        for (file_path, is_old_version), line_ranges in self._required_contexts.items():
+        for (
+            file_path,
+            is_old_version,
+        ), line_ranges in self._required_contexts.items():
             if not line_ranges:
                 logger.debug(
                     f"No line ranges for file: {file_path}, skipping semantic generation"
@@ -182,7 +201,9 @@ class ContextManager:
                 if isinstance(file_path, bytes)
                 else file_path
             )
-            content = self.file_reader.read(path_str, old_content=is_old_version)
+            content = self.file_reader.read(
+                path_str, old_content=is_old_version
+            )
             if content is None:
                 logger.warning(f"Content read for {path_str} is None")
                 continue
@@ -236,7 +257,9 @@ class ContextManager:
         languages: dict[str, list[ParsedFile]] = {}
 
         for _, parsed_file in self._parsed_files.items():
-            languages.setdefault(parsed_file.detected_language, []).append(parsed_file)
+            languages.setdefault(parsed_file.detected_language, []).append(
+                parsed_file
+            )
 
         for language, parsed_files in languages.items():
             defined_symbols: set[str] = set()
@@ -254,15 +277,22 @@ class ContextManager:
                 self._shared_context_cache[language] = context
             # TODO change all these to custom subclassed exceptions
             except Exception as e:
-                logger.warning(f"Failed to build shared context for {language}: {e}")
+                logger.warning(
+                    f"Failed to build shared context for {language}: {e}"
+                )
 
     def _build_all_contexts(self) -> None:
         """
         Build analysis contexts for all required file versions.
         """
-        for (file_path, is_old_version), parsed_file in self._parsed_files.items():
+        for (
+            file_path,
+            is_old_version,
+        ), parsed_file in self._parsed_files.items():
             try:
-                context = self._build_context(file_path, is_old_version, parsed_file)
+                context = self._build_context(
+                    file_path, is_old_version, parsed_file
+                )
                 if context is not None:
                     self._context_cache[(file_path, is_old_version)] = context
                 else:

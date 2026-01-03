@@ -64,6 +64,8 @@ class SymbolMapper:
                         # we can group on this symbol
 
                         # Add the qualified symbol to the line's symbol set
-                        line_symbols_mut.setdefault(i, set()).add(qualified_symbol)
+                        line_symbols_mut.setdefault(i, set()).add(
+                            qualified_symbol
+                        )
 
         return SymbolMap(line_symbols=line_symbols_mut)

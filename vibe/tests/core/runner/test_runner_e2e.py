@@ -503,7 +503,9 @@ if __name__ == '__main__':
 
     # Verify results
     assert results is not None
-    assert len(results) > 1  # Should have multiple commits due to chunking and grouping
+    assert (
+        len(results) > 1
+    )  # Should have multiple commits due to chunking and grouping
 
     # Each commit should be small due to chunking and grouping limits
     for result in results:

@@ -25,7 +25,9 @@ def test_pure_comment_lines_python():
     )
 
     parser = FileParser()
-    parsed = parser.parse_file("test.py", content, [(0, len(content.splitlines()) - 1)])
+    parsed = parser.parse_file(
+        "test.py", content, [(0, len(content.splitlines()) - 1)]
+    )
     assert parsed is not None
 
     # QueryManager expects a path-like with .open(); point at packaged language_config
