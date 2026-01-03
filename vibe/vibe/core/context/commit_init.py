@@ -1,6 +1,7 @@
 import inquirer
 from langchain_core.language_models.chat_models import BaseChatModel
 from rich.console import Console
+
 from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.chunker.atomic_chunker import AtomicChunker
 from vibe.core.commands.git_commands import GitCommands

@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 from rich.console import Console
+
 from vibe.core.context.expand_init import create_expand_pipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
