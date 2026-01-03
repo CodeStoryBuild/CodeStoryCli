@@ -20,6 +20,8 @@ from pathlib import Path
 
 from platformdirs import user_config_dir, user_log_path
 
+VERSION = "0.1.3"
+
 APP_NAME = "codestory"
 ENV_APP_PREFIX = APP_NAME.upper() + "_"
 LOG_DIR = Path(user_log_path(appname=APP_NAME))
