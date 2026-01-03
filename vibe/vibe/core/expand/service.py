@@ -41,12 +41,7 @@ class ExpandService:
         self.repo_path = repo_path
         self.git = SubprocessGitInterface(repo_path)
 
-    def expand_commit(
-        self,
-        commit_hash: str,
-        console: Console,
-        auto_yes: bool
-    ) -> bool:
+    def expand_commit(self, commit_hash: str, console: Console, auto_yes: bool) -> bool:
         # Ensure we're in a git repo
         if not _run_git(self.git, ["rev-parse", "--is-inside-work-tree"]):
             logger.error("Not a git repository")
@@ -71,7 +66,8 @@ class ExpandService:
         if not _is_ancestor(self.git, resolved, head_hash):
             logger.error(
                 "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported",
-                commit=_short(resolved), head=_short(head_hash)
+                commit=_short(resolved),
+                head=_short(head_hash),
             )
             return False
 
@@ -86,16 +82,21 @@ class ExpandService:
         with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
             rewrite_branch: Optional[str] = None
             temp_branch = f"vibe-expand-{_short(resolved)}"
-            
+
             try:
-                logger.info("Creating temporary worktree at {parent}", parent=_short(parent))
+                logger.info(
+                    "Creating temporary worktree at {parent}", parent=_short(parent)
+                )
                 _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
                 wt1_git = SubprocessGitInterface(wt1_dir)
 
                 _run_git(wt1_git, ["checkout", "-b", temp_branch])
 
                 # Run expand pipeline on diff(parent, resolved)
-                logger.info("Analyzing and proposing groups for commit {commit}", commit=_short(resolved))
+                logger.info(
+                    "Analyzing and proposing groups for commit {commit}",
+                    commit=_short(resolved),
+                )
                 pipeline = create_expand_pipeline(
                     wt1_dir,
                     base_commit_hash=parent,
@@ -117,7 +118,14 @@ class ExpandService:
                         logger.info("Preparing rebase in isolated worktree")
                         _run_git(
                             self.git,
-                            ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash],
+                            [
+                                "worktree",
+                                "add",
+                                "-b",
+                                rewrite_branch,
+                                wt2_dir,
+                                head_hash,
+                            ],
                         )
                         wt2_git = SubprocessGitInterface(wt2_dir)
 
@@ -126,7 +134,13 @@ class ExpandService:
                         rebase_ok = (
                             _run_git(
                                 wt2_git,
-                                ["rebase", "--onto", new_base, resolved, rewrite_branch],
+                                [
+                                    "rebase",
+                                    "--onto",
+                                    new_base,
+                                    resolved,
+                                    rewrite_branch,
+                                ],
                             )
                             is not None
                         )
@@ -144,16 +158,26 @@ class ExpandService:
                         if (
                             _run_git(
                                 self.git,
-                                ["update-ref", f"refs/heads/{current_branch}", new_head],
+                                [
+                                    "update-ref",
+                                    f"refs/heads/{current_branch}",
+                                    new_head,
+                                ],
                             )
                             is None
                         ):
-                            logger.error("Failed to update branch ref for {branch}", branch=current_branch)
+                            logger.error(
+                                "Failed to update branch ref for {branch}",
+                                branch=current_branch,
+                            )
                             return False
 
                         # If on that branch, sync working tree
                         _run_git(self.git, ["reset", "--hard", new_head])
-                        logger.info("Commit expansion successful for {commit}", commit=_short(resolved))
+                        logger.info(
+                            "Commit expansion successful for {commit}",
+                            commit=_short(resolved),
+                        )
                         return True
 
                     finally:
@@ -168,5 +192,5 @@ class ExpandService:
                 _cleanup_worktree(self.git, wt1_dir)
                 # Delete temp expand branch
                 _run_git(self.git, ["branch", "-D", temp_branch])
-        
+
         return False
