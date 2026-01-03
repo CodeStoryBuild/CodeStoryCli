@@ -7,42 +7,77 @@ from .diff_chunk import DiffChunk
 from ..data.models import ChunkApplicationData, HunkWrapper
 
 
-@dataclass(frozen=True, init=False)
+@dataclass(frozen=True)
 class RenameDiffChunk(DiffChunk):
     old_file_path: str
     new_file_path: str
     patch_content: str  # Store the raw patch (hunk headers + lines)
     application_data: List[ChunkApplicationData]  # Pre-parsed data for the synthesizer
 
-    def __init__(self, old_file_path: str, new_file_path: str, patch_content: str):
-        # Use object.__setattr__ because the class is frozen
-        object.__setattr__(self, "old_file_path", old_file_path)
-        object.__setattr__(self, "new_file_path", new_file_path)
-        object.__setattr__(self, "patch_content", patch_content)
-        object.__setattr__(self, "application_data", self._parse_patch(patch_content))
+    def file_path(self) -> str:
+        """For grouping purposes, a rename is associated with its new path."""
+        return self.new_file_path
+
+    def format_json(self) -> str:
+        data = {
+            "type": "Rename",
+            "old_file_path": self.old_file_path,
+            "new_file_path": self.new_file_path,
+            "patch_content": self.patch_content,
+        }
+        return json.dumps(data, indent=2)
+
+    def get_chunk_application_data(self) -> List[ChunkApplicationData]:
+        """
+        Returns the pre-parsed application data for this rename chunk.
+        
+        The application data was already computed during initialization from the patch content.
+        
+        Returns:
+            The list of ChunkApplicationData objects for applying this rename's changes.
+        """
+        return self.application_data
+    
+    @classmethod
+    def from_raw_patch(cls, old_file_path: str, new_file_path: str, patch_content: str) -> "RenameDiffChunk":
+        """Creates a chunk by parsing a raw patch string."""
+        app_data = cls._parse_patch(patch_content)
+        return cls(old_file_path, new_file_path, patch_content, app_data)
 
     @classmethod
     def from_hunk(cls, hunk: "HunkWrapper") -> "RenameDiffChunk":
-        """
-        Construct a RenameDiffChunk directly from a single parsed HunkWrapper.
-        This method reconstructs a minimal patch string to feed the main constructor.
-        """
+        """Constructs a RenameDiffChunk directly from a parsed HunkWrapper."""
         if not hunk.is_rename:
             raise ValueError("Cannot create a RenameDiffChunk from a non-rename hunk.")
 
-        # Reconstruct the patch content string for this single hunk
-        # The header must be regenerated to be passed to __init__
-        hunk_header = f"@@ -{hunk.old_start},0 +{hunk.new_start},0 @@"  # A simplified, valid header
+        # 1. Reconstruct the patch content string for storage/display
+        hunk_header = f"@@ -{hunk.old_start},{hunk.old_len} +{hunk.new_start},{hunk.new_len} @@"
+        patch_content = "\n".join([hunk_header] + hunk.hunk_lines)
 
-        # Combine the header and the body lines to form the patch content
-        patch_lines = [hunk_header] + hunk.hunk_lines
-        patch_content = "\n".join(patch_lines)
+        # 2. Calculate application_data DIRECTLY from hunk properties
+        add_content = [line[1:] for line in hunk.hunk_lines if not line.startswith("-")]
+        removals_count = sum(1 for line in hunk.hunk_lines if line.startswith("-"))
+        
+        start_line = hunk.old_start
+        # Handle pure additions where old_len is 0
+        if hunk.old_len == 0:
+            start_line += 1
+            removals_count = 0 # Should already be 0, but good to be explicit
 
-        # Call the main constructor with the required arguments
+        app_data = [
+            ChunkApplicationData(
+                start_line=start_line,
+                line_count=removals_count,
+                add_content=add_content,
+            )
+        ]
+
+        # 3. Call the main constructor with pre-calculated data
         return cls(
             old_file_path=hunk.old_file_path,
             new_file_path=hunk.new_file_path,
             patch_content=patch_content,
+            application_data=app_data,
         )
 
     @staticmethod
@@ -91,23 +126,3 @@ class RenameDiffChunk(DiffChunk):
             )
         return application_data
 
-    # --- Properties to conform to interfaces ---
-
-    @property
-    def file_path(self) -> str:
-        """For grouping purposes, a rename is associated with its new path."""
-        return self.new_file_path
-
-    @property
-    def content(self) -> str:
-        """Provides a consistent content interface."""
-        return self.patch_content
-
-    def format_json(self) -> str:
-        data = {
-            "type": "Rename",
-            "old_file_path": self.old_file_path,
-            "new_file_path": self.new_file_path,
-            "patch_content": self.patch_content,
-        }
-        return json.dumps(data, indent=2)
