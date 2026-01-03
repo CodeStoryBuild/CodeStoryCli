@@ -21,10 +21,7 @@
 
 
 import os
-import subprocess
-from pathlib import Path
 
-import pytest
 
 from tests.integration.conftest import run_cli
 
@@ -46,7 +43,9 @@ class TestConfigCommand:
         gitignore.write_text("*.pyc\n")
 
         result = run_cli(
-            cli_exe, ["config", "model", "gemini:gemini-2.0-flash", "--scope", "local"], cwd=temp_dir
+            cli_exe,
+            ["config", "model", "gemini:gemini-2.0-flash", "--scope", "local"],
+            cwd=temp_dir,
         )
         assert result.returncode == 0
 
@@ -65,7 +64,9 @@ class TestConfigCommand:
 
     def test_config_set_local_no_gitignore(self, cli_exe, temp_dir):
         """Test setting local config when .gitignore doesn't exist."""
-        result = run_cli(cli_exe, ["config", "temperature", "0.8", "--scope", "local"], cwd=temp_dir)
+        result = run_cli(
+            cli_exe, ["config", "temperature", "0.8", "--scope", "local"], cwd=temp_dir
+        )
         assert result.returncode == 0
 
         # Verify config file was created
@@ -99,7 +100,9 @@ class TestConfigCommand:
     def test_config_get_local(self, cli_exe, temp_dir):
         """Test getting a local configuration value."""
         # First set a value
-        run_cli(cli_exe, ["config", "model", "test-model", "--scope", "local"], cwd=temp_dir)
+        run_cli(
+            cli_exe, ["config", "model", "test-model", "--scope", "local"], cwd=temp_dir
+        )
 
         # Then get it
         result = run_cli(cli_exe, ["config", "model", "--scope", "local"], cwd=temp_dir)

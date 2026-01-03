@@ -31,9 +31,9 @@ from codestory.core.exceptions import ValidationError
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     sanitize_user_input,
+    validate_git_repository,
     validate_message_length,
     validate_target_path,
-    validate_git_repository,
 )
 from codestory.pipelines.commit_init import create_commit_pipeline
 

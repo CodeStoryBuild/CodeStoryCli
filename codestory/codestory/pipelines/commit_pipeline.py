@@ -46,11 +46,9 @@ from typing import Literal
 
 import inquirer
 from loguru import logger
-
+from rich import print as rprint
 from rich.progress import Progress
 from rich.text import Text
-from rich import print as rprint
-
 
 from ..context import CommitContext, GlobalContext
 
@@ -98,8 +96,8 @@ def progress_bar(p: Progress | None, step_name: str):
         if p:
             p.advance(ck, 1)
 
-def print_patch_cleanly(patch_content: str, max_length: int = 120):
 
+def print_patch_cleanly(patch_content: str, max_length: int = 120):
     """
 
     Displays a patch/diff content cleanly using Rich styling.
@@ -107,59 +105,39 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
     """
 
     styles = {
-
         # File headers (e.g., --- a/file.py, +++ b/file.py)
-
-        'header': "bold bright_blue",
-
+        "header": "bold bright_blue",
         # Hunks (e.g., @@ -1,5 +1,5 @@)
-
-        'hunk': "bold white",
-
+        "hunk": "bold white",
         # Deleted lines (starts with -)
-
-        'removed': "bold bright_red on #4d1515", # Added a subtle background for contrast
-
+        "removed": "bold bright_red on #4d1515",  # Added a subtle background for contrast
         # Added lines (starts with +)
-
-        'added': "bold bright_green on #18421b", # Added a subtle background for contrast
-
+        "added": "bold bright_green on #18421b",  # Added a subtle background for contrast
         # Context lines (starts with space or not present)
-
-        'context': "dim white",
-
+        "context": "dim white",
     }
-
 
     # Iterate through the patch content line by line
 
     for line in patch_content.splitlines()[:max_length]:
-
         style_key = None
 
-        prefix = line[:3] # Check up to the first three characters
+        prefix = line[:3]  # Check up to the first three characters
 
+        if prefix.startswith("---") or prefix.startswith("+++"):
+            style_key = "header"
 
-        if prefix.startswith('---') or prefix.startswith('+++'):
+        elif prefix.startswith("@@"):
+            style_key = "hunk"
 
-            style_key = 'header'
+        elif prefix.startswith("-"):
+            style_key = "removed"
 
-        elif prefix.startswith('@@'):
-
-            style_key = 'hunk'
-
-        elif prefix.startswith('-'):
-
-            style_key = 'removed'
-
-        elif prefix.startswith('+'):
-
-            style_key = 'added'
+        elif prefix.startswith("+"):
+            style_key = "added"
 
         else:
-
-            style_key = 'context'
-        
+            style_key = "context"
 
         # Create a Rich Text object and print it
 

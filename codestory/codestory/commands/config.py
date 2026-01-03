@@ -22,10 +22,11 @@
 
 from pathlib import Path
 from typing import Literal
-from rich import rprint as rprint
+
 import tomllib
 import typer
 from platformdirs import user_config_dir
+from rich import rprint as rprint
 from rich.console import Console
 from rich.table import Table
 
@@ -123,7 +124,7 @@ def _set_config(key: str, value: str, scope: str) -> None:
     if scope == "env":
         # For environment variables, just rprint instructions
         env_var = f"codestory_{key}"
-        rprint(f"[green]To set this as an environment variable:[/green]")
+        rprint("[green]To set this as an environment variable:[/green]")
         rprint(f"  Windows (PowerShell): $env:{env_var}='{value}'")
         rprint(f"  Windows (CMD): set {env_var}={value}")
         rprint(f"  Linux/macOS: export {env_var}='{value}'")

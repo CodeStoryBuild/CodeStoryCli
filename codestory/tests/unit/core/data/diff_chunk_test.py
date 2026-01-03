@@ -20,7 +20,6 @@
 # -----------------------------------------------------------------------------
 
 
-import pytest
 from unittest.mock import Mock
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper

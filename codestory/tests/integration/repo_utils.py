@@ -24,7 +24,6 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 
 class RepoState:
@@ -62,7 +61,7 @@ class RepoState:
             ["git", "commit", "-m", "Initial commit"], cwd=self.path, check=True
         )
 
-    def apply_changes(self, changes: Dict[str, Union[str, bytes, None]]):
+    def apply_changes(self, changes: dict[str, str | bytes | None]):
         """
         Apply changes to the repository.
 

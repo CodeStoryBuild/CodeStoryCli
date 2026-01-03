@@ -20,23 +20,21 @@
 # -----------------------------------------------------------------------------
 
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from pathlib import Path
-from codestory.core.validation import (
-    validate_commit_hash,
-    validate_target_path,
-    validate_message_length,
-    validate_ignore_patterns,
-    validate_min_size,
-    validate_git_repository,
-    sanitize_user_input,
-)
 from codestory.core.exceptions import (
-    ValidationError,
     GitError,
-    DetachedHeadError,
-    FileSystemError,
+    ValidationError,
+)
+from codestory.core.validation import (
+    sanitize_user_input,
+    validate_commit_hash,
+    validate_git_repository,
+    validate_ignore_patterns,
+    validate_message_length,
+    validate_min_size,
+    validate_target_path,
 )
 
 # -----------------------------------------------------------------------------

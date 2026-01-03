@@ -20,8 +20,10 @@
 # -----------------------------------------------------------------------------
 
 
-import pytest
 import subprocess
+
+import pytest
+
 from .conftest import run_cli
 
 

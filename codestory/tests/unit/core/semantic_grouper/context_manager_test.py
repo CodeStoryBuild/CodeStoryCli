@@ -20,8 +20,9 @@
 # -----------------------------------------------------------------------------
 
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from codestory.core.semantic_grouper.context_manager import ContextManager, AnalysisContext
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.file_reader.protocol import FileReader

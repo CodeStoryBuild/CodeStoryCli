@@ -51,18 +51,22 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         raise DetachedHeadError("Detached HEAD is not supported for codestory fix")
 
     # Verify commit exists and is on current branch history
-    resolved = (git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]) or "").strip()
+    resolved = (
+        git_interface.run_git_text_out(["rev-parse", fix_context.commit_hash]) or ""
+    ).strip()
     if not resolved:
         raise GitError(f"Commit not found: {fix_context.commit_hash}")
 
     is_ancestor = git_interface.run_git_text(
-            ["merge-base", "--is-ancestor", resolved, head_hash]
+        ["merge-base", "--is-ancestor", resolved, head_hash]
     )
     if is_ancestor is None or is_ancestor.returncode != 0:
-        raise GitError(f"The commit must be an ancestor of HEAD (linear history only).")
+        raise GitError("The commit must be an ancestor of HEAD (linear history only).")
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
-    parent = (git_interface.run_git_text_out(["rev-parse", f"{resolved}^"]) or "").strip()
+    parent = (
+        git_interface.run_git_text_out(["rev-parse", f"{resolved}^"]) or ""
+    ).strip()
 
     if not parent:
         raise GitError("Fixing the root commit is not supported yet!")

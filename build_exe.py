@@ -67,11 +67,15 @@ def main():
     if args.mode == "folder":
         # Folder mode: dist/folder/codestory/[exe]
         check_path = (
-            dist_path / "codestory" / ("codestory.exe" if system == "windows" else "codestory")
+            dist_path
+            / "codestory"
+            / ("codestory.exe" if system == "windows" else "codestory")
         )
     else:
         # File mode: dist/file/[exe]
-        check_path = dist_path / ("codestory.exe" if system == "windows" else "codestory")
+        check_path = dist_path / (
+            "codestory.exe" if system == "windows" else "codestory"
+        )
 
     if check_path.exists():
         print(f"Build successful! Artifact located at: {check_path}")

@@ -20,10 +20,11 @@
 # -----------------------------------------------------------------------------
 
 
-import pytest
 from unittest.mock import Mock
-from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
+
+import pytest
 from codestory.core.data.chunk import Chunk
+from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 
 # -----------------------------------------------------------------------------
 # Tests

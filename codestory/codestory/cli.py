@@ -23,7 +23,6 @@
 from pathlib import Path
 
 import typer
-import sys
 from dotenv import load_dotenv
 from loguru import logger
 from platformdirs import user_config_dir
@@ -71,19 +70,30 @@ def setup_config_args(**kwargs):
 
 def run_onboarding(ctx: typer.Context):
     rprint("[bold]Welcome to codestory![/bold]")
-    rprint("[bold]This is the first time you're running codestory. Let's get started![/bold]")
+    rprint(
+        "[bold]This is the first time you're running codestory. Let's get started![/bold]"
+    )
     rprint("[bold]You'll be asked a few questions to configure codestory.[/bold]")
-    rprint("[bold]You can always change these settings later using the 'config' command.[/bold]")
+    rprint(
+        "[bold]You can always change these settings later using the 'config' command.[/bold]"
+    )
     rprint("[bold]Press Enter to continue.[/bold]")
     input()
-    model = typer.prompt("What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)")
+    model = typer.prompt(
+        "What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)"
+    )
     api_key = typer.prompt("What is your API key?")
     global_ = typer.confirm("Do you want to set this as the global configuration?")
     config.main(ctx, key="model", value=model, scope="global" if global_ else "local")
-    config.main(ctx, key="api_key", value=api_key, scope="global" if global_ else "local")
+    config.main(
+        ctx, key="api_key", value=api_key, scope="global" if global_ else "local"
+    )
     rprint("[bold]Configuration completed![/bold]")
-    rprint("[bold]You can always change these settings and more later using the 'config' command.[/bold]")
+    rprint(
+        "[bold]You can always change these settings and more later using the 'config' command.[/bold]"
+    )
     return
+
 
 def check_run_onboarding(ctx: typer.Context):
     # check a file in user config dir
