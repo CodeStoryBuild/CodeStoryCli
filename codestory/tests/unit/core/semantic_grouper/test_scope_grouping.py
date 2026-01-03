@@ -1660,7 +1660,7 @@ def test_scope_map_single_line(tools):
     parsed = parser.parse_file("test.py", content, [(0, 0)])
 
     scope_map = scope_mapper.build_scope_map(
-        parsed.detected_language, parsed.root_node, "test.py", [(0, 0)]
+        parsed.detected_language, parsed.root_node, "test.py".encode('utf-8'), parsed.content_bytes, [(0, 0)]
     )
 
     # Single line may or may not have scope depending on language

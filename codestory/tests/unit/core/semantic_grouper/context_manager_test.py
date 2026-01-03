@@ -122,9 +122,7 @@ def test_analyze_required_contexts_mod(context_manager_deps):
     chunk = create_chunk()
     cm = ContextManager(
         [chunk],
-        context_manager_deps["parser"],
         context_manager_deps["reader"],
-        context_manager_deps["qm"],
         False
     )
 
@@ -150,9 +148,7 @@ def test_analyze_required_contexts_del(context_manager_deps):
     chunk = create_chunk(is_del=True, new_path=None)
     cm = ContextManager(
         [chunk],
-        context_manager_deps["parser"],
         context_manager_deps["reader"],
-        context_manager_deps["qm"],
         False
     )
 
