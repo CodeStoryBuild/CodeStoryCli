@@ -20,7 +20,7 @@ def main():
             directory.mkdir()
 
     # Install PyInstaller if not already installed
-    if not importlib.util.find_spec("PyInstaller"):    
+    if not importlib.util.find_spec("PyInstaller"):
         print("Installing PyInstaller...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "PyInstaller"])
 
