@@ -266,7 +266,7 @@ class QueryManager:
                     self._language_configs[language_name] = (
                         LanguageConfig.from_json_dict(language_name, language_config)
                     )
-                    logger.info(
+                    logger.debug(
                         f"Overridden language config for '{language_name}' from custom config"
                     )
                 except Exception as e:
