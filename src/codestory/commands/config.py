@@ -395,10 +395,10 @@ def main(
         cst config model
 
         # Set a local configuration value
-        cst config model "gemini:gemini-2.0-flash"
+        cst config model "gemini/gemini-2.0-flash"
 
         # Set a global configuration value
-        cst config model "openai:gpt-4" --scope global
+        cst config model "openai/gpt-4" --scope global
 
         # Show all configuration
         cst config

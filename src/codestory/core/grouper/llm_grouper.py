@@ -35,6 +35,7 @@ from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffG
 from codestory.core.exceptions import LLMResponseError, LogicalGroupingError
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
+from codestory.core.semantic_grouper.context_manager import ContextManager
 
 # -----------------------------------------------------------------------------
 # Prompts
@@ -234,6 +235,7 @@ class LLMGrouper(LogicalGrouper):
         self,
         chunks: list[Chunk],
         immut_chunks: list[ImmutableChunk],
+        context_manager: ContextManager,
         message: str,
         on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:

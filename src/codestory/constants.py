@@ -21,7 +21,7 @@ from pathlib import Path
 from platformdirs import user_config_dir, user_log_path
 
 APP_NAME = "codestory"
-ENV_APP_PREFIX = APP_NAME.upper()
+ENV_APP_PREFIX = APP_NAME.upper() + "_"
 LOG_DIR = Path(user_log_path(appname=APP_NAME))
 
 ONBOARDING_FLAG = Path(user_config_dir(APP_NAME)) / "onboarding_flag"
