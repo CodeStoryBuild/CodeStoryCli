@@ -468,6 +468,15 @@ class GitCommands:
         """
         return self.git.run_git_text_out(["rev-parse", "HEAD"]).strip()
 
+    def is_bare_repository(self) -> bool:
+        """
+        Checks if the current repository is bare.
+        """
+        return (
+            self.git.run_git_text_out(["rev-parse", "--is-bare-repository"]).strip()
+            == "true"
+        )
+
     def try_get_parent_hash(self, commit_hash: str, empty_on_fail: bool = False):
         parent_hash_result = self.git.run_git_text_out(
             ["rev-parse", "--verify", f"{commit_hash}^"]

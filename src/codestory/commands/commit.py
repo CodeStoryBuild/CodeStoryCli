@@ -23,7 +23,11 @@ from colorama import Fore, Style
 from loguru import logger
 
 from codestory.context import CommitContext, GlobalContext
-from codestory.core.exceptions import ValidationError, handle_codestory_exception
+from codestory.core.exceptions import (
+    GitError,
+    ValidationError,
+    handle_codestory_exception,
+)
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
 from codestory.core.temp_commiter.temp_commiter import TempCommitCreator
@@ -38,6 +42,10 @@ def verify_repo_state(
     commands: GitCommands, target: str, auto_yes: bool = False
 ) -> bool:
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
+
+    if commands.is_bare_repository():
+        raise GitError("The 'commit' command cannot be run on a bare repository.")
+
     if commands.need_reset():
         if auto_yes:
             unstage = True
