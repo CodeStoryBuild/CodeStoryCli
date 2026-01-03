@@ -3,15 +3,6 @@ from .diff_chunk import DiffChunk
 
 
 class Chunk(Protocol):
-    def format_json(self) -> str:
-        """
-        Formats content changes as JSON, for ai representation.
-
-        Returns:
-            A JSON string representing self.
-        """
-        ...
-
     def canonical_paths(self) -> list[bytes]:
         """
         List of affected file paths that this chunk touches (as bytes).

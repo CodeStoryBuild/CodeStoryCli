@@ -212,29 +212,8 @@ class GitSynthesizer:
                     key=lambda c: c.line_anchor,
                 )
 
-                merged = GitSynthesizer.merge_continous_same_type(sorted_file_chunks)
+                merged = GitSynthesizer.merge_chunks(sorted_file_chunks)
 
-                # if single_chunk.is_file_addition:
-                #     # file additions are handled differently
-                #     # since they are a new file, we need to merge all chunks into a new contigous hunk
-                #     additions = []
-                #     for sorted_chunk in sorted_file_chunks:
-                #         additions.extend(sorted_chunk.parsed_content)
-
-                #     hunk_header = f"@@ -{0},{0} +{1},{len(additions)} @@"
-                #     patch_lines.append(hunk_header)
-
-                #     for item in additions:
-                #         patch_lines.append(f"+{item.content}")
-
-                #     # you might hit edge case where it was an empty addition
-                #     # then the newline_marker_rem might have been marked because hit_add will never be true (in diff_chunk.py::from_hunk)
-                #     if single_chunk.contains_newline_fallback:
-                #         patch_lines.append("\\ No newline at end of file")
-                #         terminator_needed = False
-
-                # else:
-                # go over each chunk and generate the hunk headers and content
                 has_newline_fallback = False
 
                 for sorted_chunk in merged:
@@ -264,7 +243,15 @@ class GitSynthesizer:
                 if has_newline_fallback:
                     patch_lines.append(b"\\ No newline at end of file")
 
-            patches[file_path] = b"\n".join(patch_lines) + b"\n"
+            file_patch = b"\n".join(patch_lines)
+            has_newline = file_patch.endswith(b"\n")
+            
+            if not has_newline:
+                file_patch += b"\n"
+            
+            # else no need for a \n
+
+            patches[file_path] = file_patch
 
             logger.debug(
                 "Patch generation progress: cumulative_patches={count}",
@@ -272,71 +259,110 @@ class GitSynthesizer:
             )
 
         return patches
-
+    
     @staticmethod
-    def merge_continous_same_type(sorted_chunks: list[DiffChunk]):
-        new_chunks = []
-        for chunk in sorted_chunks:
-            sig = 1 if chunk.pure_addition() else (-1 if chunk.pure_deletion() else 0)
-            if new_chunks:
-                last, last_sig = new_chunks[-1]
-                if sig != 0 and sig == last_sig:
-                    # both "pure the same something"
-                    # check if they are continous
-                    if sig == 1:
-                        new_range = (
-                            chunk.new_start,
-                            chunk.new_start + chunk.new_len() - 1,
-                        )
-                        last_range = (
-                            last.new_start,
-                            last.new_start + last.new_len() - 1,
-                        )
-                    else:
-                        new_range = (
-                            chunk.old_start,
-                            chunk.old_start + chunk.old_len() - 1,
-                        )
-                        last_range = (
-                            last.old_start,
-                            last.old_start + last.old_len() - 1,
-                        )
+    def _is_contiguous(last_chunk: "DiffChunk", current_chunk: "DiffChunk") -> bool:
+        """
+        Determines if two DiffChunks are contiguous and can be merged.
 
-                    last_start, last_end = last_range
-                    new_start, new_end = new_range
-
-                    if last_end + 1 == new_start:
-                        # adjacent
-                        new_chunk = GitSynthesizer.merge_two_single_type_chunks(
-                            last, chunk
-                        )
-                        new_chunks[-1] = (new_chunk, sig)
-                    elif last_end > new_start:
-                        # overlapping, this is something that should not happen
-                        logger.error(
-                            f"Overlapping chunks! chunk1:{last} chunk2:{chunk}"
-                        )
-                    else:
-                        # just a regular non-neighbor chunk
-                        new_chunks.append((chunk, sig))
-                else:
-                    new_chunks.append((chunk, sig))
-            else:
-                new_chunks.append((chunk, sig))
-
-        return [chunk for (chunk, _) in new_chunks]
-
-    @staticmethod
-    def merge_two_single_type_chunks(old: "DiffChunk", new: "DiffChunk"):
-        return DiffChunk.from_parsed_content_slice(
-            old_file_path=old.old_file_path,
-            new_file_path=old.new_file_path,
-            file_mode=old.file_mode,
-            contains_newline_fallback=old.contains_newline_fallback
-            or new.contains_newline_fallback,
-            contains_newline_marker_rem=old.contains_newline_marker_rem,
-            parsed_slice=old.parsed_content + new.parsed_content,
+        Chunks are considered contiguous if their line number ranges are adjacent
+        on EITHER the old file side OR the new file side. This correctly handles
+        all cases: pure additions, pure deletions, and mixed modifications
+        being adjacent to other chunk types.
+        """
+        # Check for contiguity on the "new file" (additions) side
+        can_merge_on_new = (
+            last_chunk.new_len() > 0
+            and current_chunk.new_len() > 0
+            and (last_chunk.new_start + last_chunk.new_len()) == current_chunk.new_start
         )
+
+        # Check for contiguity on the "old file" (removals) side
+        can_merge_on_old = (
+            last_chunk.old_len() > 0
+            and current_chunk.old_len() > 0
+            and (last_chunk.old_start + last_chunk.old_len()) == current_chunk.old_start
+        )
+        
+        # A special case for a pure removal followed immediately by a pure addition
+        # e.g., @@ -5,1 +4,0 @@ followed by @@ -4,0 +5,1 @@
+        # These are contiguous if the new_start of the addition matches the old_start
+        # of the deletion.
+        is_adjacent_replace = (
+            last_chunk.pure_deletion()
+            and current_chunk.pure_addition()
+            and last_chunk.old_start == current_chunk.new_start
+        )
+
+        return can_merge_on_new or can_merge_on_old or is_adjacent_replace
+
+
+    @staticmethod
+    def merge_chunks(sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
+        """
+        Merges a list of sorted, atomic DiffChunks into the smallest possible
+        list of larger, valid DiffChunks.
+
+        This acts as the inverse of the `split_into_atomic_chunks` method. It
+        first groups adjacent chunks and then merges each group into a single
+        new chunk using the `from_parsed_content_slice` factory.
+        """
+        if not sorted_chunks:
+            return []
+
+        # Step 1: Group all contiguous chunks together.
+        groups = []
+        current_group = [sorted_chunks[0]]
+        for i in range(1, len(sorted_chunks)):
+            last_chunk = current_group[-1]
+            current_chunk = sorted_chunks[i]
+
+            if GitSynthesizer._is_contiguous(last_chunk, current_chunk):
+                current_group.append(current_chunk)
+            else:
+                groups.append(current_group)
+                current_group = [current_chunk]
+        groups.append(current_group)
+
+        # Step 2: Merge each group into a single new DiffChunk.
+        final_chunks = []
+        for group in groups:
+            if len(group) == 1:
+                # No merging needed for groups of one.
+                final_chunks.append(group[0])
+                continue
+
+            # Flatten the content from all chunks in the group.
+            # It's crucial that removals come before additions for from_parsed_content_slice.
+            merged_parsed_content = []
+            removals = []
+            additions = []
+            
+            # Also combine the newline markers.
+            contains_newline_fallback = False
+            contains_newline_marker = False
+
+            for chunk in group:
+                removals.extend([c for c in chunk.parsed_content if isinstance(c, Removal)])
+                additions.extend([c for c in chunk.parsed_content if isinstance(c, Addition)])
+                contains_newline_fallback |= chunk.contains_newline_fallback
+                contains_newline_marker |= chunk.contains_newline_marker
+            
+            merged_parsed_content.extend(removals)
+            merged_parsed_content.extend(additions)
+
+            # Let the factory method do the hard work of creating the new valid chunk.
+            merged_chunk = DiffChunk.from_parsed_content_slice(
+                old_file_path=group[0].old_file_path,
+                new_file_path=group[0].new_file_path,
+                file_mode=group[0].file_mode,
+                contains_newline_fallback=contains_newline_fallback,
+                contains_newline_marker=contains_newline_marker,
+                parsed_slice=merged_parsed_content,
+            )
+            final_chunks.append(merged_chunk)
+
+        return final_chunks
 
     def _build_tree_from_changes(
         self,
@@ -380,6 +406,7 @@ class GitSynthesizer:
                         "apply",
                         "--index",
                         "--recount",
+                        "--whitespace=nowarn",
                         "--unidiff-zero",
                         cwd=worktree_path,
                         stdin_content=combined_patch,
@@ -388,7 +415,7 @@ class GitSynthesizer:
                     raise RuntimeError(
                         "FATAL: Git apply failed for combined patch stream.\n"
                         f"--- ERROR DETAILS ---\n{e}\n"
-                        # f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
+                        f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
                     )
 
             # 1. Define a path for a temporary index file INSIDE the worktree.
@@ -415,6 +442,14 @@ class GitSynthesizer:
                 "Tree object created: tree_hash={tree}",
                 tree=new_tree_hash,
             )
+            
+            # Clean up the worktree before returning
+            try:
+                self._run_git_binary("worktree", "remove", "--force", str(worktree_path))
+            except RuntimeError:
+                # If worktree removal fails, it will be cleaned up when temp_dir is removed
+                logger.warning("Failed to remove worktree, will be cleaned up with temp directory")
+            
             return new_tree_hash
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:

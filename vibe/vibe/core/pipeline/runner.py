@@ -203,7 +203,7 @@ class AIGitPipeline:
 
             # Log the diff for this group at debug level
             diff_text = patch_map.get(idx, "") or "(no diff)"
-            logger.debug("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
+            logger.info("Diff for #{num}:\n{diff}", num=num, diff=diff_text)
 
             logger.info(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
