@@ -191,8 +191,8 @@ def main(
         # Commit specific directory with message
         cst commit src/  -m "Make 2 commits, one for refactor, one for feature A..."
 
-        # Commit changes with an intent filter
-        cst commit --relevance-level safe --intent "refactor abc into a class"
+        # Commit changes with an intent filter enabled
+        cst commit --intent "refactor abc into a class"
     """
     global_context: GlobalContext = ctx.obj
     with handle_codestory_exception():
