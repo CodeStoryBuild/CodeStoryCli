@@ -34,7 +34,6 @@ from codestory.core.validation import (
     validate_ignore_patterns,
     validate_min_size,
 )
-from codestory.pipelines.clean_pipeline import CleanPipeline
 
 from .fix import main as fix_main
 
@@ -113,6 +112,8 @@ def main(
     )
 
     # Execute cleaning
+    from codestory.pipelines.clean_pipeline import CleanPipeline
+
     with time_block("Clean Runner E2E"):
         runner = CleanPipeline(global_context, clean_context, fix_command)
         success = runner.run()
