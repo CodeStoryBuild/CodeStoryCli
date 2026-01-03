@@ -35,8 +35,8 @@ def create_expand_pipeline(
     commands = GitCommands(git_interface)
 
     chunker = AtomicChunker()
-    logical_grouper = SingleGrouper()
-    # logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
+    # logical_grouper = SingleGrouper()
+    logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
 
     # For expand, we don't take a working backup; synthesizer writes to the current
     # checked-out temp branch within the worktree.

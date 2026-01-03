@@ -56,8 +56,8 @@ def createPipeline(repo_path: str, target: str, console: Console):
     commands = GitCommands(git_interface)
 
     chunker = AtomicChunker()
-    logical_grouper = SingleGrouper()
-    # logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
+    # logical_grouper = SingleGrouper()
+    logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
 
     branch_saver = BranchSaver(git_interface)
 
