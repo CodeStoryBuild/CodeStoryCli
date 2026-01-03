@@ -41,14 +41,11 @@ if TYPE_CHECKING:
     )
 
 
-DEFAULT_PATCH_CUTOFF_CHARS = 1000
-
-
 def generate_annotated_patches(
     containers: list[AtomicContainer],
     context_manager: ContextManager,
     patch_generator: PatchGenerator,
-    patch_cutoff_chars: int = DEFAULT_PATCH_CUTOFF_CHARS,
+    max_tokens: int | None = None,
 ) -> list[str]:
     """Generate annotated patches for a list of containers as XML strings.
 
@@ -56,7 +53,7 @@ def generate_annotated_patches(
         containers: List of AtomicContainer objects
         context_manager: ContextManager for semantic analysis
         patch_generator: PatchGenerator for patch generation
-        patch_cutoff_chars: Maximum characters per patch before truncation
+        max_tokens: Maximum tokens for the model to use for dynamic cutoff calculation
 
     Returns:
         List of XML-formatted annotated patches, one per container
@@ -77,7 +74,7 @@ def generate_annotated_patches(
             container=container,
             context_manager=context_manager,
             patch_generator=patch_generator,
-            patch_cutoff_chars=patch_cutoff_chars,
+            max_tokens=max_tokens,
         )
         patches.append(patch)
     return patches
@@ -87,7 +84,7 @@ def generate_annotated_patch(
     container: AtomicContainer,
     context_manager: ContextManager,
     patch_generator: PatchGenerator,
-    patch_cutoff_chars: int = DEFAULT_PATCH_CUTOFF_CHARS,
+    max_tokens: int | None = None,
 ) -> str:
     """Generate an XML-formatted annotated patch for a single container."""
     merged_container = merge_container(container)
@@ -98,7 +95,9 @@ def generate_annotated_patch(
     )
 
     return generate_annotated_chunk_patch(
-        annotated_container, patch_generator, patch_cutoff_chars
+        annotated_container,
+        patch_generator,
+        max_tokens=max_tokens,
     )
 
 
@@ -115,7 +114,7 @@ def prioritize_longer_fqns(fqns: set[TypedFQN]) -> list[TypedFQN]:
 def generate_annotated_chunk_patch(
     annotated_container: AnnotatedContainer,
     patch_generator: PatchGenerator,
-    patch_cutoff_chars: int,
+    max_tokens: int | None = None,
 ) -> str:
     """Generate an XML-formatted annotated patch with semantic information per file.
 
@@ -141,6 +140,20 @@ def generate_annotated_chunk_patch(
     for chunk, sig in zip(atomic_chunks, chunk_signatures, strict=False):
         path = chunk.canonical_path()
         groups[path].append((chunk, sig))
+
+    # Dynamically calculate patch cutoff if max_tokens is provided
+    num_paths = len(groups)
+    patch_cutoff_chars = 1000  # Default fallback
+    if max_tokens is not None and num_paths > 0:
+        # Use a safe offset for prompt overhead (system prompt, metadata, etc.)
+        # The user suggests 500-1000 tokens.
+        token_offset = 1000
+        # Estimate 3 characters per token (consistent with chunk_summarizer estimation)
+        chars_per_token = 3
+
+        tokens_per_path = (max_tokens // num_paths) - token_offset
+        # Ensure we have a reasonable minimum per path
+        patch_cutoff_chars = max(tokens_per_path * chars_per_token, 1000)
 
     file_sections = []
 
