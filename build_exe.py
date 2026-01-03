@@ -10,7 +10,6 @@ import sys
 import shutil
 from pathlib import Path
 
-
 def main():
     # Create build directory if it doesn't exist
     build_dir = Path("build")
