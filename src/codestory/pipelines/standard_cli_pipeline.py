@@ -121,7 +121,8 @@ class StandardCLIPipeline:
             semantic_patch_generator = SemanticPatchGenerator(
                 semantic_groups,
                 file_manager,
-                context_lines=3,
+                context_lines=2,
+                skip_whitespace=True,
             )
             container_summarizer = ContainerSummarizer(
                 self.context.get_model(),
