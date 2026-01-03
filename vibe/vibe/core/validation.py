@@ -9,7 +9,12 @@ import re
 from pathlib import Path
 
 from .git_interface.interface import GitInterface
-from .exceptions import FileSystemError, GitError, ValidationError, DetachedHeadError
+from .exceptions import (
+    FileSystemError,
+    GitError,
+    ValidationError,
+    DetachedHeadError,
+)
 
 
 def validate_commit_hash(value: str) -> str:
