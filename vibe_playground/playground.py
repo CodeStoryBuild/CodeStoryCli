@@ -101,9 +101,9 @@ class AnalysisContext:
     after_symbol_table: dict[str, Symbol] = field(default_factory=dict)
     after_all_scopes: dict[str, Scope] = field(default_factory=dict)
 
+
 # In a new file, e.g., vibe/core/analysis/interfaces.py
 from typing import Protocol
-
 
 
 # --- 2. The Semantic Analysis Engine ---

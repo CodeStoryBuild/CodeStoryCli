@@ -34,7 +34,6 @@ from tree_sitter import Query, QueryCursor
 import json
 
 
-
 parser = get_parser("python")
 
 with open("fileA.py") as fileA:
@@ -102,5 +101,3 @@ for match_class, nodes in captures.items():
         print(match_class, f"{start_line}-{end_line}", repr(text))
 
 print(symMap.line_classes)
-
-

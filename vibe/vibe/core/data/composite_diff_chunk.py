@@ -68,4 +68,3 @@ class CompositeDiffChunk(Groupable):
             chunks.extend(chunk.get_chunks())
 
         return chunks
-
