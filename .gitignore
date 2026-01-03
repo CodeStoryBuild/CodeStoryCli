@@ -214,3 +214,6 @@ codestoryconfig.toml
 
 # docs
 codestory/site
+
+# build venv
+venv_build/

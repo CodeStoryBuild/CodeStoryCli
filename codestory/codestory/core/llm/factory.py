@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
 
-import httpx
 from loguru import logger
 
 from ..exceptions import ConfigurationError
@@ -27,6 +26,8 @@ class CodeStoryAdapter:
     """
 
     def __init__(self, config: ModelConfig):
+        import httpx
+
         self.config = config
         self.provider, self.model_name = self._parse_model_string(config.model_string)
         self.api_key = config.api_key or self._get_env_key()
@@ -61,6 +62,8 @@ class CodeStoryAdapter:
         """
         Unified invoke method. Returns the content string.
         """
+        import httpx
+
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
 
