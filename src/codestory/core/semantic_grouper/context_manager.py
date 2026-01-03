@@ -250,12 +250,6 @@ class ContextManager:
         Build shared analysis contexts for all required file versions.
         """
 
-        # TODO, this functionality is not in use right now
-        # It is designed for languages where things are shared without explicit imports
-        # If there are only explicit imports we only need to check tokens per file
-        # However for languages like go, there are certain conditions where tokens can be shared
-        # We must add this info to the language config, and alternate between the two approaches
-
         languages: dict[str, list[ParsedFile]] = {}
 
         for (_, is_old), parsed_file in self._parsed_files.items():

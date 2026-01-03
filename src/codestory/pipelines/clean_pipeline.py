@@ -68,7 +68,7 @@ class CleanPipeline:
         for idx, commit in enumerate(commits):
             short = commit[:7]
 
-            # TODO use:
+            # TODO use for more cool stuff:
             # parent = self.global_context.git_commands.try_get_parent_hash(
             #     commit, empty_on_fail=True
             # )

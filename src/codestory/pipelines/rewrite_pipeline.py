@@ -116,7 +116,7 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
 def describe_chunk(data: Chunk | ImmutableChunk | CommitGroup) -> str:
     if isinstance(data, CommitGroup):
         return "\n".join([describe_chunk(chunk) for chunk in data.chunks])
-    
+
     if isinstance(data, Chunk):
         files: dict[str, int] = {}
         for diff_c in data.get_chunks():
@@ -235,7 +235,10 @@ class RewritePipeline:
             semantic_chunks = []
 
         # first optionally filter secrets
-        if self.commit_context.secret_scanner_aggression != "none" and self.can_reject_changes:
+        if (
+            self.commit_context.secret_scanner_aggression != "none"
+            and self.can_reject_changes
+        ):
             with (
                 transient_step(
                     "Scanning for leaked secrets...",
@@ -300,10 +303,9 @@ class RewritePipeline:
                     logger.info("---------- affected chunks ----------")
                     logger.info(describe_chunk(chunk))
                 logger.info("These chunks will simply stay as uncommited changes\n")
-        
-        if (
-            self.commit_context.relevance_filter_level != "none"
-            and (self.global_context.model is None or not self.can_reject_changes)
+
+        if self.commit_context.relevance_filter_level != "none" and (
+            self.global_context.model is None or not self.can_reject_changes
         ):
             logger.warning(
                 "Relevance filter level is set to '{level}' but not currently able to reject changes",
@@ -417,28 +419,38 @@ class RewritePipeline:
                 files=len(affected_files),
             )
 
-
             # Acceptance/modification of groups:
             if not self.global_context.config.auto_accept:
-                # TODO not the cleanest way of handling this, but auto_accept is like the override just to go for it
                 if self.global_context.config.ask_for_commit_message:
                     if self.can_reject_changes:
-                        custom_message = typer.prompt("Would you like to optionally override this commit message with a custom message? (type N/n if you wish to reject this change)", default="", type=str).strip()
+                        custom_message = typer.prompt(
+                            "Would you like to optionally override this commit message with a custom message? (type N/n if you wish to reject this change)",
+                            default="",
+                            type=str,
+                        ).strip()
                         # possible rejection of group
                         if custom_message.lower() == "n":
                             user_rejected_groups.append(group)
                             continue
                     else:
-                        custom_message = typer.prompt("Would you like to optionally override this commit message with a custom message?", default="", type=str).strip()
+                        custom_message = typer.prompt(
+                            "Would you like to optionally override this commit message with a custom message?",
+                            default="",
+                            type=str,
+                        ).strip()
 
                     if custom_message:
                         # TODO how should we handle extended message
-                        group = CommitGroup(group.chunks, group.group_id, commit_message=custom_message)
-                    
+                        group = CommitGroup(
+                            group.chunks, group.group_id, commit_message=custom_message
+                        )
+
                     accepted_groups.append(group)
                 else:
                     if self.can_reject_changes:
-                        keep = typer.confirm("Do you want to commit this change?", default=True)
+                        keep = typer.confirm(
+                            "Do you want to commit this change?", default=True
+                        )
                         if keep:
                             accepted_groups.append(group)
                         else:
@@ -450,20 +462,18 @@ class RewritePipeline:
 
         if user_rejected_groups:
             logger.info(
-                    f"Rejected {len(user_rejected_groups)} commits due to user input"
+                f"Rejected {len(user_rejected_groups)} commits due to user input"
             )
             for group in user_rejected_groups:
                 logger.info("---------- affected chunks ----------")
                 logger.info(describe_chunk(group))
             logger.info("These chunks will simply stay as uncommited changes\n")
 
-            
         num_acc = len(accepted_groups)
         if num_acc == 0:
             logger.info("No changes applied")
             logger.info("User did not accept any commits")
             return None
-
 
         if self.global_context.config.auto_accept:
             apply_final = True
