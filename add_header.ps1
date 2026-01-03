@@ -40,6 +40,18 @@ foreach ($file in $pyFiles) {
     $originalContent = Get-Content -LiteralPath $file.FullName
 
     # Prepend license header
+
+    # prepend only if header not already present
+    $headerPresent = $false
+    # check if starts with header
+    if ($originalContent.Length -gt 0 -and $originalContent[0] -eq "# -----------------------------------------------------------------------------") {
+        $headerPresent = $true
+    }
+    if ($headerPresent) {
+        Write-Host "License header already present in $($file.FullName)"
+        continue
+    }
+    
     $newContent = $licenseHeader + $originalContent
 
     # Write back to file
