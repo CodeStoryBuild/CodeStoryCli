@@ -158,10 +158,9 @@ def load_chunker(chunker_cls: str, chunker_kwargs: dict) -> ChunkerInterface:
 def test_pure_additions(chunker_cls, chunker_kwargs):
     """Test chunker with pure additions (no removals)."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="line1", line_number=1),
             Addition(content="line2", line_number=2),
@@ -172,7 +171,7 @@ def test_pure_additions(chunker_cls, chunker_kwargs):
         old_start=0,
         new_start=1,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -180,10 +179,9 @@ def test_pure_additions(chunker_cls, chunker_kwargs):
 def test_pure_removals(chunker_cls, chunker_kwargs):
     """Test chunker with pure removals (no additions)."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="line1", line_number=10),
             Removal(content="line2", line_number=11),
@@ -194,7 +192,7 @@ def test_pure_removals(chunker_cls, chunker_kwargs):
         old_start=10,
         new_start=0,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -202,10 +200,9 @@ def test_pure_removals(chunker_cls, chunker_kwargs):
 def test_mixed_additions_removals(chunker_cls, chunker_kwargs):
     """Test chunker with interleaved additions and removals."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new1", line_number=1),
             Removal(content="old1", line_number=1),
@@ -217,7 +214,7 @@ def test_mixed_additions_removals(chunker_cls, chunker_kwargs):
         old_start=1,
         new_start=1,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -225,17 +222,16 @@ def test_mixed_additions_removals(chunker_cls, chunker_kwargs):
 def test_single_addition(chunker_cls, chunker_kwargs):
     """Test chunker with a single addition."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="single_line", line_number=5),
         ],
         old_start=0,
         new_start=5,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -243,17 +239,16 @@ def test_single_addition(chunker_cls, chunker_kwargs):
 def test_single_removal(chunker_cls, chunker_kwargs):
     """Test chunker with a single removal."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="single_line", line_number=20),
         ],
         old_start=20,
         new_start=0,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -261,10 +256,9 @@ def test_single_removal(chunker_cls, chunker_kwargs):
 def test_single_modification(chunker_cls, chunker_kwargs):
     """Test chunker with a single line modification (removal + addition)."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new_line", line_number=10),
             Removal(content="old_line", line_number=10),
@@ -272,7 +266,7 @@ def test_single_modification(chunker_cls, chunker_kwargs):
         old_start=10,
         new_start=10,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -330,20 +324,19 @@ def test_chunk_with_blank_lines(chunker_cls, chunker_kwargs):
 def test_chunk_with_special_characters(chunker_cls, chunker_kwargs):
     """Test chunker with special characters in content."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
-            Addition(content='def foo():', line_number=1),
-            Removal(content='def bar():', line_number=1),
+            Addition(content="def foo():", line_number=1),
+            Removal(content="def bar():", line_number=1),
             Addition(content='    print("SPLIT HERE")', line_number=2),
             Removal(content='    print("test")', line_number=2),
         ],
         old_start=1,
         new_start=1,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -354,10 +347,9 @@ def test_non_contiguous_line_numbers(chunker_cls, chunker_kwargs):
     This is a valid git patch pattern.
     """
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="old1", line_number=10),
             Removal(content="old2", line_number=11),
@@ -368,7 +360,7 @@ def test_non_contiguous_line_numbers(chunker_cls, chunker_kwargs):
         old_start=10,
         new_start=20,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -380,10 +372,9 @@ def test_non_contiguous_line_numbers(chunker_cls, chunker_kwargs):
 def test_multiple_input_chunks_same_file(chunker_cls, chunker_kwargs):
     """Test chunker with multiple input chunks from the same file."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk1 = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="line1", line_number=1),
             Addition(content="line2", line_number=2),
@@ -391,10 +382,9 @@ def test_multiple_input_chunks_same_file(chunker_cls, chunker_kwargs):
         old_start=0,
         new_start=1,
     )
-    
+
     chunk2 = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="line10", line_number=10),
             Removal(content="line11", line_number=11),
@@ -402,7 +392,7 @@ def test_multiple_input_chunks_same_file(chunker_cls, chunker_kwargs):
         old_start=10,
         new_start=0,
     )
-    
+
     # Test each chunk separately since they're from different parts of the file
     run_chunker_invariants(chunker, chunk1)
     run_chunker_invariants(chunker, chunk2)

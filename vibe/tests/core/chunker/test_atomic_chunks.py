@@ -293,11 +293,11 @@ def test_atomic_single_modification():
 # Test Cases: Complex Patterns
 # ============================================================================
 
+
 def test_atomic_unbalanced_additions_removals():
     """Test splitting when there are more additions than removals."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="old1", line_number=1),
             Removal(content="old2", line_number=2),
@@ -309,20 +309,20 @@ def test_atomic_unbalanced_additions_removals():
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 6 atomic chunks:
     # 2 modifications (old1/new1, old2/new2) + 2 pure additions (new3, new4)
     assert len(atomic_chunks) == 4
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
