@@ -13,6 +13,7 @@ from vibe.core.data.diff_chunk import DiffChunk
 from .interface import GrouperInterface
 from ..data.models import CommitGroup
 
+
 class ChangeGroup(BaseModel):
     """Represents a group of related changes as analyzed by Gemini."""
     group_id: str

@@ -2,6 +2,7 @@ from typing import List, Optional, Dict
 import subprocess
 from .interface import GitInterface
 
+
 class SubprocessGitInterface(GitInterface):
     def __init__(self, repo_path: str):
         self.repo_path = repo_path

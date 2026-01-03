@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from vibe.core.data.diff_chunk import DiffChunk
 from typing import List, Optional, Union
 
+
 @dataclass
 class LineNumbered:
     line_number: int
@@ -17,6 +18,7 @@ class Addition(LineNumbered):
 class Removal(LineNumbered):
     """ Represents a single removed line of code."""
     ...
+
 
 @dataclass(init=False)
 class Move(LineNumbered):
@@ -45,8 +47,6 @@ class Replacement(LineNumbered):
         self.line_number = line_number
 
 
-
-
 @dataclass
 class CommitGroup:
     """
@@ -57,7 +57,8 @@ class CommitGroup:
     # branch_name: str
     commmit_message: str
     extended_message: Optional[str] = None
-    
+
+
 @dataclass
 class CommitResult:
     """
@@ -66,12 +67,14 @@ class CommitResult:
     commit_hash: str
     group: CommitGroup
 
+
 @dataclass(frozen=True)
 class ChunkApplicationData:
     """A simplified, internal representation of a standard chunk's change data."""
     start_line: int
     line_count: int
     add_content: List[str]
+
 
 @dataclass
 class HunkWrapper:

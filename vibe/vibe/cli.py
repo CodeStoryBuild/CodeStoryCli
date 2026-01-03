@@ -19,6 +19,7 @@ app.add_typer(init.app, name="init")
 # Register the commit function as a direct command
 app.command(name="commit")(commit_main)
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """Show help if no subcommand is provided"""

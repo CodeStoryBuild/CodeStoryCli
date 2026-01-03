@@ -5,6 +5,7 @@ from vibe.core.grouper.interface import GrouperInterface
 from ..data.models import CommitGroup
 from ..data.diff_chunk import DiffChunk
 
+
 class SingleGrouper(GrouperInterface):
     def group_chunks(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""

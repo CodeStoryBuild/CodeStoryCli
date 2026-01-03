@@ -12,6 +12,7 @@ def repo():
     # Detect Git repo and create config
     console.print(Panel("✨ vibe initialized in current repository", style="green"))
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """Show help if no subcommand is provided"""

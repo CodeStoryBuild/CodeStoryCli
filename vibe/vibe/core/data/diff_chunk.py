@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class DiffChunk(ABC):
     """
     Represents a single diff chunk.

@@ -14,6 +14,7 @@ from ..data.models import DiffChunk, CommitGroup, CommitResult
 
 import inquirer
 
+
 class AIGitPipeline:
     def __init__(
         self,

@@ -19,8 +19,6 @@ from ..data.r_diff_chunk import RenameDiffChunk
 from ..git_interface.interface import GitInterface
 
 
-
-
 class GitSynthesizer:
     """
     Builds a clean, linear Git history from a plan of commit groups.

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Union
 
+
 class GitInterface(ABC):
     """
     Abstract interface for running git commands.

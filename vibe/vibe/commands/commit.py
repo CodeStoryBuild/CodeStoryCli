@@ -29,6 +29,7 @@ grp = SingleGrouper()
 
 runner = AIGitPipeline(git, chk, grp)
 
+
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,

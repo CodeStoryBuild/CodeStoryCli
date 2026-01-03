@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from ..data.models import DiffChunk
 
+
 class ChunkerInterface(ABC):
     @abstractmethod
     def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:

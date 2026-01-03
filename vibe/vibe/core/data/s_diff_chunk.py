@@ -6,6 +6,7 @@ import json
 
 from .utils import format_content_json
 
+
 @dataclass(frozen=True)
 class StandardDiffChunk(DiffChunk):
     """
