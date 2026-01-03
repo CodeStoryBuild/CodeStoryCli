@@ -1,5 +1,6 @@
 import json
-from typing import List, Optional
+import logging
+from typing import List, Optional, Set
 from pydantic import BaseModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -9,6 +10,7 @@ from .interface import LogicalGrouper
 from ..data.models import CommitGroup, ProgressCallback
 from ..data.chunk import Chunk
 from ..synthesizer.utils import get_patches_chunk
+from loguru import logger
 
 
 class ChangeGroup(BaseModel):
@@ -61,7 +63,7 @@ class LangChainGrouper(LogicalGrouper):
         """Convert chunks to a structured format for LLM analysis."""
         changes = []
         diff_map = get_patches_chunk(chunks)
-        for i, chunk in enumerate(chunks):
+        for i, _ in enumerate(chunks):
             # Get the JSON representation of the chunk
             data = {}
             data["change"] = diff_map.get(i, "(no diff)")
@@ -70,32 +72,70 @@ class LangChainGrouper(LogicalGrouper):
             changes.append(data)
         return json.dumps({"changes": changes}, indent=2)
 
+
     def _create_commit_groups(
-        self, response: GroupingResponse, chunks: List[Chunk]
+        self, response: GroupingResponse, original_chunks: List[Chunk]
     ) -> List[CommitGroup]:
-        """Convert LLM's response into CommitGroup objects."""
-        # Create a lookup map for chunks
-        chunk_map = {i: chunk for i, chunk in enumerate(chunks)}
+        """
+        Convert LLM's response into CommitGroup objects, with mitigations for
+        duplicate and unassigned chunks.
+        """
+        # Create a lookup map for chunks from the original list
+        chunk_map = {i: chunk for i, chunk in enumerate(original_chunks)}
 
-        commit_groups = []
-        for group in response.groups:
-            # Collect all chunks for this group
-            group_chunks = [
-                chunk_map[chunk_id]
-                for chunk_id in group.changes
-                if chunk_id in chunk_map
-            ]
+        commit_groups: List[CommitGroup] = []
+        assigned_chunk_ids: Set[int] = set() # Track chunks that have been assigned
 
-            if not group_chunks:
-                continue
+        for group_response in response.groups:
+            group_chunks: List[Chunk] = []
+            for chunk_id in group_response.changes:
+                if chunk_id not in chunk_map:
+                    logger.warning(
+                        f"LLM proposed chunk_id {chunk_id} not found in original chunks. Skipping."
+                    )
+                    continue
 
-            # Create a CommitGroup for these changes
+                if chunk_id in assigned_chunk_ids:
+                    logger.warning(
+                        f"LLM assigned chunk_id {chunk_id} to multiple groups. "
+                        f"It was already assigned. Assigning to the first encountered group."
+                    )
+                    continue # Skip duplicate assignment
+
+                # Assign the chunk to this group
+                group_chunks.append(chunk_map[chunk_id])
+                assigned_chunk_ids.add(chunk_id)
+
+            if group_chunks:
+                commit_groups.append(
+                    CommitGroup(
+                        chunks=group_chunks,
+                        group_id=group_response.group_id,
+                        commit_message=group_response.commit_message,
+                        extended_message=group_response.extended_message,
+                    )
+                )
+
+        # Mitigation 2: Handle chunks not assigned by the LLM
+        unassigned_chunks: List[Chunk] = []
+        unassigned_chunk_ids: List[int] = []
+        for i, chunk in enumerate(original_chunks):
+            if i not in assigned_chunk_ids:
+                unassigned_chunks.append(chunk)
+                unassigned_chunk_ids.append(i)
+
+        if unassigned_chunks:
+            logger.warning(
+                f"LLM failed to assign {len(unassigned_chunks)} chunks to any group. "
+                f"Chunk IDs: {unassigned_chunk_ids}. Creating a fallback group."
+            )
             commit_groups.append(
                 CommitGroup(
-                    chunks=group_chunks,
-                    group_id=group.group_id,
-                    commit_message=group.commit_message,
-                    extended_message=group.extended_message,
+                    chunks=unassigned_chunks,
+                    group_id="fallback-unassigned-changes",
+                    commit_message="chore: Fallback for unassigned changes",
+                    extended_message="These changes were not assigned to a specific group by the AI. "
+                                     "Review them manually."
                 )
             )
 
@@ -189,4 +229,5 @@ class LangChainGrouper(LogicalGrouper):
         if on_progress:
             on_progress(100)
 
+        # Apply mitigations during the conversion to CommitGroup objects
         return self._create_commit_groups(parsed_response, chunks)
