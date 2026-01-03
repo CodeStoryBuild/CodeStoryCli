@@ -27,16 +27,23 @@ def git_repo() -> tuple[Path, str]:
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"], cwd=repo_path
         )
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo_path)
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"], cwd=repo_path
+        )
 
-        (repo_path / "app.js").write_text("line 1\nline 2\nline 3\nline 4\nline 5\n")
+        (repo_path / "app.js").write_text(
+            "line 1\nline 2\nline 3\nline 4\nline 5\n"
+        )
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(
             ["git", "commit", "-m", "Initial commit"], cwd=repo_path, check=True
         )
 
         base_hash = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_path,
+            text=True,
+            capture_output=True,
         ).stdout.strip()
 
         yield repo_path, base_hash
@@ -456,12 +463,17 @@ def test_pure_deletion_entire_files(git_repo):
     (repo_path / "config.json").write_text('{"test": true}\n')
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "Add files to delete"], cwd=repo_path, check=True
+        ["git", "commit", "-m", "Add files to delete"],
+        cwd=repo_path,
+        check=True,
     )
 
     # Get new base commit hash
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Remove all content
@@ -493,7 +505,9 @@ def test_pure_deletion_entire_files(git_repo):
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
     group = CommitGroup(
-        chunks=[chunk1, chunk2], group_id="g1", commit_message="Delete temp files"
+        chunks=[chunk1, chunk2],
+        group_id="g1",
+        commit_message="Delete temp files",
     )
 
     synthesizer.execute_plan([group], new_base_hash, "main")
@@ -607,11 +621,16 @@ def test_large_mixed_changes_single_group(git_repo):
     (repo_path / "config.ini").write_text("[section]\nold_value=1\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "Setup for mixed changes"], cwd=repo_path, check=True
+        ["git", "commit", "-m", "Setup for mixed changes"],
+        cwd=repo_path,
+        check=True,
     )
 
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Mixed operations
@@ -697,7 +716,9 @@ def test_large_mixed_changes_single_group(git_repo):
     chunks.append(DiffChunk.from_hunk(hunk_rename))
 
     group = CommitGroup(
-        chunks=chunks, group_id="large_mixed", commit_message="Large mixed changes"
+        chunks=chunks,
+        group_id="large_mixed",
+        commit_message="Large mixed changes",
     )
     synthesizer.execute_plan([group], new_base_hash, "main")
 
@@ -706,7 +727,9 @@ def test_large_mixed_changes_single_group(git_repo):
     app_content = (repo_path / "app.js").read_text()
     app_lines = app_content.split("\n")
     assert app_lines[0] == "modified line 1"  # First line should be modified
-    assert app_lines[1] == "new line after 1"  # Second line should be the addition
+    assert (
+        app_lines[1] == "new line after 1"
+    )  # Second line should be the addition
     # Original "line 1" should be completely replaced, not just modified
     assert "line 1" not in app_lines
 
@@ -906,15 +929,22 @@ def test_complex_interdependent_changes(git_repo):
     (repo_path / "main.py").write_text(
         "from utils import old_function\nold_function()\n"
     )
-    (repo_path / "utils.py").write_text("def old_function():\n    return 'old'\n")
+    (repo_path / "utils.py").write_text(
+        "def old_function():\n    return 'old'\n"
+    )
     (repo_path / "config.py").write_text("OLD_CONFIG = True\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "Setup interdependent files"], cwd=repo_path, check=True
+        ["git", "commit", "-m", "Setup interdependent files"],
+        cwd=repo_path,
+        check=True,
     )
 
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Coordinated changes
@@ -1278,10 +1308,15 @@ def test_very_large_file_changes(git_repo):
     large_content = "\n".join([f"line {i}" for i in range(1, 101)])  # 100 lines
     (repo_path / "large.txt").write_text(large_content + "\n")
     subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
-    subprocess.run(["git", "commit", "-m", "Add large file"], cwd=repo_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Add large file"], cwd=repo_path, check=True
+    )
 
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Many separate contiguous chunks for modifications

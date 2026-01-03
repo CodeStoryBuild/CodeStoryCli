@@ -76,7 +76,9 @@ def main(
         None, "--api-key", help="API key for the model provider"
     ),
     model_temperature: float = typer.Option(
-        0.7, "--temperature", help="What temperature to use when creating the AI model"
+        0.7,
+        "--temperature",
+        help="What temperature to use when creating the AI model",
     ),
     verbose: Optional[bool] = typer.Option(
         False,

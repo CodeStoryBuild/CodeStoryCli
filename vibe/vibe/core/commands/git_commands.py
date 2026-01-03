@@ -20,7 +20,9 @@ class GitCommands:
     _MODE_RE = re.compile(
         rb"^(?:new file mode|deleted file mode|old mode|new mode) (\d{6})$"
     )
-    _INDEX_RE = re.compile(rb"^index [0-9a-f]{7,}\.\..[0-9a-f]{7,}(?: (\d{6}))?$")
+    _INDEX_RE = re.compile(
+        rb"^index [0-9a-f]{7,}\.\..[0-9a-f]{7,}(?: (\d{6}))?$"
+    )
     _RENAME_FROM_RE = re.compile(rb"^rename from (.+)$")
     _RENAME_TO_RE = re.compile(rb"^rename to (.+)$")
     _OLD_PATH_RE = re.compile(rb"^--- (?:(?:a/)?(.+)|/dev/null)$")
@@ -41,7 +43,14 @@ class GitCommands:
         """
         path_args = ["--"] + ([target] if target else [])
         diff_output_bytes = self.git.run_git_binary_out(
-            ["diff", base_hash, new_hash, "--binary", "--unified=0", f"-M{similarity}"]
+            [
+                "diff",
+                base_hash,
+                new_hash,
+                "--binary",
+                "--unified=0",
+                f"-M{similarity}",
+            ]
             + path_args
         )
         binary_files = self._get_binary_files(base_hash, new_hash)
@@ -102,7 +111,10 @@ class GitCommands:
 
         # 3. Check for explicit statements in the diff output as a fallback.
         for line in diff_lines:
-            if line.startswith(b"Binary files ") or b"Subproject commit" in line:
+            if (
+                line.startswith(b"Binary files ")
+                or b"Subproject commit" in line
+            ):
                 return True
         return False
 
@@ -147,7 +159,9 @@ class GitCommands:
             ):
                 # add back the "diff -git"
                 hunks.append(
-                    ImmutableHunkWrapper(canonical_path=path_to_check, file_patch=block)
+                    ImmutableHunkWrapper(
+                        canonical_path=path_to_check, file_patch=block
+                    )
                 )
                 continue
 
@@ -173,8 +187,8 @@ class GitCommands:
                     hunk_header = lines[start_idx]
                     hunk_body_lines = lines[start_idx + 1 : end_idx]
 
-                    old_start, old_len, new_start, new_len = self._parse_hunk_start(
-                        hunk_header
+                    old_start, old_len, new_start, new_len = (
+                        self._parse_hunk_start(hunk_header)
                     )
 
                     hunks.append(
@@ -285,16 +299,22 @@ class GitCommands:
             )
 
         else:
-            raise ValueError("Cannot create no-content hunk for unknown operation.")
+            raise ValueError(
+                "Cannot create no-content hunk for unknown operation."
+            )
 
-    def _parse_hunk_start(self, header_line: bytes) -> tuple[int, int, int, int]:
+    def _parse_hunk_start(
+        self, header_line: bytes
+    ) -> tuple[int, int, int, int]:
         """
         Extract old_start, old_len, new_start, new_len from @@ -x,y +a,b @@ header
         Returns: (old_start, old_len, new_start, new_len)
         """
         import re
 
-        match = re.search(rb"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line)
+        match = re.search(
+            rb"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line
+        )
         if match:
             old_start = int(match.group(1))
             old_len = int(match.group(2)) if match.group(2) else 1
@@ -341,7 +361,9 @@ class GitCommands:
 
     def is_git_repo(self) -> bool:
         """Return True if current cwd is inside a git work tree, else False."""
-        result = self.git.run_git_text_out(["rev-parse", "--is-inside-work-tree"])
+        result = self.git.run_git_text_out(
+            ["rev-parse", "--is-inside-work-tree"]
+        )
         # When not a repo, run_git_text returns None; treat as False
         return bool(result and result.strip() == "true")
 
@@ -411,7 +433,9 @@ class GitCommands:
             return a_old_end >= b_old_start
 
         # Group by canonical path (so merges only happen within same file)
-        for _, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):
+        for _, group in groupby(
+            chunks_sorted, key=lambda c: c.canonical_path()
+        ):
             file_chunks = list(group)
             if not file_chunks:
                 continue
@@ -427,7 +451,9 @@ class GitCommands:
                     if len(current_group) == 1:
                         merged_results.append(current_group[0])
                     else:
-                        merged_results.append(CompositeDiffChunk(current_group.copy()))
+                        merged_results.append(
+                            CompositeDiffChunk(current_group.copy())
+                        )
                     current_group = [h]
 
             # finalize last group (if present)
@@ -443,7 +469,9 @@ class GitCommands:
         """
         Returns the name of the currently checked out branch.
         """
-        return self.git.run_git_text_out(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
+        return self.git.run_git_text_out(
+            ["rev-parse", "--abbrev-ref", "HEAD"]
+        ).strip()
 
     def get_current_base_commit_hash(self) -> str:
         """

@@ -542,7 +542,9 @@ def large_codebase_repo():
             check=True,
         )
         subprocess.run(
-            ["git", "config", "user.name", "Developer"], cwd=repo_path, check=True
+            ["git", "config", "user.name", "Developer"],
+            cwd=repo_path,
+            check=True,
         )
 
         # Create realistic project structure
@@ -595,7 +597,9 @@ def large_codebase_repo():
         # Initial commit
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(
-            ["git", "commit", "-m", "Initial codebase"], cwd=repo_path, check=True
+            ["git", "commit", "-m", "Initial codebase"],
+            cwd=repo_path,
+            check=True,
         )
 
         yield repo_path

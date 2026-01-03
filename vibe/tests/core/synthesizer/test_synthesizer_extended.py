@@ -27,7 +27,9 @@ def multi_file_git_repo(tmp_path):
         ["git", "config", "user.name", "Test User"], cwd=repo_path, check=True
     )
     subprocess.run(
-        ["git", "config", "user.email", "test@example.com"], cwd=repo_path, check=True
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo_path,
+        check=True,
     )
 
     # Create file_a.txt
