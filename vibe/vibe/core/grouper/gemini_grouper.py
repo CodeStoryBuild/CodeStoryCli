@@ -16,6 +16,7 @@ class ChangeGroup(BaseModel):
     """Represents a group of related changes as analyzed by Gemini."""
     group_id: str
     commit_message: str
+    branch_name: str
     extended_message: Optional[str]
     changes: List[str]  # List of chunk IDs that belong to this group
     description: Optional[str]  # Brief description of why these changes are grouped
@@ -93,6 +94,7 @@ class GeminiGrouper(GrouperInterface):
             commit_groups.append(CommitGroup(
                 chunks=group_chunks,
                 group_id=group.group_id,
+                branch_name=group.branch_name,
                 commmit_message=group.commit_message,
                 extended_message=group.extended_message
             ))

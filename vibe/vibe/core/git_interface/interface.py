@@ -22,8 +22,8 @@ class GitInterface(ABC):
         """Return the working diff as a list of DiffChunks for the given target."""
 
     @abstractmethod
-    def commit(self, group: CommitGroup, message: Optional[str] = None) -> CommitResult:
-        """Apply the ChunkGroup patch to the index and commit it."""
+    def commit_to_new_branch(self, group: CommitGroup) -> CommitResult:
+        """ Create a new branch from HEAD, apply the commit group as a commit """
 
     @abstractmethod
     def reset(self) -> None:
