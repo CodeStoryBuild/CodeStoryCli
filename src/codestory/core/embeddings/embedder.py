@@ -18,11 +18,11 @@
 
 from importlib.resources import files
 
-from fastembed import TextEmbedding
-
 
 class Embedder:
     def __init__(self):
+        from fastembed import TextEmbedding
+
         cache_dir = files("codestory").joinpath("resources/embedding_models")
         # load already downloaded model from cache dir
         self.embedding_model = TextEmbedding(

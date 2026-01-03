@@ -31,7 +31,7 @@ from codestory.core.exceptions import LLMInitError
 class ModelConfig:
     """
     Configuration for the LLM Adapter.
-    model_string format: "provider/model_name" (e.g. "openai/gpt-4o")
+    model_string format: "provider:model_name" (e.g. "openai:gpt-4o")
     """
 
     model_string: str

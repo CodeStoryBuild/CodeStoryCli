@@ -15,8 +15,6 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-
-import networkx as nx
 import numpy as np
 from loguru import logger
 
