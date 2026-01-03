@@ -13,7 +13,10 @@ Responsibilities:
 import math
 from typing import List
 from .interface import ChunkerInterface
-from ..data.models import DiffChunk, Addition, Removal
+from ..data.models import DiffChunk
+from ..data.r_diff_chunk import RenameDiffChunk
+from ..data.s_diff_chunk import StandardDiffChunk
+
 
 class MaxLineChunker(ChunkerInterface):
     def __init__(self, max_lines: int = 50):
@@ -38,27 +41,32 @@ class MaxLineChunker(ChunkerInterface):
         result: List[DiffChunk] = []
         
         for chunk in diff_chunks:
-            # Count the total number of lines in this chunk
-            total_lines = chunk.get_total_lines()
-            max_line = chunk.get_max_line()
+            if isinstance(chunk, StandardDiffChunk):
+                start_num = None
+                cur_num = None
+                num_seen = 0
 
-            
-            if total_lines <= self.max_lines:
-                # If chunk is small enough, keep it as is
-                result.append(chunk)
-                continue
-            
-            # Calculate how many sub-chunks we need
-            num_subchunks = math.ceil(total_lines // self.max_lines)
+                for line in chunk.ai_content:
+                    if start_num is None:
+                        start_num = line.line_number
+                    if cur_num != line.line_number:
+                        cur_num = line.line_number
+                        num_seen += 1
 
-            
-            # Split the chunk into roughly equal parts
-            for i in range(num_subchunks):
-                start_idx = i * self.max_lines + 1
-                end_idx = min((i + 1) * self.max_lines, max_line)
-                
-                # Extract a portion of the chunk
-                sub_chunk = chunk.extract_by_lines(start_idx, end_idx)
-                result.append(sub_chunk)
+                    if num_seen >= self.max_lines:
+                        sub_chunk = chunk.extract_by_lines(start_num, cur_num)
+                        if sub_chunk:
+                            result.append(sub_chunk)
+
+                        # reset for next slice
+                        start_num = None
+                        cur_num = None
+                        num_seen = 0
+
+                # handle remaining lines
+                if start_num is not None:
+                    sub_chunk = chunk.extract_by_lines(start_num, cur_num)
+                    if sub_chunk:
+                        result.append(sub_chunk)
         
         return result

@@ -3,9 +3,9 @@ import shutil
 import subprocess
 import re
 import tempfile
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 from ..data.models import DiffChunk, CommitGroup, CommitResult, Addition, Removal
-from .interface import GitInterface
+from .interface import GitInterface, HunkWrapper
 
 class LocalGitInterface(GitInterface):
     def __init__(self, repo_path: str):
@@ -24,14 +24,45 @@ class LocalGitInterface(GitInterface):
     # Core methods
     # -------------------------------
 
-    def get_working_diff(self, target: Optional[str] = None) -> List[DiffChunk]:
+    def get_rename_map(self, target: Optional[str] = None, similarity: int = 50) -> Dict[str, str]:
         """
-        Get working diff against HEAD, zero-context hunks.
-        Converts output into DiffChunks with patch info.
+        Detect renames in the repo against HEAD.
+
+        Args:
+            target: optional file path or directory to limit detection
+            similarity: rename similarity threshold (0-100)
+
+        Returns:
+            A dictionary mapping old_file_path -> new_file_path
+        """
+        path_args = [target] if target else []
+        args = ["diff", f"-M{similarity}", "--name-status", "HEAD"] + path_args
+        output = subprocess.check_output(
+            ["git", "-C", self.repo_path] + args,
+            text=True,
+            stderr=subprocess.DEVNULL,
+            encoding="utf-8"
+        )
+
+        rename_map: Dict[str, str] = {}
+        for line in output.splitlines():
+            # Format: R<score>  old/path  new/path
+            if line.startswith("R"):
+                parts = re.split(r"\s+", line.strip(), maxsplit=2)
+                if len(parts) == 3:
+                    _, old_path, new_path = parts
+                    rename_map[old_path] = new_path
+
+        return rename_map
+
+    def get_working_diff(self, target: Optional[str] = None) -> List[HunkWrapper]:
+        """
+        Returns a list of raw hunks (file path, lines, old/new start).
+        Does not produce DiffChunks or AI content.
         """
         path_args = [target] if target else []
         diff_output = self.run_git(["diff", "HEAD", "--unified=0"] + path_args)
-        return self._parse_diff(diff_output)
+        return self._parse_hunks(diff_output)
 
     def commit_to_new_branch(self, group: CommitGroup) -> CommitResult:
         """
@@ -128,12 +159,18 @@ class LocalGitInterface(GitInterface):
     # Internal parsing
     # -------------------------------
 
-    def _parse_diff(self, diff_output: str) -> List[DiffChunk]:
+    def _parse_hunks(self, diff_output: str) -> List[HunkWrapper]:
         """
-        Parse git diff output into DiffChunk objects.
+        Convert git diff output into structured hunk metadata.
+        Each HunkWrapper contains:
+            - file_path
+            - hunk_lines
+            - old_start
+            - new_start
         """
-        chunks: List[DiffChunk] = []
+        hunks: List[HunkWrapper] = []
         file_blocks = diff_output.split("\ndiff --git ")
+
         for block in file_blocks:
             if not block.strip():
                 continue
@@ -149,61 +186,35 @@ class LocalGitInterface(GitInterface):
             if not path:
                 continue
 
-            # Extract hunks
+            # Find hunks in file block
             hunk_start = None
             for i, line in enumerate(lines):
                 if line.startswith("@@ "):
                     if hunk_start is not None:
-                        chunks.append(self._build_hunk(path, lines[hunk_start:i]))
+                        hunks.append(HunkWrapper(
+                            file_path=path,
+                            hunk_lines=lines[hunk_start+1:i],
+                            old_start=self._parse_hunk_start(lines[hunk_start])[0],
+                            new_start=self._parse_hunk_start(lines[hunk_start])[1],
+                        ))
                     hunk_start = i
             if hunk_start is not None:
-                chunks.append(self._build_hunk(path, lines[hunk_start:]))
+                hunks.append(HunkWrapper(
+                    file_path=path,
+                    hunk_lines=lines[hunk_start+1:],
+                    old_start=self._parse_hunk_start(lines[hunk_start])[0],
+                    new_start=self._parse_hunk_start(lines[hunk_start])[1],
+                ))
 
-        return chunks
+        return hunks
 
-    def _build_hunk(self, file_path: str, hunk_lines: List[str]) -> DiffChunk:
+    @staticmethod
+    def _parse_hunk_start(header_line: str) -> Tuple[int, int]:
         """
-        Build a DiffChunk from hunk lines.
-        Preserves patch, line numbers, and content for to_patch().
+        Extract old_start and new_start from @@ -x,y +a,b @@ header
         """
-        header_line = hunk_lines[0]
-        
-        # Use a robust regex to capture optional line counts.
-        match = re.search(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", header_line)
-
+        import re
+        match = re.search(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@", header_line)
         if match:
-            old_start = int(match.group(1))
-            # Default to 1 if the line count is omitted, otherwise use the captured value.
-            new_start = int(match.group(3))
-
-        else:
-            old_start = new_start = 0
-
-        # Parse AI-legible content
-        ai_content: List[Union[Addition, Removal]] = []
-        current_old_line = old_start
-        current_new_line = new_start
-
-        # Iterate over hunk lines, starting after the header
-        for line in hunk_lines[1:]:
-            if line.startswith('+'):
-                ai_content.append(Addition(content=line[1:], line_number=current_new_line))
-                current_new_line += 1
-            elif line.startswith('-'):
-                ai_content.append(Removal(content=line[1:], line_number=current_old_line))
-                current_old_line += 1
-            else:
-                # This handles context lines, which should increment both line counters
-                current_old_line += 1
-                current_new_line += 1
-        
-        # The raw content with +/- prefixes is still needed for git apply
-        raw_content = "\n".join(hunk_lines[1:])
-
-        return DiffChunk(
-            file_path=file_path,
-            content=raw_content,
-            ai_content=ai_content,
-            old_start=old_start,
-            new_start=new_start,
-        )
+            return int(match.group(1)), int(match.group(2))
+        return 0, 0

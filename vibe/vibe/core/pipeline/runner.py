@@ -4,11 +4,12 @@ from rich.progress import Progress
 from rich.console import Console
 
 from vibe.core.data import models
+from vibe.core.data.r_diff_chunk import RenameDiffChunk
 from ..git_interface.interface import GitInterface
 from ..diff_extractor.interface import DiffExtractorInterface
 from ..chunker.interface import ChunkerInterface
 from ..grouper.interface import GrouperInterface
-from ..data.models import DiffChunk, CommitGroup, CommitResult, ExtendedDiffChunk
+from ..data.models import DiffChunk, CommitGroup, CommitResult
 
 import inquirer
 
@@ -63,7 +64,7 @@ class AIGitPipeline:
 
             tr = p.add_task("Generating Diff", total=1)
 
-            raw_diff: List[DiffChunk] = self.git.get_working_diff(target)
+            raw_diff: List[DiffChunk] = self.git.get_processed_diff(target)
 
             p.advance(tr, 1)
 
@@ -73,20 +74,9 @@ class AIGitPipeline:
 
             p.advance(ck, 1)
 
-            clr = p.add_task("Simplifying diff", total=100)
-
-            simplified_chunks : List[ExtendedDiffChunk] = []
-            
-            for chunk in chunks:
-                simplified = ExtendedDiffChunk.fromDiffChunk(chunk)
-
-                simplified_chunks.append(simplified)
-
-                p.advance(clr, 100/len(chunks))
-
             clssfy = p.add_task("Grouping diff", total=1)
 
-            grouped: List[CommitGroup] = self.grouper.group_chunks(simplified_chunks)
+            grouped: List[CommitGroup] = self.grouper.group_chunks(chunks)
 
             p.advance(clssfy, 1)
 

@@ -19,9 +19,10 @@ Notes:
 
 from abc import ABC, abstractmethod
 from typing import List, Dict
-from ..data.models import ExtendedDiffChunk, CommitGroup
+from ..data.models import CommitGroup
+from ..data.diff_chunk import DiffChunk
 
 class GrouperInterface(ABC):
     @abstractmethod
-    def group_chunks(self, chunks: List[ExtendedDiffChunk]) -> List[CommitGroup]:
+    def group_chunks(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""

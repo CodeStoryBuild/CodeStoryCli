@@ -9,8 +9,9 @@ import json
 from typing import List, Optional
 from pydantic import BaseModel
 from google import genai
+from vibe.core.data.diff_chunk import DiffChunk
 from .interface import GrouperInterface
-from ..data.models import ExtendedDiffChunk, CommitGroup
+from ..data.models import CommitGroup
 
 class ChangeGroup(BaseModel):
     """Represents a group of related changes as analyzed by Gemini."""
@@ -60,7 +61,7 @@ class GeminiGrouper(GrouperInterface):
         """Initialize the grouper with Gemini API credentials."""
         self.client = genai.Client(api_key=api_key)
     
-    def _prepare_changes(self, chunks: List[ExtendedDiffChunk]) -> str:
+    def _prepare_changes(self, chunks: List[DiffChunk]) -> str:
         """Convert chunks to a structured format for Gemini analysis."""
         changes = []
         for i, chunk in enumerate(chunks):
@@ -73,7 +74,7 @@ class GeminiGrouper(GrouperInterface):
 
     def _create_commit_groups(self, 
                           response: List[ChangeGroup], 
-                          chunks: List[ExtendedDiffChunk]) -> List[CommitGroup]:
+                          chunks: List[DiffChunk]) -> List[CommitGroup]:
         """Convert Gemini's response into CommitGroup objects."""
         # Create a lookup map for chunks
         chunk_map = {str(i): chunk for i, chunk in enumerate(chunks)}
@@ -101,7 +102,7 @@ class GeminiGrouper(GrouperInterface):
             
         return commit_groups
 
-    def group_chunks(self, chunks: List[ExtendedDiffChunk]) -> List[CommitGroup]:
+    def group_chunks(self, chunks: List[DiffChunk]) -> List[CommitGroup]:
         """
         Group chunks using Gemini API to analyze intentions and relationships.
         
