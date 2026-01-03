@@ -41,8 +41,6 @@ class DiffChunk(Groupable):
         else:
             return self.old_file_path
 
-    
-
     @property
     def is_file_rename(self) -> bool:
         return (
@@ -286,12 +284,12 @@ class DiffChunk(Groupable):
             old_start=old_start,
             new_start=new_start,
         )
-    
+
     # chunk protocol
-    
+
     def get_chunks(self):
         return [self]
-    
+
     def canonical_paths(self):
         """
         Returns the relevant path for the chunk.
@@ -303,7 +301,7 @@ class DiffChunk(Groupable):
             return [self.new_file_path]
         else:
             return [self.old_file_path]
-        
+
     def format_json(self) -> str:
         """
         Converts a structured diff object into a standardized JSON format

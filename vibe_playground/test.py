@@ -60,7 +60,7 @@ for token_class, token_class_queries in shared_token_queries.items():
 
 for query in queries:
     print(query)
-    
+
 query_source = "\n".join(queries)
 
 language = get_language("python")

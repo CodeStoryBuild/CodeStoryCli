@@ -14,9 +14,10 @@ class Chunk(Protocol):
     Protocol for a diff chunk.
     Assumes your git_commands parser provides objects that satisfy this.
     """
+
     @property
     def new_start(self) -> int: ...
-    
+
     @property
     def new_end(self) -> int: ...
 
@@ -29,6 +30,7 @@ class Chunk(Protocol):
 
 class UnionFind:
     """A simple Union-Find data structure for grouping."""
+
     # (Implementation is the same as before)
     def __init__(self, elements):
         self.parent = {el: el for el in elements}
@@ -62,6 +64,7 @@ class Scope:
 @dataclass
 class Symbol:
     """Represents a defined symbol."""
+
     name: str
     type: str
     definition_scope_id: str
@@ -70,6 +73,7 @@ class Symbol:
 @dataclass
 class AnalysedHunk:
     """An internal representation of a single, continuous hunk range."""
+
     parent_chunk: Chunk  # Reference to the original Chunk
     new_start: int
     new_end: int
