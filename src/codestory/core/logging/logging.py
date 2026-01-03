@@ -144,8 +144,7 @@ def setup_logger(
 
 
 def setup_debug_logging() -> None:
-    """
-    Enable debug logging for troubleshooting.
+    """Enable debug logging for troubleshooting.
 
     Note: This creates a new StructuredLogger with debug=True.
     """
