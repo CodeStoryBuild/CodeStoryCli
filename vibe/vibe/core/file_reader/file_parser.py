@@ -98,9 +98,7 @@ class FileParser:
             )
         except Exception as e:
             # If parsing fails, return None
-            logger.warning(
-                f"Failed to parse file with {detected_language} error: {e}"
-            )
+            logger.warning(f"Failed to parse file with {detected_language} error: {e}")
             return None
 
     @classmethod
@@ -160,9 +158,7 @@ class FileParser:
             return "typescript"
         elif "java" in normalized_name and "javascript" not in normalized_name:
             return "java"
-        elif any(
-            cpp_name in normalized_name for cpp_name in ["c++", "cpp", "cxx"]
-        ):
+        elif any(cpp_name in normalized_name for cpp_name in ["c++", "cpp", "cxx"]):
             return "cpp"
         elif normalized_name == "c":
             return "c"
