@@ -176,6 +176,7 @@ def _resolve_h_file(content: str) -> str:
     # Default to C if no strong C++ signals are found
     return "c"
 
+
 def _resolve_m_file(content: str) -> str:
     """Disambiguate .m files (Objective-C vs Matlab/Octave)."""
     # Objective-C indicators
@@ -207,6 +208,7 @@ def _resolve_m_file(content: str) -> str:
 
     # Default to Objective-C as it's more common in tree-sitter contexts
     return "objc"
+
 
 def _resolve_v_file(content: str) -> str:
     """Disambiguate .v files (Verilog vs V)."""

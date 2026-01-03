@@ -140,11 +140,13 @@ class FixCommitError(CodestoryError):
 
     pass
 
+
 class LLMResponseError(CodestoryError):
     """
     Errors when llm response failed or was invalid
     """
     pass
+
 
 class LogicalGroupingError(CodestoryError):
     """

@@ -59,8 +59,8 @@ def print_patch_cleanly(patch_content: str, max_length: int = 120):
     between_diff_and_hunk = False
 
     for line in patch_content.splitlines()[:max_length]:
-        style_key = "context" # default
-        
+        style_key = "context"  # default
+
         # Check up to the first ten characters (optimizes for large lines)
         prefix = line[:10]
 

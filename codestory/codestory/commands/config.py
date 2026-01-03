@@ -91,11 +91,11 @@ def _get_config_schema() -> dict[str, dict[str, Any]]:
         field_type = field.type
         default_value = field.default
         description = descriptions.get(field_name, "No description available")
-        
+
         schema[field_name] = {
-            "description": description, 
+            "description": description,
             "default": default_value,
-            "type": field_type
+            "type": field_type,
         }
 
     return schema
@@ -220,7 +220,7 @@ def _set_config(key: str, value: str, scope: str) -> None:
         try:
             final_value = int(value)
         except ValueError:
-            pass # Keep as string if it fails, or raise error
+            pass  # Keep as string if it fails, or raise error
 
     # Update the value
     config_data[key] = final_value
