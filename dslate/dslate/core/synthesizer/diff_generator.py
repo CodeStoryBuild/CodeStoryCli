@@ -318,7 +318,9 @@ class DiffGenerator:
         # 2. Touching: Merge only if types are compatible (Same Type)
         if last_old_end == current_old_start:
             # Pure Add + Pure Add (at same line) -> Merge
-            return (last_chunk.pure_addition() and current_chunk.pure_addition()) or (last_chunk.pure_deletion() and current_chunk.pure_deletion())
+            return (last_chunk.pure_addition() and current_chunk.pure_addition()) or (
+                last_chunk.pure_deletion() and current_chunk.pure_deletion()
+            )
 
         # Disjoint
         return False
