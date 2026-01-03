@@ -4,6 +4,7 @@ from ..data.models import CommitGroup, ProgressCallback
 from ..data.diff_chunk import DiffChunk
 from .interface import GrouperInterface
 
+
 class RandomSizeGrouper(GrouperInterface):
     def __init__(self, size: int):
         self.size = size

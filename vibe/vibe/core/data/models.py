@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from vibe.core.data.diff_chunk import DiffChunk
 from typing import List, Optional, Callable
 
+
 @dataclass
 class LineNumbered:
     line_number: int

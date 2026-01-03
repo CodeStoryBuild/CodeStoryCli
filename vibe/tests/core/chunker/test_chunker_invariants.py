@@ -6,6 +6,7 @@ from vibe.core.data.models import Addition, Removal
 from vibe.core.checks.chunk_checks import chunks_disjoint as check_disjoint
 import importlib
 
+
 # Helper: flatten parsed_content to (type, line_number, content) tuples
 def flatten_chunk(chunk):
     """Flatten a chunk (including CompositeDiffChunk) to tuples."""

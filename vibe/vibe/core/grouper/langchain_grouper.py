@@ -22,7 +22,7 @@ class ChangeGroup(BaseModel):
 
 class GroupingResponse(BaseModel):
     """Container for the complete grouping response."""
-    
+
     groups: List[ChangeGroup]
 
 

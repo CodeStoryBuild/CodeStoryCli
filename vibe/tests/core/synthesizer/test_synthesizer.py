@@ -887,9 +887,7 @@ def test_single_line_changes(git_repo):
     )
 
     # Empty file creation
-    chunk3 = EmptyFileAdditionChunk(
-        _file_path="empty.txt", file_mode="100644"
-    )
+    chunk3 = EmptyFileAdditionChunk(_file_path="empty.txt", file_mode="100644")
 
     group = CommitGroup(
         chunks=[chunk1, chunk2, chunk3],

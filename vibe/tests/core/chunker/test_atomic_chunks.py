@@ -20,6 +20,7 @@ from vibe.core.checks.chunk_checks import chunks_disjoint
 # Helper Functions
 # ============================================================================
 
+
 def assert_is_atomic(chunk: StandardDiffChunk):
     """
     Assert that a chunk is atomic (cannot be split further).
@@ -440,11 +441,11 @@ def test_atomic_non_matching_line_numbers():
 # Test Cases: Edge Cases
 # ============================================================================
 
+
 def test_atomic_empty_content_lines():
     """Test splitting chunks with empty content lines."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="", line_number=1),
             Addition(content="line2", line_number=2),
@@ -453,19 +454,19 @@ def test_atomic_empty_content_lines():
         old_start=0,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 3 atomic chunks
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 

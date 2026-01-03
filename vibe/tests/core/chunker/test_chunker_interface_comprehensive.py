@@ -305,10 +305,9 @@ def test_large_chunk(chunker_cls, chunker_kwargs):
 def test_chunk_with_blank_lines(chunker_cls, chunker_kwargs):
     """Test chunker with blank line content (important for predicate chunkers)."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="line1", line_number=1),
             Addition(content="", line_number=2),
@@ -319,7 +318,7 @@ def test_chunk_with_blank_lines(chunker_cls, chunker_kwargs):
         old_start=0,
         new_start=1,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -505,11 +504,12 @@ def test_rename_chunk_passthrough(chunker_cls, chunker_kwargs):
 # Test Cases: Empty Input Handling
 # ============================================================================
 
+
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_empty_input_list(chunker_cls, chunker_kwargs):
     """Test chunker with empty input list."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     output = chunker.chunk([])
-    
+
     assert output == [] or len(output) == 0, "Empty input should produce empty output"
