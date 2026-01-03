@@ -238,7 +238,7 @@ class CommitPipeline:
         self.source = source
 
 
-    def run(self) -> str:
+    def run(self) -> str | None:
 
         # Initial invocation summary
 
@@ -289,7 +289,7 @@ class CommitPipeline:
             if self.source == "commit":
                 logger.info("[yellow]If you meant to modify existing git history, please use dslate fix or dslate clean commands[/yellow]")
 
-            return self.new_commit_hash
+            return None
 
         # start tracking progress
 
@@ -413,7 +413,7 @@ class CommitPipeline:
 
             logger.info("No AI groups proposed; aborting pipeline")
 
-            return self.new_commit_hash
+            return None
 
 
         logger.info("Proposed commits preview")
@@ -575,7 +575,7 @@ class CommitPipeline:
 
             logger.info("User declined applying commits")
 
-            return self.new_commit_hash
+            return None
 
 
         logger.debug(
@@ -625,5 +625,5 @@ class CommitPipeline:
         if new_commit_hash is None:
             logger.error("Failed to get a new_commit_hash from commit_pipeline, fallback to existing commit_hash")
         
-        return new_commit_hash or self.new_commit_hash  # fallback to the current commit
+        return new_commit_hash  
 
