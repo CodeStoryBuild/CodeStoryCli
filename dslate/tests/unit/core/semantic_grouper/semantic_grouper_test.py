@@ -36,27 +36,28 @@ def create_chunk(
 def context_manager():
     cm = Mock()
     contexts = {}
-    
+
     # Helper to configure context for a specific file/version
     def configure_context(path, is_old, symbols=None, scopes=None):
         ctx = Mock()
         ctx.symbol_map.line_symbols = symbols or {}
         ctx.scope_map.scope_lines = scopes or {}
-        
+
         contexts[(path, is_old)] = ctx
         return ctx
 
     def get_ctx(p, old):
         return contexts.get((p, old))
-        
+
     def has_ctx(p, old):
         return (p, old) in contexts
-        
+
     cm.configure_context = configure_context
     cm.get_context.side_effect = get_ctx
     cm.has_context.side_effect = has_ctx
-            
+
     return cm
+
 
 @pytest.fixture
 def grouper():

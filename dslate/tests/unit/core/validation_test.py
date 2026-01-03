@@ -10,7 +10,12 @@ from dslate.core.validation import (
     validate_git_repository,
     sanitize_user_input,
 )
-from dslate.core.exceptions import ValidationError, GitError, DetachedHeadError, FileSystemError
+from dslate.core.exceptions import (
+    ValidationError,
+    GitError,
+    DetachedHeadError,
+    FileSystemError,
+)
 
 # -----------------------------------------------------------------------------
 # sanitize_user_input
@@ -70,9 +75,9 @@ def test_validate_git_repository_not_installed(mock_git_interface):
 def test_validate_git_repository_not_in_repo(mock_git_interface):
     mock_git_interface.run_git_text_out.side_effect = [
         "git version 2.30.0",
-        "fatal: not a git repository"
+        "fatal: not a git repository",
     ]
-    
+
     with pytest.raises(GitError, match="Current directory is not a git repository"):
         validate_git_repository(mock_git_interface)
 

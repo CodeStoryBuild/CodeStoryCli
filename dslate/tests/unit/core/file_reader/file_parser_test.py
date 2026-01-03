@@ -6,6 +6,7 @@ from dslate.core.file_reader.file_parser import FileParser, ParsedFile
 # Tests
 # -----------------------------------------------------------------------------
 
+
 @patch("dslate.core.file_reader.file_parser.get_lexer_for_filename")
 def test_detect_language_success(mock_get_lexer):
     mock_lexer = Mock()
@@ -15,6 +16,7 @@ def test_detect_language_success(mock_get_lexer):
     lang = FileParser._detect_language("test.py", "content")
     assert lang == "python"
 
+
 @patch("dslate.core.file_reader.file_parser.get_lexer_for_filename")
 def test_detect_language_unknown(mock_get_lexer):
     # Simulate ClassNotFound from pygments
@@ -23,6 +25,7 @@ def test_detect_language_unknown(mock_get_lexer):
     
     lang = FileParser._detect_language("unknown.xyz", "content")
     assert lang is None
+
 
 @patch("dslate.core.file_reader.file_parser.get_parser")
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
@@ -43,12 +46,14 @@ def test_parse_file_success(mock_detect, mock_get_parser):
     assert result.root_node == mock_root
     assert result.content_bytes == b"print('hello')"
 
+
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_no_language(mock_detect):
     mock_detect.return_value = None
 
     result = FileParser.parse_file("test.txt", "content", [])
     assert result is None
+
 
 @patch("dslate.core.file_reader.file_parser.get_parser")
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
@@ -58,6 +63,7 @@ def test_parse_file_parser_error(mock_detect, mock_get_parser):
 
     result = FileParser.parse_file("test.py", "content", [])
     assert result is None
+
 
 @patch("dslate.core.file_reader.file_parser.get_parser")
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")

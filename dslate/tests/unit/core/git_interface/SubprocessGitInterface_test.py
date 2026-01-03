@@ -56,12 +56,15 @@ def test_run_git_text_success(mock_run, git_interface):
 @patch("subprocess.run")
 def test_run_git_text_cwd_override(mock_run, git_interface):
     """Test that cwd argument overrides default repo path."""
-    mock_run.return_value = Mock(spec=subprocess.CompletedProcess, returncode=0, stdout="", stderr="")
-    
+    mock_run.return_value = Mock(
+        spec=subprocess.CompletedProcess, returncode=0, stdout="", stderr=""
+    )
+
     git_interface.run_git_text(["status"], cwd="/custom/cwd")
-    
+
     _, kwargs = mock_run.call_args
     assert kwargs["cwd"] == "/custom/cwd"
+
 
 @patch("subprocess.run")
 def test_run_git_text_failure(mock_run, git_interface):
@@ -75,6 +78,7 @@ def test_run_git_text_failure(mock_run, git_interface):
 
     # Verify
     assert result is None
+
 
 @patch("subprocess.run")
 def test_run_git_binary_success(mock_run, git_interface):
@@ -94,6 +98,7 @@ def test_run_git_binary_success(mock_run, git_interface):
     _, kwargs = mock_run.call_args
     assert kwargs["text"] is False
     assert kwargs["encoding"] is None
+
 
 @patch("subprocess.run")
 def test_run_git_binary_failure(mock_run, git_interface):

@@ -10,9 +10,11 @@ from dslate.core.data.composite_diff_chunk import CompositeDiffChunk
 # Fixtures
 # -----------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_git():
     return Mock()
+
 
 @pytest.fixture
 def git_commands(mock_git):

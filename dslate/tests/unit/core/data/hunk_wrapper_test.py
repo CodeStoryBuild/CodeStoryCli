@@ -24,11 +24,9 @@ def test_init_and_properties():
 
 def test_create_empty_content():
     hunk = HunkWrapper.create_empty_content(
-        new_file_path=b"new.txt",
-        old_file_path=b"old.txt",
-        file_mode=b"100755"
+        new_file_path=b"new.txt", old_file_path=b"old.txt", file_mode=b"100755"
     )
-    
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path == b"old.txt"
     assert hunk.hunk_lines == []

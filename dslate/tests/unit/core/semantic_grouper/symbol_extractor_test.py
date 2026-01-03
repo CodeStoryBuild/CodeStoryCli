@@ -7,6 +7,7 @@ from dslate.core.semantic_grouper.query_manager import QueryManager
 # Tests
 # -----------------------------------------------------------------------------
 
+
 @patch("dslate.core.semantic_grouper.symbol_extractor.QueryManager")
 def test_extract_defined_symbols(MockQueryManager):
     # Setup QueryManager mock
@@ -45,6 +46,7 @@ def test_extract_defined_symbols(MockQueryManager):
     args, kwargs = qm.run_query.call_args
     assert args[0] == "python"
     assert kwargs["query_type"] == "token_definition"
+
 
 @patch("dslate.core.semantic_grouper.symbol_extractor.QueryManager")
 def test_extract_defined_symbols_empty(MockQueryManager):

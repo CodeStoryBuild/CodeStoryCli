@@ -49,12 +49,27 @@ def mocks():
         "comment_mapper": Mock(),
     }
 
+
 @pytest.fixture
 def context_manager_deps(mocks):
-    with patch("dslate.core.semantic_grouper.context_manager.ScopeMapper", return_value=mocks["scope_mapper"]), \
-         patch("dslate.core.semantic_grouper.context_manager.SymbolMapper", return_value=mocks["symbol_mapper"]), \
-         patch("dslate.core.semantic_grouper.context_manager.SymbolExtractor", return_value=mocks["symbol_extractor"]), \
-         patch("dslate.core.semantic_grouper.context_manager.CommentMapper", return_value=mocks["comment_mapper"]):
+    with (
+        patch(
+            "dslate.core.semantic_grouper.context_manager.ScopeMapper",
+            return_value=mocks["scope_mapper"],
+        ),
+        patch(
+            "dslate.core.semantic_grouper.context_manager.SymbolMapper",
+            return_value=mocks["symbol_mapper"],
+        ),
+        patch(
+            "dslate.core.semantic_grouper.context_manager.SymbolExtractor",
+            return_value=mocks["symbol_extractor"],
+        ),
+        patch(
+            "dslate.core.semantic_grouper.context_manager.CommentMapper",
+            return_value=mocks["comment_mapper"],
+        ),
+    ):
         yield mocks
 
 # -----------------------------------------------------------------------------
@@ -124,24 +139,26 @@ def test_simplify_overlapping_ranges(context_manager_deps):
 
 def test_build_context_success(context_manager_deps):
     chunk = create_chunk()
-    
+
     # Setup mocks for successful build
     context_manager_deps["reader"].read.return_value = "content"
-    
+
     parsed_file = Mock()
     parsed_file.root_node.has_error = False
     parsed_file.detected_language = "python"
     parsed_file.content_bytes = b"content"
     parsed_file.line_ranges = []
-    
+
     context_manager_deps["parser"].parse_file.return_value = parsed_file
-    
+
     # Config for shared tokens
     config = Mock()
     config.share_tokens_between_files = False
     context_manager_deps["qm"].get_config.return_value = config
-    
-    context_manager_deps["symbol_extractor"].extract_defined_symbols.return_value = {"sym"}
+
+    context_manager_deps["symbol_extractor"].extract_defined_symbols.return_value = {
+        "sym"
+    }
     context_manager_deps["scope_mapper"].build_scope_map.return_value = Mock()
     context_manager_deps["symbol_mapper"].build_symbol_map.return_value = Mock()
     context_manager_deps["comment_mapper"].build_comment_map.return_value = Mock()
@@ -150,12 +167,12 @@ def test_build_context_success(context_manager_deps):
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk]
+        [chunk],
     )
-    
+
     assert cm.has_context(b"file.txt", True)
     assert cm.has_context(b"file.txt", False)
-    
+
     ctx = cm.get_context(b"file.txt", True)
     assert isinstance(ctx, AnalysisContext)
     assert ctx.file_path == b"file.txt"
@@ -163,21 +180,21 @@ def test_build_context_success(context_manager_deps):
 
 def test_build_context_syntax_error(context_manager_deps):
     chunk = create_chunk()
-    
+
     context_manager_deps["reader"].read.return_value = "content"
-    
+
     parsed_file = Mock()
-    parsed_file.root_node.has_error = True # Syntax error
+    parsed_file.root_node.has_error = True  # Syntax error
     parsed_file.detected_language = "python"
-    
+
     context_manager_deps["parser"].parse_file.return_value = parsed_file
-    
+
     cm = ContextManager(
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk]
+        [chunk],
     )
-    
+
     # Should not have context due to syntax error
     assert not cm.has_context(b"file.txt", True)
