@@ -94,7 +94,7 @@ jobs:
           Compression=lzma
           SolidCompression=yes
           ChangesEnvironment=yes
-          #PrivilegesRequired=lowest 
+          ArchitecturesInstallIn64BitMode=x64
 
           [Files]
           ; Ensure we grab the entire folder created by PyInstaller (onedir mode)
