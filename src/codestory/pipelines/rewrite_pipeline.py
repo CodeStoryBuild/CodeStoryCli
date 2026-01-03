@@ -29,6 +29,7 @@ from codestory.core.chunker.interface import MechanicalChunker
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff_generation.git_diff_generator import GitDiffGenerator
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.file_reader.protocol import FileReader
 from codestory.core.git_commands.git_commands import GitCommands
@@ -342,7 +343,14 @@ class RewritePipeline:
 
         # Prepare pretty diffs for each proposed group
         all_affected_files = set()
-        patch_map = SemanticDiffGenerator(logical_groups).get_patches(logical_groups)
+        if self.global_context.config.display_diff_type == "git":
+            display_patch_map = GitDiffGenerator(logical_groups).get_patches(
+                logical_groups
+            )
+        else:
+            display_patch_map = SemanticDiffGenerator(logical_groups).get_patches(
+                logical_groups
+            )
 
         accepted_groups = []
         user_rejected_groups = []
@@ -401,7 +409,7 @@ class RewritePipeline:
             logger.info("Files: {files}\n", files=files_preview)
 
             # Log the diff for this group at debug level
-            diff_text = patch_map.get(idx, "") or "(no diff)"
+            diff_text = display_patch_map.get(idx, "") or "(no diff)"
 
             if not (
                 self.global_context.config.silent

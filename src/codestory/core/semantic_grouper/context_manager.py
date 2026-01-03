@@ -319,7 +319,7 @@ class ContextManager:
                 )
 
             logger.warning(
-                f"Syntax errors detected in current version of {file_path_str} {parsed_file}!"
+                f"Syntax errors detected in current version of {file_path_str}!"
             )
 
         try:
