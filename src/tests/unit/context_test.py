@@ -34,7 +34,7 @@ from codestory.context import (
 def test_global_config_defaults():
     """Test that GlobalConfig has expected default values."""
     config = GlobalConfig()
-    assert config.model is None
+    assert config.model == "no-model"
     assert config.api_key is None
     assert config.temperature == 0
     assert config.verbose is False
