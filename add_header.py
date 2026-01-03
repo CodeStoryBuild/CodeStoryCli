@@ -24,7 +24,7 @@ LICENSE_HEADER = """
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
-""".strip()  # .strip() removes leading/trailing whitespace/newlines from the triple quotes
+""".strip()
 
 
 def add_license_header(root_dir):
