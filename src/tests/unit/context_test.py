@@ -36,7 +36,7 @@ def test_global_config_defaults():
     config = GlobalConfig()
     assert config.model is None
     assert config.api_key is None
-    assert config.temperature == 0.7
+    assert config.temperature == 0
     assert config.verbose is False
     assert config.auto_accept is False
 
@@ -44,13 +44,13 @@ def test_global_config_defaults():
 def test_global_config_custom_values():
     """Test setting custom values in GlobalConfig."""
     config = GlobalConfig(
-        model="openai:gpt-4",
+        model="openai/gpt-4",
         api_key="sk-test",
         temperature=0.5,
         verbose=True,
         auto_accept=True,
     )
-    assert config.model == "openai:gpt-4"
+    assert config.model == "openai/gpt-4"
     assert config.api_key == "sk-test"
     assert config.temperature == 0.5
     assert config.verbose is True
@@ -84,7 +84,7 @@ def test_global_context_from_config_defaults(mock_git_commands, mock_git_interfa
     assert context.git_interface == mock_interface_instance
     assert context.git_commands == mock_commands_instance
     assert context.config.verbose is False
-    assert context.config.temperature == 0.7
+    assert context.config.temperature == 0
     assert context.config.auto_accept is False
 
     # Verify calls
@@ -98,7 +98,7 @@ def test_global_context_from_config_custom(mock_git_commands, mock_git_interface
     """Test creating GlobalContext from a populated GlobalConfig."""
     # Execute
     config = GlobalConfig(
-        model="anthropic:claude-3",
+        model="anthropic/claude-3",
         api_key="sk-ant",
         temperature=0.2,
         split_hunks="Conservative",

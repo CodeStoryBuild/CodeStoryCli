@@ -150,6 +150,17 @@ def create_global_callback():
                 **kwargs,  # Pass all dynamic config args
             )
 
+            # if we run a command that requires a global context, check that the user has learned the onboarding process
+            if not used_config_sources and used_default:
+                # we only used defaults (so no user set config)
+                check_run_onboarding(exit_after=False)
+
+                # reload any possible set configs through onboarding
+                config, used_config_sources, used_default = load_global_config(
+                    custom_config,
+                    **kwargs,
+                )
+
             # Set custom language config override if provided
             if config.custom_language_config is not None:
                 QueryManager.set_override(config.custom_language_config)
@@ -157,11 +168,11 @@ def create_global_callback():
             setup_logger(
                 ctx.invoked_subcommand, debug=config.verbose, silent=config.silent
             )
-
             # if we run a command that requires a global context, check that the user has learned the onboarding process
             if not used_config_sources and used_default:
                 # we only used defaults (so no user set config)
-                check_run_onboarding()
+                check_run_onboarding(exit_after=False)
+
                 logger.debug("No configuration found. Using default values.")
 
             logger.debug(f"Used {used_config_sources} to build global context.")

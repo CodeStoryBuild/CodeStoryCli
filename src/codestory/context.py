@@ -39,8 +39,9 @@ from codestory.core.llm import CodeStoryAdapter, ModelConfig
 class GlobalConfig:
     model: str | None = None
     api_key: str | None = None
+    api_base: str | None = None
     logical_grouping_type: Literal["embeddings", "brute_force_llm"] = "embeddings"
-    temperature: float = 0.7
+    temperature: float = 0
     relevance_filter_level: Literal["safe", "standard", "strict", "none"] = "none"
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     fallback_grouping_strategy: Literal[
@@ -57,6 +58,7 @@ class GlobalConfig:
     constraints = {
         "model": StringConstraint(),
         "api_key": StringConstraint(),
+        "api_base": StringConstraint(),
         "logical_grouping_type": LiteralTypeConstraint(
             allowed=["embeddings", "brute_force_llm"]
         ),
@@ -86,8 +88,9 @@ class GlobalConfig:
     }
 
     descriptions = {
-        "model": "LLM model (format: provider:model, e.g., openai:gpt-4)",
+        "model": "LLM model (format: provider/model, e.g., openai/gpt-4)",
         "api_key": "API key for the LLM provider",
+        "api_base": "Custom API base URL for the LLM provider (optional)",
         "logical_grouping_type": "Strategy for logically grouping chunks. Note embeddings will make many batched api calls, only really recommended for local models",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
         "relevance_filter_level": "How much to filter irrelevant changes",
@@ -105,6 +108,7 @@ class GlobalConfig:
     arg_options = {
         "model": ["--model"],
         "api_key": ["--api-key"],
+        "api_base": ["--api-base"],
         "logical_grouping_type": ["--logical-grouping-type"],
         "temperature": ["--temperature"],
         "relevance_filter_level": ["--relevance-filter-level"],
@@ -191,7 +195,13 @@ class GlobalContext:
             model = None
         else:
             model = CodeStoryAdapter(
-                ModelConfig(config.model, config.api_key, config.temperature, None)
+                ModelConfig(
+                    config.model,
+                    config.api_key,
+                    config.api_base,
+                    config.temperature,
+                    None,
+                )
             )
 
         git_interface = SubprocessGitInterface(repo_path)

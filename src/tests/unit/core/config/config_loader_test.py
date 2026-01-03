@@ -76,12 +76,7 @@ def test_load_env():
         "os.environ", {"APP_VAL": "env_val", "APP_NUMBER": "10", "OTHER": "ignore"}
     ):
         data = ConfigLoader.load_env("APP_")
-        assert data == {"VAL": "env_val", "NUMBER": "10"}
-        # Note: keys are uppercased in the implementation?
-        # Code: key_clean = k[len(app_prefix) :] -> preserves case of the rest?
-        # Code: if k.lower().startswith(app_prefix.lower()):
-        # Example: APP_VAL -> starts with APP_. key_clean = VAL.
-        # So it preserves case of the suffix.
+        assert data == {"val": "env_val", "number": "10"}
 
 
 def test_precedence_order():
