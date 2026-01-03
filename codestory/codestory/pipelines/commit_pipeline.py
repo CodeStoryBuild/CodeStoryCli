@@ -153,7 +153,7 @@ class CommitPipeline:
                 logger.info(
                     "[yellow]If you meant to modify existing git history, please use codestory fix or codestory clean commands[/yellow]"
                 )
-            raise typer.Exit(1)
+            return None
 
         # init context_manager
         if raw_chunks:
@@ -315,7 +315,7 @@ class CommitPipeline:
         if not apply_all:
             logger.info("No changes applied")
             logger.info("User declined applying commits")
-            raise typer.Exit(130)
+            return None
 
         logger.debug(
             "Num accepted groups: {groups}",
