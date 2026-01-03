@@ -109,6 +109,7 @@ def test_group_scope_overlap(grouper, context_manager):
     assert len(groups) == 1
     assert len(groups[0].chunks) == 2
 
+
 def test_group_transitive(grouper, context_manager):
     """Test transitive grouping: A-B (sym1), B-C (sym2) -> A-B-C."""
     c1 = create_chunk(new_len=1, new_start=1)  # sym1
@@ -125,6 +126,7 @@ def test_group_transitive(grouper, context_manager):
     assert len(groups) == 1
     assert len(groups[0].chunks) == 3
 
+
 def test_group_disjoint(grouper, context_manager):
     """Test that disjoint chunks remain separate."""
     c1 = create_chunk(new_len=1, new_start=1)  # sym1
@@ -138,6 +140,7 @@ def test_group_disjoint(grouper, context_manager):
     groups = grouper.group_chunks([c1, c2], context_manager)
 
     assert len(groups) == 2
+
 
 def test_fallback_missing_context(grouper, context_manager):
     """Test that chunks with missing context go to fallback group."""

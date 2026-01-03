@@ -79,6 +79,7 @@ def context_manager_deps(mocks):
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_analyze_required_contexts_mod(context_manager_deps):
     chunk = create_chunk()
     cm = ContextManager(
@@ -92,6 +93,7 @@ def test_analyze_required_contexts_mod(context_manager_deps):
     assert (b"file.txt", True) in req
     assert (b"file.txt", False) in req
 
+
 def test_analyze_required_contexts_add(context_manager_deps):
     chunk = create_chunk(is_add=True, old_path=None)
     cm = ContextManager(
@@ -104,6 +106,7 @@ def test_analyze_required_contexts_add(context_manager_deps):
     req = cm.get_required_contexts()
     assert (b"file.txt", False) in req
     assert (b"file.txt", True) not in req
+
 
 def test_analyze_required_contexts_del(context_manager_deps):
     chunk = create_chunk(is_del=True, new_path=None)
@@ -140,6 +143,7 @@ def test_simplify_overlapping_ranges(context_manager_deps):
     simplified_touching = cm.simplify_overlapping_ranges(ranges_touching)
     # (1, 5) ends at 5. (6, 10) starts at 6. 5 >= 6-1 (5 >= 5) -> True. Merge.
     assert simplified_touching == [(1, 10)]
+
 
 def test_build_context_success(context_manager_deps):
     chunk = create_chunk()
@@ -181,6 +185,7 @@ def test_build_context_success(context_manager_deps):
     assert isinstance(ctx, AnalysisContext)
     assert ctx.file_path == b"file.txt"
     assert ctx.is_old_version is True
+
 
 def test_build_context_syntax_error(context_manager_deps):
     chunk = create_chunk()

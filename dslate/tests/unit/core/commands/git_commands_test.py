@@ -252,21 +252,26 @@ def test_get_binary_files(git_commands, mock_git):
 
 def test_is_binary_or_unparsable(git_commands):
     # Case 1: In binary set
-    assert git_commands._is_binary_or_unparsable(
-        [], None, b"bin.dat", {b"bin.dat"}
-    ) is True
-    
+    assert (
+        git_commands._is_binary_or_unparsable([], None, b"bin.dat", {b"bin.dat"})
+        is True
+    )
+
     # Case 2: Submodule mode
-    assert git_commands._is_binary_or_unparsable(
-        [], b"160000", b"sub", set()
-    ) is True
-    
+    assert git_commands._is_binary_or_unparsable([], b"160000", b"sub", set()) is True
+
     # Case 3: Explicit binary line
-    assert git_commands._is_binary_or_unparsable(
-        [b"Binary files differ"], None, b"file", set()
-    ) is True
-    
+    assert (
+        git_commands._is_binary_or_unparsable(
+            [b"Binary files differ"], None, b"file", set()
+        )
+        is True
+    )
+
     # Case 4: Normal file
-    assert git_commands._is_binary_or_unparsable(
-        [b"diff content"], b"100644", b"file.txt", set()
-    ) is False
+    assert (
+        git_commands._is_binary_or_unparsable(
+            [b"diff content"], b"100644", b"file.txt", set()
+        )
+        is False
+    )

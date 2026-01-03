@@ -21,14 +21,17 @@ from dslate.core.exceptions import (
 # sanitize_user_input
 # -----------------------------------------------------------------------------
 
+
 def test_sanitize_user_input_valid():
     assert sanitize_user_input("valid input") == "valid input"
     assert sanitize_user_input("  trimmed  ") == "trimmed"
+
 
 def test_sanitize_user_input_clipping():
     long_input = "a" * 2000
     with pytest.raises(ValidationError, match="Input too long"):
         sanitize_user_input(long_input, max_length=1000)
+
 
 def test_sanitize_user_input_sanitization():
     # Null bytes and control characters should be removed
@@ -41,6 +44,7 @@ def test_sanitize_user_input_sanitization():
     # Newlines and tabs are allowed
     assert sanitize_user_input("line1\nline2\tcol") == "line1\nline2\tcol"
 
+
 def test_sanitize_user_input_type_error():
     with pytest.raises(ValidationError, match="Input must be a string"):
         sanitize_user_input(123)
@@ -52,26 +56,30 @@ def test_sanitize_user_input_type_error():
 # validate_git_repository
 # -----------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_git_interface():
     return Mock()
+
 
 def test_validate_git_repository_success(mock_git_interface):
     # Setup mock to return success for version, inside-work-tree, and branch
     mock_git_interface.run_git_text_out.side_effect = [
         "git version 2.30.0",  # --version
-        "true",                # rev-parse --is-inside-work-tree
-        "main"                 # branch --show-current
+        "true",  # rev-parse --is-inside-work-tree
+        "main",  # branch --show-current
     ]
-    
+
     # Should not raise
     validate_git_repository(mock_git_interface)
 
+
 def test_validate_git_repository_not_installed(mock_git_interface):
     mock_git_interface.run_git_text_out.side_effect = Exception("Git not found")
-    
+
     with pytest.raises(GitError, match="Git is not working properly"):
         validate_git_repository(mock_git_interface)
+
 
 def test_validate_git_repository_not_in_repo(mock_git_interface):
     mock_git_interface.run_git_text_out.side_effect = [
@@ -82,13 +90,14 @@ def test_validate_git_repository_not_in_repo(mock_git_interface):
     with pytest.raises(GitError, match="Current directory is not a git repository"):
         validate_git_repository(mock_git_interface)
 
+
 def test_validate_git_repository_detached_head(mock_git_interface):
     mock_git_interface.run_git_text_out.side_effect = [
         "git version 2.30.0",
         "true",
-        ""  # Empty string indicates detached HEAD or no branch
+        "",  # Empty string indicates detached HEAD or no branch
     ]
-    
+
     with pytest.raises(GitError, match="detached HEAD"):
         validate_git_repository(mock_git_interface)
 
@@ -97,15 +106,18 @@ def test_validate_git_repository_detached_head(mock_git_interface):
 # validate_commit_hash
 # -----------------------------------------------------------------------------
 
+
 def test_validate_commit_hash_valid():
     assert validate_commit_hash("a1b2c3d4") == "a1b2c3d4"
     assert validate_commit_hash("A1B2C3D4") == "a1b2c3d4"  # Normalization
+
 
 def test_validate_commit_hash_invalid_format():
     with pytest.raises(ValidationError, match="Invalid commit hash format"):
         validate_commit_hash("not-a-hash")
     with pytest.raises(ValidationError, match="Invalid commit hash format"):
-        validate_commit_hash("123") # Too short
+        validate_commit_hash("123")  # Too short
+
 
 def test_validate_commit_hash_type_error():
     with pytest.raises(ValidationError, match="Commit hash cannot be empty"):
@@ -118,22 +130,27 @@ def test_validate_commit_hash_type_error():
 # validate_target_path
 # -----------------------------------------------------------------------------
 
+
 def test_validate_target_path_valid_file(tmp_path):
     f = tmp_path / "test.txt"
     f.write_text("content")
     assert validate_target_path(str(f)) == f.resolve()
+
 
 def test_validate_target_path_valid_dir(tmp_path):
     d = tmp_path / "subdir"
     d.mkdir()
     assert validate_target_path(str(d)) == d.resolve()
 
+
 def test_validate_target_path_none():
     assert validate_target_path(None) is None
+
 
 def test_validate_target_path_not_exists():
     with pytest.raises(ValidationError, match="does not exist"):
         validate_target_path("non/existent/path")
+
 
 def test_validate_target_path_type_error():
     with pytest.raises(ValidationError, match="Target path cannot be empty"):
@@ -145,6 +162,7 @@ def test_validate_target_path_type_error():
 # -----------------------------------------------------------------------------
 # validate_message_length
 # -----------------------------------------------------------------------------
+
 
 def test_validate_message_length_valid():
     assert validate_message_length("valid message") == "valid message"

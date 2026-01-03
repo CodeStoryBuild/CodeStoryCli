@@ -8,6 +8,7 @@ from dslate.core.config.config_loader import ConfigLoader
 # Test Models
 # -----------------------------------------------------------------------------
 
+
 class TestConfig(BaseModel):
     val: str | None = None
     number: int = 0
@@ -73,27 +74,32 @@ def test_load_env():
 
 def test_precedence_order():
     """Test the precedence order: Args > Custom > Local > Env > Global."""
-    
+
     # Setup sources
     args = {"val": "args"}
     custom = {"val": "custom"}
     local = {"val": "local"}
     env = {"val": "env"}
     global_ = {"val": "global"}
-    
+
     # Helper to run get_full_config with mocked loaders
     def run_config(args_in, custom_path=None):
-        with patch.object(ConfigLoader, "load_toml") as mock_load_toml, \
-             patch.object(ConfigLoader, "load_env") as mock_load_env:
-            
+        with (
+            patch.object(ConfigLoader, "load_toml") as mock_load_toml,
+            patch.object(ConfigLoader, "load_env") as mock_load_env,
+        ):
             # Setup mocks
             mock_load_env.return_value = env
-            
+
             def side_effect(path):
-                if str(path) == "local.toml": return local
-                if str(path) == "global.toml": return global_
-                if str(path) == "custom.toml": return custom
+                if str(path) == "local.toml":
+                    return local
+                if str(path) == "global.toml":
+                    return global_
+                if str(path) == "custom.toml":
+                    return custom
                 return {}
+
             mock_load_toml.side_effect = side_effect
 
             config, sources = ConfigLoader.get_full_config(
@@ -102,7 +108,7 @@ def test_precedence_order():
                 Path("local.toml"),
                 "APP_",
                 Path("global.toml"),
-                Path("custom.toml") if custom_path else None
+                Path("custom.toml") if custom_path else None,
             )
             return config, sources
 
@@ -121,53 +127,46 @@ def test_precedence_order():
     # Line 52: sources = [input_args, load_toml(local), load_env, load_toml(global)]
     # Line 62: sources.insert(1, custom)
     # So order is: Args, Custom, Local, Env, Global.
-    
+
     # Test Local wins over Env/Global (no custom provided)
     # We need to modify our helper or just run it without custom
-    with patch.object(ConfigLoader, "load_toml") as mock_load_toml, \
-         patch.object(ConfigLoader, "load_env") as mock_load_env:
+    with (
+        patch.object(ConfigLoader, "load_toml") as mock_load_toml,
+        patch.object(ConfigLoader, "load_env") as mock_load_env,
+    ):
         mock_load_env.return_value = env
-        mock_load_toml.side_effect = lambda p: local if str(p) == "local.toml" else global_
-        
+        mock_load_toml.side_effect = (
+            lambda p: local if str(p) == "local.toml" else global_
+        )
+
         config, _ = ConfigLoader.get_full_config(
-            TestConfig,
-            {},
-            Path("local.toml"),
-            "APP_",
-            Path("global.toml"),
-            None
+            TestConfig, {}, Path("local.toml"), "APP_", Path("global.toml"), None
         )
         assert config.val == "local"
 
     # 4. Env should win over Global
-    with patch.object(ConfigLoader, "load_toml") as mock_load_toml, \
-         patch.object(ConfigLoader, "load_env") as mock_load_env:
+    with (
+        patch.object(ConfigLoader, "load_toml") as mock_load_toml,
+        patch.object(ConfigLoader, "load_env") as mock_load_env,
+    ):
         mock_load_env.return_value = env
         mock_load_toml.side_effect = lambda p: {} if str(p) == "local.toml" else global_
-        
+
         config, _ = ConfigLoader.get_full_config(
-            TestConfig,
-            {},
-            Path("local.toml"),
-            "APP_",
-            Path("global.toml"),
-            None
+            TestConfig, {}, Path("local.toml"), "APP_", Path("global.toml"), None
         )
         assert config.val == "env"
 
     # 5. Global should be last resort
-    with patch.object(ConfigLoader, "load_toml") as mock_load_toml, \
-         patch.object(ConfigLoader, "load_env") as mock_load_env:
+    with (
+        patch.object(ConfigLoader, "load_toml") as mock_load_toml,
+        patch.object(ConfigLoader, "load_env") as mock_load_env,
+    ):
         mock_load_env.return_value = {}
         mock_load_toml.side_effect = lambda p: {} if str(p) == "local.toml" else global_
-        
+
         config, _ = ConfigLoader.get_full_config(
-            TestConfig,
-            {},
-            Path("local.toml"),
-            "APP_",
-            Path("global.toml"),
-            None
+            TestConfig, {}, Path("local.toml"), "APP_", Path("global.toml"), None
         )
         assert config.val == "global"
 
@@ -176,15 +175,12 @@ def test_validation_error():
     """Test that invalid types raise ValidationError."""
     # 'number' expects int, give it a string that isn't an int
     args = {"number": "not-a-number"}
-    
-    with patch.object(ConfigLoader, "load_toml", return_value={}), \
-         patch.object(ConfigLoader, "load_env", return_value={}):
-        
+
+    with (
+        patch.object(ConfigLoader, "load_toml", return_value={}),
+        patch.object(ConfigLoader, "load_env", return_value={}),
+    ):
         with pytest.raises(ValidationError):
             ConfigLoader.get_full_config(
-                TestConfig,
-                args,
-                Path("local.toml"),
-                "APP_",
-                Path("global.toml")
+                TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")
             )

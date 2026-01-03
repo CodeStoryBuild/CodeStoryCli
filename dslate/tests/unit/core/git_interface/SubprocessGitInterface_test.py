@@ -46,7 +46,7 @@ def test_run_git_text_success(mock_run, git_interface):
     assert result == mock_result
     mock_run.assert_called_once()
     args, kwargs = mock_run.call_args
-    
+
     # Check arguments passed to subprocess.run
     assert args[0] == ["git", "status"]
     assert kwargs["text"] is True
@@ -110,6 +110,7 @@ def test_run_git_binary_failure(mock_run, git_interface):
     result = git_interface.run_git_binary(["fail"])
     assert result is None
 
+
 def test_run_git_text_out_wrapper(git_interface):
     """Test the convenience wrapper for text output."""
     # Mock the internal run_git_text method
@@ -125,6 +126,7 @@ def test_run_git_text_out_wrapper(git_interface):
         mock_run.return_value = None
         output = git_interface.run_git_text_out(["fail"])
         assert output is None
+
 
 def test_run_git_binary_out_wrapper(git_interface):
     """Test the convenience wrapper for binary output."""
