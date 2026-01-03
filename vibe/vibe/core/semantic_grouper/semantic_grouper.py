@@ -343,23 +343,22 @@ class SemanticGrouper:
             # Invalid line range (eg empty hunk)
             return (symbols, None)
 
+        # convert to zero indexed
+        start_index = start_line-1
+        end_index = end_line-1
+
         # Convert from 1-indexed chunks to 0-indexed scope/symbol maps
         # Get scope from the first line (LCA scope)
-        lca_scope = context.scope_map.scope_lines.get(start_line - 1)
+        lca_scope = context.scope_map.get_lca_scope_for_range((start_index, end_index))
 
-        logger.debug(
-            f"scope_map for chunk range start={start_line} end={end_line}: {context.scope_map}"
-        )
-        logger.debug(f"symbol_map snapshot: {context.symbol_map}")
+        lca_scope_id = lca_scope.id if lca_scope is not None else None
 
         # Collect symbols from fall lines in the range
-        for line in range(start_line, end_line + 1):
-            # Convert 1-indexed line to 0-indexed for map access
-            zero_indexed_line = line - 1
-            line_symbols = context.symbol_map.line_symbols.get(zero_indexed_line, set())
+        for line in range(start_index, end_index + 1):
+            line_symbols = context.symbol_map.line_symbols.get(line, set())
             symbols.update(line_symbols)
-
-        return (symbols, lca_scope)
+        
+        return (symbols, lca_scope_id)
 
     def _group_by_overlapping_signatures(
         self, chunk_signatures: List[ChunkSignature], original_chunks: List[Chunk]
