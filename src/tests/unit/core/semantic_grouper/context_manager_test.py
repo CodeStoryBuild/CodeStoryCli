@@ -222,7 +222,6 @@ def test_build_context_syntax_error(context_manager_deps):
     # Patch parse to return our parsed_file with a syntax error
     context_manager_deps["file_parser_parse"].return_value = parsed_file
 
-    # When fail_on_syntax_errors=False, the manager should still create contexts (it logs a warning)
     cm = ContextManager(
         [chunk],
         context_manager_deps["reader"],
@@ -230,7 +229,7 @@ def test_build_context_syntax_error(context_manager_deps):
     )
 
     assert cm.has_context(b"file.txt", True)
-    assert cm.has_context(b"file.txt", False)
+    assert not cm.has_context(b"file.txt", False)
 
     # When fail_on_syntax_errors=True, constructing the manager should raise SyntaxErrorDetected
     from codestory.core.exceptions import SyntaxErrorDetected

@@ -23,7 +23,6 @@
 
 import json
 import re
-from collections.abc import Callable
 from typing import Any
 
 from loguru import logger
@@ -237,16 +236,12 @@ class LLMGrouper(LogicalGrouper):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
-        on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:
         """
         Main entry point.
         """
         if not (chunks or immut_chunks):
             return []
-
-        if on_progress:
-            on_progress(10)
 
         changes_json = self._prepare_changes(chunks, immut_chunks)
         guidance = f"User Instructions: {message}" if message else ""
@@ -260,29 +255,17 @@ class LLMGrouper(LogicalGrouper):
             {"role": "user", "content": formatted_user_prompt},
         ]
 
-        if on_progress:
-            on_progress(30)
-
         try:
             # Call Model
             raw_response = self.model.invoke(messages)
 
-            if on_progress:
-                on_progress(80)
-
             # Parse & Validate
             valid_groups_data = self._clean_and_parse_json(raw_response)
-
-            if on_progress:
-                on_progress(90)
 
             # Create Domain Objects
             result = self._create_commit_groups(
                 valid_groups_data, chunks + immut_chunks
             )
-
-            if on_progress:
-                on_progress(100)
 
             return result
 

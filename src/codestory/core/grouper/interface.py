@@ -36,7 +36,6 @@ Notes:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
@@ -52,6 +51,5 @@ class LogicalGrouper(ABC):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
-        on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:
         """Return a list of ChunkGroup"""

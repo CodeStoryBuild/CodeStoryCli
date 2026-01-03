@@ -22,7 +22,6 @@
 # -----------------------------------------------------------------------------
 
 import json
-from collections.abc import Callable
 from dataclasses import dataclass
 
 from loguru import logger
@@ -184,7 +183,6 @@ class EmbeddingGrouper(LogicalGrouper):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
-        on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:
         """
         Main entry point.
@@ -216,7 +214,6 @@ class EmbeddingGrouper(LogicalGrouper):
                     commit_message=summaries[0],
                 )
             ]
-
         embeddings = self.embedder.embed(summaries)
         cluster_labels = self.clusterer.cluster(embeddings)
 

@@ -260,5 +260,7 @@ def check_run_onboarding(exit_after: bool = True) -> None:
         ONBOARDING_FLAG.touch()
         if exit_after:
             raise typer.Exit(0)
+        else:
+            print("Now continuing with command...\n")
     else:
         return
