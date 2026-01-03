@@ -22,15 +22,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' 
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt', 'pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: '3.13' 
+          cache: 'pip'
 
       - name: Install Dependencies
         # Installs your project dependencies from the root pyproject.toml
