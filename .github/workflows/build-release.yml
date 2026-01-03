@@ -58,9 +58,8 @@ jobs:
       - name: Test Built Executable
         shell: bash
         run: |
-          echo ">>> Testing Single File Build"
-          # Path updated to 'dist/' based on your latest script
-          EXE_PATH="dist/${{ matrix.exe_name }}"
+          echo ">>> Testing Standalone Build"
+          EXE_PATH="dist/cli.dist/${{ matrix.exe_name }}"
           
           echo "Target Exe: $EXE_PATH"
           
@@ -89,7 +88,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Updated Source to "dist\cst.exe"
+          # Package entire cli.dist directory
           $issContent = @"
           [Setup]
           AppName=codestory
@@ -104,7 +103,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          Source: "dist\cst.exe"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "dist\cli.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -139,11 +138,19 @@ jobs:
           VERSION=$(echo "$VERSION" | sed -E 's/^(v|release[-/]?)//')
           if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9] ]]; then VERSION="0.0.1"; fi
           
+          mkdir -p dist/package/opt/codestory
           mkdir -p dist/package/usr/bin
           mkdir -p dist/installers
           
-          # Copy binary directly to /usr/bin
-          cp dist/cst dist/package/usr/bin/cst
+          # Copy entire cli.dist directory to /opt/codestory
+          cp -r dist/cli.dist/* dist/package/opt/codestory/
+          chmod +x dist/package/opt/codestory/cst
+          
+          # Create wrapper script in /usr/bin
+          cat > dist/package/usr/bin/cst <<'EOF'
+          #!/bin/bash
+          exec /opt/codestory/cst "$@"
+          EOF
           chmod +x dist/package/usr/bin/cst
           
           mkdir -p dist/package/DEBIAN
@@ -170,8 +177,18 @@ jobs:
           mkdir -p dist/installers
           
           # Prepare a root folder for pkgbuild
+          mkdir -p dist/pkg_root/opt/codestory
           mkdir -p dist/pkg_root/usr/local/bin
-          cp dist/cst dist/pkg_root/usr/local/bin/
+          
+          # Copy entire cli.dist directory to /opt/codestory
+          cp -r dist/cli.dist/* dist/pkg_root/opt/codestory/
+          
+          # Create wrapper script in /usr/local/bin
+          cat > dist/pkg_root/usr/local/bin/cst <<'EOF'
+          #!/bin/bash
+          exec /opt/codestory/cst "$@"
+          EOF
+          chmod +x dist/pkg_root/usr/local/bin/cst
           
           # Generate PKG from the root folder
           pkgbuild --root dist/pkg_root \
@@ -187,11 +204,13 @@ jobs:
         run: |
           mkdir -p dist/ready_for_upload
           
-          # Copy the standalone executable with a clear name
+          # Package the standalone directory as a zip/tar.gz
           if [ "${{ matrix.platform }}" == "windows" ]; then
-            cp dist/cst.exe dist/ready_for_upload/cst-${{ matrix.platform }}-standalone.exe
+            cd dist
+            7z a -tzip ready_for_upload/cst-${{ matrix.platform }}-standalone.zip cli.dist/*
+            cd ..
           else
-            cp dist/cst dist/ready_for_upload/cst-${{ matrix.platform }}-standalone
+            tar -czf dist/ready_for_upload/cst-${{ matrix.platform }}-standalone.tar.gz -C dist cli.dist
           fi
           
           # Copy installers

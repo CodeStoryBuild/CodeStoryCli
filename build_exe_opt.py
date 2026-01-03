@@ -59,8 +59,6 @@ def main():
         "-m",
         "nuitka",
         "--standalone",
-        "--onefile",
-        "--onefile-cache-mode=cached",
         "--assume-yes-for-downloads",
         "--show-modules",
         # Include the root package
