@@ -6,7 +6,9 @@ from vibe.core.data.line_changes import Addition, Removal
 
 # Assuming your models are importable like this
 from vibe.core.data.commit_group import CommitGroup
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 
 # Assuming the synthesizer class is here
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer

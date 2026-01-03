@@ -6,7 +6,9 @@ from typing import Callable
 
 from loguru import logger
 from rich.console import Console
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 from vibe.context import GlobalContext, CleanContext
 
 

@@ -38,7 +38,9 @@ def test_model_creation():
                 api_key=os.getenv("OPENAI_API_KEY"),
             )
             model = create_llm_model(config)
-            print(f"✓ Successfully created OpenAI model: {type(model).__name__}")
+            print(
+                f"✓ Successfully created OpenAI model: {type(model).__name__}"
+            )
         except Exception as e:
             print(f"✗ Failed to create OpenAI model: {e}")
     else:
@@ -54,7 +56,9 @@ def test_model_creation():
                 api_key=os.getenv("ANTHROPIC_API_KEY"),
             )
             model = create_llm_model(config)
-            print(f"✓ Successfully created Anthropic model: {type(model).__name__}")
+            print(
+                f"✓ Successfully created Anthropic model: {type(model).__name__}"
+            )
         except Exception as e:
             print(f"✗ Failed to create Anthropic model: {e}")
     else:

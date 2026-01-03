@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from vibe.core.commands.git_commands import GitCommands
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 from vibe.core.git_interface.interface import GitInterface
 from vibe.core.llm.config import try_create_model
 

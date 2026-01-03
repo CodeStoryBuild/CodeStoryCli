@@ -7,7 +7,9 @@ from pathlib import Path
 from vibe.core.commands.git_commands import GitCommands
 from vibe.core.data.hunk_wrapper import HunkWrapper
 from vibe.core.data.immutable_hunk_wrapper import ImmutableHunkWrapper
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 
 
 @pytest.fixture
@@ -121,7 +123,10 @@ class TestGitDiffParsing:
         assert isinstance(hunk, HunkWrapper)
         assert hunk.old_file_path == b"to_delete.txt"
         assert hunk.new_file_path is None
-        assert hunk.hunk_lines == [b"-delete me", b"\\ No newline at end of file"]
+        assert hunk.hunk_lines == [
+            b"-delete me",
+            b"\\ No newline at end of file",
+        ]
 
     def test_parse_rename_with_modification(self, git_repo: Path):
         """Test a file that is renamed and modified in the same commit."""
@@ -144,7 +149,10 @@ class TestGitDiffParsing:
         print(hunk.hunk_lines)
         assert hunk.old_file_path == b"original.txt"
         assert hunk.new_file_path == b"renamed.txt"
-        assert hunk.hunk_lines == [b"+content2", b"\\ No newline at end of file"]
+        assert hunk.hunk_lines == [
+            b"+content2",
+            b"\\ No newline at end of file",
+        ]
 
     def test_add_binary_file(self, git_repo: Path):
         """Test that binary file changes are captured as ImmutableHunkWrapper."""

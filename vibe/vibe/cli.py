@@ -16,7 +16,11 @@ from vibe.core.logging.logging import setup_logger
 
 
 from vibe.core.config.config_loader import ConfigLoader
-from vibe.runtimeutil import ensure_utf8_output, setup_signal_handlers, version_callback
+from vibe.runtimeutil import (
+    ensure_utf8_output,
+    setup_signal_handlers,
+    version_callback,
+)
 from vibe.context import GlobalConfig, GlobalContext
 
 

@@ -6,7 +6,9 @@ import pytest
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.hunk_wrapper import HunkWrapper
 from vibe.core.data.commit_group import CommitGroup
-from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from vibe.core.git_interface.SubprocessGitInterface import (
+    SubprocessGitInterface,
+)
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
 
 ## Fixtures
