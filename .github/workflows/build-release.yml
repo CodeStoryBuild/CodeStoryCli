@@ -18,13 +18,13 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            exe_name: codestory.exe
+            exe_name: cst.exe
           - os: ubuntu-latest
             platform: linux
-            exe_name: codestory
+            exe_name: cst
           - os: macos-latest
             platform: macos
-            exe_name: codestory
+            exe_name: cst
 
     steps:
       - name: Checkout code
@@ -89,7 +89,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          # Updated Source to "dist\codestory.exe"
+          # Updated Source to "dist\cst.exe"
           $issContent = @"
           [Setup]
           AppName=codestory
@@ -104,7 +104,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          Source: "dist\codestory.exe"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "dist\cst.exe"; DestDir: "{app}"; Flags: ignoreversion
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -143,8 +143,8 @@ jobs:
           mkdir -p dist/installers
           
           # Copy binary directly to /usr/bin
-          cp dist/codestory dist/package/usr/bin/codestory
-          chmod +x dist/package/usr/bin/codestory
+          cp dist/cst dist/package/usr/bin/cst
+          chmod +x dist/package/usr/bin/cst
           
           mkdir -p dist/package/DEBIAN
           cat > dist/package/DEBIAN/control <<EOF
@@ -171,7 +171,7 @@ jobs:
           
           # Prepare a root folder for pkgbuild
           mkdir -p dist/pkg_root/usr/local/bin
-          cp dist/codestory dist/pkg_root/usr/local/bin/
+          cp dist/cst dist/pkg_root/usr/local/bin/
           
           # Generate PKG from the root folder
           pkgbuild --root dist/pkg_root \
@@ -189,9 +189,9 @@ jobs:
           
           # Copy the standalone executable with a clear name
           if [ "${{ matrix.platform }}" == "windows" ]; then
-            cp dist/codestory.exe dist/ready_for_upload/codestory-${{ matrix.platform }}-standalone.exe
+            cp dist/cst.exe dist/ready_for_upload/cst-${{ matrix.platform }}-standalone.exe
           else
-            cp dist/codestory dist/ready_for_upload/codestory-${{ matrix.platform }}-standalone
+            cp dist/cst dist/ready_for_upload/cst-${{ matrix.platform }}-standalone
           fi
           
           # Copy installers

@@ -87,10 +87,7 @@ def main():
         "--include-package=inquirer",
         "--include-package=readchar",
         
-        # --- TREE SITTER FIX ---
         "--include-package=tree_sitter",
-        # Note: --include-package-data IGNORES .pyd/.so files by default!
-        # We must manually force the bindings folder to be included as data directory.
     ]
 
     # --- FINAL CONFIG ---
