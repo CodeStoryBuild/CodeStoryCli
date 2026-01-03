@@ -72,10 +72,7 @@ class ConfigLoader:
 
         source_names = [source_names[i] for i in used_indexes]
 
-        if used_defaults:
-            source_names.append("Default Values")
-
-        return built_model, source_names
+        return built_model, source_names, used_defaults
 
     @staticmethod
     def load_toml(path: Path):

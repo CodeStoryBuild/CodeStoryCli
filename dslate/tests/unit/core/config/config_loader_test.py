@@ -124,7 +124,7 @@ def test_precedence_order():
 
             mock_load_toml.side_effect = side_effect
 
-            config, sources = ConfigLoader.get_full_config(
+            config, sources, used_defaults = ConfigLoader.get_full_config(
                 TestConfig,
                 args_in,
                 Path("local.toml"),
@@ -161,7 +161,7 @@ def test_precedence_order():
             lambda p: local if str(p) == "local.toml" else global_
         )
 
-        config, _ = ConfigLoader.get_full_config(
+        config, _, _ = ConfigLoader.get_full_config(
             TestConfig, {}, Path("local.toml"), "APP_", Path("global.toml"), None
         )
         assert config.val == "local"
@@ -174,7 +174,7 @@ def test_precedence_order():
         mock_load_env.return_value = env
         mock_load_toml.side_effect = lambda p: {} if str(p) == "local.toml" else global_
 
-        config, _ = ConfigLoader.get_full_config(
+        config, _, _ = ConfigLoader.get_full_config(
             TestConfig, {}, Path("local.toml"), "APP_", Path("global.toml"), None
         )
         assert config.val == "env"
