@@ -166,7 +166,6 @@ class TestGitDiffParsing:
         assert len(hunks) == 1
         hunk = hunks[0]
         assert isinstance(hunk, HunkWrapper)
-        print(hunk.hunk_lines)
         assert hunk.old_file_path == b"original.txt"
         assert hunk.new_file_path == b"renamed.txt"
         assert hunk.hunk_lines == [

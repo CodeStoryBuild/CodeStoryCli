@@ -96,6 +96,8 @@ class TempCommitCreator:
             logger.debug(
                 f"Branch '{original_branch}' is empty: creating initial empty commit"
             )
+            # Unstage any files that were staged before creating the initial commit
+            self._run(["reset"])
             self._run(["commit", "--allow-empty", "-m", "Initial commit"])
 
         old_commit_hash = (self._run(["rev-parse", "HEAD"]) or "").strip()

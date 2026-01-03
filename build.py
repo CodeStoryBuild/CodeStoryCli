@@ -43,8 +43,8 @@ def main():
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("Nuitka not found. Installing...")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "nuitka", "zstandard"]
+        raise RuntimeError(
+            "Nuitka and zstandard must be installed to build the executable."
         )
 
     # Entry point
@@ -58,6 +58,7 @@ def main():
         sys.executable,
         "-m",
         "nuitka",
+        "--debug",
         "--standalone",
         "--assume-yes-for-downloads",
         "--show-modules",
@@ -66,6 +67,10 @@ def main():
         "--include-package=codestory",
         "--include-package-data=codestory",
         "--include-package=tree_sitter",
+        "--nofollow-import-to=sympy",
+        "--nofollow-import-to=onnxruntime.quantization",
+        "--nofollow-import-to=onnxruntime.transformers",
+        "--nofollow-import-to=onnxruntime.datasets",
     ]
 
     cmd.extend(
