@@ -18,9 +18,11 @@
 -----------------------------------------------------------------------------
 """
 
+import os
+import tempfile
 from pathlib import Path
 
-from codestory.core.exceptions import DetachedHeadError
+from codestory.core.exceptions import DetachedHeadError, GitError
 from loguru import logger
 
 from ..git_interface.interface import GitInterface
@@ -43,6 +45,34 @@ class BranchSaver:
         """Run a git command via the GitInterface and return stdout as string."""
         return self.git.run_git_text_out(args, cwd=cwd, input_text=input_text)
 
+    def _run_git_binary(
+        self,
+        *args: str,
+        cwd: str | Path | None = None,
+        env: dict | None = None,
+        stdin_content: str | bytes | None = None,
+    ) -> bytes:
+        """Helper to run Git commands via the binary interface."""
+        input_data = None
+        if isinstance(stdin_content, str):
+            input_data = stdin_content.encode("utf-8")
+        elif isinstance(stdin_content, bytes):
+            input_data = stdin_content
+
+        result = self.git.run_git_binary_out(
+            args=list(args), input_bytes=input_data, env=env, cwd=cwd
+        )
+
+        if result is None:
+            raise GitError(f"Git command failed: {' '.join(args)}")
+
+        return result
+
+    def _run_git_decoded(self, *args: str, **kwargs) -> str:
+        """Helper to run Git and get a decoded string."""
+        output_bytes = self._run_git_binary(*args, **kwargs)
+        return output_bytes.decode("utf-8", errors="replace").strip()
+
     def _branch_exists(self, branch_name: str) -> bool:
         """Check if a branch exists using `git rev-parse --verify --quiet`."""
         result = self._run(["rev-parse", "--verify", "--quiet", branch_name])
@@ -50,10 +80,10 @@ class BranchSaver:
 
     def save_working_state(self) -> tuple[str, str, str]:
         """
-        Save the current working directory into a backup branch.
+        Save the current working directory into a backup branch using index manipulation.
 
-        - If the backup branch exists, it fast-forwards it to the main branch's HEAD.
-        - Commits all changes, including previously untracked files.
+        - Creates a tree object from the current working directory state.
+        - Commits this tree to a backup branch WITHOUT checking it out.
         - Returns the old commit hash (main's HEAD), the new commit hash (backup branch's HEAD),
           and the backup branch name.
         """
@@ -76,23 +106,47 @@ class BranchSaver:
 
         logger.debug(f"Creating/Updating backup branch name={backup_branch}")
 
-        # Create or update the backup branch to point to the current branch's HEAD
-        self._run(["branch", "-f", backup_branch, original_branch])
+        # Create a temporary index file to build the backup commit
+        temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="codestory_backup_")
+        os.close(temp_index_fd)
 
-        # Temporarily switch to the backup branch to commit the working changes
-        # Using a try/finally block to ensure we always switch back
+        env = os.environ.copy()
+        env["GIT_INDEX_FILE"] = temp_index_path
+
         try:
-            self._run(["checkout", backup_branch])
-            self._run(["add", "-A"])
+            # Load the current HEAD into the temporary index
+            self._run_git_binary("read-tree", "HEAD", env=env)
+
+            # Add all working directory changes to the temporary index
+            # This includes untracked files
+            self._run_git_binary("add", "-A", env=env)
+
+            # Write the index state to a tree object
+            new_tree_hash = self._run_git_decoded("write-tree", env=env)
+
+            # Create a commit from this tree
             commit_msg = f"Backup of working state from {original_branch}"
-            # Using --no-verify to skip any pre-commit hooks for this temporary commit
-            self._run(["commit", "--no-verify", "-m", commit_msg])
-            new_commit_hash = (self._run(["rev-parse", "HEAD"]) or "").strip()
+            new_commit_hash = self._run_git_decoded(
+                "commit-tree",
+                new_tree_hash,
+                "-p",
+                old_commit_hash,
+                "-m",
+                commit_msg,
+            )
+
+            # Update the backup branch to point to this new commit
+            # This happens entirely in the git database, no checkout needed
+            self._run(["branch", "-f", backup_branch, new_commit_hash])
+
+            logger.debug(
+                f"Backup created: {new_commit_hash[:8]} on branch {backup_branch}"
+            )
+
         finally:
-            # Always return to the original branch
-            self._run(["checkout", original_branch])
-            # once we have created the save, bring back the changes
-            self.restore_from_backup()
+            # Cleanup the temporary index file
+            if os.path.exists(temp_index_path):
+                os.unlink(temp_index_path)
 
         return (
             old_commit_hash,
