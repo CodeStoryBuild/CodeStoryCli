@@ -41,7 +41,7 @@ class StructuredLogger:
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logfile = LOG_DIR / f"{self.command_name}_{timestamp}.log"
-        
+
         # Console sink with Rich formatting
         def console_sink(message):
             # Parse loguru message

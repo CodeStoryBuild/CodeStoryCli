@@ -311,85 +311,91 @@ class GitSynthesizer:
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             worktree_path = Path(temp_dir) / "synth_worktree"
+            worktree_created = False
 
-            # create the worktree off of our base commit
-            self._run_git_binary(
-                "worktree", "add", "--detach", str(worktree_path), base_commit_hash
-            )
-
-            patches = GitSynthesizer._generate_unified_diff(
-                chunks_for_commit, total_chunks_per_file
-            )
-            logger.info(
-                "Tree build patch set summary: files={files} total_lines={lines}",
-                files=len(patches),
-                lines=sum(len(p.splitlines()) for p in patches.values()),
-            )
-            # Batch apply: concatenate all file patches into a single patch stream
-            # This reduces process overhead and applies atomically.
-            if patches:
-                # Keep ordering deterministic by sorting file paths
-                ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
-                combined_patch = b"".join(patch for _, patch in ordered_items)
-
-                try:
-                    logger.debug(
-                        "Applying combined patch stream: files={files}",
-                        files=len(ordered_items),
-                    )
-                    self._run_git_binary(
-                        "apply",
-                        "--index",
-                        "--recount",
-                        "--whitespace=nowarn",
-                        "--unidiff-zero",
-                        cwd=worktree_path,
-                        stdin_content=combined_patch,
-                    )
-                except RuntimeError as e:
-                    raise RuntimeError(
-                        "FATAL: Git apply failed for combined patch stream.\n"
-                        f"--- ERROR DETAILS ---\n{e}\n"
-                        f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
-                    )
-
-            # 1. Define a path for a temporary index file INSIDE the worktree.
-            temp_index_path = Path(temp_dir) / ".git_temporary_index"
-
-            # 2. Clean up any existing index files for the temp index.
-            # 2. Clean up any existing lock files for the temp index.
-            temp_index_lock_path = Path(str(temp_index_path) + ".lock")
-            if temp_index_lock_path.exists():
-                temp_index_lock_path.unlink()
-
-            # 3. Create a modified environment that tells Git to use this index.
-            env = os.environ.copy()
-            env["GIT_INDEX_FILE"] = str(temp_index_path)
-
-            # 5. Run 'git add' with this environment. It will now write to the temp index.
-            self._run_git_binary("add", "-A", ".", cwd=worktree_path, env=env)
-
-            # 6. Run 'write-tree' with the SAME environment. It will read from the temp index.
-            new_tree_hash = self._run_git_decoded(
-                "write-tree", cwd=worktree_path, env=env
-            )
-            logger.info(
-                "Tree object created: tree_hash={tree}",
-                tree=new_tree_hash,
-            )
-
-            # Clean up the worktree before returning
             try:
+                # create the worktree off of our base commit
                 self._run_git_binary(
-                    "worktree", "remove", "--force", str(worktree_path)
+                    "worktree", "add", "--detach", str(worktree_path), base_commit_hash
                 )
-            except RuntimeError:
-                # If worktree removal fails, it will be cleaned up when temp_dir is removed
-                logger.warning(
-                    "Failed to remove worktree, will be cleaned up with temp directory"
+                worktree_created = True
+
+                patches = GitSynthesizer._generate_unified_diff(
+                    chunks_for_commit, total_chunks_per_file
+                )
+                logger.info(
+                    "Tree build patch set summary: files={files} total_lines={lines}",
+                    files=len(patches),
+                    lines=sum(len(p.splitlines()) for p in patches.values()),
+                )
+                # Batch apply: concatenate all file patches into a single patch stream
+                # This reduces process overhead and applies atomically.
+                if patches:
+                    # Keep ordering deterministic by sorting file paths
+                    ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
+                    combined_patch = b"".join(patch for _, patch in ordered_items)
+
+                    try:
+                        logger.debug(
+                            "Applying combined patch stream: files={files}",
+                            files=len(ordered_items),
+                        )
+                        self._run_git_binary(
+                            "apply",
+                            "--index",
+                            "--recount",
+                            "--whitespace=nowarn",
+                            "--unidiff-zero",
+                            cwd=worktree_path,
+                            stdin_content=combined_patch,
+                        )
+                    except RuntimeError as e:
+                        raise RuntimeError(
+                            "FATAL: Git apply failed for combined patch stream.\n"
+                            f"--- ERROR DETAILS ---\n{e}\n"
+                            f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
+                        )
+
+                # 1. Define a path for a temporary index file INSIDE the worktree.
+                temp_index_path = Path(temp_dir) / ".git_temporary_index"
+
+                # 2. Clean up any existing index files for the temp index.
+                # 2. Clean up any existing lock files for the temp index.
+                temp_index_lock_path = Path(str(temp_index_path) + ".lock")
+                if temp_index_lock_path.exists():
+                    temp_index_lock_path.unlink()
+
+                # 3. Create a modified environment that tells Git to use this index.
+                env = os.environ.copy()
+                env["GIT_INDEX_FILE"] = str(temp_index_path)
+
+                # 5. Run 'git add' with this environment. It will now write to the temp index.
+                self._run_git_binary("add", "-A", ".", cwd=worktree_path, env=env)
+
+                # 6. Run 'write-tree' with the SAME environment. It will read from the temp index.
+                new_tree_hash = self._run_git_decoded(
+                    "write-tree", cwd=worktree_path, env=env
+                )
+                logger.info(
+                    "Tree object created: tree_hash={tree}",
+                    tree=new_tree_hash,
                 )
 
-            return new_tree_hash
+                return new_tree_hash
+
+            finally:
+                # Clean up the worktree before TemporaryDirectory cleanup
+                # This prevents orphaned worktree references in git
+                if worktree_created:
+                    try:
+                        self._run_git_binary(
+                            "worktree", "remove", "--force", str(worktree_path)
+                        )
+                    except RuntimeError:
+                        # If worktree removal fails, log it but let temp_dir cleanup proceed
+                        logger.warning(
+                            "Failed to remove worktree, will be cleaned up with temp directory"
+                        )
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
         return self._run_git_decoded(
