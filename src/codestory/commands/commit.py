@@ -46,26 +46,6 @@ def verify_repo_state(
     if commands.is_bare_repository():
         raise GitError("The 'commit' command cannot be run on a bare repository.")
 
-    if commands.need_reset():
-        if auto_yes:
-            unstage = True
-            logger.debug(
-                f"{Fore.YELLOW}Auto-confirm:{Style.RESET_ALL} Unstaging all changes to proceed."
-            )
-        else:
-            unstage = typer.confirm(
-                "Staged changes detected. codestory requires a clean staging area. Unstage all changes?",
-                default=False,
-            )
-
-        if unstage:
-            commands.reset()
-        else:
-            logger.debug(
-                f"{Fore.YELLOW}Unstage Operation Refused, exiting early.{Style.RESET_ALL}"
-            )
-            raise ValidationError("Cannot proceed without unstaging changes, exiting.")
-
     # always track all files that are not explicitly excluded using gitignore or target path selector
     # this is a very explicit design choice to simplify (remove) the concept of staged/unstaged changes
     if commands.need_track_untracked(target):
