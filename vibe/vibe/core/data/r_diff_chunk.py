@@ -30,16 +30,18 @@ class RenameDiffChunk(DiffChunk):
     def get_chunk_application_data(self) -> List[ChunkApplicationData]:
         """
         Returns the pre-parsed application data for this rename chunk.
-        
+
         The application data was already computed during initialization from the patch content.
-        
+
         Returns:
             The list of ChunkApplicationData objects for applying this rename's changes.
         """
         return self.application_data
-    
+
     @classmethod
-    def from_raw_patch(cls, old_file_path: str, new_file_path: str, patch_content: str) -> "RenameDiffChunk":
+    def from_raw_patch(
+        cls, old_file_path: str, new_file_path: str, patch_content: str
+    ) -> "RenameDiffChunk":
         """Creates a chunk by parsing a raw patch string."""
         app_data = cls._parse_patch(patch_content)
         return cls(old_file_path, new_file_path, patch_content, app_data)
@@ -51,18 +53,20 @@ class RenameDiffChunk(DiffChunk):
             raise ValueError("Cannot create a RenameDiffChunk from a non-rename hunk.")
 
         # 1. Reconstruct the patch content string for storage/display
-        hunk_header = f"@@ -{hunk.old_start},{hunk.old_len} +{hunk.new_start},{hunk.new_len} @@"
+        hunk_header = (
+            f"@@ -{hunk.old_start},{hunk.old_len} +{hunk.new_start},{hunk.new_len} @@"
+        )
         patch_content = "\n".join([hunk_header] + hunk.hunk_lines)
 
         # 2. Calculate application_data DIRECTLY from hunk properties
         add_content = [line[1:] for line in hunk.hunk_lines if not line.startswith("-")]
         removals_count = sum(1 for line in hunk.hunk_lines if line.startswith("-"))
-        
+
         start_line = hunk.old_start
         # Handle pure additions where old_len is 0
         if hunk.old_len == 0:
             start_line += 1
-            removals_count = 0 # Should already be 0, but good to be explicit
+            removals_count = 0  # Should already be 0, but good to be explicit
 
         app_data = [
             ChunkApplicationData(
@@ -125,4 +129,3 @@ class RenameDiffChunk(DiffChunk):
                 )
             )
         return application_data
-

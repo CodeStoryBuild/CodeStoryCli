@@ -31,18 +31,20 @@ def flatten_chunk(chunk: DiffChunk) -> List[tuple]:
     Handles StandardDiffChunk and CompositeDiffChunk.
     """
     result = []
-    
+
     if isinstance(chunk, StandardDiffChunk):
         for item in chunk.parsed_content:
             result.append((type(item).__name__, item.line_number, item.content))
     elif isinstance(chunk, CompositeDiffChunk):
         for sub_chunk in chunk.chunks:
             result.extend(flatten_chunk(sub_chunk))
-    
+
     return result
 
 
-def assert_input_preserved(output_chunks: List[DiffChunk], input_chunk: StandardDiffChunk):
+def assert_input_preserved(
+    output_chunks: List[DiffChunk], input_chunk: StandardDiffChunk
+):
     """
     Assert that output chunks contain exactly the same changes as input.
     Changes can be reordered, but must be identical.
@@ -50,9 +52,9 @@ def assert_input_preserved(output_chunks: List[DiffChunk], input_chunk: Standard
     output_flattened = []
     for chunk in output_chunks:
         output_flattened.extend(flatten_chunk(chunk))
-    
+
     input_flattened = flatten_chunk(input_chunk)
-    
+
     assert sorted(output_flattened) == sorted(input_flattened), (
         f"Output chunks do not preserve input.\n"
         f"Input: {sorted(input_flattened)}\n"
@@ -79,9 +81,9 @@ def assert_chunks_disjoint(chunks: List[DiffChunk]):
     Assert that all chunks are disjoint using the official chunk_checks utility.
     """
     standard_chunks = extract_standard_chunks(chunks)
-    assert chunks_disjoint(standard_chunks), (
-        "Output chunks are not disjoint! Chunks have overlapping line numbers."
-    )
+    assert chunks_disjoint(
+        standard_chunks
+    ), "Output chunks are not disjoint! Chunks have overlapping line numbers."
 
 
 def assert_chunks_valid(chunks: List[DiffChunk]):
@@ -126,12 +128,14 @@ def run_chunker_invariants(chunker: ChunkerInterface, input_chunk: StandardDiffC
 # Define all chunkers to test
 CHUNKERS = [
     ("vibe.core.chunker.simple_chunker.SimpleChunker", {}),
-    ("vibe.core.chunker.predicate_chunker.PredicateChunker", {
-        "split_predicate": lambda x: x.strip() == ""
-    }),
-    ("vibe.core.chunker.predicate_chunker.PredicateChunker", {
-        "split_predicate": lambda x: "SPLIT" in x
-    }),
+    (
+        "vibe.core.chunker.predicate_chunker.PredicateChunker",
+        {"split_predicate": lambda x: x.strip() == ""},
+    ),
+    (
+        "vibe.core.chunker.predicate_chunker.PredicateChunker",
+        {"split_predicate": lambda x: "SPLIT" in x},
+    ),
     ("vibe.core.chunker.max_line_chunker.MaxLineChunker", {"max_chunks": 3}),
     ("vibe.core.chunker.max_line_chunker.MaxLineChunker", {"max_chunks": 1}),
     ("vibe.core.chunker.max_line_chunker.MaxLineChunker", {"max_chunks": 10}),
@@ -442,34 +446,35 @@ def test_multiple_input_chunks_different_files(chunker_cls, chunker_kwargs):
 def test_output_composite_chunks_are_valid(chunker_cls, chunker_kwargs):
     """Test that composite chunks in output are properly structured."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     # Create a chunk large enough to potentially create composites
     parsed_content = []
     content_lines = []
-    
+
     for i in range(20):
-        parsed_content.append(Addition(content=f"line_{i}", line_number=i+1))
+        parsed_content.append(Addition(content=f"line_{i}", line_number=i + 1))
         content_lines.append(f"+line_{i}")
-    
+
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=parsed_content,
         old_start=0,
         new_start=1,
     )
-    
+
     output_chunks = chunker.chunk([chunk])
-    
+
     # Check that any composite chunks have valid structure
     for out_chunk in output_chunks:
         if isinstance(out_chunk, CompositeDiffChunk):
             assert len(out_chunk.chunks) > 0, "Composite chunk is empty"
-            assert all(isinstance(c, StandardDiffChunk) for c in out_chunk.chunks), \
-                "Composite chunk contains non-StandardDiffChunk"
-            assert out_chunk._file_path == chunk._file_path, \
-                "Composite chunk file path doesn't match"
-    
+            assert all(
+                isinstance(c, StandardDiffChunk) for c in out_chunk.chunks
+            ), "Composite chunk contains non-StandardDiffChunk"
+            assert (
+                out_chunk._file_path == chunk._file_path
+            ), "Composite chunk file path doesn't match"
+
     # Run standard invariants
     assert_input_preserved(output_chunks, chunk)
     assert_chunks_disjoint(output_chunks)

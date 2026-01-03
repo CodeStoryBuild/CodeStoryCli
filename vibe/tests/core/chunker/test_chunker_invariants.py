@@ -22,6 +22,7 @@ def flatten_chunk(chunk):
         ]
     return []
 
+
 def chunks_disjoint(chunks):
     """Check that chunks are disjoint using official checker."""
     standard_chunks = []
@@ -31,6 +32,7 @@ def chunks_disjoint(chunks):
         elif isinstance(chunk, CompositeDiffChunk):
             standard_chunks.extend(chunk.chunks)
     return check_disjoint(standard_chunks)
+
 
 def chunks_reconstruct_input(chunks, original):
     # Flatten all output chunks
@@ -49,7 +51,9 @@ CHUNKERS = [
 
 def run_chunker_invariants(chunker, orig):
     out_chunks = chunker.chunk([orig])
-    assert chunks_reconstruct_input(out_chunks, orig), "Output chunks do not reconstruct input"
+    assert chunks_reconstruct_input(
+        out_chunks, orig
+    ), "Output chunks do not reconstruct input"
     assert chunks_disjoint(out_chunks), "Output chunks are not pairwise disjoint"
 
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)

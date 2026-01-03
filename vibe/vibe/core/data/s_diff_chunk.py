@@ -104,19 +104,15 @@ class StandardDiffChunk(DiffChunk):
     def get_chunk_application_data(self) -> List[ChunkApplicationData]:
         """
         Converts this StandardDiffChunk into ChunkApplicationData format for the synthesizer.
-        
+
         This method encapsulates the logic for converting parsed_content (Addition/Removal objects)
         into the format needed to apply the changes to files.
-        
+
         Returns:
             A list containing a single ChunkApplicationData object representing this chunk's changes.
         """
-        removals = [
-            item for item in self.parsed_content if isinstance(item, Removal)
-        ]
-        additions = [
-            item for item in self.parsed_content if isinstance(item, Addition)
-        ]
+        removals = [item for item in self.parsed_content if isinstance(item, Removal)]
+        additions = [item for item in self.parsed_content if isinstance(item, Addition)]
 
         # If a chunk has both removals and additions, it's a "replace" operation.
         # The anchor point for applying the change is always the start of the removal.
@@ -149,7 +145,7 @@ class StandardDiffChunk(DiffChunk):
         else:
             # Empty chunk - shouldn't happen but handle gracefully
             return []
-        
+
     def file_path(self):
         return self._file_path
 
@@ -187,10 +183,15 @@ class StandardDiffChunk(DiffChunk):
             is_file_addition=hunk.is_file_addition,
             is_file_deletion=hunk.is_file_deletion,
         )
-    
+
     @classmethod
     def from_parsed_content_slice(
-        cls, file_path: str, parsed_slice: List[Union[Addition, Removal]], file_mode, is_file_addition, is_file_deletion
+        cls,
+        file_path: str,
+        parsed_slice: List[Union[Addition, Removal]],
+        file_mode,
+        is_file_addition,
+        is_file_deletion,
     ) -> Optional["StandardDiffChunk"]:
         """
         Creates a StandardDiffChunk from a slice of parsed Addition/Removal objects.
@@ -198,11 +199,10 @@ class StandardDiffChunk(DiffChunk):
         """
         if not parsed_slice:
             return None
-            
+
         removals = [item for item in parsed_slice if isinstance(item, Removal)]
         additions = [item for item in parsed_slice if isinstance(item, Addition)]
 
-        
         if removals and not additions:
             # Pure Deletion: The 'new_start' is anchored to the line *before* the removal.
             old_start = removals[0].line_number

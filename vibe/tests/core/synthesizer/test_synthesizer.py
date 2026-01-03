@@ -91,7 +91,7 @@ def test_file_deletion(git_repo):
         parsed_content=[Removal(i + 1, f"line {i+1}") for i in range(5)],
         old_start=1,
         new_start=1,
-        is_file_deletion=True
+        is_file_deletion=True,
     )
     group = CommitGroup(chunks=[chunk], group_id="g1", commmit_message="Delete app.js")
 
@@ -403,7 +403,7 @@ def test_pure_deletion_entire_files(git_repo):
         parsed_content=[Removal(1, "temporary content")],
         old_start=1,
         new_start=1,
-        is_file_deletion=True
+        is_file_deletion=True,
     )
 
     chunk2 = StandardDiffChunk(
@@ -411,7 +411,7 @@ def test_pure_deletion_entire_files(git_repo):
         parsed_content=[Removal(1, '{"test": true}')],
         old_start=1,
         new_start=1,
-        is_file_deletion=True
+        is_file_deletion=True,
     )
 
     group = CommitGroup(
@@ -471,7 +471,7 @@ def test_pure_deletion_multiple_groups(git_repo):
         parsed_content=[Removal(1, "other line 1"), Removal(2, "other line 2")],
         old_start=1,
         new_start=1,
-        is_file_deletion=True
+        is_file_deletion=True,
     )
     group2 = CommitGroup(
         chunks=[chunk2], group_id="g2", commmit_message="Delete other.txt"
@@ -559,20 +559,20 @@ def test_large_mixed_changes_single_group(git_repo):
             parsed_content=[Removal(1, "Old documentation")],
             old_start=1,
             new_start=1,
-            is_file_deletion=True
+            is_file_deletion=True,
         ),
         # Rename and modify
         RenameDiffChunk.from_raw_patch(
-                old_file_path="config.ini",
-                new_file_path="config/settings.ini",
-                patch_content=(
-                    "@@ -1,2 +1,3 @@\n"
-                    "-[section]\n"
-                    "-old_value=1\n"
-                    "+[database]\n"
-                    "+host=localhost\n"
-                    "+port=5432\n"
-                ),
+            old_file_path="config.ini",
+            new_file_path="config/settings.ini",
+            patch_content=(
+                "@@ -1,2 +1,3 @@\n"
+                "-[section]\n"
+                "-old_value=1\n"
+                "+[database]\n"
+                "+host=localhost\n"
+                "+port=5432\n"
+            ),
         ),
     ]
 
@@ -712,7 +712,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
             parsed_content=[Removal(1, "shared content")],
             old_start=1,
             new_start=1,
-            is_file_deletion=True
+            is_file_deletion=True,
         ),
         RenameDiffChunk.from_raw_patch(
             old_file_path="app.js", new_file_path="legacy/app.js", patch_content=""

@@ -31,41 +31,47 @@ def assert_is_atomic(chunk: StandardDiffChunk):
     """
     removals = [item for item in chunk.parsed_content if isinstance(item, Removal)]
     additions = [item for item in chunk.parsed_content if isinstance(item, Addition)]
-    
+
     total_items = len(removals) + len(additions)
-    
+
     if total_items == 1:
         # Pure addition or pure removal - atomic
         return True
     elif total_items == 2:
         # Must be exactly 1 removal and 1 addition at matching relative positions
-        assert len(removals) == 1 and len(additions) == 1, \
-            f"Atomic chunk with 2 items must have 1 removal and 1 addition, got {len(removals)} removals and {len(additions)} additions"
-        
+        assert (
+            len(removals) == 1 and len(additions) == 1
+        ), f"Atomic chunk with 2 items must have 1 removal and 1 addition, got {len(removals)} removals and {len(additions)} additions"
+
         # Check that they're at matching relative positions
         removal = removals[0]
         addition = additions[0]
         rel_removal = removal.line_number - chunk.old_start
         rel_addition = addition.line_number - chunk.new_start
-        
-        assert rel_removal == rel_addition, \
-            f"Modification atomic chunk has mismatched positions: removal at rel {rel_removal}, addition at rel {rel_addition}"
+
+        assert (
+            rel_removal == rel_addition
+        ), f"Modification atomic chunk has mismatched positions: removal at rel {rel_removal}, addition at rel {rel_addition}"
         return True
     else:
-        pytest.fail(f"Chunk is not atomic! Has {total_items} items: {len(removals)} removals, {len(additions)} additions")
+        pytest.fail(
+            f"Chunk is not atomic! Has {total_items} items: {len(removals)} removals, {len(additions)} additions"
+        )
 
 
-def assert_atomic_chunks_preserve_input(atomic_chunks: list, original: StandardDiffChunk):
+def assert_atomic_chunks_preserve_input(
+    atomic_chunks: list, original: StandardDiffChunk
+):
     """Assert that atomic chunks contain exactly the same items as original."""
     original_items = set()
     for item in original.parsed_content:
         original_items.add((type(item).__name__, item.line_number, item.content))
-    
+
     atomic_items = set()
     for chunk in atomic_chunks:
         for item in chunk.parsed_content:
             atomic_items.add((type(item).__name__, item.line_number, item.content))
-    
+
     assert atomic_items == original_items, (
         f"Atomic chunks do not preserve input.\n"
         f"Original: {sorted(original_items)}\n"

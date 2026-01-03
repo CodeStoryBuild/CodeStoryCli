@@ -45,17 +45,16 @@ class MaxLineChunker(ChunkerInterface):
             if isinstance(chunk, StandardDiffChunk):
                 # Split into atomic chunks
                 atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-                
+
                 # If atomic chunks fit within limit, add them individually
                 if len(atomic_chunks) <= self.max_chunks:
                     result.extend(atomic_chunks)
                 else:
                     # Group atomic chunks into composite chunks
                     for i in range(0, len(atomic_chunks), self.max_chunks):
-                        chunk_group = atomic_chunks[i:i + self.max_chunks]
+                        chunk_group = atomic_chunks[i : i + self.max_chunks]
                         composite = CompositeDiffChunk(
-                            chunks=chunk_group,
-                            _file_path=chunk._file_path
+                            chunks=chunk_group, _file_path=chunk._file_path
                         )
                         result.append(composite)
             else:

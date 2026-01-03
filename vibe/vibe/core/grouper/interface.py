@@ -25,5 +25,10 @@ from ..data.diff_chunk import DiffChunk
 
 class GrouperInterface(ABC):
     @abstractmethod
-    def group_chunks(self, chunks: List[DiffChunk], message : str, on_progress : Optional[ProgressCallback] = None) -> List[CommitGroup]:
+    def group_chunks(
+        self,
+        chunks: List[DiffChunk],
+        message: str,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""

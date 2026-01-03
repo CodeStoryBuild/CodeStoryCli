@@ -19,30 +19,31 @@ class PredicateChunker(ChunkerInterface):
 
             # Split into atomic chunks first
             atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-            
+
             # Group atomic chunks based on predicate
             current_group: List[StandardDiffChunk] = []
             separator_group: List[StandardDiffChunk] = []
-            
+
             for atomic_chunk in atomic_chunks:
                 # Check if any line in the atomic chunk matches the predicate
                 matches_predicate = any(
                     self.split_predicate(item.content)
                     for item in atomic_chunk.parsed_content
                 )
-                
+
                 if matches_predicate:
                     # Flush any current group before starting separator group
                     if current_group:
                         if len(current_group) == 1:
                             result.append(current_group[0])
                         else:
-                            result.append(CompositeDiffChunk(
-                                chunks=current_group,
-                                _file_path=chunk._file_path
-                            ))
+                            result.append(
+                                CompositeDiffChunk(
+                                    chunks=current_group, _file_path=chunk._file_path
+                                )
+                            )
                         current_group = []
-                    
+
                     # Add to separator group
                     separator_group.append(atomic_chunk)
                 else:
@@ -51,32 +52,35 @@ class PredicateChunker(ChunkerInterface):
                         if len(separator_group) == 1:
                             result.append(separator_group[0])
                         else:
-                            result.append(CompositeDiffChunk(
-                                chunks=separator_group,
-                                _file_path=chunk._file_path
-                            ))
+                            result.append(
+                                CompositeDiffChunk(
+                                    chunks=separator_group, _file_path=chunk._file_path
+                                )
+                            )
                         separator_group = []
-                    
+
                     # Add to current group
                     current_group.append(atomic_chunk)
-            
+
             # Flush any remaining groups
             if separator_group:
                 if len(separator_group) == 1:
                     result.append(separator_group[0])
                 else:
-                    result.append(CompositeDiffChunk(
-                        chunks=separator_group,
-                        _file_path=chunk._file_path
-                    ))
-            
+                    result.append(
+                        CompositeDiffChunk(
+                            chunks=separator_group, _file_path=chunk._file_path
+                        )
+                    )
+
             if current_group:
                 if len(current_group) == 1:
                     result.append(current_group[0])
                 else:
-                    result.append(CompositeDiffChunk(
-                        chunks=current_group,
-                        _file_path=chunk._file_path
-                    ))
+                    result.append(
+                        CompositeDiffChunk(
+                            chunks=current_group, _file_path=chunk._file_path
+                        )
+                    )
 
         return result

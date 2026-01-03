@@ -37,7 +37,9 @@ class GitCommands:
             diff_output = diff_output_bytes.decode("utf-8", errors="replace")
         return self._parse_hunks_with_renames(diff_output)
 
-    def _parse_hunks_with_renames(self, diff_output: Optional[str]) -> List[HunkWrapper]:
+    def _parse_hunks_with_renames(
+        self, diff_output: Optional[str]
+    ) -> List[HunkWrapper]:
         """
         Parses a unified diff output that may contain rename blocks.
         Extracts metadata about file operations (additions, deletions, renames).
@@ -45,7 +47,7 @@ class GitCommands:
         hunks: List[HunkWrapper] = []
         if not diff_output or diff_output is None:
             return hunks
-        
+
         file_blocks = diff_output.split("\ndiff --git ")
 
         for block in file_blocks:
@@ -60,7 +62,7 @@ class GitCommands:
             file_metadata = self._parse_file_metadata(block, lines)
             if not file_metadata["canonical_path"]:
                 continue
-            
+
             # Parse hunks within the block
             hunk_start_indices = [
                 i for i, line in enumerate(lines) if line.startswith("@@ ")
@@ -80,7 +82,9 @@ class GitCommands:
                     hunk_header = lines[start_idx]
                     hunk_body_lines = lines[start_idx + 1 : end_idx]
 
-                    old_start, old_len, new_start, new_len = self._parse_hunk_start(hunk_header)
+                    old_start, old_len, new_start, new_len = self._parse_hunk_start(
+                        hunk_header
+                    )
 
                     hunks.append(
                         HunkWrapper(
@@ -90,7 +94,11 @@ class GitCommands:
                             new_start=new_start,
                             old_len=old_len,
                             new_len=new_len,
-                            old_file_path=file_metadata["old_path"] if file_metadata["is_rename"] else None,
+                            old_file_path=(
+                                file_metadata["old_path"]
+                                if file_metadata["is_rename"]
+                                else None
+                            ),
                             file_mode=file_metadata["file_mode"],
                             is_file_addition=file_metadata["is_file_addition"],
                             is_file_deletion=file_metadata["is_file_deletion"],
@@ -121,7 +129,7 @@ class GitCommands:
             )
             if rename_from_line:
                 old_path = rename_from_line[12:]
-            
+
             rename_to_line = next(
                 (l for l in lines if l.startswith("rename to ")), None
             )
@@ -138,10 +146,8 @@ class GitCommands:
                 new_path = add_line[6:]
 
         # Determine canonical path
-        canonical_path = (
-            new_path if new_path and new_path != "/dev/null" else old_path
-        )
-        
+        canonical_path = new_path if new_path and new_path != "/dev/null" else old_path
+
         # For files with no --- or +++ lines (like empty new files),
         # parse the path from the first line "a/path b/path"
         if not canonical_path and lines:
@@ -292,10 +298,12 @@ class GitCommands:
                 chunks.append(RenameDiffChunk.from_hunk(hunk))
             elif hunk.is_file_addition and len(hunk.hunk_lines) == 0:
                 # Empty new file (no content)
-                chunks.append(EmptyFileAdditionChunk(
-                    _file_path=hunk.new_file_path,
-                    file_mode=hunk.file_mode or "100644"
-                ))
+                chunks.append(
+                    EmptyFileAdditionChunk(
+                        _file_path=hunk.new_file_path,
+                        file_mode=hunk.file_mode or "100644",
+                    )
+                )
             elif hunk.is_file_deletion and len(hunk.hunk_lines) == 0:
                 # File deletion without content
                 chunks.append(FileDeletionChunk(_file_path=hunk.new_file_path))

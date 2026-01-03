@@ -32,7 +32,7 @@ class ChunkerInterface(ABC):
     def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:
         """Split hunks into smaller chunks or sub-hunks"""
 
-    def split_into_atomic_chunks(chunk) -> List['StandardDiffChunk']:
+    def split_into_atomic_chunks(chunk) -> List["StandardDiffChunk"]:
         """
         Splits the chunk into its most atomic units using a single-pass,
         two-pointer merge algorithm.
@@ -50,8 +50,16 @@ class ChunkerInterface(ABC):
         while r_ptr < len(removals) or a_ptr < len(additions):
             # Use float('inf') as a sentinel when a pointer is out of bounds.
             # This ensures the other list's items are always processed.
-            rel_r_idx = removals[r_ptr].line_number - chunk.old_start if r_ptr < len(removals) else float('inf')
-            rel_a_idx = additions[a_ptr].line_number - chunk.new_start if a_ptr < len(additions) else float('inf')
+            rel_r_idx = (
+                removals[r_ptr].line_number - chunk.old_start
+                if r_ptr < len(removals)
+                else float("inf")
+            )
+            rel_a_idx = (
+                additions[a_ptr].line_number - chunk.new_start
+                if a_ptr < len(additions)
+                else float("inf")
+            )
 
             sub_slice = []
             # Case 1: Matched pair (Modification)
@@ -72,7 +80,13 @@ class ChunkerInterface(ABC):
 
             # Create the atomic chunk from the determined slice.
             # The factory method handles the details of chunk creation.
-            atomic_chunk = chunk.from_parsed_content_slice(chunk._file_path, sub_slice, chunk.file_mode, chunk.is_file_addition, chunk.is_file_deletion)
+            atomic_chunk = chunk.from_parsed_content_slice(
+                chunk._file_path,
+                sub_slice,
+                chunk.file_mode,
+                chunk.is_file_addition,
+                chunk.is_file_deletion,
+            )
             if chunk:
                 atomic_chunks.append(atomic_chunk)
 

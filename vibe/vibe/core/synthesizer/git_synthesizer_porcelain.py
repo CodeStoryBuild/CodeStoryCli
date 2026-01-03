@@ -27,7 +27,11 @@ class GitSynthesizer:
         self.git = git
 
     def _run_git(
-        self, *args: str, cwd: Optional[Union[str, Path]] = None, env: Optional[Dict] = None, stdin_content: Optional[Union[str, bytes]] = None
+        self,
+        *args: str,
+        cwd: Optional[Union[str, Path]] = None,
+        env: Optional[Dict] = None,
+        stdin_content: Optional[Union[str, bytes]] = None,
     ) -> bytes:
         """
         Helper to run Git commands via the binary interface.
@@ -39,10 +43,7 @@ class GitSynthesizer:
             input_data = stdin_content
 
         result = self.git.run_git_binary(
-            args=list(args),
-            input_bytes=input_data,
-            env=env,
-            cwd=cwd
+            args=list(args), input_bytes=input_data, env=env, cwd=cwd
         )
 
         if result is None:
@@ -58,31 +59,26 @@ class GitSynthesizer:
         return output_bytes.decode("utf-8", errors="replace").strip()
 
     def _generate_unified_diff(
-        self, chunks: List[Union[StandardDiffChunk, RenameDiffChunk]], worktree_path: Path
+        self, chunks: List[Union[StandardDiffChunk]]
     ) -> Dict[str, str]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches)
         for each file, correctly handling line number offsets for disjoint hunks.
         """
         patches: Dict[str, str] = {}
-        
+
         sorted_chunks = sorted(chunks, key=lambda c: c.file_path())
 
-        for file_path, file_chunks_iter in groupby(sorted_chunks, key=lambda c: c.file_path()):
+        for file_path, file_chunks_iter in groupby(
+            sorted_chunks, key=lambda c: c.file_path()
+        ):
             file_chunks = list(file_chunks_iter)
 
-            if isinstance(file_chunks[0], RenameDiffChunk):
-                if file_chunks[0].patch_content:
-                    patches[file_path] = file_chunks[0].patch_content
-                continue
-            
             patch_lines = []
-            
-            # Check if any chunk in this file has file operation metadata
-            standard_chunks = [c for c in file_chunks if isinstance(c, StandardDiffChunk)]
-            is_file_addition = any(c.is_file_addition for c in standard_chunks)
-            is_file_deletion = any(c.is_file_deletion for c in standard_chunks)
-            
+
+            is_file_addition = any(c.is_file_addition for c in file_chunks)
+            is_file_deletion = any(c.is_file_deletion for c in file_chunks)
+
             # Generate appropriate patch headers based on file operation metadata
             if is_file_addition:
                 patch_lines.append(f"--- /dev/null")
@@ -94,39 +90,37 @@ class GitSynthesizer:
                 # Regular modification
                 patch_lines.append(f"--- a/{file_path}")
                 patch_lines.append(f"+++ b/{file_path}")
-            
+
             sorted_file_chunks = sorted(
-                [c for c in file_chunks if isinstance(c, StandardDiffChunk) and len(c.parsed_content) > 0],
-                key=lambda c: c.old_start
+                [
+                    c
+                    for c in file_chunks
+                    if isinstance(c, StandardDiffChunk) and len(c.parsed_content) > 0
+                ],
+                key=lambda c: c.old_start,
             )
-            
-            line_offset = 0
-            
+
             for chunk in sorted_file_chunks:
                 removals = [p for p in chunk.parsed_content if isinstance(p, Removal)]
                 additions = [p for p in chunk.parsed_content if isinstance(p, Addition)]
-                
+
                 old_len = len(removals)
                 new_len = len(additions)
-                
-                hunk_old_start = chunk.old_start
-                # hunk_new_start = chunk.old_start + line_offset
-                hunk_new_start = chunk.new_start
-                
-                hunk_header = f"@@ -{hunk_old_start},{old_len} +{hunk_new_start},{new_len} @@"
+
+                hunk_header = (
+                    f"@@ -{chunk.old_start},{old_len} +{chunk.new_start},{new_len} @@"
+                )
                 patch_lines.append(hunk_header)
-                
+
                 for item in chunk.parsed_content:
                     if isinstance(item, Removal):
                         patch_lines.append(f"-{item.content}")
                     elif isinstance(item, Addition):
                         patch_lines.append(f"+{item.content}")
 
-                # line_offset += (new_len - old_len)
-                
             if len(sorted_file_chunks) > 0:
                 patches[file_path] = "\n".join(patch_lines) + "\n"
-                
+
         return patches
 
     def _build_tree_from_changes(
@@ -135,7 +129,7 @@ class GitSynthesizer:
         """
         Creates a new Git tree object by applying a specific set of changes
         to a base commit.
-        
+
         Processes chunks in order:
         1. Standard patches (StandardDiffChunk with content)
         2. Renames (RenameDiffChunk)
@@ -144,9 +138,11 @@ class GitSynthesizer:
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             worktree_path = Path(temp_dir) / "synth_worktree"
-            
+
             try:
-                self._run_git("worktree", "add", "--detach", str(worktree_path), base_commit_hash)
+                self._run_git(
+                    "worktree", "add", "--detach", str(worktree_path), base_commit_hash
+                )
 
                 # Flatten composite chunks into primitives
                 primitive_chunks: List[DiffChunk] = []
@@ -157,24 +153,33 @@ class GitSynthesizer:
                         primitive_chunks.append(chunk)
 
                 # Separate chunks by type
-                standard_chunks = [c for c in primitive_chunks if isinstance(c, StandardDiffChunk)]
-                rename_chunks = [c for c in primitive_chunks if isinstance(c, RenameDiffChunk)]
-                empty_file_chunks = [c for c in primitive_chunks if isinstance(c, EmptyFileAdditionChunk)]
-                deletion_chunks = [c for c in primitive_chunks if isinstance(c, FileDeletionChunk)]
+                standard_chunks = [
+                    c for c in primitive_chunks if isinstance(c, StandardDiffChunk)
+                ]
+                rename_chunks = [
+                    c for c in primitive_chunks if isinstance(c, RenameDiffChunk)
+                ]
+                empty_file_chunks = [
+                    c for c in primitive_chunks if isinstance(c, EmptyFileAdditionChunk)
+                ]
+                deletion_chunks = [
+                    c for c in primitive_chunks if isinstance(c, FileDeletionChunk)
+                ]
 
-                
-                patches = self._generate_unified_diff(standard_chunks, worktree_path)
+                patches = self._generate_unified_diff(standard_chunks)
                 for file_path, patch_content in patches.items():
-                    if not patch_content.strip(): 
+                    if not patch_content.strip():
                         continue
-                    
+
                     try:
                         self._run_git(
-                            "apply", "--recount", "--unidiff-zero",
+                            "apply",
+                            "--recount",
+                            "--unidiff-zero",
                             cwd=worktree_path,
-                            stdin_content=patch_content
+                            stdin_content=patch_content,
                         )
-                        
+
                     except RuntimeError as e:
                         file_content = ""
                         target_file = worktree_path / file_path
@@ -186,8 +191,6 @@ class GitSynthesizer:
                             f"--- PATCH CONTENT ---\n{patch_content}\n"
                             f"--- CURRENT FILE CONTENT ---\n{file_content}\n"
                         )
-
-                    
 
                 for r_chunk in rename_chunks:
                     # Build valid Git rename patch
@@ -207,7 +210,10 @@ class GitSynthesizer:
                     patch_str = "\n".join(patch_lines) + "\n"
 
                     self._run_git(
-                        "apply", "--index", "--recount", "--unidiff-zero",
+                        "apply",
+                        "--index",
+                        "--recount",
+                        "--unidiff-zero",
                         cwd=worktree_path,
                         stdin_content=patch_str,
                     )
@@ -218,14 +224,16 @@ class GitSynthesizer:
                     target_file = worktree_path / file_path
                     target_file.parent.mkdir(parents=True, exist_ok=True)
                     target_file.touch()
-                    
+
                     if empty_chunk.file_mode is not None:
                         target_file.chmod(int(empty_chunk.file_mode, 8))
 
                 # Step 4: Delete files
                 for deletion_chunk in deletion_chunks:
                     try:
-                        self._run_git("rm", "-f", deletion_chunk.file_path(), cwd=worktree_path)
+                        self._run_git(
+                            "rm", "-f", deletion_chunk.file_path(), cwd=worktree_path
+                        )
                     except (RuntimeError, ValueError):
                         # File might have been already removed, continue
                         pass
@@ -233,29 +241,33 @@ class GitSynthesizer:
                 # --- THE ISOLATED INDEX FIX ---
                 # 1. Define a path for a temporary index file INSIDE the worktree.
                 temp_index_path = worktree_path / ".git_temporary_index"
-                
+
                 # 2. Clean up any existing lock file to prevent "File exists" errors
                 temp_index_lock_path = Path(str(temp_index_path) + ".lock")
                 if temp_index_lock_path.exists():
                     temp_index_lock_path.unlink()
-                
+
                 # 3. Create a modified environment that tells Git to use this index.
                 env = os.environ.copy()
                 env["GIT_INDEX_FILE"] = str(temp_index_path)
-                
+
                 # 4. Run 'git add' with this environment. It will now write to the temp index.
                 self._run_git("add", "-A", ".", cwd=worktree_path, env=env)
-                
+
                 # 5. Run 'write-tree' with the SAME environment. It will read from the temp index.
-                new_tree_hash = self._run_git_decoded("write-tree", cwd=worktree_path, env=env)
-                
+                new_tree_hash = self._run_git_decoded(
+                    "write-tree", cwd=worktree_path, env=env
+                )
+
                 return new_tree_hash
 
             finally:
                 self._run_git("worktree", "remove", "--force", str(worktree_path))
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
-        return self._run_git_decoded("commit-tree", tree_hash, "-p", parent_hash, "-m", message)
+        return self._run_git_decoded(
+            "commit-tree", tree_hash, "-p", parent_hash, "-m", message
+        )
 
     # vibe/core/synthesizer/synthesizer.py
 
@@ -269,10 +281,10 @@ class GitSynthesizer:
         and stateless.
         """
         results: List[CommitResult] = []
-        
+
         # 1. Establish the constant starting point for all tree builds.
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
-        
+
         # 2. These variables will track the evolving state of our NEW commit chain.
         last_synthetic_commit_hash = original_base_commit_hash
         cumulative_chunks: List[DiffChunk] = []
@@ -290,8 +302,7 @@ class GitSynthesizer:
                 #    - ALWAYS apply the full set of accumulated changes.
                 #    This is the key to the stateless, cumulative rebuild.
                 new_tree_hash = self._build_tree_from_changes(
-                    original_base_commit_hash, 
-                    cumulative_chunks
+                    original_base_commit_hash, cumulative_chunks
                 )
 
                 # 5. Create the new commit, chaining it to the previous one we made.
@@ -302,14 +313,17 @@ class GitSynthesizer:
                 new_commit_hash = self._create_commit(
                     new_tree_hash, last_synthetic_commit_hash, full_message
                 )
-                
+
                 # 6. The commit we just made becomes the parent for the NEXT loop iteration.
                 last_synthetic_commit_hash = new_commit_hash
                 results.append(CommitResult(commit_hash=new_commit_hash, group=group))
 
             except Exception as e:
-                print(f"FATAL: Synthesis failed during group '{group.group_id}'. No changes have been applied.")
+                print(
+                    f"FATAL: Synthesis failed during group '{group.group_id}'. No changes have been applied."
+                )
                 import traceback
+
                 traceback.print_exc()
                 raise e
 
@@ -317,7 +331,9 @@ class GitSynthesizer:
         final_commit_hash = last_synthetic_commit_hash
         if final_commit_hash != original_base_commit_hash:
             # Update the branch ref dynamically
-            self._run_git("update-ref", f"refs/heads/{current_branch}", final_commit_hash)
+            self._run_git(
+                "update-ref", f"refs/heads/{current_branch}", final_commit_hash
+            )
             # Update the working directory to reflect the new branch state
             self._run_git("reset", "--hard", final_commit_hash)
 

@@ -53,20 +53,20 @@ class DeterministicChunker(ChunkerInterface):
         """
         from vibe.core.chunker.interface import ChunkerInterface
         from vibe.core.data.c_diff_chunk import CompositeDiffChunk
-        
+
         if not isinstance(chunk, StandardDiffChunk):
             # only split standard diff chunks, not renames
             return [chunk]
-        
+
         if not chunk.parsed_content:
             return [chunk]
 
         # Split into atomic chunks
         atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-        
+
         if not atomic_chunks:
             return [chunk]
-        
+
         # Group consecutive atomic chunks (2-3 chunks per group) to avoid too many tiny chunks
         sub_chunks = []
         i = 0
@@ -74,17 +74,16 @@ class DeterministicChunker(ChunkerInterface):
             # Determine the range for this sub-group (2-3 atomic chunks)
             end_idx = min(i + 2, len(atomic_chunks))
             chunk_group = atomic_chunks[i:end_idx]
-            
+
             if len(chunk_group) == 1:
                 # Single atomic chunk, add as-is
                 sub_chunks.append(chunk_group[0])
             else:
                 # Multiple atomic chunks, wrap in CompositeDiffChunk
-                sub_chunks.append(CompositeDiffChunk(
-                    chunks=chunk_group,
-                    _file_path=chunk._file_path
-                ))
-            
+                sub_chunks.append(
+                    CompositeDiffChunk(chunks=chunk_group, _file_path=chunk._file_path)
+                )
+
             # Move to next group
             i = end_idx
 
@@ -107,7 +106,9 @@ class DeterministicGrouper(GrouperInterface):
         self.group_by_file = group_by_file
         self.max_chunks_per_group = max_chunks_per_group
 
-    def group_chunks(self, chunks: List[DiffChunk], message : str, on_progress = None) -> List[CommitGroup]:
+    def group_chunks(
+        self, chunks: List[DiffChunk], message: str, on_progress=None
+    ) -> List[CommitGroup]:
         """
         Group chunks deterministically for predictable testing.
         """
@@ -155,7 +156,9 @@ class DeterministicGrouper(GrouperInterface):
 
         return groups
 
-    def _group_by_content_patterns(self, chunks: List[StandardDiffChunk]) -> List[CommitGroup]:
+    def _group_by_content_patterns(
+        self, chunks: List[StandardDiffChunk]
+    ) -> List[CommitGroup]:
         """Group chunks by content patterns for more complex testing."""
         groups = []
         group_counter = 1
@@ -211,10 +214,10 @@ class DeterministicGrouper(GrouperInterface):
 
         if any(isinstance(chunk, RenameDiffChunk) for chunk in chunks):
             return "Rename"
-        
+
         if any(isinstance(chunk, EmptyFileAdditionChunk) for chunk in chunks):
             return "Add"
-        
+
         if any(isinstance(chunk, FileDeletionChunk) for chunk in chunks):
             return "Remove"
 

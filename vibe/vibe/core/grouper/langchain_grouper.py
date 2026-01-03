@@ -102,15 +102,25 @@ class LangChainGrouper(GrouperInterface):
         """Provide heuristic progress estimation based on number of output tokens."""
         if not content:
             return
-            
+
         # Estimate tokens by splitting on whitespace and common separators
         # This is a rough approximation of token count
-        n_tokens = len(content.split()) + content.count(',') + content.count('{') + content.count('}')
-        
+        n_tokens = (
+            len(content.split())
+            + content.count(",")
+            + content.count("{")
+            + content.count("}")
+        )
+
         progress = min(95, n_tokens // 5)
         return progress
 
-    def group_chunks(self, chunks: List[DiffChunk], message: str, on_progress: Optional[ProgressCallback] = None) -> List[CommitGroup]:
+    def group_chunks(
+        self,
+        chunks: List[DiffChunk],
+        message: str,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> List[CommitGroup]:
         """
         Group chunks using LangChain chat model to analyze intentions and relationships.
 
@@ -133,38 +143,41 @@ class LangChainGrouper(GrouperInterface):
 
         # Prepare the changes for analysis
         changes_json = self._prepare_changes(chunks)
-        
+
         if on_progress:
             on_progress(10)
 
-        optional_guidance_message = f"Custom user instructions: {message}" if message else ""
+        optional_guidance_message = (
+            f"Custom user instructions: {message}" if message else ""
+        )
 
         # Create the prompt template
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("system", SYSTEM_PROMPT),
-            ("human", ANALYSIS_PROMPT)
-        ])
+        prompt_template = ChatPromptTemplate.from_messages(
+            [("system", SYSTEM_PROMPT), ("human", ANALYSIS_PROMPT)]
+        )
 
         # Format the prompt with our specific data
         formatted_prompt = prompt_template.format_messages(
             format_instructions=self.output_parser.get_format_instructions(),
             optional_guidance_message=optional_guidance_message,
-            changes_json=changes_json
+            changes_json=changes_json,
         )
 
         if on_progress:
             on_progress(15)
 
         # Expected number of groups for progress estimation
-        estimated_groups = min(len(chunks), 5)  # Heuristic: assume most changes will be grouped
-        
+        estimated_groups = min(
+            len(chunks), 5
+        )  # Heuristic: assume most changes will be grouped
+
         # Stream the response
         accumulated_content = ""
         try:
             stream = self.chat_model.stream(formatted_prompt)
-            
+
             for chunk in stream:
-                if hasattr(chunk, 'content') and chunk.content:
+                if hasattr(chunk, "content") and chunk.content:
                     accumulated_content += chunk.content
                     if on_progress:
                         progress = self._estimate_progress(accumulated_content)
