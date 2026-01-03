@@ -30,3 +30,37 @@ CONFIG_FILENAME = "codestoryconfig.toml"
 
 GLOBAL_CONFIG_FILE = Path(user_config_dir(APP_NAME)) / CONFIG_FILENAME
 LOCAL_CONFIG_FILE = Path(CONFIG_FILENAME)
+
+SUPPORTED_LANGUAGES = [
+    "python",
+    "javascript",
+    "typescript",
+    "java",
+    "cpp",
+    "csharp",
+    "go",
+    "rust",
+    "ruby",
+    "php",
+    "swift",
+    "kotlin",
+    "scala",
+    "r",
+    "lua",
+    "dart",
+    "elixir",
+    "haskell",
+    "ocaml",
+    "erlang",
+    "clojure",
+    "solidity",
+    "julia",
+    "bash",
+    "c",
+    "toml",
+    "json",
+    "yaml",
+    "markdown",
+    "rst",
+    "html",
+]

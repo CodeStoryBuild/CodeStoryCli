@@ -62,3 +62,12 @@ def get_log_dir_callback(value: bool):
 
         typer.echo(f"{str(LOG_DIR)}")
         raise typer.Exit()
+
+
+def get_supported_languages_callback(value: bool):
+    """Show version and exit."""
+    if value:
+        from codestory.constants import SUPPORTED_LANGUAGES
+
+        typer.echo(f"{str(SUPPORTED_LANGUAGES)}")
+        raise typer.Exit()
