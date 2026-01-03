@@ -73,7 +73,7 @@ def run_clean(
         success = runner.run()
 
     if success:
-        logger.info("Clean command completed successfully")
+        logger.success("Clean command completed successfully")
     else:
         logger.error("Clean operation failed")
 
