@@ -61,18 +61,13 @@ def main():
         "--standalone",
         "--assume-yes-for-downloads",
         "--show-modules",
-        # Include the root package
         "--include-package=tree_sitter_language_pack",
-        # Explicitly force the bindings subpackage
-        # Nuitka usually only includes modules it sees imported in code.
         "--include-module=tree_sitter_language_pack.bindings",
-        # --- CORE INCLUDES ---
-        "--include-package=codestory",
-        "--include-package-data=codestory",
+        "--include-package=codestory-cli",
+        "--include-package-data=codestory-cli",
         "--include-package=tree_sitter",
     ]
 
-    # --- FINAL CONFIG ---
     cmd.extend(
         [
             f"--output-dir={dist_path}",
