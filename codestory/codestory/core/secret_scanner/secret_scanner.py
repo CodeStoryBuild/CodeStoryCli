@@ -75,13 +75,12 @@ PATTERNS_BALANCED = [
     r"(postgres|mysql|mongodb|redis|amqp)://[a-zA-Z0-9_]+:[a-zA-Z0-9_]+@",
 ]
 
-PATTERNS_PARANOID = [
-    r"(?i)secret"
-]
+PATTERNS_PARANOID = [r"(?i)secret"]
 
 # -----------------------------------------------------------------------------
 # Entropy Calculation
 # -----------------------------------------------------------------------------
+
 
 def shannon_entropy(data: str) -> float:
     if not data:
@@ -96,9 +95,11 @@ def shannon_entropy(data: str) -> float:
         entropy -= p_x * math.log2(p_x)
     return entropy
 
+
 # -----------------------------------------------------------------------------
 # Scanner Logic
 # -----------------------------------------------------------------------------
+
 
 class SecretScanner:
     def __init__(self, config: ScannerConfig):
@@ -213,9 +214,11 @@ class SecretScanner:
                     return True
         return False
 
+
 # -----------------------------------------------------------------------------
 # Main Entry Point
 # -----------------------------------------------------------------------------
+
 
 def filter_hunks(
     chunks: list[Chunk],

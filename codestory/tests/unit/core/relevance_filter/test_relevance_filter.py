@@ -1,13 +1,16 @@
 import json
-import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
-from codestory.core.relevance_filter.relevance_filter import RelevanceFilter, RelevanceFilterConfig
+import pytest
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition
 from codestory.core.llm import CodeStoryAdapter
+from codestory.core.relevance_filter.relevance_filter import (
+    RelevanceFilter,
+    RelevanceFilterConfig,
+)
 
 
 class TestRelevanceFilter:

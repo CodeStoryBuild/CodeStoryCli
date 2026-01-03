@@ -18,6 +18,7 @@ class RelevanceFilterConfig:
     max_tokens_per_chunk: int = 500
     extra_instructions: str = ""
 
+
 # -----------------------------------------------------------------------------
 # Language-Agnostic System Prompts
 # -----------------------------------------------------------------------------
@@ -50,7 +51,6 @@ AGGRESSION_RULES = {
         2. Corrupted text or merge conflict markers.
     - KEEP: All human-authored text, even if it seems slightly unrelated to the intent.
     """,
-
     "standard": """
     MODE: STANDARD (The Editor)
     - GOAL: High Cohesion. Remove noise that distracts from the intent.
@@ -59,7 +59,6 @@ AGGRESSION_RULES = {
         2. System/IDE configuration files that are usually ignored.
     - KEEP: Any content change that plausibly relates to the intent, even indirectly.
     """,
-
     "strict": """
     MODE: STRICT (The Lawyer)
     - GOAL: Laser Precision.
@@ -69,8 +68,10 @@ AGGRESSION_RULES = {
         2. Scope creep (changes that add features not requested).
         3. ALL temporary artifacts, diagnostics, or unrelated metadata.
     - If the user says "Update Title", reject changes to the "Footer".
-    """
+    """,
 }
+
+
 class RelevanceFilter:
     def __init__(self, model: CodeStoryAdapter, config: RelevanceFilterConfig):
         self.model = model

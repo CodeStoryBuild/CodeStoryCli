@@ -14,6 +14,7 @@ class TypeConstraint(ABC):
     Subclasses should implement `coerce` which attempts to coerce/validate
     a provided value. If coercion/validation fails, raise ConfigurationError.
     """
+
     @abstractmethod
     def coerce(self, value: Any) -> Any:
         """Try to coerce and validate `value`. Return coerced value or raise."""
