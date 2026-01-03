@@ -46,6 +46,7 @@ def create_rewrite_pipeline(
         logical_grouper = EmbeddingGrouper(
             global_ctx.get_model(),
             batching_strategy=global_ctx.config.batching_strategy,
+            max_tokens=global_ctx.config.max_tokens,
         )
     else:
         logger.warning("Using no ai grouping as rewrite_pipeline recieved no model!")
