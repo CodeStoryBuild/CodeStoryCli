@@ -30,4 +30,4 @@ jobs:
         
     - name: Test with pytest
       run: |
-        pytest codestory/tests/unit
+        pytest src/tests/unit
