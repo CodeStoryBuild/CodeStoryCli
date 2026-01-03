@@ -51,10 +51,7 @@ class LanguageConfig:
         lines = []
         for query in queries:
             if not "@placeholder" in query:
-                raise ValueError(
-                    f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!"
-                )
-
+                logger.error(f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!")
             else:
                 # TODO consider if multiple @placeholders should be supported or warned against
                 # .replace will replace all instances of it

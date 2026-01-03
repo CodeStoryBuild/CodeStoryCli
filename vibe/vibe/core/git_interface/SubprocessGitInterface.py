@@ -91,6 +91,6 @@ class SubprocessGitInterface(GitInterface):
             return result.stdout
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Git binary command failed: {' '.join(e.cmd)} code={e.returncode} stderr={(e.stderr[:500] + '...(truncated)') if e.stderr and len(e.stderr) > 500 else e.stderr}"
+                    f"Git binary command failed: {' '.join(e.cmd)} code={e.returncode} stderr={e.stderr.decode('utf-8', errors='ignore')}"
             )
             return None

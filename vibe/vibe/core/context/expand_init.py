@@ -2,6 +2,8 @@ from importlib.resources import files
 
 from rich.console import Console
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 from vibe.core.file_reader.file_parser import FileParser
 from vibe.core.synthesizer.git_synthesizer import GitSynthesizer
 from vibe.core.commands.git_commands import GitCommands
