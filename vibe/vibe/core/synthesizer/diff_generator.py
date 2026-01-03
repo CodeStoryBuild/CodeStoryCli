@@ -4,6 +4,7 @@ from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.immutable_chunk import ImmutableChunk
 from vibe.core.data.line_changes import Addition, Removal
 
+
 class DiffGenerator:
     def __init__(self, all_chunks_flattened: list[DiffChunk | ImmutableChunk]):
         diff_chunks = [chunk for chunk in all_chunks_flattened if isinstance(chunk, DiffChunk)]

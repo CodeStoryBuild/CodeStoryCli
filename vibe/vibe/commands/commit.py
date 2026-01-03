@@ -1,3 +1,4 @@
+from typing import Optional
 import typer
 import inquirer
 from loguru import logger
@@ -15,10 +16,7 @@ from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.commands.git_commands import GitCommands
 
 
-
-def verify_repo(
-    commands: GitCommands, target: str, auto_yes: bool = False
-) -> bool:
+def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:
     # Step -1: ensure we're inside a git repository
     if not commands.is_git_repo():
         raise RuntimeError(
@@ -57,7 +55,9 @@ def verify_repo(
 
 def main(
     ctx: typer.Context,
-    target: str = typer.Argument(".", help="The target path to check for changes."),
+    target: Optional[str] = typer.Argument(
+        None, help="The target path to check for changes."
+    ),
     message: str | None = typer.Argument(None, help="Message to the AI model"),
 ) -> None:
     """
@@ -69,12 +69,6 @@ def main(
 
         # Commit specific directory with message
         vibe commit src/ "Refactor user authentication"
-
-        # Auto-accept all suggestions
-        vibe commit --yes
-
-        # Use specific model
-        vibe --model openai:gpt-4 commit
     """
 
     # Validate inputs
@@ -85,33 +79,53 @@ def main(
     if validated_message:
         validated_message = sanitize_user_input(validated_message)
 
-
-    global_context : GlobalContext = ctx.obj
+    global_context: GlobalContext = ctx.obj
     commit_context = CommitContext(validated_target, validated_message)
 
     logger.debug("[green] Verifying Repo State... [/green]")
     # verify repo state specifically for commit command
-    if not verify_repo(global_context.git_commands, str(commit_context.target), global_context.auto_accept):
+    if not verify_repo(
+        global_context.git_commands,
+        str(commit_context.target),
+        global_context.auto_accept,
+    ):
         raise ValidationError("Cannot proceed without unstaging changes, exiting.")
-    
+
     # next we create our base/new commits + backup branch for later
     branch_saver = BranchSaver(global_context.git_interface)
 
     logger.debug("[green] Creating backup of working state... [/green]")
-    base_commit_hash, new_commit_hash, base_branch = (
+    base_commit_hash, new_commit_hash, current_branch = (
         branch_saver.save_working_state()
     )
 
     with time_block("Commit Command E2E"):
         runner = create_commit_pipeline(
-            global_context, commit_context, base_commit_hash, new_commit_hash, base_branch, branch_saver 
+            global_context, commit_context, base_commit_hash, new_commit_hash
         )
 
-        result = runner.run()
+        new_commit_hash = runner.run()
 
-    if not result:
-        logger.info("[yellow]No commits were created[/yellow]")
-    else:
+    # Update branch reference
+    if new_commit_hash is not None and new_commit_hash != base_commit_hash:
+        global_context.git_interface.run_git_binary_out(
+            ["update-ref", f"refs/heads/{current_branch}", new_commit_hash]
+        )
+
+        logger.info(
+            "Branch updated: branch={branch} new_head={head}",
+            branch=current_branch,
+            head=new_commit_hash,
+        )
+
+        # Sync the Git Index (Staging Area) to the new HEAD.
+        # This makes the files you just committed show up as "Clean".
+        # Files you skipped (outside target) will show up as "Modified" (Unstaged).
+        # We use 'read-tree' WITHOUT '-u' so it doesn't touch physical files.
+        global_context.git_interface.run_git_binary_out(["read-tree", "HEAD"])
+
         logger.info(
             "Commit command completed successfully",
         )
+    else:
+        logger.info("[yellow]No commits were created[/yellow]")

@@ -37,7 +37,7 @@ class GitSynthesizer:
         elif isinstance(stdin_content, bytes):
             input_data = stdin_content
 
-        result = self.git.run_git_binary(
+        result = self.git.run_git_binary_out(
             args=list(args), input_bytes=input_data, env=env, cwd=cwd
         )
 
@@ -61,7 +61,7 @@ class GitSynthesizer:
         Creates a new Git tree object by applying changes directly to a temporary Git Index.
         This avoids creating any files on the filesystem.
         """
-        
+
         # 1. Create a temp file to serve as the isolated Git Index
         # We use delete=False and close it immediately so we can pass the path to Git
         # (Windows prevents opening a file twice if strictly locked, this avoids that)
@@ -79,7 +79,7 @@ class GitSynthesizer:
 
             # 4. Generate the combined patch
             patches = diff_generator.generate_unified_diff(chunks_for_commit)
-            
+
             if patches:
                 ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
                 combined_patch = b"".join(patch for _, patch in ordered_items)
@@ -95,7 +95,7 @@ class GitSynthesizer:
                         "--whitespace=nowarn",
                         "--unidiff-zero",
                         "--verbose",
-                        env=env, 
+                        env=env,
                         stdin_content=combined_patch,
                     )
                 except RuntimeError as e:
@@ -106,7 +106,7 @@ class GitSynthesizer:
 
             # 6. Write the index state to a Tree Object in the Git database
             new_tree_hash = self._run_git_decoded("write-tree", env=env)
-            
+
             return new_tree_hash
 
         finally:
@@ -120,13 +120,12 @@ class GitSynthesizer:
         )
 
     def execute_plan(
-        self, 
-        groups: list[CommitGroup], 
-        base_commit: str, 
-        branch_to_update: Optional[str] = None
+        self,
+        groups: list[CommitGroup],
+        base_commit: str,
     ) -> str:
         """
-        Executes the synthesis plan using pure Git plumbing. 
+        Executes the synthesis plan using pure Git plumbing.
         Returns the hash of the final commit.
         """
 
@@ -140,7 +139,7 @@ class GitSynthesizer:
         diff_generator = DiffGenerator(all_diff_chunks)
 
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
-        
+
         # Track state
         last_synthetic_commit_hash = original_base_commit_hash
         cumulative_chunks: list[DiffChunk] = []
@@ -168,9 +167,7 @@ class GitSynthesizer:
 
                 # 2. Build the Tree (In Memory / Index)
                 new_tree_hash = self._build_tree_index_only(
-                    original_base_commit_hash, 
-                    primitive_chunks, 
-                    diff_generator
+                    original_base_commit_hash, primitive_chunks, diff_generator
                 )
 
                 # 3. Create the Commit
@@ -182,7 +179,9 @@ class GitSynthesizer:
                     new_tree_hash, last_synthetic_commit_hash, full_message
                 )
 
-                logger.info(f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message}")
+                logger.info(
+                    f"Commit created: {new_commit_hash[:8]} | Msg: {group.commit_message}"
+                )
 
                 # 4. Update parent for next loop
                 last_synthetic_commit_hash = new_commit_hash
@@ -193,21 +192,5 @@ class GitSynthesizer:
                 ) from e
 
         final_commit_hash = last_synthetic_commit_hash
-
-        # Optional: Update branch reference
-        if branch_to_update and final_commit_hash != original_base_commit_hash:
-            self._run_git_binary(
-                "update-ref", 
-                f"refs/heads/{branch_to_update}", 
-                final_commit_hash
-            )
-            # Optional: Reset working dir to match if it's the active branch
-            # self._run_git_binary("reset", "--hard", final_commit_hash)
-            
-            logger.info(
-                "Branch updated: branch={branch} new_head={head}",
-                branch=branch_to_update,
-                head=final_commit_hash,
-            )
 
         return final_commit_hash

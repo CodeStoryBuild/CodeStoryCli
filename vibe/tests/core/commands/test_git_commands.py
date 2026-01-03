@@ -12,11 +12,11 @@ class DummyGit(GitInterface):
         self.binary_output = b""
         self.text_output = ""
 
-    def run_git_binary(self, args):
+    def run_git_binary_out(self, args):
         self.calls.append(("binary", args))
         return self.binary_output
 
-    def run_git_text(self, args):
+    def run_git_text_out(self, args):
         self.calls.append(("text", args))
         return self.text_output
 

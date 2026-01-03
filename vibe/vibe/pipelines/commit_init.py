@@ -18,10 +18,8 @@ from loguru import logger
 def create_commit_pipeline(
     global_ctx: GlobalContext,
     commit_ctx: CommitContext,
-    base_commit_hash : str,
-    new_commit_hash : str,
-    branch_to_update : Optional[str],
-    branch_saver : Optional[BranchSaver]
+    base_commit_hash: str,
+    new_commit_hash: str,
 ):
     chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
 
@@ -31,12 +29,14 @@ def create_commit_pipeline(
     # else:
     #     logger.warning("Using no ai grouping as commit_pipeline recieved no model!")
     logical_grouper = SingleGrouper()
-    
+
     if new_commit_hash is None:
         logger.info("[red] Failed to backup working state, exiting. [/red]")
         raise GitError("Failed to backup working state, exiting.")
 
-    file_reader = GitFileReader(global_ctx.git_interface, base_commit_hash, new_commit_hash)
+    file_reader = GitFileReader(
+        global_ctx.git_interface, base_commit_hash, new_commit_hash
+    )
     file_parser = FileParser()
 
     query_manager = QueryManager()
@@ -59,8 +59,6 @@ def create_commit_pipeline(
         query_manager,
         base_commit_hash,
         new_commit_hash,
-        branch_to_update,
-        branch_saver,
     )
 
     return pipeline

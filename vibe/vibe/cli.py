@@ -91,17 +91,29 @@ def main(
         console.print(ctx.get_help())
         console.print("\n[dim]Run 'vibe --help' for more information.[/dim]")
         raise typer.Exit()
-    
+
     setup_logger(ctx.invoked_subcommand)
 
-    config_args = setup_config_args(model=model, api_key=api_key, model_temperature = model_temperature, verbose = verbose, auto_accept = auto_accept)
-    
-    
+    config_args = setup_config_args(
+        model=model,
+        api_key=api_key,
+        model_temperature=model_temperature,
+        verbose=verbose,
+        auto_accept=auto_accept,
+    )
+
     local_config_path = Path("vibeconfig.toml")
     env_prefix = "VIBE_"
     global_config_path = Path(user_config_dir("Vibe")) / "vibeconfig.toml"
 
-    config, used_configs = ConfigLoader.get_full_config(GlobalConfig, config_args, local_config_path, env_prefix, global_config_path, custom_config)
+    config, used_configs = ConfigLoader.get_full_config(
+        GlobalConfig,
+        config_args,
+        local_config_path,
+        env_prefix,
+        global_config_path,
+        custom_config,
+    )
     logger.info(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context

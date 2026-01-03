@@ -208,7 +208,7 @@ def validate_min_size(value: int | None) -> int | None:
     return value
 
 
-def validate_git_repository(git_interface : GitInterface) -> None:
+def validate_git_repository(git_interface: GitInterface) -> None:
     """
     Validate that we're in a git repository.
 
@@ -220,25 +220,27 @@ def validate_git_repository(git_interface : GitInterface) -> None:
     """
     # Check if git is available
     try:
-        git_interface.run_git_text(
+        git_interface.run_git_text_out(
             ["--version"],
         )
-    
+
     except Exception as e:
-        raise GitError( 
+        raise GitError(
             "Git is not working properly",
             f"Git version check failed: {e}",
         )
     # Check if we're in a git repository
-    is_in_repo = git_interface.run_git_text(
+    is_in_repo = git_interface.run_git_text_out(
         ["rev-parse", "--is-inside-work-tree"],
     )
     if is_in_repo is None or "fatal: not a git repository" in is_in_repo:
         raise GitError("Not in a git repository!")
-    
+
     # validate that we are on a branch
     try:
-        original_branch = git_interface.run_git_text(["branch", "--show-current"]) or ""
+        original_branch = (
+            git_interface.run_git_text_out(["branch", "--show-current"]) or ""
+        )
         # check that not a detached branch
         if not original_branch.strip():
             msg = "Cannot backup: currently on a detached HEAD."
