@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from dslate.core.commands.git_commands import GitCommands
 from dslate.core.git_interface.interface import GitInterface
@@ -15,13 +15,30 @@ from dslate.core.llm.config import try_create_model
 
 
 class GlobalConfig(BaseModel):
-    # (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.5-flash)
-    model: str | None = None
-    api_key: str | None = None
-    model_temperature: float = 0.7
-    aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
-    verbose: bool = False
-    auto_accept: bool = False
+    model: str | None = Field(
+        default=None,
+        description="LLM model (format: provider:model, e.g., openai:gpt-4)"
+    )
+    api_key: str | None = Field(
+        default=None,
+        description="API key for the LLM provider"
+    )
+    model_temperature: float = Field(
+        default=0.7,
+        description="Temperature for LLM responses (0.0-1.0)"
+    )
+    aggresiveness: Literal["Conservative", "Regular", "Extra"] = Field(
+        default="Regular",
+        description="How aggressively to split commits smaller"
+    )
+    verbose: bool = Field(
+        default=False,
+        description="Enable verbose logging output"
+    )
+    auto_accept: bool = Field(
+        default=False,
+        description="Automatically accept all prompts without user confirmation"
+    )
 
 
 @dataclass(frozen=True)
