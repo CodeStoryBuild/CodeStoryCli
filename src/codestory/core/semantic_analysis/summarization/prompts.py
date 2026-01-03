@@ -25,9 +25,9 @@ token efficiency and LLM comprehension.
 # Single Chunk Summary Prompts
 # -----------------------------------------------------------------------------
 
-INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages. 
+INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
-Given code changes with git patches and metadata (added/removed/modified symbols), write a concise commit message that describes what changed.
+Given a code change with a diff patch and optional metadata (languages, scopes, symbols), write a concise commit message.
 {message}
 Rules:
 - Single line, max 72 characters
