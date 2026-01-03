@@ -6,31 +6,29 @@
 # Path to the codestory directory (change if needed)
 $rootDir = ".\codestory"
 
-# Define the license header as an array of strings
-$licenseHeader = @(
-    "# -----------------------------------------------------------------------------",
-    "# codestory - Dual Licensed Software",
-    "# Copyright (c) 2025 Adem Can",
-    "#",
-    "# This file is part of codestory.",
-    "#",
-    "# codestory is available under a dual-license:",
-    "#   1. AGPLv3 (Affero General Public License v3)",
-    "#      - See LICENSE.txt and LICENSE-AGPL.txt",
-    "#      - Online: https://www.gnu.org/licenses/agpl-3.0.html",
-    "#",
-    "#   2. Commercial License",
-    "#      - For proprietary or revenue-generating use,",
-    "#        including SaaS, embedding in closed-source software,",
-    "#        or avoiding AGPL obligations.",
-    "#      - See LICENSE.txt and COMMERCIAL-LICENSE.txt",
-    "#      - Contact: ademfcan@gmail.com",
-    "#",
-    "# By using this file, you agree to the terms of one of the two licenses above.",
-    "# -----------------------------------------------------------------------------",
-    "",  # padding line 1
-    ""   # padding line 2
-)
+$licenseHeader = @"
+"""
+-----------------------------------------------------------------------------
+/*
+ * Copyright (C) 2025 CodeStory
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; Version 2.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, you can contact us at support@codestory.build.
+ */
+-----------------------------------------------------------------------------
+"""
+
+
+"@
 
 # Get all .py files recursively in the codestory directory
 $pyFiles = Get-ChildItem -Path $rootDir -Recurse -Filter "*.py"
