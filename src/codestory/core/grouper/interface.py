@@ -41,6 +41,7 @@ from collections.abc import Callable
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
 class LogicalGrouper(ABC):
@@ -49,6 +50,7 @@ class LogicalGrouper(ABC):
         self,
         chunks: list[Chunk],
         immut_chunks: list[ImmutableChunk],
+        context_manager: ContextManager,
         message: str,
         on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:

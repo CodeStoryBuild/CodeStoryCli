@@ -157,12 +157,10 @@ def test_multi_file_disjoint_changes(multi_file_git_repo):
     # --- Define the Groups ---
     group1 = CommitGroup(
         chunks=[chunk_A1, chunk_B2],
-        group_id="g1",
         commit_message="feat: Add new content to files",
     )
     group2 = CommitGroup(
         chunks=[chunk_A2, chunk_B1],
-        group_id="g2",
         commit_message="refactor: Modify existing content",
     )
 
@@ -312,12 +310,10 @@ def test_multi_file_disjoint_changes_reversed_order(multi_file_git_repo):
     # ... chunk_A1, chunk_A2, chunk_B1, chunk_B2 ...
     group1 = CommitGroup(
         chunks=[chunk_A1, chunk_B2],
-        group_id="g1",
         commit_message="feat: Add new content to files",
     )
     group2 = CommitGroup(
         chunks=[chunk_A2, chunk_B1],
-        group_id="g2",
         commit_message="refactor: Modify existing content",
     )
 

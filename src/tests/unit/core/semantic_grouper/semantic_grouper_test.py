@@ -63,7 +63,12 @@ def context_manager():
         ctx = Mock()
         ctx.symbol_map.modified_line_symbols = symbols or {}
         ctx.symbol_map.extern_line_symbols = {}
-        ctx.scope_map.scope_lines = scopes or {}
+        ctx.scope_map.named_scope_lines = scopes or {}
+        ctx.scope_map.structural_scope_lines = {}
+        # Build sorted version from scopes dict
+        ctx.scope_map.named_scope_lines_sorted = {
+            line: list(scope_set) for line, scope_set in (scopes or {}).items()
+        }
 
         contexts[(path, is_old)] = ctx
         return ctx

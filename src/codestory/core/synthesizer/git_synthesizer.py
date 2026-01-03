@@ -70,7 +70,8 @@ class GitSynthesizer:
     def _build_tree_index_only(
         self,
         base_commit_hash: str,
-        chunks_for_commit: list[DiffChunk | ImmutableChunk],
+        diff_chunks: list[DiffChunk],
+        immutable_chunks: list[ImmutableChunk],
         diff_generator: DiffGenerator,
     ) -> str:
         """
@@ -94,7 +95,9 @@ class GitSynthesizer:
             self._run_git_binary("read-tree", base_commit_hash, env=env)
 
             # 4. Generate the combined patch
-            patches = diff_generator.generate_unified_diff(chunks_for_commit)
+            patches = diff_generator.generate_unified_diff(
+                diff_chunks, immutable_chunks
+            )
 
             if patches:
                 ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
@@ -150,7 +153,8 @@ class GitSynthesizer:
 
         # Track state
         last_synthetic_commit_hash = original_base_commit_hash
-        cumulative_chunks: list[DiffChunk] = []
+        cumulative_diff_chunks: list[DiffChunk] = []
+        cumulative_immutable_chunks: list[ImmutableChunk] = []
 
         logger.debug(
             "Execute plan (Index-Only): groups={groups} base={base}",
@@ -165,19 +169,18 @@ class GitSynthesizer:
                 # 1. Accumulate chunks (Cumulative Strategy)
                 # We rebuild from the ORIGINAL base every time using ALL previous chunks + new chunks.
                 # This provides maximum stability against context drift.
-                cumulative_chunks.extend(group.chunks)
-
-                # Flatten chunks
-                primitive_chunks: list[DiffChunk] = []
-                for chunk in cumulative_chunks:
+                for chunk in group.chunks:
                     if isinstance(chunk, ImmutableChunk):
-                        primitive_chunks.append(chunk)
+                        cumulative_immutable_chunks.append(chunk)
                     else:
-                        primitive_chunks.extend(chunk.get_chunks())
+                        cumulative_diff_chunks.extend(chunk.get_chunks())
 
                 # 2. Build the Tree (In Memory / Index)
                 new_tree_hash = self._build_tree_index_only(
-                    original_base_commit_hash, primitive_chunks, diff_generator
+                    original_base_commit_hash,
+                    cumulative_diff_chunks,
+                    cumulative_immutable_chunks,
+                    diff_generator,
                 )
 
                 # 3. Create the Commit
@@ -198,7 +201,7 @@ class GitSynthesizer:
 
             except Exception as e:
                 raise SynthesizerError(
-                    f"FATAL: Synthesis failed during group '{group.group_id}'. No changes applied."
+                    f"FATAL: Synthesis failed during group #{i + 1}. No changes applied."
                 ) from e
 
         final_commit_hash = last_synthetic_commit_hash

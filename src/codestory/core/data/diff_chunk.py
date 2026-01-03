@@ -71,7 +71,6 @@ class DiffChunk:
     file_mode: bytes | None = None
     # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
     contains_newline_fallback: bool = False
-    contains_newline_marker: bool = False
 
     # the structured content of this chunk (list of Addition/Removal objects)
     parsed_content: list[Addition | Removal] | None = None
@@ -220,7 +219,6 @@ class DiffChunk:
                     new_file_path=self.new_file_path,
                     file_mode=self.file_mode,
                     contains_newline_fallback=self.contains_newline_fallback,
-                    contains_newline_marker=self.contains_newline_marker,
                     parsed_slice=[line],
                 )
                 final_chunks.append(atomic_chunk)
@@ -250,7 +248,6 @@ class DiffChunk:
         current_new_line = hunk.new_start
 
         contains_newline_fallback = False
-        contains_newline_marker = False
 
         for line in hunk.hunk_lines:
             sanitized_content = DiffChunk._sanitize_patch_content(line[1:])
@@ -279,7 +276,6 @@ class DiffChunk:
                 )
                 current_old_line += 1
             elif line.strip() == b"\\ No newline at end of file":
-                contains_newline_marker = True
                 if parsed_content:
                     parsed_content[-1].content = (
                         parsed_content[-1].content + b"\n\\ No newline at end of file"
@@ -294,7 +290,6 @@ class DiffChunk:
             parsed_content=parsed_content,
             old_start=hunk.old_start,
             contains_newline_fallback=contains_newline_fallback,
-            contains_newline_marker=contains_newline_marker,
         )
 
     @classmethod
@@ -304,7 +299,6 @@ class DiffChunk:
         new_file_path: bytes | None,
         file_mode: bytes | None,
         contains_newline_fallback: bool,
-        contains_newline_marker: bool,
         parsed_slice: list[Addition | Removal],
     ) -> "DiffChunk":
         """Create a DiffChunk from a slice of parsed content."""
@@ -331,7 +325,6 @@ class DiffChunk:
             new_file_path=new_file_path,
             file_mode=file_mode,
             contains_newline_fallback=contains_newline_fallback,
-            contains_newline_marker=contains_newline_marker,
             parsed_content=parsed_slice,
             old_start=old_start,
         )

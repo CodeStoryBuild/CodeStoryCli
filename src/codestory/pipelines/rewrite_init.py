@@ -25,7 +25,7 @@ from codestory.context import CommitContext, GlobalContext
 from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.exceptions import GitError
 from codestory.core.file_reader.git_file_reader import GitFileReader
-from codestory.core.grouper.llm_grouper import LLMGrouper
+from codestory.core.grouper.embedding_grouper import EmbeddingGrouper
 from codestory.core.grouper.single_grouper import SingleGrouper
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
@@ -39,10 +39,11 @@ def create_rewrite_pipeline(
     new_commit_hash: str,
     source: Literal["commit", "fix"],
 ):
+    logger.info("Loading Rewrite Pipeline...")
     chunker = AtomicChunker(global_ctx.config.aggresiveness != "Conservative")
 
     if global_ctx.model is not None:
-        logical_grouper = LLMGrouper(global_ctx.model)
+        logical_grouper = EmbeddingGrouper(global_ctx.model)
     else:
         logger.warning("Using no ai grouping as rewrite_pipeline recieved no model!")
         logical_grouper = SingleGrouper()

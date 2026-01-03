@@ -22,6 +22,7 @@ from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.grouper.interface import LogicalGrouper
+from codestory.core.semantic_grouper.context_manager import ContextManager
 
 
 class SingleGrouper(LogicalGrouper):
@@ -29,6 +30,7 @@ class SingleGrouper(LogicalGrouper):
         self,
         chunks: list[Chunk],
         immut_chunks: list[ImmutableChunk],
+        context_manager: ContextManager,
         message: str,
         on_progress=None,
     ) -> list[CommitGroup]:
@@ -39,7 +41,6 @@ class SingleGrouper(LogicalGrouper):
         for chunk in chunks:
             group = CommitGroup(
                 [chunk],
-                str(id_),
                 f"Automaticaly Generated Commit #{id_} (Time: {g_time})",
                 "Auto gen commit message",
             )
@@ -49,7 +50,6 @@ class SingleGrouper(LogicalGrouper):
         for chunk in immut_chunks:
             group = CommitGroup(
                 [chunk],
-                str(id_),
                 f"Automaticaly Generated Commit #{id_} (Time: {g_time}) ",
                 "Auto gen commit message",
             )

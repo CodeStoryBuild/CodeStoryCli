@@ -26,10 +26,11 @@ from codestory.core.semantic_grouper.context_manager import (
     AnalysisContext,
     ContextManager,
 )
+from codestory.core.synthesizer.chunk_merger import merge_chunks
 
 
 @dataclass(frozen=True)
-class ChunkSignature:
+class Signature:
     """Represents the semantic signature of a chunk."""
 
     def_new_symbols: set[str]  # Symbols defined in the new version
@@ -40,10 +41,83 @@ class ChunkSignature:
     extern_old_symbols: set[
         str
     ]  # Symbols referenced but not defined in the old version
-    scopes: set[
-        str
-    ]  # Scopes that the chunk contains. Currently used only for equality checks.
-    # TODO: Consider storing more descriptive scope metadata if needed (e.g., scope types or fully-qualified names).
+    new_named_structural_scopes: set[str]
+    old_named_structural_scopes: set[str]
+    # scopes that can only really be used for structural links
+    new_structural_scopes: set[str]
+    old_structural_scopes: set[str]
+    # ordered scopes that can be used for things like fully qualified names, but not grouping
+    new_named_scopes: list[str]
+    old_named_scopes: list[str]
+
+    @staticmethod
+    def from_signatures(signatures: list["Signature"]) -> "Signature":
+        # combine multiple signatures into one big one
+        if len(signatures) == 0:
+            return Signature(set(), set(), set(), set(), [], [], set(), set())
+
+        base_sig = next(sig for sig in signatures if sig is not None)
+        base_new_symbols = set(base_sig.def_new_symbols)
+        base_old_symbols = set(base_sig.def_old_symbols)
+        base_extern_new_symbols = set(base_sig.extern_new_symbols)
+        base_extern_old_symbols = set(base_sig.extern_old_symbols)
+
+        base_new_named_structural_scopes = set(base_sig.new_named_structural_scopes)
+        base_old_named_structural_scopes = set(base_sig.old_named_structural_scopes)
+        base_new_structural_scopes = set(base_sig.new_structural_scopes)
+        base_old_structural_scopes = set(base_sig.old_structural_scopes)
+
+        # Use lists for named scopes to preserve order, track seen to avoid duplicates
+        base_new_named_scopes = list(base_sig.new_named_scopes)
+        base_old_named_scopes = list(base_sig.old_named_scopes)
+        seen_new_named = set(base_new_named_scopes)
+        seen_old_named = set(base_old_named_scopes)
+
+        for s in signatures:
+            if s is None:
+                continue
+            if s is base_sig:
+                continue
+
+            base_new_symbols.update(s.def_new_symbols)
+            base_old_symbols.update(s.def_old_symbols)
+            base_extern_new_symbols.update(s.extern_new_symbols)
+            base_extern_old_symbols.update(s.extern_old_symbols)
+
+            base_new_named_structural_scopes.update(s.new_named_structural_scopes)
+            base_old_named_structural_scopes.update(s.old_named_structural_scopes)
+            base_new_structural_scopes.update(s.new_structural_scopes)
+            base_old_structural_scopes.update(s.old_structural_scopes)
+
+            # Preserve order while avoiding duplicates for named scopes
+            for scope in s.new_named_scopes:
+                if scope not in seen_new_named:
+                    base_new_named_scopes.append(scope)
+                    seen_new_named.add(scope)
+            for scope in s.old_named_scopes:
+                if scope not in seen_old_named:
+                    base_old_named_scopes.append(scope)
+                    seen_old_named.add(scope)
+
+        return Signature(
+            def_new_symbols=base_new_symbols,
+            def_old_symbols=base_old_symbols,
+            extern_new_symbols=base_extern_new_symbols,
+            extern_old_symbols=base_extern_old_symbols,
+            new_named_structural_scopes=base_new_named_structural_scopes,
+            old_named_structural_scopes=base_old_named_structural_scopes,
+            new_structural_scopes=base_new_structural_scopes,
+            old_structural_scopes=base_old_structural_scopes,
+            new_named_scopes=base_new_named_scopes,
+            old_named_scopes=base_old_named_scopes,
+        )
+
+
+@dataclass(frozen=True)
+class ChunkSignature:
+    total_signature: Signature
+    # ith index is signature for the ith diffchunk inside chunk.get_chunks()
+    signatures: list[Signature | None]
 
 
 @dataclass(frozen=True)
@@ -63,36 +137,26 @@ class ChunkLabeler:
         """
         Generate semantic signatures for each original chunk.
         """
+        merged_chunks = merge_chunks(original_chunks)
+        # ensure these chunks are merged
         annotated_chunks = []
 
-        for chunk in original_chunks:
+        for chunk in merged_chunks:
             # Get all DiffChunks that belong to this original chunk
             chunk_diff_chunks = chunk.get_chunks()
 
             # Generate signature for this chunk, which might fail (return None)
-            signature_result = ChunkLabeler._generate_signature_for_chunk(
+            signatures = ChunkLabeler._generate_signatures(
                 chunk_diff_chunks, context_manager
             )
 
-            if signature_result is None:
+            if all(sig is None for sig in signatures):
                 # Analysis failed for this chunk
                 chunk_signature = None
             else:
-                # Analysis succeeded, unpack symbols and scope
-                (
-                    def_new_symbols,
-                    def_old_symbols,
-                    extern_new_symbols,
-                    extern_old_symbols,
-                    scopes,
-                ) = signature_result
-
                 chunk_signature = ChunkSignature(
-                    def_new_symbols=def_new_symbols,
-                    def_old_symbols=def_old_symbols,
-                    extern_new_symbols=extern_new_symbols,
-                    extern_old_symbols=extern_old_symbols,
-                    scopes=scopes,
+                    total_signature=Signature.from_signatures(signatures),
+                    signatures=signatures,
                 )
 
             annotated = AnnotatedChunk(
@@ -105,71 +169,32 @@ class ChunkLabeler:
         return annotated_chunks
 
     @staticmethod
-    def _generate_signature_for_chunk(
+    def _generate_signatures(
         diff_chunks: list[DiffChunk], context_manager: ContextManager
-    ) -> (
-        tuple[set[str], set[str], set[str], set[str], set[str]] | None
-    ):  # Return type is now Optional[tuple[Set[str], Optional[str]]]
+    ) -> list[Signature | None]:
         """
-        Generate a semantic signature for a single chunk.
-        Returns tuple of (symbols, scope) if analysis succeeds, None if analysis fails.
-        Scope is determined by the LCA scope of the first diff chunk that has a scope.
+        Generate a semantic signature for a list of DiffChunks
         """
         if not diff_chunks:
-            return (
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-            )  # An empty chunk has a valid, empty signature with no scope
+            return []  # No diff chunks, return empty signature list
 
-        def_new_symbols_acc = set()
-        def_old_symbols_acc = set()
-        extern_new_symbols_acc = set()
-        extern_old_symbols_acc = set()
-        total_scope = set()
-
+        signatures = []
         for diff_chunk in diff_chunks:
-            # try:
             if not ChunkLabeler._has_analysis_context(diff_chunk, context_manager):
-                # If any diff chunk lacks context, the entire chunk fails analysis
                 logger.debug(
                     f"No analysis for a diff chunk in {diff_chunk.canonical_path().decode('utf-8', errors='replace')}!"
                 )
-                return None
+                signatures.append(None)
+                continue
 
-            (
-                def_new_symbols,
-                def_old_symbols,
-                extern_new_symbols,
-                extern_old_symbols,
-                diff_chunk_scope,
-            ) = ChunkLabeler._get_signature_for_diff_chunk(diff_chunk, context_manager)
-            def_new_symbols_acc.update(def_new_symbols)
-            def_old_symbols_acc.update(def_old_symbols)
-            extern_new_symbols_acc.update(extern_new_symbols)
-            extern_old_symbols_acc.update(extern_old_symbols)
+            signature = ChunkLabeler._get_signature_for_diff_chunk(
+                diff_chunk, context_manager
+            )
+            signatures.append(signature)
 
-            total_scope.update(diff_chunk_scope)
+            logger.debug(f"Generated signature for chunk with {signature=}")
 
-            # except Exception as e:
-            #     logger.debug(
-            #         f"Signature generation failed for diff chunk {diff_chunk.canonical_path().decode('utf-8', errors='replace')}: {e}"
-            #     )
-            #     return None
-
-        logger.debug(
-            f"Generated signature for chunk with def_new_symbols={def_new_symbols_acc}, def_old_symbols={def_old_symbols_acc}, extern_new_symbols={extern_new_symbols_acc}, extern_old_symbols={extern_old_symbols_acc}, scopes={total_scope}"
-        )
-
-        return (
-            def_new_symbols_acc,
-            def_old_symbols_acc,
-            extern_new_symbols_acc,
-            extern_old_symbols_acc,
-            total_scope,
-        )
+        return signatures
 
     @staticmethod
     def _has_analysis_context(
@@ -211,7 +236,7 @@ class ChunkLabeler:
     @staticmethod
     def _get_signature_for_diff_chunk(
         diff_chunk: DiffChunk, context_manager: ContextManager
-    ) -> tuple[set[str], set[str], set[str], set[str], set[str]]:
+    ) -> Signature:
         """
         Generate signature and scope information for a single DiffChunk based on affected line ranges.
 
@@ -227,7 +252,16 @@ class ChunkLabeler:
         def_new_symbols_acc = set()
         extern_old_symbols_acc = set()
         extern_new_symbols_acc = set()
-        chunk_scope = set()
+
+        new_named_structural_scopes_acc = set()
+        old_named_structural_scopes_acc = set()
+        new_structural_scopes_acc = set()
+        old_structural_scopes_acc = set()
+
+        new_named_scopes_acc = []  # Use list to preserve order
+        new_named_scopes_seen = set()  # Track seen to avoid duplicates
+        old_named_scopes_acc = []  # Use list to preserve order
+        old_named_scopes_seen = set()  # Track seen to avoid duplicates
 
         if diff_chunk.is_standard_modification or diff_chunk.is_file_rename:
             # For modifications/renames, analyze both old and new line ranges
@@ -236,28 +270,48 @@ class ChunkLabeler:
             old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
-                def_old_symbols, extern_old_symbols, old_scope = (
-                    ChunkLabeler._get_signature_for_line_range(
-                        diff_chunk.old_start, old_end, old_context
-                    )
+                (
+                    def_old_symbols,
+                    extern_old_symbols,
+                    old_named_structural_scopes,
+                    old_structural_scopes,
+                    old_named_scopes,
+                ) = ChunkLabeler._get_signature_for_line_range(
+                    diff_chunk.old_start, old_end, old_context
                 )
                 def_old_symbols_acc.update(def_old_symbols)
                 extern_old_symbols_acc.update(extern_old_symbols)
-                chunk_scope.update(old_scope)
+                old_named_structural_scopes_acc.update(old_named_structural_scopes)
+                old_structural_scopes_acc.update(old_structural_scopes)
+                # Preserve order while avoiding duplicates
+                for scope in old_named_scopes:
+                    if scope not in old_named_scopes_seen:
+                        old_named_scopes_acc.append(scope)
+                        old_named_scopes_seen.add(scope)
 
             # New version signature
             new_context = context_manager.get_context(diff_chunk.new_file_path, False)
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
                 abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
-                def_new_symbols, extern_new_symbols, new_scope = (
-                    ChunkLabeler._get_signature_for_line_range(
-                        abs_new_start, abs_new_end, new_context
-                    )
+                (
+                    def_new_symbols,
+                    extern_new_symbols,
+                    new_named_structural_scopes,
+                    new_structural_scopes,
+                    new_named_scopes,
+                ) = ChunkLabeler._get_signature_for_line_range(
+                    abs_new_start, abs_new_end, new_context
                 )
                 def_new_symbols_acc.update(def_new_symbols)
                 extern_new_symbols_acc.update(extern_new_symbols)
-                chunk_scope.update(new_scope)
+                new_named_structural_scopes_acc.update(new_named_structural_scopes)
+                new_structural_scopes_acc.update(new_structural_scopes)
+                # Preserve order while avoiding duplicates
+                for scope in new_named_scopes:
+                    if scope not in new_named_scopes_seen:
+                        new_named_scopes_acc.append(scope)
+                        new_named_scopes_seen.add(scope)
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
@@ -265,10 +319,14 @@ class ChunkLabeler:
             abs_new_start = diff_chunk.get_abs_new_line_start()
             if new_context and abs_new_start is not None:
                 abs_new_end = diff_chunk.get_abs_new_line_end() or abs_new_start
-                def_new_symbols_acc, extern_new_symbols_acc, chunk_scope = (
-                    ChunkLabeler._get_signature_for_line_range(
-                        abs_new_start, abs_new_end, new_context
-                    )
+                (
+                    def_new_symbols_acc,
+                    extern_new_symbols_acc,
+                    new_named_structural_scopes_acc,
+                    new_structural_scopes_acc,
+                    new_named_scopes_acc,
+                ) = ChunkLabeler._get_signature_for_line_range(
+                    abs_new_start, abs_new_end, new_context
                 )
 
         elif diff_chunk.is_file_deletion:
@@ -276,26 +334,33 @@ class ChunkLabeler:
             old_context = context_manager.get_context(diff_chunk.old_file_path, True)
             if old_context and diff_chunk.old_start is not None:
                 old_end = diff_chunk.old_start + diff_chunk.old_len() - 1
-                def_old_symbols_acc, extern_old_symbols_acc, chunk_scope = (
-                    ChunkLabeler._get_signature_for_line_range(
-                        diff_chunk.old_start, old_end, old_context
-                    )
+                (
+                    def_old_symbols_acc,
+                    extern_old_symbols_acc,
+                    old_named_structural_scopes_acc,
+                    old_structural_scopes_acc,
+                    old_named_scopes_acc,
+                ) = ChunkLabeler._get_signature_for_line_range(
+                    diff_chunk.old_start, old_end, old_context
                 )
 
-        # Return order must match the one expected by callers:
-        # (def_new, def_old, extern_new, extern_old, chunk_scope)
-        return (
-            def_new_symbols_acc,
-            def_old_symbols_acc,
-            extern_new_symbols_acc,
-            extern_old_symbols_acc,
-            chunk_scope,
+        return Signature(
+            def_new_symbols=def_new_symbols_acc,
+            def_old_symbols=def_old_symbols_acc,
+            extern_new_symbols=extern_new_symbols_acc,
+            extern_old_symbols=extern_old_symbols_acc,
+            new_named_structural_scopes=new_named_structural_scopes_acc,
+            old_named_structural_scopes=old_named_structural_scopes_acc,
+            new_structural_scopes=new_structural_scopes_acc,
+            old_structural_scopes=old_structural_scopes_acc,
+            new_named_scopes=new_named_scopes_acc,
+            old_named_scopes=old_named_scopes_acc,
         )
 
     @staticmethod
     def _get_signature_for_line_range(
         start_line: int, end_line: int, context: AnalysisContext
-    ) -> tuple[set[str], set[str], set[str]]:
+    ) -> tuple[set[str], set[str], set[str], set[str], list[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -305,22 +370,31 @@ class ChunkLabeler:
             context: AnalysisContext containing symbol map and scope map
 
         Returns:
-            Tuple of (symbols, scope) for the specified line range.
-            Scope is the LCA scope, simplified to the scope of the first line.
+            Tuple of (defined symbols, external symbols, named scopes, structural scopes) for the specified line range.
+            Named scopes are returned as an ordered list for FQN construction.
         """
         defined_range_symbols = set()
         extern_range_symbols = set()
-        range_scope = set()
+        named_structural_scopes_range = set()
+        structural_scopes_range = set()
+        named_scopes_range = []  # Ordered list
+        named_scopes_seen = set()  # Track to avoid duplicates
 
         if start_line < 1 or end_line < start_line:
             # Chunks that are pure deletions can fall into this
-            return (defined_range_symbols, extern_range_symbols, range_scope)
+            return (
+                defined_range_symbols,
+                extern_range_symbols,
+                named_structural_scopes_range,
+                structural_scopes_range,
+                named_scopes_range,
+            )
 
         # convert to zero indexed
         start_index = start_line - 1
         end_index = end_line - 1
 
-        # Collect symbols from fall lines in the range
+        # Collect symbols from all lines in the range
         for line in range(start_index, end_index + 1):
             # Symbols explicitly defined on this line
             defined_line_symbols = context.symbol_map.modified_line_symbols.get(line)
@@ -333,9 +407,27 @@ class ChunkLabeler:
             if extern_line_symbols:
                 extern_range_symbols.update(extern_line_symbols)
 
-            scopes = context.scope_map.scope_lines.get(line)
+            # Collect named scopes in order, avoiding duplicates
+            sorted_named_scopes = context.scope_map.named_scope_lines_sorted.get(line)
+            if sorted_named_scopes:
+                for scope in sorted_named_scopes:
+                    if scope not in named_scopes_seen:
+                        named_scopes_range.append(scope)
+                        named_scopes_seen.add(scope)
 
-            if scopes:
-                range_scope.update(scopes)
+            # Collect structural scopes
+            named_structural_scopes = context.scope_map.named_scope_lines.get(line)
+            if named_structural_scopes:
+                named_structural_scopes_range.update(named_structural_scopes)
 
-        return (defined_range_symbols, extern_range_symbols, range_scope)
+            structural_scopes = context.scope_map.structural_scope_lines.get(line)
+            if structural_scopes:
+                structural_scopes_range.update(structural_scopes)
+
+        return (
+            defined_range_symbols,
+            extern_range_symbols,
+            named_structural_scopes_range,
+            structural_scopes_range,
+            named_scopes_range,
+        )

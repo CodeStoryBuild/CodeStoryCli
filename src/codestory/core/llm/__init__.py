@@ -18,6 +18,6 @@
 
 """LLM integration module for codestory."""
 
-from codestory.core.llm.factory import CodeStoryAdapter, ModelConfig
+from codestory.core.llm.codestory_adapter import CodeStoryAdapter, ModelConfig
 
 __all__ = ["CodeStoryAdapter", "ModelConfig"]

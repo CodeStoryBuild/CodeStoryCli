@@ -27,7 +27,10 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 class ScopeMap:
     """Maps each line number to scope inside it."""
 
-    scope_lines: dict[int, set[str]]
+    named_scope_lines: dict[int, set[str]]
+    structural_scope_lines: dict[int, set[str]]
+    # Ordered list of named scopes per line, sorted by start position (for FQN construction)
+    named_scope_lines_sorted: dict[int, list[str]]
 
 
 class ScopeMapper:
@@ -64,11 +67,14 @@ class ScopeMapper:
 
         Returns:
 
-            ScopeMap containing the mapping of line numbers to scope names
+            ScopeMap containing the mapping of line numbers to named and structural scope names
 
         """
 
-        line_to_scope: dict[int, set[str]] = {}
+        line_to_named_scope: dict[int, set[str]] = {}
+        line_to_structural_scope: dict[int, set[str]] = {}
+        # Track named scopes with their start positions for ordering
+        line_to_named_scope_with_pos: dict[int, list[tuple[int, str]]] = {}
 
         # Run scope queries using the query manager
 
@@ -79,8 +85,51 @@ class ScopeMapper:
             line_ranges=line_ranges,
         )
 
-        for _, nodes in scope_captures.items():
-            for node in nodes:
+        # Process named_scope captures
+        if "named_scope" in scope_captures:
+            for node in scope_captures["named_scope"]:
+                # Extract the first line of the scope for semantic context
+
+                # Slice from node start to end, then find first newline
+
+                node_bytes = content_bytes[node.start_byte : node.end_byte]
+
+                # Find the first newline to get only the first line
+
+                newline_pos = node_bytes.find(b"\n")
+
+                if newline_pos != -1:
+                    first_line_bytes = node_bytes[:newline_pos]
+
+                else:
+                    first_line_bytes = node_bytes
+
+                # Decode and strip whitespace
+
+                first_line_text = first_line_bytes.decode(
+                    "utf8", errors="replace"
+                ).strip()
+
+                # Truncate if too long to keep scope names manageable
+
+                if len(first_line_text) > 80:
+                    first_line_text = first_line_text[:77] + "..."
+
+                # Create scope name: file:node_id:first_line_content
+
+                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}:{first_line_text}"
+                fqn_name = first_line_text
+
+                for line_num in range(node.start_point[0], node.end_point[0] + 1):
+                    line_to_named_scope.setdefault(line_num, set()).add(scope_name)
+                    # Store with start byte position for sorting
+                    line_to_named_scope_with_pos.setdefault(line_num, []).append(
+                        (node.start_byte, fqn_name)
+                    )
+
+        # Process structural_scope captures
+        if "structural_scope" in scope_captures:
+            for node in scope_captures["structural_scope"]:
                 # Extract the first line of the scope for semantic context
 
                 # Slice from node start to end, then find first newline
@@ -113,6 +162,19 @@ class ScopeMapper:
                 scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}:{first_line_text}"
 
                 for line_num in range(node.start_point[0], node.end_point[0] + 1):
-                    line_to_scope.setdefault(line_num, set()).add(scope_name)
+                    line_to_structural_scope.setdefault(line_num, set()).add(scope_name)
 
-        return ScopeMap(scope_lines=line_to_scope)
+        # Build sorted named scope mapping
+        line_to_named_scope_sorted: dict[int, list[str]] = {}
+        for line_num, scopes_with_pos in line_to_named_scope_with_pos.items():
+            # Sort by start position, then extract just the scope names
+            sorted_scopes = [
+                scope for _, scope in sorted(scopes_with_pos, key=lambda x: x[0])
+            ]
+            line_to_named_scope_sorted[line_num] = sorted_scopes
+
+        return ScopeMap(
+            named_scope_lines=line_to_named_scope,
+            structural_scope_lines=line_to_structural_scope,
+            named_scope_lines_sorted=line_to_named_scope_sorted,
+        )

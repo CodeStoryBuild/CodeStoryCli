@@ -82,7 +82,7 @@ def test_basic_modification(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Modify line 3")
+    group = CommitGroup(chunks=[chunk], commit_message="Modify line 3")
 
     final_hash = synthesizer.execute_plan([group], base_hash)
     subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
@@ -127,7 +127,7 @@ def test_file_deletion(git_repo):
         file_mode=None,
     )
     chunk = DiffChunk.from_hunk(hunk)
-    group = CommitGroup(chunks=[chunk], group_id="g1", commit_message="Delete app.js")
+    group = CommitGroup(chunks=[chunk], commit_message="Delete app.js")
 
     final_hash = synthesizer.execute_plan([group], base_hash)
     subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
@@ -152,7 +152,6 @@ def test_rename_file(git_repo):
     chunk = DiffChunk.from_hunk(hunk)
     group = CommitGroup(
         chunks=[chunk],
-        group_id="g1",
         commit_message="Rename app.js to server.js",
     )
 
@@ -186,7 +185,7 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk1 = DiffChunk.from_hunk(hunk1)
-    group1 = CommitGroup(chunks=[chunk1], group_id="g1", commit_message="Add header")
+    group1 = CommitGroup(chunks=[chunk1], commit_message="Add header")
 
     hunk2 = HunkWrapper(
         new_file_path=b"app.js",
@@ -199,7 +198,7 @@ def test_critical_line_shift_scenario(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Update footer")
+    group2 = CommitGroup(chunks=[chunk2], commit_message="Update footer")
 
     # Execute: commit group2, then group1
     final_hash = synthesizer.execute_plan([group2, group1], base_hash)
@@ -296,7 +295,6 @@ def test_pure_addition_single_file(git_repo):
 
     group = CommitGroup(
         chunks=[chunk1, chunk2, chunk3],
-        group_id="g1",
         commit_message="Add multiple lines",
     )
 
@@ -358,9 +356,7 @@ def test_pure_addition_new_files(git_repo):
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
 
-    group = CommitGroup(
-        chunks=[chunk1, chunk2], group_id="g1", commit_message="Add new files"
-    )
+    group = CommitGroup(chunks=[chunk1, chunk2], commit_message="Add new files")
 
     final_hash = synthesizer.execute_plan([group], base_hash)
     subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
@@ -393,9 +389,7 @@ def test_pure_addition_multiple_groups(git_repo):
         file_mode=None,
     )
     chunk1 = DiffChunk.from_hunk(hunk1)
-    group1 = CommitGroup(
-        chunks=[chunk1], group_id="g1", commit_message="Add header comment"
-    )
+    group1 = CommitGroup(chunks=[chunk1], commit_message="Add header comment")
 
     hunk2 = HunkWrapper(
         new_file_path=b"README.md",
@@ -408,7 +402,7 @@ def test_pure_addition_multiple_groups(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(chunks=[chunk2], group_id="g2", commit_message="Add README")
+    group2 = CommitGroup(chunks=[chunk2], commit_message="Add README")
 
     final_hash = synthesizer.execute_plan([group1, group2], base_hash)
     subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
@@ -457,7 +451,6 @@ def test_pure_deletion_partial_content(git_repo):
 
     group = CommitGroup(
         chunks=[chunk1, chunk2],
-        group_id="g1",
         commit_message="Remove lines 2 and 4",
     )
 
@@ -533,7 +526,6 @@ def test_pure_deletion_entire_files(git_repo):
     chunk2 = DiffChunk.from_hunk(hunk2)
     group = CommitGroup(
         chunks=[chunk1, chunk2],
-        group_id="g1",
         commit_message="Delete temp files",
     )
 
@@ -595,7 +587,6 @@ def test_pure_deletion_multiple_groups(git_repo):
     chunk1b = DiffChunk.from_hunk(hunk1b)
     group1 = CommitGroup(
         chunks=[chunk1, chunk1b],
-        group_id="g1",
         commit_message="Remove lines from app.js",
     )
 
@@ -612,9 +603,7 @@ def test_pure_deletion_multiple_groups(git_repo):
         file_mode=None,
     )
     chunk2 = DiffChunk.from_hunk(hunk2)
-    group2 = CommitGroup(
-        chunks=[chunk2], group_id="g2", commit_message="Delete other.txt"
-    )
+    group2 = CommitGroup(chunks=[chunk2], commit_message="Delete other.txt")
 
     final_hash = synthesizer.execute_plan([group1, group2], new_base_hash)
     subprocess.run(["git", "reset", "--hard", final_hash], cwd=repo_path, check=True)
@@ -746,7 +735,6 @@ def test_large_mixed_changes_single_group(git_repo):
 
     group = CommitGroup(
         chunks=chunks,
-        group_id="large_mixed",
         commit_message="Large mixed changes",
     )
     final_hash = synthesizer.execute_plan([group], new_base_hash)
@@ -854,7 +842,6 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     ]
     group1 = CommitGroup(
         chunks=group1_chunks,
-        group_id="frontend",
         commit_message="Update frontend",
     )
 
@@ -901,7 +888,6 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     ]
     group2 = CommitGroup(
         chunks=group2_chunks,
-        group_id="backend",
         commit_message="Update backend",
     )
 
@@ -935,7 +921,6 @@ def test_large_mixed_changes_multiple_groups(git_repo):
     ]
     group3 = CommitGroup(
         chunks=group3_chunks,
-        group_id="cleanup",
         commit_message="Cleanup and reorganize",
     )
 
@@ -1047,7 +1032,6 @@ def test_complex_interdependent_changes(git_repo):
 
     group = CommitGroup(
         chunks=chunks,
-        group_id="refactor",
         commit_message="Refactor interdependent code",
     )
     final_hash = synthesizer.execute_plan([group], new_base_hash)
@@ -1080,9 +1064,7 @@ def test_empty_group_handling(git_repo):
 
     # Empty group
 
-    empty_group = CommitGroup(
-        chunks=[], group_id="empty", commit_message="Empty commit"
-    )
+    empty_group = CommitGroup(chunks=[], commit_message="Empty commit")
 
     # No-op group (removes and adds the same line)
     hunk = HunkWrapper(
@@ -1096,9 +1078,7 @@ def test_empty_group_handling(git_repo):
         file_mode=None,
     )
     no_op_chunk = DiffChunk.from_hunk(hunk)
-    no_op_group = CommitGroup(
-        chunks=[no_op_chunk], group_id="noop", commit_message="No-op change"
-    )
+    no_op_group = CommitGroup(chunks=[no_op_chunk], commit_message="No-op change")
 
     # Handles edge cases
     final_hash = synthesizer.execute_plan([empty_group, no_op_group], base_hash)
@@ -1145,7 +1125,6 @@ def test_single_line_changes(git_repo):
 
     group = CommitGroup(
         chunks=[chunk1, chunk2, chunk3],
-        group_id="minimal",
         commit_message="Minimal changes",
     )
     final_hash = synthesizer.execute_plan([group], base_hash)
@@ -1210,7 +1189,6 @@ def test_boundary_line_numbers(git_repo):
 
     group = CommitGroup(
         chunks=[chunk1, chunk2, chunk3],
-        group_id="boundaries",
         commit_message="Boundary line changes",
     )
     final_hash = synthesizer.execute_plan([group], base_hash)
@@ -1265,7 +1243,6 @@ def test_unicode_and_special_characters(git_repo):
 
     group = CommitGroup(
         chunks=[chunk1, chunk2],
-        group_id="unicode",
         commit_message="Unicode and special chars",
     )
     final_hash = synthesizer.execute_plan([group], base_hash)
@@ -1331,7 +1308,6 @@ def test_conflicting_simultaneous_changes(git_repo):
 
     group = CommitGroup(
         chunks=chunks,
-        group_id="overlapping",
         commit_message="Overlapping changes",
     )
     final_hash = synthesizer.execute_plan([group], base_hash)
@@ -1398,7 +1374,6 @@ def test_very_large_file_changes(git_repo):
 
     group = CommitGroup(
         chunks=chunks,
-        group_id="large_changes",
         commit_message="Many changes to large file",
     )
     final_hash = synthesizer.execute_plan([group], new_base_hash)
