@@ -108,16 +108,16 @@ def run_chunker_invariants(chunker: ChunkerInterface, input_chunk: StandardDiffC
     Run all invariant checks on a chunker's output.
     """
     output_chunks = chunker.chunk([input_chunk])
-    
+
     # Invariant 1: Output must preserve input
     assert_input_preserved(output_chunks, input_chunk)
-    
+
     # Invariant 2: Output must be disjoint
     assert_chunks_disjoint(output_chunks)
-    
+
     # Invariant 3: Output must be valid
     assert_chunks_valid(output_chunks)
-    
+
     return output_chunks
 
 
@@ -144,7 +144,7 @@ CHUNKERS = [
 
 def load_chunker(chunker_cls: str, chunker_kwargs: dict) -> ChunkerInterface:
     """Load a chunker class dynamically."""
-    mod_name, cls_name = chunker_cls.rsplit('.', 1)
+    mod_name, cls_name = chunker_cls.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     Chunker = getattr(mod, cls_name)
     return Chunker(**chunker_kwargs)
@@ -153,6 +153,7 @@ def load_chunker(chunker_cls: str, chunker_kwargs: dict) -> ChunkerInterface:
 # ============================================================================
 # Test Cases: Basic Scenarios
 # ============================================================================
+
 
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_pure_additions(chunker_cls, chunker_kwargs):
@@ -274,28 +275,28 @@ def test_single_modification(chunker_cls, chunker_kwargs):
 # Test Cases: Edge Cases
 # ============================================================================
 
+
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_large_chunk(chunker_cls, chunker_kwargs):
     """Test chunker with a large chunk (100 lines)."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     parsed_content = []
     content_lines = []
-    
+
     for i in range(50):
-        parsed_content.append(Addition(content=f"addition_{i}", line_number=i+1))
+        parsed_content.append(Addition(content=f"addition_{i}", line_number=i + 1))
         content_lines.append(f"+addition_{i}")
-        parsed_content.append(Removal(content=f"removal_{i}", line_number=i+1))
+        parsed_content.append(Removal(content=f"removal_{i}", line_number=i + 1))
         content_lines.append(f"-removal_{i}")
-    
+
     chunk = StandardDiffChunk(
         _file_path="large.py",
-       
         parsed_content=parsed_content,
         old_start=1,
         new_start=1,
     )
-    
+
     run_chunker_invariants(chunker, chunk)
 
 
@@ -368,6 +369,7 @@ def test_non_contiguous_line_numbers(chunker_cls, chunker_kwargs):
 # Test Cases: Multiple Input Chunks
 # ============================================================================
 
+
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_multiple_input_chunks_same_file(chunker_cls, chunker_kwargs):
     """Test chunker with multiple input chunks from the same file."""
@@ -430,6 +432,7 @@ def test_multiple_input_chunks_different_files(chunker_cls, chunker_kwargs):
 # Test Cases: Composite Chunk Handling
 # ============================================================================
 
+
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_output_composite_chunks_are_valid(chunker_cls, chunker_kwargs):
     """Test that composite chunks in output are properly structured."""
@@ -471,6 +474,7 @@ def test_output_composite_chunks_are_valid(chunker_cls, chunker_kwargs):
 # ============================================================================
 # Test Cases: Rename Chunk Handling
 # ============================================================================
+
 
 @pytest.mark.parametrize("chunker_cls,chunker_kwargs", CHUNKERS)
 def test_rename_chunk_passthrough(chunker_cls, chunker_kwargs):

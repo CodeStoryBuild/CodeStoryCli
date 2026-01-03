@@ -16,7 +16,7 @@ class SubprocessGitInterface(GitInterface):
         args: List[str],
         input_text: Optional[str] = None,
         env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None
+        cwd: Optional[Union[str, Path]] = None,
     ) -> Optional[str]:
         # This method is not used by the synthesizer, but included for completeness
         try:
@@ -30,7 +30,7 @@ class SubprocessGitInterface(GitInterface):
                 capture_output=True,
                 check=True,
                 env=env,
-                cwd=effective_cwd
+                cwd=effective_cwd,
             )
             return result.stdout
         except subprocess.CalledProcessError:
@@ -41,19 +41,23 @@ class SubprocessGitInterface(GitInterface):
         args: List[str],
         input_bytes: Optional[bytes] = None,
         env: Optional[Dict] = None,
-        cwd: Optional[Union[str, Path]] = None
+        cwd: Optional[Union[str, Path]] = None,
     ) -> Optional[bytes]:
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
-            
+
             cmd = ["git"] + args
 
             if "apply" in args:
                 if input_bytes:
-                    print(f"DEBUG_INTERFACE: run_git_binary received {len(input_bytes)} bytes for 'git apply'.")
+                    print(
+                        f"DEBUG_INTERFACE: run_git_binary received {len(input_bytes)} bytes for 'git apply'."
+                    )
                 else:
-                    print("DEBUG_INTERFACE: WARNING! run_git_binary received NO input bytes for 'git apply'.")
-            
+                    print(
+                        "DEBUG_INTERFACE: WARNING! run_git_binary received NO input bytes for 'git apply'."
+                    )
+
             # The debug print can be simplified now
             print(f"DEBUG: Running command: {' '.join(cmd)}")
             result = subprocess.run(
@@ -64,14 +68,20 @@ class SubprocessGitInterface(GitInterface):
                 capture_output=True,
                 check=True,
                 env=env,
-                cwd=effective_cwd
+                cwd=effective_cwd,
             )
-            print(f"DEBUG: Command succeeded, stdout length: {len(result.stdout)}, stderr length: {len(result.stderr)}")
+            print(
+                f"DEBUG: Command succeeded, stdout length: {len(result.stdout)}, stderr length: {len(result.stderr)}"
+            )
             if result.stderr:
                 # Limit stderr printing to avoid flooding logs
-                print(f"DEBUG: stderr: {result.stderr.decode('utf-8', 'replace').strip()}")
+                print(
+                    f"DEBUG: stderr: {result.stderr.decode('utf-8', 'replace').strip()}"
+                )
             if result.stdout:
-                print(f"DEBUG: stdout: {result.stdout.decode('utf-8', 'replace').strip()}")
+                print(
+                    f"DEBUG: stdout: {result.stdout.decode('utf-8', 'replace').strip()}"
+                )
             return result.stdout
         except subprocess.CalledProcessError as e:
             print(f"ERROR: Git command failed: {' '.join(e.cmd)}")

@@ -8,6 +8,7 @@ from vibe.core.data.r_diff_chunk import RenameDiffChunk
 from ..git_interface.interface import GitInterface
 from ..commands.git_commands import GitCommands
 from ..synthesizer.git_synthesizer_porcelain import GitSynthesizer
+
 # from ..synthesizer.git_synthesizer_opt import GitSynthesizer
 from ..chunker.interface import ChunkerInterface
 from ..grouper.interface import GrouperInterface
