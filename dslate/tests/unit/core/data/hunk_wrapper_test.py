@@ -14,13 +14,14 @@ def test_init_and_properties():
         old_start=1,
         new_start=1,
         old_len=1,
-        new_len=1
+        new_len=1,
     )
-    
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path == b"old.txt"
     assert hunk.file_path == b"new.txt"
-    assert hunk.file_mode == b"100644" # Default
+    assert hunk.file_mode == b"100644"  # Default
+
 
 def test_create_empty_content():
     hunk = HunkWrapper.create_empty_content(
@@ -38,20 +39,16 @@ def test_create_empty_content():
 
 
 def test_create_empty_addition():
-    hunk = HunkWrapper.create_empty_addition(
-        new_file_path=b"new.txt"
-    )
-    
+    hunk = HunkWrapper.create_empty_addition(new_file_path=b"new.txt")
+
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path is None
     assert hunk.hunk_lines == []
 
 
 def test_create_empty_deletion():
-    hunk = HunkWrapper.create_empty_deletion(
-        old_file_path=b"old.txt"
-    )
-    
+    hunk = HunkWrapper.create_empty_deletion(old_file_path=b"old.txt")
+
     assert hunk.new_file_path is None
     assert hunk.old_file_path == b"old.txt"
     assert hunk.hunk_lines == []

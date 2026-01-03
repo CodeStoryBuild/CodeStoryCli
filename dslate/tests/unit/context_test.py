@@ -24,6 +24,7 @@ def test_global_config_defaults():
     assert config.verbose is False
     assert config.auto_accept is False
 
+
 def test_global_config_custom_values():
     """Test setting custom values in GlobalConfig."""
     config = GlobalConfig(
@@ -83,6 +84,7 @@ def test_global_context_from_config_defaults(
     mock_git_interface.assert_called_once_with(repo_path)
     mock_git_commands.assert_called_once_with(mock_interface_instance)
 
+
 @patch("dslate.context.try_create_model")
 @patch("dslate.context.SubprocessGitInterface")
 @patch("dslate.context.GitCommands")
@@ -125,6 +127,7 @@ def test_commit_context_defaults():
     ctx = CommitContext()
     assert ctx.target == "."
     assert ctx.message is None
+
 
 def test_fix_context():
     ctx = FixContext(commit_hash="abc1234")

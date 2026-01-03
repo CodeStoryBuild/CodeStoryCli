@@ -10,6 +10,7 @@ from dslate.core.semantic_grouper.query_manager import QueryManager
 # Helpers
 # -----------------------------------------------------------------------------
 
+
 def create_chunk(
     old_path=b"file.txt",
     new_path=b"file.txt",
@@ -19,7 +20,7 @@ def create_chunk(
     new_len=1,
     is_rename=False,
     is_add=False,
-    is_del=False
+    is_del=False,
 ):
     chunk = Mock(spec=DiffChunk)
     chunk.canonical_path.return_value = new_path if not is_del else old_path
@@ -29,13 +30,14 @@ def create_chunk(
     chunk.old_len.return_value = old_len
     chunk.get_abs_new_line_start.return_value = new_start
     chunk.get_abs_new_line_end.return_value = new_start + new_len - 1
-    
+
     chunk.is_standard_modification = not (is_rename or is_add or is_del)
     chunk.is_file_rename = is_rename
     chunk.is_file_addition = is_add
     chunk.is_file_deletion = is_del
-    
+
     return chunk
+
 
 @pytest.fixture
 def mocks():
@@ -115,22 +117,23 @@ def test_analyze_required_contexts_del(context_manager_deps):
     assert (b"file.txt", True) in req
     assert (b"file.txt", False) not in req
 
+
 def test_simplify_overlapping_ranges(context_manager_deps):
     # We can test this static-like method by instantiating with empty chunks
     cm = ContextManager(
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        []
+        [],
     )
-    
+
     ranges = [(1, 5), (3, 7), (10, 12)]
     simplified = cm.simplify_overlapping_ranges(ranges)
-    
+
     # (1, 5) and (3, 7) overlap -> (1, 7)
     # (10, 12) is separate
     assert simplified == [(1, 7), (10, 12)]
-    
+
     # Touching ranges
     ranges_touching = [(1, 5), (6, 10)]
     simplified_touching = cm.simplify_overlapping_ranges(ranges_touching)

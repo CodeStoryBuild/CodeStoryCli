@@ -24,6 +24,7 @@ def git_commands(mock_git):
 # Regex Tests
 # -----------------------------------------------------------------------------
 
+
 def test_regex_patterns(git_commands):
     """Test that regex patterns match expected git output formats."""
     # Mode
@@ -62,6 +63,7 @@ def test_parse_file_metadata_standard(git_commands):
     assert new == b"test.txt"
     assert mode is None
 
+
 def test_parse_file_metadata_new_file(git_commands):
     lines = [
         b"diff --git a/new.txt b/new.txt",
@@ -88,6 +90,7 @@ def test_parse_file_metadata_deleted_file(git_commands):
     assert old == b"del.txt"
     assert new is None
     assert mode == b"100644"
+
 
 def test_parse_file_metadata_rename(git_commands):
     lines = [
@@ -118,6 +121,7 @@ def test_parse_file_metadata_fallback(git_commands):
 # -----------------------------------------------------------------------------
 # Get Full Working Diff Tests (Mocked)
 # -----------------------------------------------------------------------------
+
 
 def test_get_full_working_diff_simple(git_commands, mock_git):
     diff_output = (
@@ -152,7 +156,7 @@ def test_get_full_working_diff_binary(git_commands, mock_git):
     git_commands._get_binary_files = Mock(return_value={b"bin.dat"})
 
     hunks = git_commands.get_full_working_diff("base", "new")
-    
+
     assert len(hunks) == 1
     assert isinstance(hunks[0], ImmutableHunkWrapper)
     assert hunks[0].canonical_path == b"bin.dat"
@@ -160,6 +164,7 @@ def test_get_full_working_diff_binary(git_commands, mock_git):
 # -----------------------------------------------------------------------------
 # Merge Overlapping Chunks Tests
 # -----------------------------------------------------------------------------
+
 
 def create_chunk(path, old_start, old_len, new_start, new_len):
     """Helper to create a DiffChunk."""
@@ -170,7 +175,7 @@ def create_chunk(path, old_start, old_len, new_start, new_len):
     # Generate additions for new_len
     for i in range(new_len):
         lines.append(b"+new line")
-        
+
     hunk = HunkWrapper(
         new_file_path=path.encode(),
         old_file_path=path.encode(),
@@ -179,14 +184,15 @@ def create_chunk(path, old_start, old_len, new_start, new_len):
         old_start=old_start,
         new_start=new_start,
         old_len=old_len,
-        new_len=new_len
+        new_len=new_len,
     )
     return DiffChunk.from_hunk(hunk)
 
+
 def test_merge_overlapping_chunks_disjoint(git_commands):
-    c1 = create_chunk("file.txt", 1, 1, 1, 1) # lines 1-2
-    c2 = create_chunk("file.txt", 10, 1, 10, 1) # lines 10-11
-    
+    c1 = create_chunk("file.txt", 1, 1, 1, 1)  # lines 1-2
+    c2 = create_chunk("file.txt", 10, 1, 10, 1)  # lines 10-11
+
     merged = git_commands.merge_overlapping_chunks([c1, c2])
     assert len(merged) == 2
     assert merged[0] == c1
@@ -194,18 +200,19 @@ def test_merge_overlapping_chunks_disjoint(git_commands):
 
 
 def test_merge_overlapping_chunks_overlap(git_commands):
-    c1 = create_chunk("file.txt", 1, 5, 1, 5) # 1-6
-    c2 = create_chunk("file.txt", 3, 5, 3, 5) # 3-8 (overlaps)
-    
+    c1 = create_chunk("file.txt", 1, 5, 1, 5)  # 1-6
+    c2 = create_chunk("file.txt", 3, 5, 3, 5)  # 3-8 (overlaps)
+
     merged = git_commands.merge_overlapping_chunks([c1, c2])
     assert len(merged) == 1
     assert isinstance(merged[0], CompositeDiffChunk)
     assert len(merged[0].chunks) == 2
 
+
 def test_merge_overlapping_chunks_touching(git_commands):
-    c1 = create_chunk("file.txt", 1, 5, 1, 5) # 1-6 (ends at 6)
-    c2 = create_chunk("file.txt", 6, 5, 6, 5) # 6-11 (starts at 6)
-    
+    c1 = create_chunk("file.txt", 1, 5, 1, 5)  # 1-6 (ends at 6)
+    c2 = create_chunk("file.txt", 6, 5, 6, 5)  # 6-11 (starts at 6)
+
     merged = git_commands.merge_overlapping_chunks([c1, c2])
     assert len(merged) == 1
     assert isinstance(merged[0], CompositeDiffChunk)
@@ -213,8 +220,8 @@ def test_merge_overlapping_chunks_touching(git_commands):
 
 def test_merge_overlapping_chunks_different_files(git_commands):
     c1 = create_chunk("a.txt", 1, 5, 1, 5)
-    c2 = create_chunk("b.txt", 1, 5, 1, 5) # Same lines, diff file
-    
+    c2 = create_chunk("b.txt", 1, 5, 1, 5)  # Same lines, diff file
+
     merged = git_commands.merge_overlapping_chunks([c1, c2])
     assert len(merged) == 2
     # Order depends on sorting, likely a.txt then b.txt
@@ -225,14 +232,13 @@ def test_merge_overlapping_chunks_different_files(git_commands):
 # Binary Detection Tests
 # -----------------------------------------------------------------------------
 
+
 def test_get_binary_files(git_commands, mock_git):
     # Mock numstat output
     mock_git.run_git_binary_out.return_value = (
-        b"-\t-\tbin.dat\n"
-        b"1\t1\ttext.txt\n"
-        b"-\t-\trenamed.bin => new.bin\n"
+        b"-\t-\tbin.dat\n1\t1\ttext.txt\n-\t-\trenamed.bin => new.bin\n"
     )
-    
+
     binary_files = git_commands._get_binary_files("base", "new")
     assert b"bin.dat" in binary_files
     assert b"text.txt" not in binary_files

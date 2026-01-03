@@ -12,7 +12,7 @@ def test_detect_language_success(mock_get_lexer):
     mock_lexer = Mock()
     mock_lexer.name = "Python"
     mock_get_lexer.return_value = mock_lexer
-    
+
     lang = FileParser._detect_language("test.py", "content")
     assert lang == "python"
 
@@ -21,8 +21,9 @@ def test_detect_language_success(mock_get_lexer):
 def test_detect_language_unknown(mock_get_lexer):
     # Simulate ClassNotFound from pygments
     from pygments.util import ClassNotFound
+
     mock_get_lexer.side_effect = ClassNotFound
-    
+
     lang = FileParser._detect_language("unknown.xyz", "content")
     assert lang is None
 
@@ -31,16 +32,16 @@ def test_detect_language_unknown(mock_get_lexer):
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_success(mock_detect, mock_get_parser):
     mock_detect.return_value = "python"
-    
+
     mock_parser = Mock()
     mock_tree = Mock()
     mock_root = Mock()
     mock_tree.root_node = mock_root
     mock_parser.parse.return_value = mock_tree
     mock_get_parser.return_value = mock_parser
-    
+
     result = FileParser.parse_file("test.py", "print('hello')", [])
-    
+
     assert isinstance(result, ParsedFile)
     assert result.detected_language == "python"
     assert result.root_node == mock_root
@@ -81,11 +82,11 @@ def test_map_lexer_to_language():
     # Direct mapping
     assert FileParser._map_lexer_to_language("Python") == "python"
     assert FileParser._map_lexer_to_language("JavaScript") == "javascript"
-    
+
     # Variations
     assert FileParser._map_lexer_to_language("C++") == "cpp"
     assert FileParser._map_lexer_to_language("cxx") == "cpp"
     assert FileParser._map_lexer_to_language("TS") == "typescript"
-    
+
     # Unknown
     assert FileParser._map_lexer_to_language("UnknownLang") is None

@@ -9,12 +9,15 @@ from dslate.core.data.line_changes import Addition, Removal
 # Helpers
 # -----------------------------------------------------------------------------
 
-def create_chunk(content_lines, old_path=b"file.txt", new_path=b"file.txt", start_line=1):
+
+def create_chunk(
+    content_lines, old_path=b"file.txt", new_path=b"file.txt", start_line=1
+):
     """Helper to create a DiffChunk with specific content."""
     parsed_content = []
     current_old = start_line
     current_new = start_line
-    
+
     for line in content_lines:
         if line.startswith(b"+"):
             parsed_content.append(Addition(current_old, current_new, line[1:]))
@@ -22,13 +25,14 @@ def create_chunk(content_lines, old_path=b"file.txt", new_path=b"file.txt", star
         elif line.startswith(b"-"):
             parsed_content.append(Removal(current_old, current_new, line[1:]))
             current_old += 1
-            
+
     return DiffChunk(
         old_file_path=old_path,
         new_file_path=new_path,
         parsed_content=parsed_content,
-        old_start=start_line
+        old_start=start_line,
     )
+
 
 @pytest.fixture
 def context_manager():
@@ -40,6 +44,7 @@ def context_manager():
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
+
 
 def test_split_hunks_true(context_manager):
     """Test that chunks are split when split_hunks is True."""
@@ -68,25 +73,26 @@ def test_split_hunks_false(context_manager):
     assert len(result) == 1
     assert result[0] is chunk
 
+
 def test_group_whitespace_context(context_manager):
     """Test grouping of whitespace-only chunks."""
     chunker = AtomicChunker(split_hunks=True)
-    
+
     # 3 chunks: code, whitespace, code
     c1 = create_chunk([b"+code1"])
-    c2 = create_chunk([b"+   "]) # Whitespace
+    c2 = create_chunk([b"+   "])  # Whitespace
     c3 = create_chunk([b"+code2"])
-    
+
     # Pass them as a single chunk to be split
     # Note: AtomicChunker splits the input chunk first
     # But here we can pass pre-split chunks if we want to test _group_by_chunk_predicate directly
     # OR we can pass a single chunk and let it split.
-    
+
     # Let's pass a single chunk that will be split
     big_chunk = create_chunk([b"+code1", b"+   ", b"+code2"])
-    
+
     result = chunker.chunk([big_chunk], context_manager)
-    
+
     # Logic:
     # 1. Split into 3 atomic chunks.
     # 2. c2 is context (blank/whitespace).
@@ -95,11 +101,11 @@ def test_group_whitespace_context(context_manager):
     # Implementation preference: next group (c3) if possible, else previous (c1).
     # So c2 attaches to c3.
     # Result: [c1, Composite(c2, c3)]
-    
+
     assert len(result) == 2
     assert isinstance(result[0], DiffChunk)
     assert result[0].parsed_content[0].content == b"code1"
-    
+
     assert isinstance(result[1], CompositeDiffChunk)
     assert len(result[1].chunks) == 2
     assert result[1].chunks[0].parsed_content[0].content == b"   "
