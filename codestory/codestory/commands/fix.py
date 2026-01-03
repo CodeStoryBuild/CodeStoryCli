@@ -21,8 +21,8 @@
 
 
 import typer
-from loguru import logger
 from colorama import Fore, Style
+from loguru import logger
 
 from codestory.context import CommitContext, FixContext, GlobalContext
 from codestory.core.exceptions import (

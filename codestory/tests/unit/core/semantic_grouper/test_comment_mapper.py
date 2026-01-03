@@ -1,6 +1,6 @@
-import pytest
 from textwrap import dedent
 
+import pytest
 from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.semantic_grouper.comment_mapper import CommentMapper
 from codestory.core.semantic_grouper.query_manager import QueryManager
