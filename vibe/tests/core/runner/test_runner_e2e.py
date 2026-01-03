@@ -423,9 +423,7 @@ def test_runner_with_staged_changes_reset(complex_git_repo):
 
     # Make some changes and stage them
     main_file = repo_path / "src" / "main.py"
-    new_content = main_file.read_text().replace(
-        "Hello, World!", "Hello, Staged!"
-    )
+    new_content = main_file.read_text().replace("Hello, World!", "Hello, Staged!")
     main_file.write_text(new_content)
     subprocess.run(["git", "add", "src/main.py"], cwd=repo_path, check=True)
 

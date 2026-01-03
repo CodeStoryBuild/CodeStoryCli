@@ -16,9 +16,7 @@ from vibe.core.branch_saver.branch_saver import BranchSaver
 from vibe.core.commands.git_commands import GitCommands
 
 
-def verify_repo(
-    commands: GitCommands, target: str, auto_yes: bool = False
-) -> bool:
+def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> bool:
     # Step -1: ensure we're inside a git repository
     if not commands.is_git_repo():
         raise RuntimeError(
