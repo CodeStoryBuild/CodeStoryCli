@@ -135,7 +135,7 @@ def api_key_missing(service: str) -> ConfigurationError:
     """Create a ConfigurationError for missing API keys."""
     return ConfigurationError(
         f"Missing API key for {service}",
-        f"Set the API key using environment variable or run setup command"
+        "Set the API key using environment variable or run setup command"
     )
 
 

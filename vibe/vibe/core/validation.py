@@ -225,9 +225,9 @@ def validate_git_repository(path: str = ".") -> None:
     # Check if git is available
     try:
         result = subprocess.run(
-            ["git", "--version"], 
-            capture_output=True, 
-            text=True, 
+            ["git", "--version"],
+            capture_output=True,
+            text=True,
             timeout=5,
             cwd=path
         )
@@ -245,7 +245,7 @@ def validate_git_repository(path: str = ".") -> None:
         raise GitError("Git command timed out")
     except subprocess.SubprocessError as e:
         raise GitError(f"Git subprocess error: {e}")
-    
+
     # Check if we're in a git repository
     try:
         result = subprocess.run(
