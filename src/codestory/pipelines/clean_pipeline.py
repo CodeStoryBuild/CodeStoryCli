@@ -79,6 +79,7 @@ class CleanPipeline:
                 break
 
             # TODO implement sliding window to possibly group small commits together *before* fixing all together
+            # We will use symbols/changed etc to reason about this window size
             # parent = self.global_context.git_commands.try_get_parent_hash(
             #     commit, empty_on_fail=True
             # )

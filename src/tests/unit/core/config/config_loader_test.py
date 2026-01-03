@@ -24,6 +24,7 @@ import pytest
 
 from codestory.core.config.config_loader import ConfigLoader
 from codestory.core.exceptions import ConfigurationError
+from codestory.core.config.type_constraints import IntConstraint
 
 # -----------------------------------------------------------------------------
 # Test Models
@@ -36,7 +37,9 @@ class TestConfig:
     number: int = 0
     flag: bool = False
 
-    constraints = {}
+    constraints = {
+        "number": IntConstraint(),
+    }
 
     descriptions = {}
 
@@ -186,6 +189,7 @@ def test_validation_error():
         patch.object(ConfigLoader, "load_env", return_value={}),
         pytest.raises(ConfigurationError),
     ):
-        ConfigLoader.get_full_config(
+        config = ConfigLoader.get_full_config(
             TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")
         )
+        assert config is None
