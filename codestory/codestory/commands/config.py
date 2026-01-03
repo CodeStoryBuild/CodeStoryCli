@@ -285,7 +285,9 @@ def _get_config(key: str | None, scope: str | None) -> None:
                 # Show default value if not set
                 default_value = schema[k]["default"]
                 default_str = (
-                    str(default_value) if default_value is not None else "[dim]No-Default[/dim]"
+                    str(default_value)
+                    if default_value is not None
+                    else "[dim]No-Default[/dim]"
                 )
                 default_str = _truncate_text(default_str, 40)
                 table.add_row(k, description_short, default_str, "[dim](not set)[/dim]")
@@ -313,8 +315,8 @@ def main(
     ),
 ) -> None:
     """
-    Manage global and local codestory configurations. 
-    
+    Manage global and local codestory configurations.
+
     Priority order: program arguments > custom config > local config > environment variables > global config
 
     Examples:

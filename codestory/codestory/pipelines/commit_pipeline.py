@@ -52,15 +52,12 @@ from rich.text import Text
 from ..context import CommitContext, GlobalContext
 from ..core.chunker.interface import MechanicalChunker
 from ..core.commands.git_commands import GitCommands
-
 from ..core.data.chunk import Chunk
 
 from ..core.data.commit_group import CommitGroup
 from ..core.data.immutable_chunk import ImmutableChunk
 from ..core.file_reader.file_parser import FileParser
-
 from ..core.file_reader.protocol import FileReader
-
 from ..core.git_interface.interface import GitInterface
 
 from ..core.grouper.interface import LogicalGrouper
@@ -68,7 +65,6 @@ from ..core.grouper.interface import LogicalGrouper
 from ..core.logging.utils import log_chunks, time_block
 
 from ..core.semantic_grouper.context_manager import ContextManager
-
 from ..core.semantic_grouper.query_manager import QueryManager
 
 from ..core.semantic_grouper.semantic_grouper import SemanticGrouper
