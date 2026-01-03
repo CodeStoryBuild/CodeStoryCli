@@ -62,28 +62,33 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         ["merge-base", "--is-ancestor", end_resolved, head_hash]
     )
     if is_ancestor is None or is_ancestor.returncode != 0:
-        raise GitError("The end commit must be an ancestor of HEAD (linear history only).")
+        raise GitError(
+            "The end commit must be an ancestor of HEAD (linear history only)."
+        )
 
     # Determine base commit (start)
     if fix_context.start_commit_hash:
         # User provided explicit start commit
         start_resolved = (
-            git_interface.run_git_text_out(["rev-parse", fix_context.start_commit_hash]) or ""
+            git_interface.run_git_text_out(["rev-parse", fix_context.start_commit_hash])
+            or ""
         ).strip()
         if not start_resolved:
             raise GitError(f"Start commit not found: {fix_context.start_commit_hash}")
-        
+
         # Validate that start < end (start is ancestor of end)
         is_start_before_end = git_interface.run_git_text(
             ["merge-base", "--is-ancestor", start_resolved, end_resolved]
         )
         if is_start_before_end is None or is_start_before_end.returncode != 0:
-            raise GitError("Start commit must be an ancestor of end commit (start < end).")
-        
+            raise GitError(
+                "Start commit must be an ancestor of end commit (start < end)."
+            )
+
         # Ensure start != end
         if start_resolved == end_resolved:
             raise GitError("Start and end commits cannot be the same.")
-        
+
         base_hash = start_resolved
     else:
         # Default: use end's parent as start (original behavior)
@@ -107,7 +112,9 @@ def main(
         is_eager=True,
         help="Show this message and exit.",
     ),
-    commit_hash: str = typer.Argument(..., help="Hash of the end commit to split or fix"),
+    commit_hash: str = typer.Argument(
+        ..., help="Hash of the end commit to split or fix"
+    ),
     start_commit: str = typer.Option(
         None,
         "--start",
@@ -118,8 +125,8 @@ def main(
 
     Examples:
         # Fix a specific commit (--start will be parent of def456)
-        codestory fix def456 
-        
+        codestory fix def456
+
         # Fix a range of commits from start to end
         codestory fix def456 --start abc123
     """
@@ -129,7 +136,9 @@ def main(
     validated_end_hash = validate_commit_hash(commit_hash)
     validated_start_hash = validate_commit_hash(start_commit) if start_commit else None
 
-    fix_context = FixContext(end_commit_hash=validated_end_hash, start_commit_hash=validated_start_hash)
+    fix_context = FixContext(
+        end_commit_hash=validated_end_hash, start_commit_hash=validated_start_hash
+    )
 
     logger.debug("Fix command started", fix_context=fix_context)
 
@@ -142,10 +151,10 @@ def main(
         # TODO add custom fix message
         message=None,
         # no filters because we cannot selectively edit changes in a fix
-        relevance_filter_level="none", 
-        relevance_filter_intent=None, 
+        relevance_filter_level="none",
+        relevance_filter_intent=None,
         secret_scanner_aggression="none",
-    )  
+    )
 
     from codestory.pipelines.commit_init import create_commit_pipeline
     from codestory.pipelines.fix_pipeline import FixPipeline

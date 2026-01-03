@@ -127,7 +127,7 @@ def test_fix_context():
     ctx = FixContext(end_commit_hash="abc1234")
     assert ctx.end_commit_hash == "abc1234"
     assert ctx.start_commit_hash is None
-    
+
     # Test with both start and end
     ctx_with_start = FixContext(end_commit_hash="def5678", start_commit_hash="abc1234")
     assert ctx_with_start.end_commit_hash == "def5678"
