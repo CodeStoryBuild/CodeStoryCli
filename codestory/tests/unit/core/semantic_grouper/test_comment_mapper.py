@@ -44,9 +44,8 @@ def tools():
                 \"\"\"
                 pass
             """,
-            {0, 1, 3, 4, 5, 6} 
+            {0, 1, 3, 4, 5, 6},
         ),
-
         # --- JAVASCRIPT ---
         (
             "javascript",
@@ -58,9 +57,8 @@ def tools():
                3: Block End */
             function f() {}
             """,
-            {0, 2, 3}
+            {0, 2, 3},
         ),
-
         # --- TYPESCRIPT ---
         (
             "typescript",
@@ -72,9 +70,8 @@ def tools():
                 // 3: Pure inside
             }
             """,
-            {0, 3}
+            {0, 3},
         ),
-
         # --- JAVA ---
         (
             "java",
@@ -88,9 +85,8 @@ def tools():
                 int x = 1; // 4: Inline
             }
             """,
-            {0, 2, 3, 4}
+            {0, 2, 3, 4},
         ),
-
         # --- C++ ---
         (
             "cpp",
@@ -102,9 +98,8 @@ def tools():
                3: Block */
             int main() { return 0; }
             """,
-            {0, 2, 3}
+            {0, 2, 3},
         ),
-
         # --- C# ---
         (
             "csharp",
@@ -117,9 +112,8 @@ def tools():
                 public class C {}
             }
             """,
-            {0, 1, 3}
+            {0, 1, 3},
         ),
-
         # --- GO ---
         (
             "go",
@@ -132,9 +126,8 @@ def tools():
                /* 4: Block */
             }
             """,
-            {0, 2, 4}
+            {0, 2, 4},
         ),
-
         # --- RUST ---
         (
             "rust",
@@ -147,26 +140,26 @@ def tools():
                 /* 4: Block */
             }
             """,
-            {0, 1, 4}
+            {0, 1, 4},
         ),
     ],
 )
-def test_pure_comment_identification(tools, language, filename, content, expected_lines):
+def test_pure_comment_identification(
+    tools, language, filename, content, expected_lines
+):
     parser, mapper = tools
-    
+
     # Clean up the multiline string indentation
     clean_content = dedent(content).strip()
-    
-    # Adjust expected lines because .strip() removes the initial empty newline 
+
+    # Adjust expected lines because .strip() removes the initial empty newline
     # from the multiline string definition.
     # We parse the cleaned content.
-    
+
     parsed = parser.parse_file(
-        filename, 
-        clean_content, 
-        [(0, len(clean_content.splitlines()) - 1)]
+        filename, clean_content, [(0, len(clean_content.splitlines()) - 1)]
     )
-    
+
     assert parsed is not None, f"Tree-sitter failed to parse {language} content."
     assert parsed.detected_language == language
 

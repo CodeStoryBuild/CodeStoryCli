@@ -111,7 +111,11 @@ def main(
     )
 
     commit_context = CommitContext(
-        target=None, message=None, relevance_filter_level="none", relevance_filter_intent=None, secret_scanner_aggression="none"
+        target=None,
+        message=None,
+        relevance_filter_level="none",
+        relevance_filter_intent=None,
+        secret_scanner_aggression="none",
     )  # TODO add custom fix message
     commit_pipeline = create_commit_pipeline(
         global_context, commit_context, base_hash, new_hash, "fix"

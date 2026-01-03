@@ -186,7 +186,6 @@ class CommitPipeline:
                 [],
             )
 
-            
             with (
                 transient_step("Creating Semantic Groups", self.global_context.silent),
                 time_block("semantic_grouping"),
@@ -212,7 +211,6 @@ class CommitPipeline:
                 ),
                 time_block("secret_scanning"),
             ):
-
                 (
                     semantic_chunks,
                     immutable_chunks,
@@ -229,9 +227,11 @@ class CommitPipeline:
                     count=len(rejected_chunks),
                 )
 
-
         # then filter for relevance if configured
-        if self.commit_context.relevance_filter_level != "none" and self.global_context.model is not None:
+        if (
+            self.commit_context.relevance_filter_level != "none"
+            and self.global_context.model is not None
+        ):
             with (
                 transient_step(
                     "Applying Relevance Filter...",
@@ -245,7 +245,7 @@ class CommitPipeline:
                         level=self.commit_context.relevance_filter_level,
                         intent=self.commit_context.relevance_filter_intent
                         or "Update content",
-                    )
+                    ),
                 )
 
                 (
@@ -265,12 +265,14 @@ class CommitPipeline:
                     count=len(rejected_relevance),
                 )
 
-        if self.commit_context.relevance_filter_level != "none" and self.global_context.model is None:
+        if (
+            self.commit_context.relevance_filter_level != "none"
+            and self.global_context.model is None
+        ):
             logger.warning(
                 "Relevance filter level is set to '{level}' but no model is configured. Skipping relevance filtering.",
                 level=self.commit_context.relevance_filter_level,
             )
-
 
         # take these semantically valid, filtered chunks, and now group them into logical commits
         with (
