@@ -55,6 +55,17 @@ class GitSynthesizer:
         """
         output_bytes = self._run_git_binary(*args, **kwargs)
         return output_bytes.decode("utf-8", errors="replace").strip()
+    
+    @staticmethod
+    def sanitize_filename(filename: str) -> str:
+        """
+        Sanitize a filename for use in git patch headers.
+
+        - Escapes spaces with backslashes.
+        - Removes any trailing tabs.
+        - Leaves other characters unchanged.
+        """
+        return filename.rstrip("\t").strip()  # remove trailing tabs
 
     @staticmethod
     def _generate_unified_diff(
@@ -87,8 +98,9 @@ class GitSynthesizer:
             # single chunk for metadata extraction
             single_chunk: DiffChunk = file_chunks[0]
 
-            old_file_path = single_chunk.old_file_path
-            new_file_path = single_chunk.new_file_path
+            old_file_path = GitSynthesizer.sanitize_filename(single_chunk.old_file_path) if single_chunk.old_file_path is not None else None 
+            new_file_path = GitSynthesizer.sanitize_filename(single_chunk.new_file_path) if single_chunk.new_file_path is not None else None 
+
 
             multiple_chunks = len(file_chunks) > 1
 
@@ -101,10 +113,10 @@ class GitSynthesizer:
                     c.has_content for c in file_chunks
                 ), "Standard chunk does not have content!"
                 assert all(
-                    c.old_file_path == old_file_path for c in file_chunks
+                    c.old_file_path == single_chunk.old_file_path for c in file_chunks
                 ), "Standard chunk old file paths dont match!"
                 assert all(
-                    c.new_file_path == new_file_path for c in file_chunks
+                    c.new_file_path == single_chunk.new_file_path for c in file_chunks
                 ), "Standard chunk new file paths dont match!"
                 assert all(
                     c.is_file_addition == single_chunk.is_file_addition
@@ -176,11 +188,11 @@ class GitSynthesizer:
                 )
 
             old_file_header = (
-                f"a/{old_file_path}" if old_file_path is not None else DEVNULL
+                GitSynthesizer.sanitize_filename(f"a/{old_file_path}") if old_file_path is not None else DEVNULL
             )
 
             new_file_header = (
-                f"b/{new_file_path}" if new_file_path is not None else DEVNULL
+                GitSynthesizer.sanitize_filename(f"b/{new_file_path}") if new_file_path is not None else DEVNULL
             )
 
             # second part of deletion edge case
@@ -195,8 +207,6 @@ class GitSynthesizer:
             patch_lines.append(
                 "+++ {new_file_header}".format(new_file_header=new_file_header)
             )
-
-            terminator_needed = True
 
             if not multiple_chunks and not single_chunk.has_content:
                 patch_lines.append("@@ -0,0 +0,0 @@")
@@ -258,13 +268,10 @@ class GitSynthesizer:
 
                 if has_newline_fallback:
                     patch_lines.append("\\ No newline at end of file")
-                    terminator_needed = False
 
-            patches[file_path] = "\n".join(patch_lines) + (
-                "\n" if terminator_needed else ""
-            )
-
-            logger.info(
+            patches[file_path] = "\n".join(patch_lines) + "\n"
+            
+            logger.debug(
                 "Patch generation progress: cumulative_patches={count}",
                 count=len(patches),
             )
@@ -349,77 +356,72 @@ class GitSynthesizer:
         with tempfile.TemporaryDirectory() as temp_dir:
             worktree_path = Path(temp_dir) / "synth_worktree"
 
-            try:
-                # create the worktree off of our base commit
-                self._run_git_binary(
-                    "worktree", "add", "--detach", str(worktree_path), base_commit_hash
-                )
+            # create the worktree off of our base commit
+            self._run_git_binary(
+                "worktree", "add", "--detach", str(worktree_path), base_commit_hash
+            )
 
-                patches = GitSynthesizer._generate_unified_diff(
-                    chunks_for_commit, total_chunks_per_file
-                )
-                logger.info(
-                    "Tree build patch set summary: files={files} total_lines={lines}",
-                    files=len(patches),
-                    lines=sum(len(p.splitlines()) for p in patches.values()),
-                )
-                for file_path, patch_content in patches.items():
-                    if not patch_content.strip():
-                        logger.warning(f"Skipping empty patch for file: {file_path}")
-                        continue
+            patches = GitSynthesizer._generate_unified_diff(
+                chunks_for_commit, total_chunks_per_file
+            )
+            logger.info(
+                "Tree build patch set summary: files={files} total_lines={lines}",
+                files=len(patches),
+                lines=sum(len(p.splitlines()) for p in patches.values()),
+            )
+            # Batch apply: concatenate all file patches into a single patch stream
+            # This reduces process overhead and applies atomically.
+            if patches:
+                # Keep ordering deterministic by sorting file paths
+                ordered_items = sorted(patches.items(), key=lambda kv: kv[0])
+                combined_patch = "".join(patch for _, patch in ordered_items)
 
-                    try:
-                        logger.info(
-                            "Applying patch: file={file} patch_lines={lines}",
-                            file=file_path,
-                            lines=patch_content.splitlines(),
-                        )
-                        self._run_git_binary(
-                            "apply",
-                            "--index",
-                            "--recount",
-                            "--unidiff-zero",
-                            cwd=worktree_path,
-                            stdin_content=patch_content,
-                        )
+                try:
+                    logger.debug(
+                        "Applying combined patch stream: files={files}",
+                        files=len(ordered_items),
+                    )
+                    self._run_git_binary(
+                        "apply",
+                        "--index",
+                        "--recount",
+                        "--unidiff-zero",
+                        cwd=worktree_path,
+                        stdin_content=combined_patch,
+                    )
+                except RuntimeError as e:
+                    raise RuntimeError(
+                        "FATAL: Git apply failed for combined patch stream.\n"
+                        f"--- ERROR DETAILS ---\n{e}\n"
+                        f"--- PATCH CONTENT (combined) ---\n{combined_patch}\n"
+                    )
 
-                    except RuntimeError as e:
-                        raise RuntimeError(
-                            f"FATAL: Git apply failed for '{file_path}'.\n"
-                            f"--- ERROR DETAILS ---\n{e}\n"
-                            f"--- PATCH CONTENT ---\n{patch_content}\n"
-                        )
+            # 1. Define a path for a temporary index file INSIDE the worktree.
+            temp_index_path = Path(temp_dir) / ".git_temporary_index"
 
-                # 1. Define a path for a temporary index file INSIDE the worktree.
-                temp_index_path = Path(temp_dir) / ".git_temporary_index"
+            # 2. Clean up any existing index files for the temp index.
+            # 2. Clean up any existing lock files for the temp index.
+            temp_index_lock_path = Path(str(temp_index_path) + ".lock")
+            if temp_index_lock_path.exists():
+                temp_index_lock_path.unlink()
 
-                # 2. Clean up any existing index files for the temp index.
-                # 2. Clean up any existing lock files for the temp index.
-                temp_index_lock_path = Path(str(temp_index_path) + ".lock")
-                if temp_index_lock_path.exists():
-                    temp_index_lock_path.unlink()
+            # 3. Create a modified environment that tells Git to use this index.
+            env = os.environ.copy()
+            env["GIT_INDEX_FILE"] = str(temp_index_path)
 
-                # 3. Create a modified environment that tells Git to use this index.
-                env = os.environ.copy()
-                env["GIT_INDEX_FILE"] = str(temp_index_path)
+            # 5. Run 'git add' with this environment. It will now write to the temp index.
+            self._run_git_binary("add", "-A", ".", cwd=worktree_path, env=env)
 
-                # 5. Run 'git add' with this environment. It will now write to the temp index.
-                self._run_git_binary("add", "-A", ".", cwd=worktree_path, env=env)
+            # 6. Run 'write-tree' with the SAME environment. It will read from the temp index.
+            new_tree_hash = self._run_git_decoded(
+                "write-tree", cwd=worktree_path, env=env
+            )
+            logger.info(
+                "Tree object created: tree_hash={tree}",
+                tree=new_tree_hash,
+            )
+            return new_tree_hash
 
-                # 6. Run 'write-tree' with the SAME environment. It will read from the temp index.
-                new_tree_hash = self._run_git_decoded(
-                    "write-tree", cwd=worktree_path, env=env
-                )
-                logger.info(
-                    "Tree object created: tree_hash={tree}",
-                    tree=new_tree_hash,
-                )
-                return new_tree_hash
-
-            finally:
-                self._run_git_binary(
-                    "worktree", "remove", "--force", str(worktree_path)
-                )
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
         return self._run_git_decoded(

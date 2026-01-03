@@ -9,6 +9,7 @@ from .interface import LogicalGrouper
 from ..data.models import CommitGroup, ProgressCallback
 from ..data.utils import flatten_diff_chunks
 from ..data.chunk import Chunk
+from ..synthesizer.utils import get_patches_chunk
 
 
 class ChangeGroup(BaseModel):
@@ -59,13 +60,12 @@ class LangChainGrouper(LogicalGrouper):
 
     def _prepare_changes(self, chunks: List[Chunk]) -> str:
         """Convert chunks to a structured format for LLM analysis."""
-        total_chunks = self.get_total_chunks_per_file(chunks)
         changes = []
+        diff_map = get_patches_chunk(chunks)
         for i, chunk in enumerate(chunks):
             # Get the JSON representation of the chunk
             data = {}
-            change = self.get_descriptive_patch(chunk, total_chunks)
-            data["change"] = change
+            data["change"] = diff_map.get(i, "(no diff)")
             # Add a unique ID for reference
             data["chunk_id"] = i
             changes.append(data)
