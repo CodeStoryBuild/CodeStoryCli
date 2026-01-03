@@ -23,10 +23,9 @@
 from dataclasses import dataclass
 
 from loguru import logger
-from pygments.lexers import get_lexer_for_filename
-from pygments.util import ClassNotFound
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
+from .language_mapper import detect_tree_sitter_language
 
 
 @dataclass(frozen=True)
@@ -40,37 +39,7 @@ class ParsedFile:
 
 
 class FileParser:
-    """Parses files using Tree-sitter after detecting language with Pygments."""
-
-    # Mapping from Pygments lexer names to Tree-sitter language names
-    LANGUAGE_MAPPING = {
-        "python": "python",
-        "python3": "python",
-        "javascript": "javascript",
-        "typescript": "typescript",
-        "java": "java",
-        "c": "c",
-        "cpp": "cpp",
-        "c++": "cpp",
-        "csharp": "c_sharp",
-        "c#": "c_sharp",
-        "go": "go",
-        "rust": "rust",
-        "ruby": "ruby",
-        "php": "php",
-        "swift": "swift",
-        "kotlin": "kotlin",
-        "scala": "scala",
-        "html": "html",
-        "css": "css",
-        "json": "json",
-        "yaml": "yaml",
-        "toml": "toml",
-        "xml": "xml",
-        "bash": "bash",
-        "shell": "bash",
-        "sh": "bash",
-    }
+    """Parses files using Tree-sitter after detecting language."""
 
     @classmethod
     def parse_file(
@@ -91,7 +60,6 @@ class FileParser:
             ParsedFile containing the root node and detected language, or None if parsing failed
         """
         # TODO see if we can parse only the relevant ranges in line_ranges
-        # Detect language using Pygments
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
             logger.debug(f"Failed to get detect language for {file_name}")
@@ -123,10 +91,8 @@ class FileParser:
             return None
 
     @classmethod
-    def _detect_language(cls, file_name: str, file_content: str) -> str | None:
+    def _detect_language(cls, file_path: str, file_content: str) -> str | None:
         """
-        Detect the programming language using Pygments.
-
         Args:
             file_name: Name of the file (used for extension-based detection)
             file_content: Content of the file (used as fallback)
@@ -134,56 +100,4 @@ class FileParser:
         Returns:
             Tree-sitter compatible language name, or None if detection failed
         """
-        # TODO mix using file_content and file_name
-        try:
-            # Try to guess lexer based on filename
-            # clean file name
-            file_name_cleaned = file_name.replace(" ", "")
-
-            lexer = get_lexer_for_filename(file_name_cleaned)
-            # TODO handle composite lexers | eg language1+language2
-            # Map Pygments lexer name to Tree-sitter language name
-            return cls._map_lexer_to_language(lexer.name)
-        except ClassNotFound:
-            # If Pygments can't detect the language, return None
-            return None
-
-        except Exception:
-            # For any other errors, return None
-            return None
-
-    @classmethod
-    def _map_lexer_to_language(cls, lexer_name: str) -> str | None:
-        """
-        Map a Pygments lexer name to a Tree-sitter language name.
-
-        Args:
-            lexer_name: The lexer name from Pygments
-
-        Returns:
-            Tree-sitter compatible language name, or None if no mapping exists
-        """
-        # Normalize the lexer name
-        normalized_name = lexer_name.lower().strip()
-
-        # Direct mapping
-        if normalized_name in cls.LANGUAGE_MAPPING:
-            return cls.LANGUAGE_MAPPING[normalized_name]
-
-        # Try some common variations
-        if "python" in normalized_name:
-            return "python"
-        elif "javascript" in normalized_name or "js" in normalized_name:
-            return "javascript"
-        elif "typescript" in normalized_name or "ts" in normalized_name:
-            return "typescript"
-        elif "java" in normalized_name and "javascript" not in normalized_name:
-            return "java"
-        elif any(cpp_name in normalized_name for cpp_name in ["c++", "cpp", "cxx"]):
-            return "cpp"
-        elif normalized_name == "c":
-            return "c"
-
-        # If no mapping found, return None
-        logger.debug(f"No mapping found from lexer to language for lexer: {lexer_name}")
-        return None
+        return detect_tree_sitter_language(file_path, file_content)

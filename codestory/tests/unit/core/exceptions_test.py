@@ -32,7 +32,7 @@ from codestory.core.exceptions import (
     ValidationError,
     ai_service_timeout,
     api_key_missing,
-    codestoryError,
+    CodestoryError,
     git_not_found,
     invalid_commit_hash,
     not_git_repository,
@@ -41,15 +41,15 @@ from codestory.core.exceptions import (
 
 
 def test_exception_inheritance():
-    assert issubclass(GitError, codestoryError)
+    assert issubclass(GitError, CodestoryError)
     assert issubclass(DetachedHeadError, GitError)
-    assert issubclass(ValidationError, codestoryError)
-    assert issubclass(ConfigurationError, codestoryError)
-    assert issubclass(AIServiceError, codestoryError)
-    assert issubclass(FileSystemError, codestoryError)
-    assert issubclass(ChunkingError, codestoryError)
-    assert issubclass(SynthesizerError, codestoryError)
-    assert issubclass(FixCommitError, codestoryError)
+    assert issubclass(ValidationError, CodestoryError)
+    assert issubclass(ConfigurationError, CodestoryError)
+    assert issubclass(AIServiceError, CodestoryError)
+    assert issubclass(FileSystemError, CodestoryError)
+    assert issubclass(ChunkingError, CodestoryError)
+    assert issubclass(SynthesizerError, CodestoryError)
+    assert issubclass(FixCommitError, CodestoryError)
 
 
 def test_git_not_found():

@@ -29,7 +29,7 @@ error handling and user experience.
 """
 
 
-class codestoryError(Exception):
+class CodestoryError(Exception):
     """
     Base exception for all codestory-related errors.
 
@@ -50,7 +50,7 @@ class codestoryError(Exception):
         super().__init__(message)
 
 
-class GitError(codestoryError):
+class GitError(CodestoryError):
     """
     Errors related to git operations.
 
@@ -67,7 +67,7 @@ class DetachedHeadError(GitError):
     pass
 
 
-class ValidationError(codestoryError):
+class ValidationError(CodestoryError):
     """
     Input validation errors.
 
@@ -78,7 +78,7 @@ class ValidationError(codestoryError):
     pass
 
 
-class ConfigurationError(codestoryError):
+class ConfigurationError(CodestoryError):
     """
     Configuration-related errors.
 
@@ -89,7 +89,7 @@ class ConfigurationError(codestoryError):
     pass
 
 
-class AIServiceError(codestoryError):
+class AIServiceError(CodestoryError):
     """
     AI service related errors.
 
@@ -100,7 +100,7 @@ class AIServiceError(codestoryError):
     pass
 
 
-class FileSystemError(codestoryError):
+class FileSystemError(CodestoryError):
     """
     File system operation errors.
 
@@ -111,7 +111,7 @@ class FileSystemError(codestoryError):
     pass
 
 
-class ChunkingError(codestoryError):
+class ChunkingError(CodestoryError):
     """
     Errors during diff chunking operations.
 
@@ -122,7 +122,7 @@ class ChunkingError(codestoryError):
     pass
 
 
-class SynthesizerError(codestoryError):
+class SynthesizerError(CodestoryError):
     """
     Errors during commit synthesis.
 
@@ -133,11 +133,23 @@ class SynthesizerError(codestoryError):
     pass
 
 
-class FixCommitError(codestoryError):
+class FixCommitError(CodestoryError):
     """
     Errors during fix command run
     """
 
+    pass
+
+class LLMResponseError(CodestoryError):
+    """
+    Errors when llm response failed or was invalid
+    """
+    pass
+
+class LogicalGroupingError(CodestoryError):
+    """
+    Errors during logical grouping step
+    """
     pass
 
 

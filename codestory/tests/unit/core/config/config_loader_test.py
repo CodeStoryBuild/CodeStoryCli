@@ -21,18 +21,19 @@
 
 
 from pathlib import Path
+from dataclasses import dataclass
 from unittest.mock import mock_open, patch
 
 import pytest
 from codestory.core.config.config_loader import ConfigLoader
-from pydantic import BaseModel, ValidationError
 
 # -----------------------------------------------------------------------------
 # Test Models
 # -----------------------------------------------------------------------------
 
 
-class TestConfig(BaseModel):
+@dataclass
+class TestConfig:
     val: str | None = None
     number: int = 0
     flag: bool = False
@@ -191,7 +192,7 @@ def test_validation_error():
     with (
         patch.object(ConfigLoader, "load_toml", return_value={}),
         patch.object(ConfigLoader, "load_env", return_value={}),
-        pytest.raises(ValidationError),
+        pytest.raises(ValueError),
     ):
         ConfigLoader.get_full_config(
             TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")

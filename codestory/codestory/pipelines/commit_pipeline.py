@@ -1,11 +1,10 @@
 import contextlib
 from typing import Literal
 
-import inquirer
+import typer
+from colorama import Fore, Style
 from loguru import logger
-from rich import print as rprint
-from rich.progress import Progress
-from rich.text import Text
+from tqdm import tqdm
 
 from ..context import CommitContext, GlobalContext
 from ..core.chunker.interface import MechanicalChunker
@@ -26,83 +25,74 @@ from ..core.synthesizer.utils import get_patches
 
 
 @contextlib.contextmanager
-def progress_bar(p: Progress | None, step_name: str):
-    if p:
-        ck = p.add_task(step_name, total=1)
-
-    try:
-        yield
-
-    finally:
-        if p:
-            p.advance(ck, 1)
+def transient_step(description: str, silent: bool):
+    """
+    Creates an indeterminate progress bar that animates while processing
+    and cleans itself up immediately upon exit.
+    """
+    if silent:
+        yield None
+    else:
+        # total=None -> Indeterminate mode (scanner animation)
+        # leave=False -> Clears the line when context exits
+        with tqdm(
+            desc=description, 
+            total=None, 
+            leave=False, 
+            unit="it"
+        ) as pbar:
+            yield pbar
 
 
 def print_patch_cleanly(patch_content: str, max_length: int = 120):
     """
-
-    Displays a patch/diff content cleanly using Rich styling.
-
+    Displays a patch/diff content cleanly using direct Colorama styling.
     """
+    # Direct mapping to Colorama styles
     styles = {
-        # diff header
-        "diff_header": "#0496FF",
-        "between_diff": "bold white",
-        "header_removed": "bold bright_red",
-        # Added lines (starts with +)
-        "header_added": "bold bright_green",
-        # Hunks (e.g., @@ -1,5 +1,5 @@)
-        "hunk": "#0496FF",
-        # Deleted lines (starts with -)
-        "removed": "bold bright_red on #4d1515",  # Added a subtle background for contrast
-        # Added lines (starts with +)
-        "added": "bold bright_green on #18421b",  # Added a subtle background for contrast
-        # Context lines (starts with space or not present)
-        "context": "dim white",
+        "diff_header": Fore.BLUE,
+        "between_diff": Fore.WHITE + Style.BRIGHT,
+        "header_removed": Fore.RED + Style.BRIGHT,
+        "header_added": Fore.GREEN + Style.BRIGHT,
+        "hunk": Fore.BLUE,
+        "removed": Fore.RED,
+        "added": Fore.GREEN,
+        "context": Fore.WHITE + Style.DIM,
     }
 
     # Iterate through the patch content line by line
-
     between_diff_and_hunk = False
 
     for line in patch_content.splitlines()[:max_length]:
-        style_key = None
-
-        prefix = line[
-            :10
-        ]  # Check up to the first ten characters (could have large line diffs)
+        style_key = "context" # default
+        
+        # Check up to the first ten characters (optimizes for large lines)
+        prefix = line[:10]
 
         if prefix.startswith("diff --git"):
             style_key = "diff_header"
             between_diff_and_hunk = True
-
-        elif prefix.startswith("---") or prefix.startswith("+++"):
-            style_key = "header_removed" if prefix.startswith("---") else "header_added"
-
+        elif prefix.startswith("---"):
+            style_key = "header_removed"
             between_diff_and_hunk = False
-
+        elif prefix.startswith("+++"):
+            style_key = "header_added"
+            between_diff_and_hunk = False
         elif prefix.startswith("@@"):
             style_key = "hunk"
-
         elif prefix.startswith("-"):
             style_key = "removed"
-
         elif prefix.startswith("+"):
             style_key = "added"
-
         elif between_diff_and_hunk:
-            # lines after diff header, before first hunk, eg new file mode... or renamed file mode\nrename to...
+            # lines after diff header, before first hunk (e.g., file mode lines)
             style_key = "between_diff"
 
-        else:
-            style_key = "context"
-
-        # Create a Rich Text object and print it
-
-        rprint(Text(line, style=styles[style_key]))
+        # Apply style directly
+        print(f"{styles[style_key]}{line}{Style.RESET_ALL}")
 
     if len(patch_content.splitlines()) > max_length:
-        rprint("[yellow](Diff truncated)[/yellow]\n")
+        print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
 
 
 class CommitPipeline:
@@ -124,36 +114,22 @@ class CommitPipeline:
         source: Literal["commit", "fix"],
     ):
         self.global_context = global_context
-
         self.commit_context = commit_context
-
         self.git = git
-
         self.commands = commands
-
         self.mechanical_chunker = mechanical_chunker
-
         self.semantic_grouper = semantic_grouper
-
         self.logical_grouper = logical_grouper
-
         self.synthesizer = synthesizer
-
         self.file_reader = file_reader
-
         self.file_parser = file_parser
-
         self.query_manager = query_manager
-
         self.base_commit_hash = base_commit_hash
-
         self.new_commit_hash = new_commit_hash
-
         self.source = source
 
     def run(self) -> str | None:
         # Initial invocation summary
-
         logger.debug(
             "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
             target=self.commit_context.target,
@@ -163,7 +139,6 @@ class CommitPipeline:
         )
 
         # Diff between the base commit and the backup branch commit - all working directory changes
-
         with time_block("raw_diff_generation_ms"):
             raw_chunks, immutable_chunks = self.commands.get_processed_working_diff(
                 self.base_commit_hash,
@@ -179,19 +154,13 @@ class CommitPipeline:
 
         if not (raw_chunks or immutable_chunks):
             logger.info("No changes to process.")
-
             if self.source == "commit":
                 logger.info(
                     "[yellow]If you meant to modify existing git history, please use codestory fix or codestory clean commands[/yellow]"
                 )
-
-            return None
-
-        # start tracking progress
-        p = Progress() if not self.global_context.silent else None
+            raise typer.Exit(1)
 
         # init context_manager
-
         if raw_chunks:
             flat_chunks = [
                 diff_chunk for chunk in raw_chunks for diff_chunk in chunk.get_chunks()
@@ -205,9 +174,10 @@ class CommitPipeline:
             )
 
             # create smallest mechanically valid chunks
-
             with (
-                progress_bar(p, "Creating Mechanical Chunks"),
+                transient_step(
+                    "Creating Mechanical Chunks", self.global_context.silent
+                ),
                 time_block("mechanical_chunking"),
             ):
                 mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
@@ -221,7 +191,9 @@ class CommitPipeline:
             )
 
             with (
-                progress_bar(p, "Creating Semantic Groups"),
+                transient_step(
+                    "Creating Semantic Groups", self.global_context.silent
+                ),
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
@@ -233,23 +205,22 @@ class CommitPipeline:
                 semantic_chunks,
                 [],
             )
-
         else:
             semantic_chunks = []
 
-        if p:
-            ai_grp = p.add_task("Using AI to create meaningfull commits....", total=1)
-
-            def on_progress(percent):
-                # percent is 0-100, progress bar expects 0-1
-
-                p.update(ai_grp, completed=percent / 100)
-        else:
-            on_progress = None
-
         # take these semantically valid chunks, and now group them into logical commits
+        with (
+            transient_step(
+                "Using AI to create meaningful commits...", self.global_context.silent
+            ) as pbar,
+            time_block("logical_grouping"),
+        ):
+            
+            # Simple progress callback to keep the animation alive
+            def on_progress(percent):
+                if pbar is not None:
+                    pbar.update(1)
 
-        with time_block("logical_grouping"):
             ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
                 semantic_chunks,
                 immutable_chunks,
@@ -257,27 +228,19 @@ class CommitPipeline:
                 on_progress=on_progress,
             )
 
-        if p:
-            p.stop()
-
         if not ai_groups:
             logger.warning("No proposed commits to apply")
-
             logger.info("No AI groups proposed; aborting pipeline")
-
             return None
 
         logger.info("Proposed commits preview")
 
         # Prepare pretty diffs for each proposed group
-
         all_affected_files = set()
-
         patch_map = get_patches(ai_groups)
 
         for idx, group in enumerate(ai_groups):
             num = idx + 1
-
             logger.info(
                 "\nProposed commit #{num}: {message}",
                 num=num,
@@ -291,13 +254,11 @@ class CommitPipeline:
                 )
 
             affected_files = set()
-
             for chunk in group.chunks:
                 if isinstance(chunk, ImmutableChunk):
                     affected_files.add(
                         chunk.canonical_path.decode("utf-8", errors="replace")
                     )
-
                 else:
                     for diff_chunk in chunk.get_chunks():
                         if diff_chunk.is_file_rename:
@@ -308,7 +269,6 @@ class CommitPipeline:
                                 if isinstance(diff_chunk.old_file_path, bytes)
                                 else diff_chunk.old_file_path
                             )
-
                             new_path = (
                                 diff_chunk.new_file_path.decode(
                                     "utf-8", errors="replace"
@@ -316,12 +276,9 @@ class CommitPipeline:
                                 if isinstance(diff_chunk.new_file_path, bytes)
                                 else diff_chunk.new_file_path
                             )
-
                             affected_files.add(f"{old_path} -> {new_path}")
-
                         else:
                             path = diff_chunk.canonical_path()
-
                             affected_files.add(
                                 path.decode("utf-8", errors="replace")
                                 if isinstance(path, bytes)
@@ -331,22 +288,19 @@ class CommitPipeline:
             all_affected_files.update(affected_files)
 
             files_preview = ", ".join(sorted(affected_files))
-
             if len(files_preview) > 120:
                 files_preview = files_preview[:117] + "..."
-
             logger.info("Files: {files}\n", files=files_preview)
 
             # Log the diff for this group at debug level
-
             diff_text = patch_map.get(idx, "") or "(no diff)"
 
             if not (self.global_context.silent and self.global_context.auto_accept):
-                rprint(f"Diff for #{num}:")
+                print(f"Diff for #{num}:")
                 if diff_text != "(no diff)":
                     print_patch_cleanly(diff_text, max_length=120)
                 else:
-                    rprint("[yellow](no diff)[/yellow]")
+                    print(f"{Fore.YELLOW}(no diff){Style.RESET_ALL}")
 
             logger.debug(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
@@ -354,28 +308,22 @@ class CommitPipeline:
                 chunk_count=len(group.chunks),
                 files=len(affected_files),
             )
-
             logger.info("")
 
         # Single confirmation for all groups
-
         if self.global_context.auto_accept:
             apply_all = True
-
             logger.debug("Auto-confirm: Applying all proposed commits")
-
         else:
-            apply_all = inquirer.confirm(
+            apply_all = typer.confirm(
                 "Apply all proposed commits?",
                 default=False,
             )
 
         if not apply_all:
             logger.info("No changes applied")
-
             logger.info("User declined applying commits")
-
-            return None
+            raise typer.Exit(130)
 
         logger.debug(
             "Num accepted groups: {groups}",
@@ -388,7 +336,6 @@ class CommitPipeline:
             )
 
         # Final pipeline summary
-
         logger.debug(
             "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} final_groups={acc} files_changed={files}",
             raw=len(raw_chunks) + len(immutable_chunks),

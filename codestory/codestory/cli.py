@@ -20,19 +20,21 @@
 # -----------------------------------------------------------------------------
 
 
+import os
 from pathlib import Path
 
 import typer
-from dotenv import load_dotenv
+from colorama import init, Fore, Style
 from loguru import logger
 from platformdirs import user_config_dir
-from rich import print as rprint
-from rich.traceback import install
+
+# Initialize colorama for cross-platform colored output
+init(autoreset=True)
 
 from codestory.commands import clean, commit, config, fix
 from codestory.context import GlobalConfig, GlobalContext
 from codestory.core.config.config_loader import ConfigLoader
-from codestory.core.exceptions import codestoryError
+from codestory.core.exceptions import CodestoryError
 from codestory.core.logging.logging import setup_logger
 from codestory.runtimeutil import (
     ensure_utf8_output,
@@ -69,29 +71,23 @@ def setup_config_args(**kwargs):
 
 
 def run_onboarding(ctx: typer.Context):
-    rprint("[bold]Welcome to codestory![/bold]")
-    rprint(
-        "[bold]This is the first time you're running codestory. Let's get started![/bold]"
-    )
-    rprint("[bold]You'll be asked a few questions to configure codestory.[/bold]")
-    rprint(
-        "[bold]You can always change these settings later using the 'config' command.[/bold]"
-    )
-    rprint("[bold]Press Enter to continue.[/bold]")
+    print(f"{Fore.WHITE}{Style.BRIGHT}Welcome to codestory!{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{Style.BRIGHT}This is the first time you're running codestory. Let's get started!{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{Style.BRIGHT}You'll be asked a few questions to configure codestory.{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings later using the 'config' command.{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{Style.BRIGHT}Press Enter to continue.{Style.RESET_ALL}")
     input()
     model = typer.prompt(
         "What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)"
     )
     api_key = typer.prompt("What is your API key?")
-    global_ = typer.confirm("Do you want to set this as the global configuration?")
+    global_ = typer.confirm("Do you want to set this as the global configuration?", default=False)
     config.main(ctx, key="model", value=model, scope="global" if global_ else "local")
     config.main(
         ctx, key="api_key", value=api_key, scope="global" if global_ else "local"
     )
-    rprint("[bold]Configuration completed![/bold]")
-    rprint(
-        "[bold]You can always change these settings and more later using the 'config' command.[/bold]"
-    )
+    print(f"{Fore.WHITE}{Style.BRIGHT}Configuration completed!{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{Style.BRIGHT}You can always change these settings and more later using the 'config' command.{Style.RESET_ALL}")
     return
 
 
@@ -136,7 +132,7 @@ def main(
     model: str | None = typer.Option(
         None,
         "--model",
-        help="AI model to use (e.g., openai:gpt-4).",
+        help="AI model to use. Format provider/model (e.g., openai/gpt-4).",
     ),
     api_key: str | None = typer.Option(
         None, "--api-key", help="API key for the model provider"
@@ -170,7 +166,7 @@ def main(
         return
 
     if ctx.invoked_subcommand is None:
-        rprint(ctx.get_help())
+        print(ctx.get_help())
         raise typer.Exit()
 
     # initial setup of logger, will be updated later if needed
@@ -215,6 +211,16 @@ def main(
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
     ctx.obj = global_context
 
+def load_env(path=".env"):
+    try:
+        for line in open(path):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, _, value = line.partition("=")
+            os.environ[key] = value
+    except FileNotFoundError:
+        pass
 
 def run_app():
     """Run the application with global exception handling."""
@@ -223,14 +229,12 @@ def run_app():
         ensure_utf8_output()
         # Set up signal handlers for graceful shutdown
         setup_signal_handlers()
-        # Disable showing locals in tracebacks (way too much text)
-        install(show_locals=False)
         # load any .env files
-        load_dotenv()
+        load_env()
         # launch cli
         app(prog_name="cst")
 
-    except codestoryError as e:
+    except CodestoryError as e:
         logger.error(e)
 
     except KeyboardInterrupt:

@@ -20,7 +20,6 @@
 # -----------------------------------------------------------------------------
 
 
-import inquirer
 import typer
 from loguru import logger
 
@@ -61,7 +60,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
                 "[yellow]Auto-confirm:[/yellow] Unstaging all changes to proceed."
             )
         else:
-            unstage = inquirer.confirm(
+            unstage = typer.confirm(
                 "Staged changes detected. codestory requires a clean staging area. Unstage all changes?",
                 default=False,
             )

@@ -70,16 +70,12 @@ def test_global_config_custom_values():
 # -----------------------------------------------------------------------------
 
 
-@patch("codestory.context.try_create_model")
 @patch("codestory.context.SubprocessGitInterface")
 @patch("codestory.context.GitCommands")
 def test_global_context_from_config_defaults(
-    mock_git_commands, mock_git_interface, mock_create_model
+    mock_git_commands, mock_git_interface
 ):
     """Test creating GlobalContext from an empty GlobalConfig (defaults)."""
-    # Setup mocks
-    mock_model = Mock()
-    mock_create_model.return_value = mock_model
 
     mock_interface_instance = Mock()
     mock_git_interface.return_value = mock_interface_instance
@@ -94,7 +90,7 @@ def test_global_context_from_config_defaults(
 
     # Verify
     assert context.repo_path == repo_path
-    assert context.model == mock_model
+    assert context.model == None
     assert context.git_interface == mock_interface_instance
     assert context.git_commands == mock_commands_instance
     assert context.verbose is False
@@ -103,25 +99,19 @@ def test_global_context_from_config_defaults(
     assert context.auto_accept is False
 
     # Verify calls
-    mock_create_model.assert_called_once_with(None, None, 0.7)
     mock_git_interface.assert_called_once_with(repo_path)
     mock_git_commands.assert_called_once_with(mock_interface_instance)
 
 
-@patch("codestory.context.try_create_model")
 @patch("codestory.context.SubprocessGitInterface")
 @patch("codestory.context.GitCommands")
 def test_global_context_from_config_custom(
-    mock_git_commands, mock_git_interface, mock_create_model
+    mock_git_commands, mock_git_interface
 ):
     """Test creating GlobalContext from a populated GlobalConfig."""
-    # Setup mocks
-    mock_model = Mock()
-    mock_create_model.return_value = mock_model
-
     # Execute
     config = GlobalConfig(
-        model="claude-3",
+        model="anthropic:claude-3",
         api_key="sk-ant",
         temperature=0.2,
         aggresiveness="Conservative",
@@ -132,14 +122,11 @@ def test_global_context_from_config_custom(
     context = GlobalContext.from_global_config(config, repo_path)
 
     # Verify
-    assert context.model == mock_model
+    assert context.model != None
     assert context.verbose is True
     assert context.temperature == 0.2
     assert context.aggresiveness == "Conservative"
     assert context.auto_accept is True
-
-    # Verify calls
-    mock_create_model.assert_called_once_with("claude-3", "sk-ant", 0.2)
 
 
 # -----------------------------------------------------------------------------
