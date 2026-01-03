@@ -43,7 +43,7 @@ class SemanticGrouper:
     def __init__(
         self,
         fallback_grouping_strategy: Literal[
-            "all_together", "by_file_path", "by_file_name", "by_file_extension"
+            "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
         ] = "all_together",
     ):
         """
@@ -161,6 +161,10 @@ class SemanticGrouper:
         """
         if not fallback_chunks:
             return []
+        
+        if self.fallback_grouping_strategy == "all_alone":
+            # no fallback grouping, just leave each chunk as is
+            return [CompositeDiffChunk(chunks=[chunk]) for chunk in fallback_chunks]
 
         # Build signature sets for each chunk
         chunk_signatures: list[set[str]] = []

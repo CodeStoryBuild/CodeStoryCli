@@ -44,7 +44,7 @@ class GlobalConfig:
     secret_scanner_aggression: Literal["safe", "standard", "strict", "none"] = "safe"
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = "Regular"
     fallback_grouping_strategy: Literal[
-        "all_together", "by_file_path", "by_file_name", "by_file_extension"
+        "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
     ] = "all_together"
     verbose: bool = False
     auto_accept: bool = False
@@ -70,6 +70,7 @@ class GlobalConfig:
                 "by_file_path",
                 "by_file_name",
                 "by_file_extension",
+                "all_alone",
             )
         ),
         "verbose": BoolConstraint(),
@@ -85,7 +86,7 @@ class GlobalConfig:
         "relevance_filter_level": "How much to filter irrelevant changes",
         "secret_scanner_aggression": "How aggresively to scan for secrets",
         "aggresiveness": "How aggressively to split commits smaller",
-        "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation: all_together (default), by_file_path, by_file_name, or by_file_extension",
+        "fallback_grouping_strategy": "Strategy for grouping chunks that fail annotation",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
