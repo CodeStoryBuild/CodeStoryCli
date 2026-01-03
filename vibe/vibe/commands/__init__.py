@@ -2,6 +2,6 @@
 
 __all__ = [
     "commit",
-    "expand", 
+    "expand",
     "clean",
 ]

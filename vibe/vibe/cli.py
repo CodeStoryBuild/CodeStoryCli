@@ -38,7 +38,7 @@ def setup_signal_handlers():
         console = Console()
         console.print("\n[yellow]Operation cancelled by user[/yellow]")
         raise typer.Exit(130)  # Standard exit code for Ctrl+C
-    
+
     signal.signal(signal.SIGINT, signal_handler)
     if hasattr(signal, 'SIGTERM'):
         signal.signal(signal.SIGTERM, signal_handler)

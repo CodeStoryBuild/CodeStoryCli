@@ -20,21 +20,21 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
-    
+
     def __init__(self, command_name: str, console: Console):
         self.command_name = command_name
         self.console = console
         self._setup_logger()
-    
+
     def _setup_logger(self) -> None:
         """Set up loguru with proper formatting and sinks."""
         # Clear existing sinks to avoid duplicates
         logger.remove()
-        
+
         # Determine log level from environment
         log_level = os.getenv("VIBE_LOG_LEVEL", "INFO").upper()
         console_level = os.getenv("VIBE_CONSOLE_LOG_LEVEL", log_level).upper()
-        
+
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logfile = LOG_DIR / f"{self.command_name}_{timestamp}.log"
@@ -45,7 +45,7 @@ class StructuredLogger:
             record = message.record
             level = record["level"].name
             msg = record["message"]
-            
+
             # Format with Rich colors
             if level == "DEBUG":
                 style = "dim"
@@ -59,15 +59,15 @@ class StructuredLogger:
                 style = "red bold reverse"
             else:
                 style = "white"
-            
+
             # Only show structured fields in debug mode
             if log_level == "DEBUG" and record.get("extra"):
                 extra_info = " ".join(f"{k}={v}" for k, v in record["extra"].items())
                 msg = f"{msg} ({extra_info})"
-            
+
             text = Text(f"[{level}] {msg}", style=style)
             self.console.print(text)
-        
+
         # Add console sink with appropriate level
         logger.add(
             console_sink,
@@ -75,7 +75,7 @@ class StructuredLogger:
             format="{message}",
             catch=True
         )
-        
+
         # File sink with detailed formatting
         logger.add(
             logfile,
@@ -91,16 +91,16 @@ class StructuredLogger:
             backtrace=True,
             diagnose=True
         )
-        
+
         # Log initialization
         logger.bind(
             command=self.command_name,
             logfile=str(logfile),
             log_level=log_level
         ).info("Logger initialized")
-        
+
         self.logfile = logfile
-    
+
     def get_logfile(self) -> Path:
         """Get the current log file path."""
         return self.logfile
@@ -155,7 +155,7 @@ def log_operation(operation: str, success: bool, **details) -> None:
     """
     level = "info" if success else "error"
     status = "SUCCESS" if success else "FAILED"
-    
+
     logger.bind(
         operation=operation,
         success=success,
@@ -200,10 +200,10 @@ def cleanup_old_logs(days: int = 14) -> int:
         Number of files cleaned up
     """
     import time
-    
+
     cutoff_time = time.time() - (days * 24 * 60 * 60)
     cleaned = 0
-    
+
     for log_file in LOG_DIR.glob("*.log*"):
         if log_file.stat().st_mtime < cutoff_time:
             try:
@@ -211,5 +211,5 @@ def cleanup_old_logs(days: int = 14) -> int:
                 cleaned += 1
             except OSError:
                 pass  # File might be in use or permission issues
-    
+
     return cleaned
