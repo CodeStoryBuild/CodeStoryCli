@@ -154,7 +154,10 @@ def main_fix(
     from codestory.commands.fix import run_fix
 
     with handle_codestory_exception():
-        run_fix(ctx.obj, commit_hash, start_commit)
+        if run_fix(ctx.obj, commit_hash, start_commit):
+            raise typer.Exit(0)
+        else:
+            raise typer.Exit(1)
 
 
 @app.command(name="clean")
@@ -193,7 +196,10 @@ def main_clean(
     from codestory.commands.clean import run_clean
 
     with handle_codestory_exception():
-        run_clean(ctx.obj, ignore, min_size, start_from)
+        if run_clean(ctx.obj, ignore, min_size, start_from):
+            raise typer.Exit(0)
+        else:
+            raise typer.Exit(1)
 
 
 @app.command(name="config")
