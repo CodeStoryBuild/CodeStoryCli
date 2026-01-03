@@ -30,11 +30,10 @@ error handling and user experience.
 
 
 class CodestoryError(Exception):
-    """
-    Base exception for all codestory-related errors.
+    """Base exception for all codestory-related errors.
 
-    All codestory-specific exceptions should inherit from this class
-    to enable consistent error handling throughout the application.
+    All codestory-specific exceptions should inherit from this class to
+    enable consistent error handling throughout the application.
     """
 
     pass
@@ -112,11 +111,10 @@ class ModelRetryExhausted(CodestoryError):
 
 
 class FileSystemError(CodestoryError):
-    """
-    File system operation errors.
+    """File system operation errors.
 
-    Raised when file or directory operations fail,
-    such as permission issues or missing files.
+    Raised when file or directory operations fail, such as permission
+    issues or missing files.
     """
 
     pass
@@ -144,17 +142,13 @@ class SynthesizerError(CodestoryError):
 
 
 class FixCommitError(CodestoryError):
-    """
-    Errors during fix command run
-    """
+    """Errors during fix command run."""
 
     pass
 
 
 class LLMResponseError(CodestoryError):
-    """
-    Errors when llm response failed or was invalid
-    """
+    """Errors when llm response failed or was invalid."""
 
     pass
 
@@ -171,17 +165,13 @@ class LLMInitError(CodestoryError):
 
 
 class LogicalGroupingError(CodestoryError):
-    """
-    Errors during logical grouping step
-    """
+    """Errors during logical grouping step."""
 
     pass
 
 
 class CleanCommandError(CodestoryError):
-    """
-    Errors specific to running the cst clean command
-    """
+    """Errors specific to running the cst clean command."""
 
 
 class SyntaxErrorDetected(CodestoryError):
