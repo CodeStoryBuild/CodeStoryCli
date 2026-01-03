@@ -396,7 +396,6 @@ class Replacement(LineNumbered):
 
 
 
-
 @dataclass
 class CommitGroup:
     """
