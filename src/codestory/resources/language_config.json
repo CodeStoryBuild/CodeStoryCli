@@ -20,9 +20,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((decorated_definition) @placeholder)",
-                "((class_definition) @placeholder)"
+                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((decorated_definition definition: (function_definition name: (identifier) @placeholder.name)) @placeholder)",
+                "((class_definition name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((while_statement) @placeholder)",
@@ -62,11 +62,11 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((arrow_function) @placeholder)",
-                "((class_declaration) @placeholder)"
+                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((class_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((arrow_function) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((for_in_statement) @placeholder)",
@@ -103,13 +103,13 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((arrow_function) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((interface_declaration) @placeholder)",
-                "((enum_declaration) @placeholder)"
+                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                "((interface_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((arrow_function) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((for_in_statement) @placeholder)",
@@ -144,10 +144,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method_declaration) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((interface_declaration) @placeholder)",
-                "((constructor_declaration) @placeholder)"
+                "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((interface_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -186,9 +186,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((class_specifier) @placeholder)",
-                "((namespace_definition) @placeholder)"
+                "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
+                "((class_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                "((namespace_definition name: (namespace_identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -224,10 +224,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method_declaration) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((namespace_declaration) @placeholder)",
-                "((constructor_declaration) @placeholder)"
+                "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((namespace_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -274,8 +274,8 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((method_declaration) @placeholder)"
+                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                "((method_declaration name: (field_identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -311,11 +311,11 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_item) @placeholder)",
-                "((impl_item) @placeholder)",
-                "((struct_item) @placeholder)",
-                "((enum_item) @placeholder)",
-                "((mod_item) @placeholder)"
+                "((function_item name: (identifier) @placeholder.name) @placeholder)",
+                "((impl_item type: (type_identifier) @placeholder.name) @placeholder)",
+                "((struct_item name: (type_identifier) @placeholder.name) @placeholder)",
+                "((enum_item name: (type_identifier) @placeholder.name) @placeholder)",
+                "((mod_item name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_expression) @placeholder)",
@@ -351,13 +351,13 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method) @placeholder)",
-                "((singleton_method) @placeholder)",
-                "((class) @placeholder)",
-                "((module) @placeholder)",
-                "((lambda) @placeholder)"
+                "((method name: (identifier) @placeholder.name) @placeholder)",
+                "((singleton_method name: (identifier) @placeholder.name) @placeholder)",
+                "((class name: (constant) @placeholder.name) @placeholder)",
+                "((module name: (constant) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((lambda) @placeholder)",
                 "((if) @placeholder)",
                 "((unless) @placeholder)",
                 "((while) @placeholder)",
@@ -394,10 +394,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((method_declaration) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((namespace_definition) @placeholder)"
+                "((function_definition name: (name) @placeholder.name) @placeholder)",
+                "((method_declaration name: (name) @placeholder.name) @placeholder)",
+                "((class_declaration name: (name) @placeholder.name) @placeholder)",
+                "((namespace_definition name: (namespace_name) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -432,9 +432,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((protocol_declaration) @placeholder)"
+                "((function_declaration name: (simple_identifier) @placeholder.name) @placeholder)",
+                "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                "((protocol_declaration name: (type_identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -468,11 +468,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((class_declaration) @placeholder)",
-                "((object_declaration) @placeholder)",
-                "((anonymous_initializer) @placeholder)",
-                "((lambda_literal) @placeholder)"
+                "((function_declaration (simple_identifier) @placeholder.name) @placeholder)",
+                "((class_declaration (type_identifier) @placeholder.name) @placeholder)",
+                "((object_declaration (type_identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_expression) @placeholder)",
@@ -480,7 +478,9 @@
                 "((for_statement) @placeholder)",
                 "((while_statement) @placeholder)",
                 "((do_while_statement) @placeholder)",
-                "((try_expression) @placeholder)"
+                "((try_expression) @placeholder)",
+                "((anonymous_initializer) @placeholder)",
+                "((lambda_literal) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -508,10 +508,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((class_definition) @placeholder)",
-                "((object_definition) @placeholder)",
-                "((trait_definition) @placeholder)"
+                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((class_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((object_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((trait_definition name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_expression) @placeholder)",
@@ -542,9 +542,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)"
             ],
             "structural_scope": [
+                "((function_definition) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((while_statement) @placeholder)",
@@ -574,10 +574,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration) @placeholder)",
-                "((function_definition) @placeholder)"
+                "((function_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((function_definition) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((while_statement) @placeholder)",
@@ -612,11 +612,11 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_body) @placeholder)",
-                "((class_definition) @placeholder)",
-                "((enum_declaration) @placeholder)"
+                "((class_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((function_body) @placeholder)",
                 "((if_statement) @placeholder)",
                 "((for_statement) @placeholder)",
                 "((while_statement) @placeholder)",
@@ -647,9 +647,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((anonymous_function) @placeholder)"
             ],
             "structural_scope": [
+                "((anonymous_function) @placeholder)",
                 "((call) @placeholder)",
                 "((do_block) @placeholder)"
             ]
@@ -679,10 +679,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function) @placeholder)",
-                "((lambda) @placeholder)"
+                "((function name: (variable) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
+                "((lambda) @placeholder)",
                 "((local_binds) @placeholder)",
                 "((let) @placeholder)",
                 "((case) @placeholder)",
@@ -713,11 +713,11 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((value_definition) @placeholder)",
-                "((function_expression) @placeholder)",
-                "((module_definition) @placeholder)"
+                "((module_definition (module_binding (module_name) @placeholder.name)) @placeholder)"
             ],
             "structural_scope": [
+                "((value_definition) @placeholder)",
+                "((function_expression) @placeholder)",
                 "((if_expression) @placeholder)",
                 "((match_expression) @placeholder)",
                 "((try_expression) @placeholder)",
@@ -747,7 +747,7 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_clause) @placeholder)"
+                "((function_clause name: (atom) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((case_expr) @placeholder)",
@@ -775,9 +775,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((anon_fn_lit) @placeholder)"
             ],
             "structural_scope": [
+                "((anon_fn_lit) @placeholder)",
                 "((list_lit) @placeholder)",
                 "((vec_lit) @placeholder)",
                 "((map_lit) @placeholder)",
@@ -811,9 +811,9 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((modifier_definition) @placeholder)",
-                "((contract_declaration) @placeholder)"
+                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((modifier_definition name: (identifier) @placeholder.name) @placeholder)",
+                "((contract_declaration name: (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
@@ -835,12 +835,12 @@
                     "((identifier) @placeholder)"
                 ],
                 "definition_queries": [
-                    "(assignment_expression (identifier) @placeholder)",
-                    "(function_definition name: (identifier) @placeholder)",
-                    "(short_function_definition name: (identifier) @placeholder)",
-                    "(macro_definition name: (identifier) @placeholder)",
-                    "(struct_definition name: (identifier) @placeholder)",
-                    "(module_definition name: (identifier) @placeholder)",
+                    "(assignment_expression left: (identifier) @placeholder)",
+                    "(function_definition (signature (call_expression (identifier) @placeholder)))",
+                    "(short_function_definition (signature (call_expression (identifier) @placeholder)))",
+                    "(macro_definition (signature (call_expression (identifier) @placeholder)))",
+                    "(struct_definition (type_head (identifier) @placeholder))",
+                    "(module_definition (identifier) @placeholder)",
                     "(for_clause (identifier) @placeholder)",
                     "(import_statement (identifier) @placeholder)",
                     "(using_statement (identifier) @placeholder)"
@@ -849,10 +849,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition) @placeholder)",
-                "((macro_definition) @placeholder)",
-                "((struct_definition) @placeholder)",
-                "((module_definition) @placeholder)"
+                "((function_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
+                "((macro_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
+                "((struct_definition (type_head (identifier) @placeholder.name)) @placeholder)",
+                "((module_definition (identifier) @placeholder.name) @placeholder)"
             ],
             "structural_scope": [
                 "((if_statement) @placeholder)",
