@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# dslate - Dual Licensed Software
+# codestory - Dual Licensed Software
 # Copyright (c) 2025 Adem Can
 #
 # This file is part of codestory.
