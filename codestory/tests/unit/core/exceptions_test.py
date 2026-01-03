@@ -23,6 +23,7 @@
 from codestory.core.exceptions import (
     AIServiceError,
     ChunkingError,
+    CodestoryError,
     ConfigurationError,
     DetachedHeadError,
     FileSystemError,
@@ -32,7 +33,6 @@ from codestory.core.exceptions import (
     ValidationError,
     ai_service_timeout,
     api_key_missing,
-    CodestoryError,
     git_not_found,
     invalid_commit_hash,
     not_git_repository,

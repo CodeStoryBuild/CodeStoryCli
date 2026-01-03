@@ -12,12 +12,10 @@ from loguru import logger
 from ..data.chunk import Chunk
 from ..data.commit_group import CommitGroup
 from ..data.immutable_chunk import ImmutableChunk
+from ..exceptions import LLMResponseError, LogicalGroupingError
+from ..llm import CodeStoryAdapter
 from ..synthesizer.utils import get_patches_chunk
 from .interface import LogicalGrouper
-
-from ..llm import CodeStoryAdapter
-from ..exceptions import LogicalGroupingError, LLMResponseError
-
 
 # -----------------------------------------------------------------------------
 # Prompts
