@@ -20,6 +20,7 @@
 # -----------------------------------------------------------------------------
 
 
+from typing import Literal
 from dslate.context import CommitContext, GlobalContext
 from dslate.core.chunker.atomic_chunker import AtomicChunker
 from dslate.core.exceptions import GitError
@@ -39,6 +40,7 @@ def create_commit_pipeline(
     commit_ctx: CommitContext,
     base_commit_hash: str,
     new_commit_hash: str,
+    source: Literal["commit", "fix"]
 ):
     chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
 
@@ -77,6 +79,7 @@ def create_commit_pipeline(
         query_manager,
         base_commit_hash,
         new_commit_hash,
+        source
     )
 
     return pipeline
