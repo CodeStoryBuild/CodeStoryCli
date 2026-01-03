@@ -25,7 +25,11 @@ class LineNumbered:
 
 @dataclass
 class Addition(LineNumbered):
-    """Represents a single added line of code."""
+    """Represents a single added line of code.
+    
+    old_line: Position in old file where this addition occurs (the line after which we insert)
+    abs_new_line: Absolute position in new file (from original diff, for semantic grouping only)
+    """
 
     ...
 
