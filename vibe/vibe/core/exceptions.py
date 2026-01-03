@@ -110,10 +110,12 @@ class SynthesizerError(VibeError):
 
     pass
 
+
 class ExpansionError(VibeError):
     """
     Errors during expand command run
     """
+
     pass
 
 
