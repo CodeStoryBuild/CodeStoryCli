@@ -34,11 +34,16 @@ symbol_mapper = SymbolMapper(query_manager)
 
 # --- PASS 1: Build Scope Map ---
 scope_map = scope_mapper.build_scope_map(parsed_file.detected_language, root, FILE_PATH)
+
+print("--- Generated Scope Map ---")
 for line, scope in scope_map.scope_lines.items():
     print(f"Line {line}: {scope}")
+print("-" * 25)
 
 # --- PASS 2: Build Symbol Map ---
 sym_map = symbol_mapper.build_symbol_map(parsed_file.detected_language, root, scope_map)
+
+print("\n--- Found Symbols (with Scope Tagging) ---")
 for line, symbols in sorted(sym_map.line_symbols.items()):
     for symbol in symbols:
         # Extract parts for display
@@ -50,6 +55,7 @@ for line, symbols in sorted(sym_map.line_symbols.items()):
 print("\n--- Final Scoped Symbol Map ---")
 for line, symbols in sorted(sym_map.line_symbols.items()):
     print(f"Line {line}: {symbols}")
+print("-" * 25)
 
 
 def get_signature(start_line : int, end_line : int):
