@@ -77,7 +77,7 @@ class SymbolMapper:
                 text = node.text.decode("utf8", errors="replace")
 
                 qualified_symbol = QueryManager.create_qualified_symbol(
-                    match_class, text
+                    match_class, text, language_name
                 )
 
                 if qualified_symbol in defined_symbols:

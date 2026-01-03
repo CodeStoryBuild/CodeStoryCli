@@ -42,8 +42,8 @@ def test_extract_defined_symbols(MockQueryManager):
 
     # Mock create_qualified_symbol static method (it's called on the class)
     # Since we patched QueryManager class, we can configure the static method on the mock class
-    def create_qualified_symbol_side_effect(match_class, text):
-        return f"{match_class}:{text}"
+    def create_qualified_symbol_side_effect(match_class, text, file_name):
+        return f"{text} {match_class} {file_name}"
 
     MockQueryManager.create_qualified_symbol.side_effect = (
         create_qualified_symbol_side_effect
@@ -54,8 +54,8 @@ def test_extract_defined_symbols(MockQueryManager):
     symbols = extractor.extract_defined_symbols("python", Mock(), [])
 
     assert len(symbols) == 2
-    assert "class:MyClass" in symbols
-    assert "function:my_function" in symbols
+    assert "MyClass class python" in symbols
+    assert "my_function function python" in symbols
 
     # Verify run_query call
     qm.run_query_captures.assert_called_once()

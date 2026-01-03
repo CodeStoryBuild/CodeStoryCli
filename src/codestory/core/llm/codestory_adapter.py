@@ -58,6 +58,9 @@ class CodeStoryAdapter:
         # Async client created lazily to avoid event loop issues
         self._async_client = None  # type: httpx.AsyncClient | None
 
+        # Persistent event loop for sync batch calls
+        self._loop = None
+
     def _get_async_client(self):
         import httpx
 
@@ -65,9 +68,19 @@ class CodeStoryAdapter:
             self._async_client = httpx.AsyncClient(timeout=60.0)
         return self._async_client
 
+    def _get_loop(self):
+        """Get or create a persistent event loop for sync batch calls."""
+        if self._loop is None or self._loop.is_closed():
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+        return self._loop
+
     def close(self):
-        """Close the synchronous client."""
+        """Close the synchronous client and event loop."""
         self.client.close()
+        if self._loop and not self._loop.is_closed():
+            self._loop.close()
+            self._loop = None
 
     async def aclose(self):
         """Close the asynchronous client."""
@@ -178,15 +191,10 @@ class CodeStoryAdapter:
     ) -> list[str]:
         """
         Synchronous convenience wrapper for batched calls.
-        Note: Cannot be called from within a running event loop.
+        Safe for multiple calls in a CLI by reusing a persistent event loop.
         """
-        try:
-            return asyncio.run(self.async_invoke_batch(batch, max_concurrent))
-        except RuntimeError as e:
-            raise RuntimeError(
-                "invoke_batch cannot be used inside an already-running event loop. "
-                "Use `await async_invoke_batch(...)` instead."
-            ) from e
+        loop = self._get_loop()
+        return loop.run_until_complete(self.async_invoke_batch(batch, max_concurrent))
 
     def _prepare_request(
         self, messages: list[dict[str, str]]

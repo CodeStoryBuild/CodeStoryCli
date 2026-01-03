@@ -69,7 +69,7 @@ class DiffChunk:
 
     # the file mode from git diff (e.g., b'100644', b'100755')
     file_mode: bytes | None = None
-    # whether the chunk should have a "\\ no newline at end of file" at end of the chunk
+    # whether the chunk should have a "\\ no newline at end of file" at end of the chunk (for chunks with no additions/removals)
     contains_newline_fallback: bool = False
 
     # the structured content of this chunk (list of Addition/Removal objects)
@@ -277,9 +277,7 @@ class DiffChunk:
                 current_old_line += 1
             elif line.strip() == b"\\ No newline at end of file":
                 if parsed_content:
-                    parsed_content[-1].content = (
-                        parsed_content[-1].content + b"\n\\ No newline at end of file"
-                    )
+                    parsed_content[-1].newline_marker = True
                 else:
                     contains_newline_fallback = True
 

@@ -33,6 +33,7 @@ from codestory.core.synthesizer.chunk_merger import merge_chunks
 class Signature:
     """Represents the semantic signature of a chunk."""
 
+    languages: set[str]  # Programming languages/File types of the signature
     def_new_symbols: set[str]  # Symbols defined in the new version
     def_old_symbols: set[str]  # Symbols defined in the old version
     extern_new_symbols: set[
@@ -59,6 +60,7 @@ class Signature:
             )
 
         base_sig = next(sig for sig in signatures if sig is not None)
+        base_languages = set(base_sig.languages)
         base_new_symbols = set(base_sig.def_new_symbols)
         base_old_symbols = set(base_sig.def_old_symbols)
         base_extern_new_symbols = set(base_sig.extern_new_symbols)
@@ -79,6 +81,7 @@ class Signature:
             if s is base_sig:
                 continue
 
+            base_languages.update(s.languages)
             base_new_symbols.update(s.def_new_symbols)
             base_old_symbols.update(s.def_old_symbols)
             base_extern_new_symbols.update(s.extern_new_symbols)
@@ -94,6 +97,7 @@ class Signature:
             base_old_fqns.update(s.old_fqns)
 
         return Signature(
+            languages=base_languages,
             def_new_symbols=base_new_symbols,
             def_old_symbols=base_old_symbols,
             extern_new_symbols=base_extern_new_symbols,
@@ -242,6 +246,7 @@ class ChunkLabeler:
             Tuple of (symbols, scope) in the affected line ranges.
             Scope is determined by the LCA scope of the chunk's line ranges.
         """
+        languages = set()
         def_old_symbols_acc = set()
         def_new_symbols_acc = set()
         extern_old_symbols_acc = set()
@@ -272,6 +277,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
+                languages.add(old_context.parsed_file.detected_language)
                 def_old_symbols_acc.update(def_old_symbols)
                 extern_old_symbols_acc.update(extern_old_symbols)
                 old_named_structural_scopes_acc.update(old_named_structural_scopes)
@@ -293,6 +299,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
+                languages.add(new_context.parsed_file.detected_language)
                 def_new_symbols_acc.update(def_new_symbols)
                 extern_new_symbols_acc.update(extern_new_symbols)
                 new_named_structural_scopes_acc.update(new_named_structural_scopes)
@@ -315,6 +322,7 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
+                languages.add(new_context.parsed_file.detected_language)
 
         elif diff_chunk.is_file_deletion:
             # For deletions, analyze old version only
@@ -331,8 +339,10 @@ class ChunkLabeler:
                 ) = ChunkLabeler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
+                languages.add(old_context.parsed_file.detected_language)
 
         return Signature(
+            languages=languages,
             def_new_symbols=def_new_symbols_acc,
             def_old_symbols=def_old_symbols_acc,
             extern_new_symbols=extern_new_symbols_acc,

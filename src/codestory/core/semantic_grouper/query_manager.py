@@ -74,7 +74,7 @@ class LanguageConfig:
             share_tokens_between_files,
         )
 
-    def __get_source(self, queries: list[str], capture_class) -> str:
+    def __get_source(self, queries: list[str], capture_class: str) -> str:
         lines = []
         for query in queries:
             if "@placeholder" not in query:
@@ -200,6 +200,9 @@ class QueryManager:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
+
+    def has_language(self, language_name: str) -> bool:
+        return language_name in self._language_configs
 
     def _init_configs(self, config_content: str) -> dict[str, LanguageConfig]:
         try:
@@ -358,5 +361,8 @@ class QueryManager:
         return lang_config
 
     @staticmethod
-    def create_qualified_symbol(capture_class: str, token_name: str) -> str:
-        return f"{capture_class}:{token_name}"
+    def create_qualified_symbol(
+        capture_class: str, token_name: str, language: str
+    ) -> str:
+        # returns something like "foo identifier_class python"
+        return f"{token_name} {capture_class} {language}"

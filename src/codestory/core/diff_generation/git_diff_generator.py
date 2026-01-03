@@ -18,41 +18,16 @@
 
 from itertools import groupby
 
-from codestory.core.data.chunk import Chunk
-from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.diff_generation.diff_generator import DiffGenerator
 from codestory.core.git_commands.git_const import DEVNULLBYTES
 from codestory.core.synthesizer.chunk_merger import merge_diff_chunks_by_file
 
 
-class DiffGenerator:
-    def __init__(self, all_chunks: list[Chunk | ImmutableChunk | CommitGroup]):
-        diff_chunks = []
-        # flattening all diff chunks
-        for chunk in all_chunks:
-            if isinstance(chunk, Chunk):
-                diff_chunks.extend(chunk.get_chunks())
-            elif isinstance(chunk, CommitGroup):
-                for group_chunk in chunk.chunks:
-                    if isinstance(group_chunk, Chunk):
-                        diff_chunks.extend(group_chunk.get_chunks())
-            # else skip Immutable Chunks, they dont use total chunks per file
-
-        self.total_chunks_per_file = self.__get_total_chunks_per_file(diff_chunks)
-
-    def __get_total_chunks_per_file(self, chunks: list[DiffChunk]):
-        total_chunks_per_file = {}
-        for file_path, file_chunks_iter in groupby(
-            sorted(chunks, key=lambda c: c.canonical_path()),
-            key=lambda c: c.canonical_path(),
-        ):
-            total_chunks_per_file[file_path] = len(list(file_chunks_iter))
-
-        return total_chunks_per_file
-
-    def generate_unified_diff(
+class GitDiffGenerator(DiffGenerator):
+    def generate_diff(
         self,
         diff_chunks: list[DiffChunk],
         immutable_chunks: list[ImmutableChunk] | None = None,
@@ -67,9 +42,6 @@ class DiffGenerator:
         """
         if immutable_chunks is None:
             immutable_chunks = []
-
-        # Ensure chunks are disjoint before generating patches
-        self.__validate_chunks_are_disjoint(diff_chunks)
 
         patches: dict[bytes, bytes] = {}
 
@@ -125,12 +97,12 @@ class DiffGenerator:
                 file_change_type = "modified"
 
             old_file_path = (
-                self.__sanitize_filename(single_chunk.old_file_path)
+                self.sanitize_filename(single_chunk.old_file_path)
                 if single_chunk.old_file_path
                 else None
             )
             new_file_path = (
-                self.__sanitize_filename(single_chunk.new_file_path)
+                self.sanitize_filename(single_chunk.new_file_path)
                 if single_chunk.new_file_path
                 else None
             )
@@ -213,6 +185,8 @@ class DiffGenerator:
                             patch_lines.append(b"-" + item.content)
                         elif isinstance(item, Addition):
                             patch_lines.append(b"+" + item.content)
+                        if item.newline_marker:
+                            patch_lines.append(b"\\ No newline at end of file")
 
                     # Update cumulative offset for next chunk
                     cumulative_offset += new_len - old_len
@@ -229,52 +203,6 @@ class DiffGenerator:
             patches[file_path] = file_patch
 
         return patches
-
-    def __sanitize_filename(self, filename: bytes) -> bytes:
-        """
-        Sanitize a filename for use in git patch headers.
-
-        - Escapes spaces with backslashes.
-        - Removes any trailing tabs.
-        - Leaves other characters unchanged.
-        """
-        return filename.rstrip(b"\t").strip()  # remove trailing tabs
-
-    def __validate_chunks_are_disjoint(self, chunks: list[DiffChunk]) -> bool:
-        """Validate that all chunks are pairwise disjoint in old file coordinates.
-
-        This is a critical invariant: chunks must not overlap in the old file
-        for them to be safely applied in any order.
-
-        Returns True if all chunks are disjoint, raises RuntimeError otherwise.
-        """
-        from itertools import groupby
-
-        # Group by file
-        sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
-        for file_path, file_chunks_iter in groupby(
-            sorted_chunks, key=lambda c: c.canonical_path()
-        ):
-            file_chunks = list(file_chunks_iter)
-
-            # Sort by old_start within each file
-            file_chunks.sort(key=lambda c: c.old_start or 0)
-
-            # Check each adjacent pair for overlap
-            for i in range(len(file_chunks) - 1):
-                chunk_a = file_chunks[i]
-                chunk_b = file_chunks[i + 1]
-
-                if not chunk_a.is_disjoint_from(chunk_b):
-                    raise RuntimeError(
-                        f"INVARIANT VIOLATION: Chunks are not disjoint!\n"
-                        f"File: {file_path}\n"
-                        f"Chunk A: old_start={chunk_a.old_start}, old_len={chunk_a.old_len()}\n"
-                        f"Chunk B: old_start={chunk_b.old_start}, old_len={chunk_b.old_len()}\n"
-                        f"These chunks overlap in old file coordinates!"
-                    )
-
-        return True
 
     def __calculate_hunk_starts(
         self,

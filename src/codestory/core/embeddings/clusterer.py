@@ -1,15 +1,99 @@
-import hdbscan
+import networkx as nx
+import numpy as np
+from loguru import logger
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import normalize
+
+
+class SklearnLouvainClusterer:
+    """
+    Clusters embeddings using scikit-learn NearestNeighbors + NetworkX Louvain community detection.
+
+    Suitable for small to medium datasets (<1000 embeddings).
+    """
+
+    def __init__(
+        self,
+        min_k: int = 5,
+        max_k: int = 50,
+        k_factor: float = 0.10,
+        resolution: float = 1.5,
+    ):
+        self.min_k = min_k
+        self.max_k = max_k
+        self.k_factor = k_factor
+        self.resolution = resolution
+        self.labels_ = np.array([])
+
+    def fit(self, embeddings: list[list[float]]) -> np.ndarray:
+        # Early exits for edge cases
+        if embeddings is None or len(embeddings) == 0:
+            return np.array([])
+
+        embeddings = np.asarray(embeddings, dtype="float32")
+        n_samples = embeddings.shape[0]
+
+        if n_samples == 1:
+            return np.array([0])
+
+        # Normalize embeddings for cosine similarity
+        embeddings = normalize(embeddings, norm="l2")
+
+        # Determine k for nearest neighbors
+        k = int(self.k_factor * n_samples)
+        k = max(self.min_k, min(self.max_k, int(k)))
+        k_search = min(k + 1, n_samples)  # include self (+1)
+
+        # Use brute-force kNN with cosine similarity (via inner product on normalized vectors)
+        nbrs = NearestNeighbors(
+            n_neighbors=k_search, algorithm="brute", metric="cosine"
+        )
+        nbrs.fit(embeddings)
+        distances, neighbors = nbrs.kneighbors(embeddings)
+
+        # Build weighted similarity graph
+        # Convert cosine distances to similarities (similarity = 1 - distance)
+        G = nx.Graph()
+        G.add_nodes_from(range(n_samples))
+
+        for i in range(n_samples):
+            for j_idx in range(1, k_search):  # skip self (0)
+                neighbor = neighbors[i, j_idx]
+                # Convert distance to similarity for graph weighting
+                similarity = 1.0 - distances[i, j_idx]
+                if neighbor != -1:
+                    G.add_edge(i, neighbor, weight=float(similarity))
+
+        # Louvain community detection
+        try:
+            communities = nx.community.louvain_communities(
+                G, resolution=self.resolution
+            )
+        except Exception as e:
+            logger.warning(
+                f"Louvain clustering failed: {e}. Fallback to single cluster."
+            )
+            return np.zeros(n_samples, dtype=int)
+
+        # Assign cluster labels
+        labels = np.full(n_samples, -1, dtype=int)
+        for label_id, community in enumerate(communities):
+            for node in community:
+                labels[node] = label_id
+
+        logger.info(
+            f"Clustered {n_samples} embeddings into {len(communities)} clusters."
+        )
+        return labels
 
 
 class Clusterer:
-    def __init__(self, hdbScan: hdbscan.HDBSCAN = None):
-        if hdbScan is None:
-            # TODO find good balance for hyperparameters
-            hdbScan = hdbscan.HDBSCAN(
-                min_cluster_size=2, metric="euclidean", cluster_selection_method="eom"
-            )
+    """
+    Wrapper class for clustering embeddings.
+    """
 
-        self.clusterer = hdbScan
+    def __init__(self):
+        self.clusterer = SklearnLouvainClusterer()
 
     def cluster(self, embeddings: list[list[float]]):
         return self.clusterer.fit(embeddings)

@@ -31,10 +31,10 @@ from loguru import logger
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.exceptions import LLMResponseError, LogicalGroupingError
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
-from codestory.core.synthesizer.utils import get_patches_chunk
 
 # -----------------------------------------------------------------------------
 # Prompts
@@ -86,7 +86,7 @@ class LLMGrouper(LogicalGrouper):
     ) -> str:
         """Convert chunks to a simplified structure for LLM analysis."""
         changes = []
-        diff_map = get_patches_chunk(chunks)
+        diff_map = SemanticDiffGenerator(chunks).get_patches(chunks)
 
         # Process mutable chunks
         for i in range(len(chunks)):

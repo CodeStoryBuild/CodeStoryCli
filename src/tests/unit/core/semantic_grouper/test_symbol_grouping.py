@@ -2846,6 +2846,6 @@ class B:
     )
 
     # Both methods should create distinct symbols (different qualified names)
-    # The query manager creates qualified symbols like "identifier_class:method"
+    # The query manager creates qualified symbols like "identifier_class method"
     # But they should be on different lines in different contexts
     assert len(defined_symbols) >= 1, "Should have at least one method symbol"

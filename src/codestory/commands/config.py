@@ -302,6 +302,11 @@ def get_config(key: str | None, scope: str | None) -> None:
                 }
             )
 
+        if found:
+            print(
+                f"{Fore.WHITE}{Style.BRIGHT}Configuration for key={key} displayed in order of priority:{Style.RESET_ALL}"
+            )
+
         display_config(table_data)
 
     else:

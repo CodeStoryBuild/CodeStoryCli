@@ -29,6 +29,7 @@ from codestory.core.chunker.interface import MechanicalChunker
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
+from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.file_reader.protocol import FileReader
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.git_interface.interface import GitInterface
@@ -42,7 +43,6 @@ from codestory.core.secret_scanner.secret_scanner import filter_hunks
 from codestory.core.semantic_grouper.context_manager import ContextManager
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
-from codestory.core.synthesizer.utils import get_patches
 
 
 @contextlib.contextmanager
@@ -192,13 +192,13 @@ class RewritePipeline:
             return None
 
         # init context_manager
-        if raw_chunks:
-            context_manager = ContextManager(
-                raw_chunks,
-                self.file_reader,
-                self.commit_context.fail_on_syntax_errors,
-            )
+        context_manager = ContextManager(
+            raw_chunks,
+            self.file_reader,
+            self.commit_context.fail_on_syntax_errors,
+        )
 
+        if raw_chunks:
             # create smallest mechanically valid chunks
             with (
                 transient_step(
@@ -342,7 +342,7 @@ class RewritePipeline:
 
         # Prepare pretty diffs for each proposed group
         all_affected_files = set()
-        patch_map = get_patches(logical_groups)
+        patch_map = SemanticDiffGenerator(logical_groups).get_patches(logical_groups)
 
         accepted_groups = []
         user_rejected_groups = []
