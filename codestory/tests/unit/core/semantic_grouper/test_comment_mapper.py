@@ -142,6 +142,194 @@ def tools():
             """,
             {0, 1, 4},
         ),
+        # --- RUBY ---
+        (
+            "ruby",
+            "test.rb",
+            """
+            # 0: Pure comment
+            x = 1 # 1: Inline
+            =begin
+            3: Block comment start
+            4: Block comment content
+            =end
+            class Foo
+            end
+            """,
+            {0, 2, 3, 4, 5},
+        ),
+        # --- PHP ---
+        (
+            "php",
+            "test.php",
+            """
+            <?php
+            // 1: Pure comment
+            $x = 1; // 2: Inline
+            /* 3: Block
+               4: Block */
+            function foo() {}
+            ?>
+            """,
+            {1, 3, 4},
+        ),
+        # --- SWIFT ---
+        (
+            "swift",
+            "test.swift",
+            """
+            // 0: Pure comment
+            let x = 1 // 1: Inline
+            /* 2: Block
+               3: Block */
+            func foo() {}
+            """,
+            {0, 2, 3},
+        ),
+        # --- KOTLIN ---
+        (
+            "kotlin",
+            "Test.kt",
+            """
+            // 0: Pure comment
+            val x = 1 // 1: Inline
+            /* 2: Block
+               3: Block */
+            fun main() {}
+            """,
+            {0, 2, 3},
+        ),
+        # --- SCALA ---
+        (
+            "scala",
+            "Test.scala",
+            """
+            // 0: Pure comment
+            val x = 1 // 1: Inline
+            /* 2: Block
+               3: Block */
+            def main(): Unit = {}
+            """,
+            {0, 2, 3},
+        ),
+        # --- R ---
+        (
+            "r",
+            "test.R",
+            """
+            # 0: Pure comment
+            x <- 1 # 1: Inline
+            # 2: Another comment
+            foo <- function() {
+              # 4: Inside function
+            }
+            """,
+            {0, 2, 4},
+        ),
+        # --- LUA ---
+        (
+            "lua",
+            "test.lua",
+            """
+            -- 0: Pure comment
+            x = 1 -- 1: Inline
+            --[[ 2: Block start
+                 3: Block content ]]
+            function foo() end
+            """,
+            {0, 2, 3},
+        ),
+        # --- DART ---
+        (
+            "dart",
+            "test.dart",
+            """
+            // 0: Pure comment
+            /// 1: Doc comment
+            int x = 1; // 2: Inline
+            /* 3: Block */
+            void main() {}
+            """,
+            {0, 1, 3},
+        ),
+        # --- ELIXIR ---
+        (
+            "elixir",
+            "test.ex",
+            """
+            # 0: Pure comment
+            x = 1 # 1: Inline
+            # 2: Another comment
+            defmodule Foo do
+              # 4: Inside module
+            end
+            """,
+            {0, 2, 4},
+        ),
+        # --- HASKELL ---
+        (
+            "haskell",
+            "Test.hs",
+            """
+            -- 0: Pure comment
+            x = 1 -- 1: Inline
+            {- 2: Block start
+               3: Block end -}
+            main = return ()
+            """,
+            {0, 2, 3},
+        ),
+        # --- ERLANG ---
+        (
+            "erlang",
+            "test.erl",
+            """
+            % 0: Pure comment
+            -module(test). % 1: Inline
+            % 2: Another comment
+            foo() -> ok.
+            """,
+            {0, 2},
+        ),
+        # --- CLOJURE ---
+        (
+            "clojure",
+            "test.clj",
+            """
+            ; 0: Pure comment
+            (def x 1) ; 1: Inline
+            ; 2: Another comment
+            (defn foo [] nil)
+            """,
+            {0, 2},
+        ),
+        # --- SOLIDITY ---
+        (
+            "solidity",
+            "Test.sol",
+            """
+            // 0: Pure comment
+            /// 1: NatSpec comment
+            contract Test {
+                uint x = 1; // 3: Inline
+                /* 4: Block */
+            }
+            """,
+            {0, 1, 4},
+        ),
+        # --- JULIA ---
+        (
+            "julia",
+            "test.jl",
+            """
+            # 0: Pure comment
+            x = 1 # 1: Inline
+            #= 2: Block start
+               3: Block content =#
+            function foo() end
+            """,
+            {0, 2, 3},
+        ),
     ],
 )
 def test_pure_comment_identification(
