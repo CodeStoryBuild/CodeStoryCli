@@ -69,7 +69,7 @@ class CommitPipeline:
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
 
-    def run(self):
+    def run(self) -> str:
         # Initial invocation summary
         logger.info(
             "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
@@ -93,8 +93,8 @@ class CommitPipeline:
         )
 
         if not (raw_chunks or immutable_chunks):
-            logger.info("No changes to process, exiting")
-            return
+            logger.info("No changes to process")
+            return self.new_commit_hash
 
         # start tracking progress
         with Progress() as p:
@@ -152,7 +152,7 @@ class CommitPipeline:
         if not ai_groups:
             logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
-            return
+            return self.new_commit_hash
 
         logger.info("Proposed commits preview")
         # Prepare pretty diffs for each proposed group
@@ -235,7 +235,7 @@ class CommitPipeline:
         if not apply_all:
             logger.info("No changes applied")
             logger.info("User declined applying commits")
-            return
+            return self.new_commit_hash
 
         logger.info(
             "Accepted groups summary: accepted_groups={groups}",
@@ -245,7 +245,7 @@ class CommitPipeline:
         with time_block("Executing Synthesizer Pipeline"):
             new_commit_hash = self.synthesizer.execute_plan(
                 ai_groups,
-                self.commands.get_current_base_commit_hash(),
+                self.base_commit_hash
             )
 
         # Final pipeline summary
@@ -262,4 +262,4 @@ class CommitPipeline:
             files=len(all_affected_files),
         )
 
-        return new_commit_hash or None
+        return new_commit_hash or self.new_commit_hash # fallback to the current commit

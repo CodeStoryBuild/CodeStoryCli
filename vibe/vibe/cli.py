@@ -89,9 +89,8 @@ def main(
     """
     # default behavior
     if ctx.invoked_subcommand is None:
-        console = Console()
-        console.print(ctx.get_help())
-        console.print("\n[dim]Run 'vibe --help' for more information.[/dim]")
+        logger.info(ctx.get_help())
+        print("\n[dim]Run 'vibe --help' for more information.[/dim]")
         raise typer.Exit()
 
     setup_logger(ctx.invoked_subcommand)
@@ -138,28 +137,27 @@ def run_app():
         app(prog_name="vibe")
 
     except ValidationError as e:
-        console.print(f"[red]Validation Error:[/red] {e.message}")
+        logger.error(f"[red]Validation Error:[/red] {e.message}")
         if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
+            logger.error(f"[dim]Details: {e.details}[/dim]")
         raise typer.Exit(1)
 
     except GitError as e:
-        console.print(f"[red]Git Error:[/red] {e.message}")
+        logger.error(f"[red]Git Error:[/red] {e.message}")
         if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
+            logger.error(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Git operation failed: {e.message}")
         raise typer.Exit(1)
 
     except VibeError as e:
-        console.print(f"[red]Error:[/red] {e.message}")
+        logger.error(f"[red]Error:[/red] {e.message}")
         if e.details:
-            console.print(f"[dim]Details: {e.details}[/dim]")
+            logger.error(f"[dim]Details: {e.details}[/dim]")
         logger.error(f"Vibe operation failed: {e.message}")
         raise typer.Exit(1)
 
     except KeyboardInterrupt:
-        console = Console()
-        console.print("\n[yellow]Operation cancelled by user[/yellow]")
+        logger.info("\n[yellow]Operation cancelled by user[/yellow]")
         raise typer.Exit(130)
 
 

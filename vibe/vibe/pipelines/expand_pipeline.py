@@ -1,6 +1,7 @@
 from loguru import logger
 from vibe.context import GlobalContext, ExpandContext
 from vibe.pipelines.commit_pipeline import CommitPipeline
+from vibe.core.exceptions import ExpansionError
 
 # Assuming GitInterface is imported or available in the context
 # from vibe.core.git_interface.interface import GitInterface
@@ -45,8 +46,7 @@ class ExpandPipeline:
         new_commit_hash = self.commit_pipeline.run()
 
         if not new_commit_hash:
-            logger.warning("Commit pipeline returned no hash. Aborting.")
-            return None
+            raise ExpansionError("Commit pipeline returned no hash. Aborting.")
 
         # 2. Identify the downstream commits to reparent
         # We need the list of commits strictly after the base_hash.
@@ -59,8 +59,7 @@ class ExpandPipeline:
             )
             original_chain = rev_list_out.splitlines() if rev_list_out else []
         except RuntimeError:
-            logger.error("Failed to read commit history.")
-            return None
+            raise ExpansionError("Failed to read commit history.")
 
         if not original_chain:
             # Edge case: The base was HEAD (or detached), nothing to replay.
@@ -102,8 +101,7 @@ class ExpandPipeline:
                     lines = meta.splitlines()
                     # Safety check on output format
                     if len(lines) < 7:
-                        logger.error(f"Failed to parse metadata for commit {commit}")
-                        return None
+                        raise ExpansionError(f"Failed to parse metadata for commit {commit}")
 
                     tree_hash = lines[0]
                     author_name = lines[1]
@@ -133,7 +131,7 @@ class ExpandPipeline:
                         ["commit-tree", tree_hash, "-p", current_parent],
                         input_text=message,
                         env=env,
-                    )
+                    ).strip() # git commit tree add trailing newline
 
                 final_head = current_parent
 

@@ -2,19 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Callable
 
 from loguru import logger
 from rich.console import Console
-from vibe.pipelines.expand_pipeline import ExpandPipeline
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
-
-
-@dataclass
-class CleanOptions:
-    ignore: Sequence[str] | None = None
-    min_size: int | None = None
-    auto_yes: bool = False
-    start_from: str | None = None
+from vibe.context import GlobalContext, CleanContext
 
 
 class CleanPipeline:
@@ -28,41 +21,42 @@ class CleanPipeline:
 
     def __init__(
         self,
-        repo_path: str = ".",
-        git: SubprocessGitInterface | None = None,
-        expand_service: ExpandPipeline | None = None,
+        global_context: GlobalContext,
+        clean_context: CleanContext,
+        expand_command: Callable[[str], str],
     ):
-        self.repo_path = repo_path
-        self.git = git or SubprocessGitInterface(repo_path)
-        self.expand_service = expand_service or ExpandPipeline(repo_path)
+        self.global_context = global_context
+        self.clean_context = clean_context
+        self.expand_command = expand_command
 
-    def run(self, options: CleanOptions, console: Console) -> bool:
-        commits = self._get_first_parent_commits(options.start_from)
-        if len(commits) < 2:
-            logger.info("Nothing to do: fewer than 2 commits on branch")
-            return True
+    def run(self) -> bool:
+        commits = self._get_first_parent_commits(self.clean_context.start_from)[:-1] # we skip root commit
 
-        targets = commits[:-1]  # skip root
-        total = len(targets)
+        if not commits:
+            logger.warning("No candidate commits to clean, please note cleaning root commit is not supported!")
+            return False
+        
+        total = len(commits)
+
         logger.info("Starting vibe clean operation on {total} commits", total=total)
 
         expanded = 0
         skipped = 0
 
-        for idx, commit in enumerate(targets, start=1):
+        for idx, commit in enumerate(commits):
             short = commit[:7]
 
-            if self._is_merge(commit):
+            if self.clean_context.skip_merge and self._is_merge(commit):
                 logger.debug("Skipping merge commit {commit}", commit=short)
                 skipped += 1
                 continue
 
-            if self._is_ignored(commit, options.ignore):
+            if self._is_ignored(commit, self.clean_context.ignore):
                 logger.debug("Skipping ignored commit {commit}", commit=short)
                 skipped += 1
                 continue
 
-            if options.min_size is not None:
+            if self.clean_context.min_size is not None:
                 changes = self._count_line_changes(commit)
                 if changes is None:
                     logger.debug(
@@ -70,12 +64,12 @@ class CleanPipeline:
                     )
                     skipped += 1
                     continue
-                if changes < options.min_size:
+                if changes < self.clean_context.min_size:
                     logger.debug(
                         "Skipping {commit}: {changes} < min-size {min_size}",
                         commit=short,
                         changes=changes,
-                        min_size=options.min_size,
+                        min_size=self.clean_context.min_size,
                     )
                     skipped += 1
                     continue
@@ -86,14 +80,7 @@ class CleanPipeline:
                 idx=idx,
                 total=total,
             )
-            ok = self.expand_service.run(
-                commit, console=console, auto_yes=options.auto_yes
-            )
-            if not ok:
-                logger.error(
-                    "Expansion failed or declined at {commit}. Stopping", commit=short
-                )
-                return False
+            self.expand_command(commit)
             expanded += 1
 
         logger.info(
@@ -103,31 +90,22 @@ class CleanPipeline:
         )
         return True
 
-    # --- helpers ---
-
-    def _confirm(self, prompt: str) -> bool:
-        try:
-            import typer
-
-            return typer.confirm(prompt, default=True)
-        except Exception:
-            return True
 
     def _get_first_parent_commits(self, start_from: str | None = None) -> list[str]:
         start_ref = start_from or "HEAD"
         if start_from:
             # Resolve the commit hash first to ensure it exists
-            resolved = self.git.run_git_text_out(["rev-parse", start_from])
+            resolved = self.global_context.git_interface.run_git_text_out(["rev-parse", start_from])
             if resolved is None:
                 raise ValueError(f"Could not resolve commit: {start_from}")
             start_ref = resolved.strip()
 
-        out = self.git.run_git_text_out(["rev-list", "--first-parent", start_ref]) or ""
+        out = self.global_context.git_interface.run_git_text_out(["rev-list", "--first-parent", start_ref]) or ""
         return [l.strip() for l in out.splitlines() if l.strip()]
 
     def _is_merge(self, commit: str) -> bool:
         line = (
-            self.git.run_git_text_out(["rev-list", "--parents", "-n", "1", commit])
+            self.global_context.git_interface.run_git_text_out(["rev-list", "--parents", "-n", "1", commit])
             or ""
         )
         parts = line.strip().split()
@@ -142,7 +120,7 @@ class CleanPipeline:
     def _count_line_changes(self, commit: str) -> int | None:
         # Sum additions + deletions between parent and commit.
         # Use numstat for robust parsing; binary files show '-' which we treat as 0.
-        out = self.git.run_git_text_out(["diff", "--numstat", f"{commit}^", commit])
+        out = self.global_context.git_interface.run_git_text_out(["diff", "--numstat", f"{commit}^", commit])
         if out is None:
             return None
         total = 0
