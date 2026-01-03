@@ -35,5 +35,5 @@ class LogicalGrouper(ABC):
 
 class Groupable(ABC):
     @abstractmethod
-    def format_json(self) -> Dict:
+    def format_json(self) -> str:
         """Format the object as json, describing what it does"""
