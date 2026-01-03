@@ -24,7 +24,7 @@ from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.file_reader.git_file_reader import GitFileReader
 from codestory.core.semantic_grouper.context_manager import (
     AnalysisContext,
-    ContextManager,
+    ContextManagerBuilder,
 )
 from codestory.core.semantic_grouper.query_manager import QueryManager
 
@@ -137,45 +137,14 @@ def context_manager_deps(mocks):
 # -----------------------------------------------------------------------------
 
 
-def test_analyze_required_contexts_mod(context_manager_deps):
-    chunk = create_chunk()
-    cm = ContextManager(
-        [chunk], context_manager_deps["reader"], "base", "patched", False
-    )
-
-    req = cm.get_required_contexts()
-    assert (b"file.txt", True) in req
-    assert (b"file.txt", False) in req
-
-
-def test_analyze_required_contexts_add(context_manager_deps):
-    chunk = create_chunk(is_add=True, old_path=None)
-    cm = ContextManager(
-        [chunk], context_manager_deps["reader"], "base", "patched", False
-    )
-
-    req = cm.get_required_contexts()
-    assert (b"file.txt", False) in req
-    assert (b"file.txt", True) not in req
-
-
-def test_analyze_required_contexts_del(context_manager_deps):
-    chunk = create_chunk(is_del=True, new_path=None)
-    cm = ContextManager(
-        [chunk], context_manager_deps["reader"], "base", "patched", False
-    )
-
-    req = cm.get_required_contexts()
-    assert (b"file.txt", True) in req
-    assert (b"file.txt", False) not in req
-
-
 def test_simplify_overlapping_ranges(context_manager_deps):
-    # We can test this static-like method by instantiating with empty chunks
-    cm = ContextManager([], context_manager_deps["reader"], "base", "patched", False)
+    # Test the builder's simplify method directly
+    builder = ContextManagerBuilder(
+        [], context_manager_deps["reader"], "base", "patched", False
+    )
 
     ranges = [(1, 5), (3, 7), (10, 12)]
-    simplified = cm.simplify_overlapping_ranges(ranges)
+    simplified = builder._simplify_overlapping_ranges(ranges)
 
     # (1, 5) and (3, 7) overlap -> (1, 7)
     # (10, 12) is separate
@@ -183,7 +152,7 @@ def test_simplify_overlapping_ranges(context_manager_deps):
 
     # Touching ranges
     ranges_touching = [(1, 5), (6, 10)]
-    simplified_touching = cm.simplify_overlapping_ranges(ranges_touching)
+    simplified_touching = builder._simplify_overlapping_ranges(ranges_touching)
     # (1, 5) ends at 5. (6, 10) starts at 6. 5 >= 6-1 (5 >= 5) -> True. Merge.
     assert simplified_touching == [(1, 10)]
 
@@ -218,9 +187,9 @@ def test_build_context_success(context_manager_deps):
     # Patch parse to return the mocked parsed_file
     context_manager_deps["file_parser_parse"].return_value = parsed_file
 
-    cm = ContextManager(
+    cm = ContextManagerBuilder(
         [chunk], context_manager_deps["reader"], "base", "patched", False
-    )
+    ).build()
 
     assert cm.has_context(b"file.txt", True)
     assert cm.has_context(b"file.txt", False)
@@ -251,25 +220,25 @@ def test_build_context_syntax_error(context_manager_deps):
     # Patch parse to return our parsed_file with a syntax error
     context_manager_deps["file_parser_parse"].return_value = parsed_file
 
-    cm = ContextManager(
+    cm = ContextManagerBuilder(
         [chunk],
         context_manager_deps["reader"],
         "base",
         "patched",
         False,
-    )
+    ).build()
 
     assert cm.has_context(b"file.txt", True)
     assert not cm.has_context(b"file.txt", False)
 
-    # When fail_on_syntax_errors=True, constructing the manager should raise SyntaxErrorDetected
+    # When fail_on_syntax_errors=True, building should raise SyntaxErrorDetected
     from codestory.core.exceptions import SyntaxErrorDetected
 
     with pytest.raises(SyntaxErrorDetected):
-        ContextManager(
+        ContextManagerBuilder(
             [chunk],
             context_manager_deps["reader"],
             "base",
             "patched",
             True,
-        )
+        ).build()

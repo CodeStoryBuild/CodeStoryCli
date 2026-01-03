@@ -22,7 +22,7 @@ Test script for ContextManager to validate it works correctly.
 
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
-from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.semantic_grouper.context_manager import ContextManagerBuilder
 
 
 class MockFileReader:
@@ -111,14 +111,14 @@ def test_context_manager():
         ),
     ]
 
-    # Create context manager
-    context_manager = ContextManager(
+    # Create context manager using builder
+    context_manager = ContextManagerBuilder(
         chunks=diff_chunks,
         file_reader=file_reader,
         base_commit="base",
         patched_commit="head",
         fail_on_syntax_errors=False,
-    )
+    ).build()
 
     # Test getting contexts
     # Test standard modification (should have both old and new versions)
