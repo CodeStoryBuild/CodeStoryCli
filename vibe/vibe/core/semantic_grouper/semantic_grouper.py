@@ -171,7 +171,7 @@ class SemanticGrouper:
                 logger.warning(
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
-                raise RuntimeError(e)
+                return None
         
         logger.debug(f"{total_signature=} {total_scope=} {diff_chunks=}")
 
