@@ -1,18 +1,9 @@
-## Philosophy
+## CodeStory Cli
 
-codestory is a command-line tool that sits on top of your git repository and provides a set of commands to help you manage your codebase. It is not a git extension, but rather a smart controller on top of git commands. The primary goal is to make it easier to work with git, and to let you focus on the code. 
-
-codestory was built with a couple core principles in mind:
-
+CodeStory Cli is likely what you will use most often if you are a developer. It contains the core functionality you will need to create and maintain clean commit histories. Once again, the cli does not replace the git command, but rather allows you not have to worry about the semantics of git in 99% of cases.
+Using the cli, you can: Automatically create commits out of your working directory, with configurable guardrails around things like not commitng sensitive information, or unwanted changes. Fix previous commits by rewriting them into smaller logical commits. Automatically clean up your entire history from start to end. To ensure robustness, the cli was built with a couple core principles in mind:
 1. Every operation is atomic, commands will either succeed or fail as a whole. This means that if a command does not finish/succeed, no changes will be made to your repository.
-2. The state of your repository will never change, rather only the history will be rewritten. 
-3. the current state of a project is not the only thing that matters, the steps taken to get there are just as important.
-
-## Why do you need this?
-
-Many times, when working on a project, you will make a change, and then make another change, and then make another change, and so on. Now you can either make one big commit, or you can embark on the tedious process of making small commits. With large changes this can take hours, and be error prone. With codestory, you can go grab a drink, and once you come back it will automatically be done for you. Focus on the code, and let codestory handle the rest.
-
-## How it works
-In the background, codestory essentially cuts up your changes into small pieces, where each piece is a logical unit of work. To do this, it not only analzes your code structure, but also uses AI to understand high level logical relationships between your files. For example, if you have documentation, tests, and source code, codestory will understand that they are all related, and will try to keep them together. 
-
-Finally, it will create a new commit for each of those pieces with a clear commit message, and rewrite your history to reflect these changes, all without any manual intervention.
+2. The final state of your code will never change, rather the history will be rewritten to show cleaner steps of how you got there. 
+For more information, visit:
+[CodeStory Cli Reference](reference/root.md)
+[CodeStory Home](codestory.build)
