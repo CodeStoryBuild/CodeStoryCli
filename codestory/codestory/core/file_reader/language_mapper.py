@@ -5,7 +5,6 @@ A lightweight, drop-in language detector for tree-sitter-language-pack.
 Detects language based on filename, extension, shebang, and content heuristics.
 """
 
-import os
 import re
 from pathlib import Path
 from typing import Optional

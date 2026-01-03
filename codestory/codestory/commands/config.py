@@ -354,7 +354,7 @@ def _get_config(key: str | None, scope: str | None) -> None:
                         "Key": k,
                         "Description": description,
                         "Value": val_str,
-                        "Source": f"Default",
+                        "Source": "Default",
                     }
                 )
 
