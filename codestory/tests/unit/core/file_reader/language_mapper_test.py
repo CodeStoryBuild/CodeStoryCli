@@ -50,7 +50,7 @@ def test_ambiguous_h_file():
     """Test distinguishing between C and C++ header files."""
     c_content = "#include <stdio.h>\nint main() { return 0; }"
     cpp_content = "#include <iostream>\nclass MyClass { public: int x; };"
-    
+
     assert detect_tree_sitter_language("header.h", c_content) == "c"
     assert detect_tree_sitter_language("header.h", cpp_content) == "cpp"
     # Default fallback
@@ -60,7 +60,7 @@ def test_ambiguous_m_file():
     """Test distinguishing between Objective-C and Matlab files."""
     objc_content = "#import <Foundation/Foundation.h>\n@interface MyClass : NSObject"
     matlab_content = "% This is a comment\nfunction y = average(x)"
-    
+
     assert detect_tree_sitter_language("class.m", objc_content) == "objc"
     assert detect_tree_sitter_language("calc.m", matlab_content) == "matlab"
     # Default fallback
@@ -70,9 +70,10 @@ def test_ambiguous_v_file():
     """Test distinguishing between Verilog and V files."""
     verilog_content = "module adder(input a, output b); endmodule"
     v_content = "fn main() { println('hello') }"
-    
+
     assert detect_tree_sitter_language("chip.v", verilog_content) == "verilog"
     assert detect_tree_sitter_language("main.v", v_content) == "v"
+
 
 # -----------------------------------------------------------------------------
 # 3. Shebang Tests

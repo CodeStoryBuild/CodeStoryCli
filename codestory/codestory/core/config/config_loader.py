@@ -180,7 +180,7 @@ class ConfigLoader:
             return float(value)
         elif typ is bool:
             if isinstance(value, str):
-                return value.lower() in ('true', '1', 'yes', 'on')
+                return value.lower() in ("true", "1", "yes", "on")
             return bool(value)
         else:
             # For other types, assume it's already correct or str

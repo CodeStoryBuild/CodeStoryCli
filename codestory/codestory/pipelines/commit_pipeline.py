@@ -35,12 +35,7 @@ def transient_step(description: str, silent: bool):
     else:
         # total=None -> Indeterminate mode (scanner animation)
         # leave=False -> Clears the line when context exits
-        with tqdm(
-            desc=description, 
-            total=None, 
-            leave=False, 
-            unit="it"
-        ) as pbar:
+        with tqdm(desc=description, total=None, leave=False, unit="it") as pbar:
             yield pbar
 
 

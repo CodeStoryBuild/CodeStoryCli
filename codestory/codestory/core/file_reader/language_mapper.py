@@ -236,6 +236,7 @@ def _resolve_v_file(content: str) -> str:
     # Default to Verilog (older, more established)
     return "verilog"
 
+
 # -----------------------------------------------------------------------------
 # 3. Main Detection Function
 # -----------------------------------------------------------------------------
