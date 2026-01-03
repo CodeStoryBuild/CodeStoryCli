@@ -207,7 +207,7 @@ def test_runner_with_file_deletion(complex_git_repo, mock_inquirer_accept_all):
     """Test pipeline with file deletion only."""
     repo_path = complex_git_repo
     
-    # Delete files
+    # Remove files
     (repo_path / "docs" / "api.md").unlink()
     (repo_path / "src" / "utils.py").unlink()
     
