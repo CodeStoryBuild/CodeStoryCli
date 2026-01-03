@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
+from codestory.core.exceptions import ConfigurationError
 import pytest
 from codestory.core.config.config_loader import ConfigLoader
 
@@ -192,7 +193,7 @@ def test_validation_error():
     with (
         patch.object(ConfigLoader, "load_toml", return_value={}),
         patch.object(ConfigLoader, "load_env", return_value={}),
-        pytest.raises(ValueError),
+        pytest.raises(ConfigurationError),
     ):
         ConfigLoader.get_full_config(
             TestConfig, args, Path("local.toml"), "APP_", Path("global.toml")

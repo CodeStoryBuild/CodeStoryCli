@@ -137,11 +137,16 @@ class ConfigLoader:
                 remaining_keys -= contributions
 
         coerced_data = {}
+        # If the model provides a __constraints__ mapping, use it
+        constraints_map = getattr(config_model, "__constraints__", {})
+
         for field in fields(config_model):
             name = field.name
             if name in final_data:
                 value = final_data[name]
-                coerced_value = ConfigLoader.coerce_value(value, field.type)
+                coerced_value = ConfigLoader.coerce_value(
+                    value, field.type, field_name=name, constraints_map=constraints_map
+                )
                 coerced_data[name] = coerced_value
 
         model = config_model(**coerced_data)
@@ -150,8 +155,20 @@ class ConfigLoader:
         return model, used_indices, bool(remaining_keys)
 
     @staticmethod
-    def coerce_value(value: Any, typ: Any) -> Any:
-        """Coerce a value to the given type with manual validation."""
+    def coerce_value(
+        value: Any, typ: Any, field_name: str | None = None, constraints_map: dict | None = None
+    ) -> Any:
+        """Coerce a value to the given type with manual validation.
+
+        If a `constraints_map` is provided and contains a constraint for
+        `field_name`, use that constraint's `coerce` method.
+        """
+
+        # If we have a constraint for this field, prefer it
+        if constraints_map and field_name and field_name in constraints_map:
+            constraint = constraints_map[field_name]
+            return constraint.coerce(value)
+
         origin = get_origin(typ)
         args = get_args(typ)
 
@@ -166,7 +183,7 @@ class ConfigLoader:
             for subtyp in non_none_types:
                 try:
                     return ConfigLoader.coerce_value(value, subtyp)
-                except ValueError:
+                except ConfigurationError:
                     continue
             raise ConfigurationError(f"Cannot coerce {value} to {typ}")
         elif origin is Literal:
@@ -176,9 +193,15 @@ class ConfigLoader:
         elif typ is str:
             return str(value)
         elif typ is int:
-            return int(value)
+            try:
+                return int(value)
+            except Exception as e:
+                raise ConfigurationError() from e
         elif typ is float:
-            return float(value)
+            try:
+                return float(value)
+            except Exception as e:
+                raise ConfigurationError() from e
         elif typ is bool:
             if isinstance(value, str):
                 return value.lower() in ("true", "1", "yes", "on")

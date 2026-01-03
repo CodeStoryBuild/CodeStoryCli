@@ -86,17 +86,20 @@ def _get_config_schema() -> dict[str, dict[str, Any]]:
     }
 
     schema = {}
+
     for field in fields(GlobalConfig):
         field_name = field.name
         # Get the type annotation if possible, defaulting to str
         field_type = field.type
         default_value = field.default
+        constraint = GlobalConfig.constraints.get(field_name)
         description = descriptions.get(field_name, "No description available")
 
         schema[field_name] = {
             "description": description,
             "default": default_value,
             "type": field_type,
+            "constraint": constraint,
         }
 
     return schema
@@ -209,19 +212,15 @@ def _set_config(key: str, value: str, scope: str) -> None:
     # Type Conversion
     # Inputs from CLI are always strings, but TOML supports types.
     # We check the GlobalConfig type annotation to convert properly.
-    target_type = field_info.get("type", str)
     final_value = value
 
-    if target_type == bool or target_type == bool | None:
-        if value.lower() in ("true", "1", "yes", "on"):
-            final_value = True
-        elif value.lower() in ("false", "0", "no", "off"):
-            final_value = False
-    elif target_type == int or target_type == int | None:
-        try:
-            final_value = int(value)
-        except ValueError:
-            pass  # Keep as string if it fails, or raise error
+    # If a constraint exists, use it for coercion and validation
+    constraint = field_info.get("constraint")
+    try:
+        final_value = constraint.coerce(value)
+    except ConfigurationError as e:
+        print(f"{Fore.RED}Error:{Style.RESET_ALL} Invalid value for {key}: {e}")
+        raise typer.Exit(1)
 
     # Update the value
     config_data[key] = final_value

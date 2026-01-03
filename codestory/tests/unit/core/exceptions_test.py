@@ -55,8 +55,8 @@ def test_exception_inheritance():
 def test_git_not_found():
     exc = git_not_found()
     assert isinstance(exc, GitError)
-    assert "Git is not installed" in exc.message
-    assert "Please install git" in exc.details
+    assert "Git is not installed" in str(exc)
+    assert "Please install git" in str(exc)
 
 
 def test_not_git_repository():
@@ -69,7 +69,7 @@ def test_not_git_repository():
 def test_invalid_commit_hash():
     exc = invalid_commit_hash("badhash")
     assert isinstance(exc, ValidationError)
-    assert "Invalid commit hash: badhash" in exc.message
+    assert "Invalid commit hash: badhash" in str(exc)
 
 
 def test_path_not_found():
