@@ -34,6 +34,20 @@ from codestory.core.exceptions import (
 from codestory.core.git_commands.git_commands import GitCommands
 
 
+def is_root_commit(git_commands: GitCommands, commit_hash: str) -> bool:
+    """
+    Check if a commit is a root commit (has no parents).
+
+    Args:
+        git_commands: Git commands to run
+        commit_hash: The commit hash to check
+
+    Returns:
+        True if it's a root commit, False otherwise
+    """
+    return git_commands.try_get_parent_hash(commit_hash) is None
+
+
 def validate_commit_hash(
     value: str, git_commands: GitCommands | None = None, branch: str | None = None
 ) -> str:

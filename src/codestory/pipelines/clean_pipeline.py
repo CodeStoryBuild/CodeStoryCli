@@ -51,18 +51,17 @@ class CleanPipeline:
         # ------------------------------------------------------------------
         # 1. Determine linear history window candidates
         # ------------------------------------------------------------------
-        raw_commits = self._get_linear_history(self.clean_context.start_from)
+        # Pass end_at from context
+        commits_to_rewrite = self._get_linear_history(
+            self.clean_context.start_from, 
+            getattr(self.clean_context, "end_at", None)
+        )
 
-        if not raw_commits:
+        if not commits_to_rewrite:
             logger.warning(
-                "No commits eligible for cleaning (root or merge-only history)."
+                "No commits eligible for cleaning."
             )
             return None
-
-        # Process from Oldest -> Newest
-        commits_to_rewrite = list(reversed(raw_commits))
-
-        original_branch = self.global_context.current_branch
 
         start_commit = commits_to_rewrite[0]
         end_commit = commits_to_rewrite[-1]
@@ -180,109 +179,125 @@ class CleanPipeline:
             # ------------------------------------------------------------------
             # 4. Finalize: Atomic Update
             # ------------------------------------------------------------------
-            logger.success("History rewrite complete. Updating references.")
+            logger.success("History rewrite complete.")
 
-            # Check if there are downstream commits that need to be rebased
-            # This happens when start_from is not HEAD
-            original_head = self.global_context.git_commands.get_commit_hash(
+            # Check for downstream commits (rebase required if end_at != branch_tip)
+            # We look at what the original end_at was supposed to be vs current branch tip
+            
+            original_branch_head = self.global_context.git_commands.get_commit_hash(
                 self.global_context.current_branch
             )
-
-            # Check if there are commits after the cleaned range
-            downstream_commits = None
-            if end_commit != original_head:
-                # There are commits between end_commit and the branch tip that need rebasing
+            
+            # end_commit is the last commit we rewrote. 
+            # If we were cleaning up to end_at, end_commit should correspond to end_at.
+            
+            if end_commit != original_branch_head:
+                logger.info("Rebasing downstream commits...")
+                # We need to rebase from (old) end_commit ... tip
                 downstream_commits = self.global_context.git_commands.get_rev_list(
                     f"{end_commit}..{self.global_context.current_branch}", reverse=True
                 )
 
-            if downstream_commits:
-                logger.info(
-                    f"Rebasing {len(downstream_commits)} downstream commit(s) onto new history..."
-                )
-
-                # Use merge-tree to rebase downstream commits (bare-repo friendly)
-                # Process commits from oldest to newest
-                new_parent = current_base_hash
-
-                for commit in downstream_commits:
-                    # Get commit metadata
-                    log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
-                    meta_out = self.global_context.git_commands.get_commit_metadata(
-                        commit, log_format
-                    )
-
-                    if not meta_out:
-                        raise CleanCommandError(
-                            f"Failed to get metadata for commit {commit[:7]}"
-                        )
-
-                    lines = meta_out.splitlines()
-                    if len(lines) < 7:
-                        raise CleanCommandError(
-                            f"Invalid metadata for commit {commit[:7]}"
-                        )
-
-                    author_name = lines[0]
-                    author_email = lines[1]
-                    author_date = lines[2]
-                    committer_name = lines[3]
-                    committer_email = lines[4]
-                    committer_date = lines[5]
-                    message = "\n".join(lines[6:])
-
-                    # Get the parent of the original commit
-                    original_parent = (
-                        self.global_context.git_commands.try_get_parent_hash(commit)
-                    )
-                    if not original_parent:
-                        raise CleanCommandError(
-                            f"Failed to get parent of commit {commit[:7]}"
-                        )
-
-                    # Use merge-tree to compute the new tree
-                    # merge-tree --write-tree --merge-base <base> <branch1> <branch2>
-                    # We want to replay commit's changes onto new_parent
-                    new_tree = self.global_context.git_commands.merge_tree(
-                        original_parent, new_parent, commit
-                    )
-
-                    if not new_tree:
-                        raise CleanCommandError(
-                            f"Failed to merge-tree for commit {commit[:7]}. May have conflicts."
-                        )
-
-                    # Create commit with the new tree
-                    cmd_env = os.environ.copy()
-                    cmd_env["GIT_AUTHOR_NAME"] = author_name
-                    cmd_env["GIT_AUTHOR_EMAIL"] = author_email
-                    cmd_env["GIT_AUTHOR_DATE"] = author_date
-                    cmd_env["GIT_COMMITTER_NAME"] = committer_name
-                    cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
-                    cmd_env["GIT_COMMITTER_DATE"] = committer_date
-
-                    new_commit = self.global_context.git_commands.commit_tree(
-                        new_tree, [new_parent], message, env=cmd_env
-                    )
-
-                    if not new_commit:
-                        raise CleanCommandError(
-                            f"Failed to create commit for {commit[:7]}"
-                        )
-
-                    new_parent = new_commit
-
-                logger.success("Downstream commits successfully rebased.")
-                current_base_hash = new_parent
+                if downstream_commits:
+                    new_parent = current_base_hash
+                    for commit in downstream_commits:
+                        new_parent = self._rebase_commit(commit, new_parent)
+                    current_base_hash = new_parent
+                    logger.success("Downstream commits successfully rebased.")
 
             return current_base_hash
-            
-            
 
         except Exception as e:
             logger.error(f"Clean pipeline failed: {e}")
-            logger.warning("No references were updated. Repository state is unchanged.")
             return None
+
+    def _get_linear_history(self, start_from: str | None = None, end_at: str | None = None) -> list[str]:
+        """
+        Returns a list of commit hashes to rewrite (Oldest -> Newest).
+        Ensures the root commit is excluded (cannot be rewritten).
+        """
+        # Resolve end
+        if end_at:
+            end_sha = self.global_context.git_commands.get_commit_hash(end_at)
+        else:
+            end_sha = self.global_context.git_commands.get_commit_hash(
+                self.global_context.current_branch
+            )
+
+        range_spec = None
+        
+        if start_from:
+            start_sha = self.global_context.git_commands.get_commit_hash(start_from)
+            parent = self.global_context.git_commands.try_get_parent_hash(start_sha)
+            
+            if parent:
+                # effectively acts as A..B (commits reachable from B not A).
+                range_spec = f"{parent}...{end_sha}"
+            else:
+                # Root commit: just end_sha implies reachable from end_sha
+                range_spec = end_sha
+        else:
+            # Auto-detect mode: clean from last merge up to end
+            stop_commits = self.global_context.git_commands.get_rev_list(
+                end_sha, merges=True, n=1
+            )
+            if stop_commits:
+                stop_commit = stop_commits[0]
+                range_spec = f"{stop_commit}..{end_sha}"
+            else:
+                range_spec = end_sha
+
+        # Get commits Oldest -> Newest
+        commits = self.global_context.git_commands.get_rev_list(
+            range_spec, first_parent=True, reverse=True
+        )
+
+        # We cannot rewrite the root commit because we need a parent to serve as the base.
+        if commits:
+            first_commit = commits[0]
+            if not self.global_context.git_commands.try_get_parent_hash(first_commit):
+                # Remove root commit from list to be rewritten.
+                # It will act as the immutable base for the next commit in the list.
+                commits.pop(0)
+
+        return commits
+
+    def _rebase_commit(self, commit: str, new_parent: str) -> str:
+        # (Included for completeness of logic flow)
+        log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
+        meta_out = self.global_context.git_commands.get_commit_metadata(commit, log_format)
+        if not meta_out:
+            raise CleanCommandError(f"Failed to get metadata for {commit}")
+
+        lines = meta_out.splitlines()
+        if len(lines) < 7:
+             raise CleanCommandError(f"Invalid metadata for {commit}")
+
+        author_name, author_email, author_date = lines[0], lines[1], lines[2]
+        committer_name, committer_email, committer_date = lines[3], lines[4], lines[5]
+        message = "\n".join(lines[6:])
+
+        original_parent = self.global_context.git_commands.try_get_parent_hash(commit)
+        if not original_parent:
+            raise CleanCommandError(f"Failed to get parent of {commit}")
+
+        new_tree = self.global_context.git_commands.merge_tree(
+            original_parent, new_parent, commit
+        )
+        if not new_tree:
+            raise CleanCommandError(f"Failed to merge-tree for {commit}")
+
+        cmd_env = os.environ.copy()
+        cmd_env["GIT_AUTHOR_NAME"] = author_name
+        cmd_env["GIT_AUTHOR_EMAIL"] = author_email
+        cmd_env["GIT_AUTHOR_DATE"] = author_date
+        cmd_env["GIT_COMMITTER_NAME"] = committer_name
+        cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
+        cmd_env["GIT_COMMITTER_DATE"] = committer_date
+
+        return self.global_context.git_commands.commit_tree(
+            new_tree, [new_parent], message, env=cmd_env
+        ) or ""
 
     def _copy_commit_index_only(
         self, original_commit: str, new_base: str
@@ -371,39 +386,6 @@ class CleanPipeline:
             # Cleanup the temporary index file
             if os.path.exists(temp_index_path):
                 os.unlink(temp_index_path)
-
-    def _get_linear_history(self, start_from: str | None = None) -> list[str]:
-        """
-        Returns a list of commit hashes from the start reference down to (but excluding)
-        the first merge or the root. Order is Newest -> Oldest.
-        """
-        start_ref = start_from or self.global_context.current_branch
-        if start_from:
-            try:
-                start_ref = self.global_context.git_commands.get_commit_hash(start_from)
-            except ValueError:
-                raise CleanCommandError(f"Could not resolve commit: {start_from}")
-
-        stop_commits = self.global_context.git_commands.get_rev_list(
-            start_ref, merges=True, n=1
-        )
-
-        range_spec = start_ref
-        if stop_commits:
-            stop_commit = stop_commits[0]
-            range_spec = f"{stop_commit}..{start_ref}"
-
-        commits = self.global_context.git_commands.get_rev_list(
-            range_spec, first_parent=True
-        )
-
-        if commits:
-            last = commits[-1]
-            parents = self.global_context.git_commands.try_get_parent_hash(last)
-            if not parents:
-                commits.pop()
-
-        return commits
 
     def _is_ignored(self, commit: str, ignore: Sequence[str] | None) -> bool:
         if not ignore:

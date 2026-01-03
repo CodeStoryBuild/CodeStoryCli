@@ -25,6 +25,7 @@ from codestory.core.exceptions import (
 )
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
+    is_root_commit,
     validate_commit_hash,
     validate_no_merge_commits_in_range,
 )
@@ -78,10 +79,10 @@ def get_info(global_context: GlobalContext, fix_context: FixContext):
         base_hash = start_resolved
     else:
         # Default: use end's parent as start (original behavior)
-        base_hash = global_context.git_commands.try_get_parent_hash(end_resolved)
-
-        if not base_hash:
+        if is_root_commit(global_context.git_commands, end_resolved):
             raise GitError("Fixing the root commit is not supported yet!")
+
+        base_hash = global_context.git_commands.try_get_parent_hash(end_resolved)
 
     # Validate that there are no merge commits in the range to be fixed
     validate_no_merge_commits_in_range(
