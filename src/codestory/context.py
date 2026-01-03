@@ -29,10 +29,7 @@ from codestory.core.config.type_constraints import (
     TypeConstraint,
 )
 from codestory.core.git_commands.git_commands import GitCommands
-from codestory.core.git_interface.interface import GitInterface
-from codestory.core.git_interface.SubprocessGitInterface import (
-    SubprocessGitInterface,
-)
+from codestory.core.git_interface import GitInterface
 from codestory.core.llm import CodeStoryAdapter, ModelConfig
 
 
@@ -254,7 +251,7 @@ class GlobalContext:
     def from_global_config(
         cls, config: GlobalConfig, repo_path: Path, current_branch: str = ""
     ):
-        git_interface = SubprocessGitInterface(repo_path)
+        git_interface = GitInterface(repo_path)
         git_commands = GitCommands(git_interface)
         return GlobalContext(
             repo_path, git_interface, git_commands, config, current_branch

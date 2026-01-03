@@ -35,8 +35,10 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 class StructuredLogger:
     """Structured logging helper for consistent log formatting."""
 
-    def __init__(self, command_name: str):
+    def __init__(self, command_name: str, debug: bool = False, silent: bool = False):
         self.command_name = command_name
+        self.debug = debug
+        self.silent = silent
         self._setup_logger()
 
     def _setup_logger(self) -> None:
@@ -46,9 +48,16 @@ class StructuredLogger:
         # Clear existing sinks to avoid duplicates
         logger.remove()
 
-        # Determine log level from environment
-        log_level = os.getenv("CODESTORY_LOG_LEVEL", "INFO").upper()
-        console_level = os.getenv("CODESTORY_CONSOLE_LOG_LEVEL", log_level).upper()
+        # Determine log level - flags override env vars
+        if self.debug:
+            log_level = "DEBUG"
+            console_level = "DEBUG"
+        elif self.silent:
+            log_level = "ERROR"
+            console_level = "ERROR"
+        else:
+            log_level = os.getenv("CODESTORY_LOG_LEVEL", "INFO").upper()
+            console_level = os.getenv("CODESTORY_CONSOLE_LOG_LEVEL", log_level).upper()
 
         # Create timestamped log file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

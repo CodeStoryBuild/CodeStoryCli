@@ -16,13 +16,42 @@
 #  */
 # -----------------------------------------------------------------------------
 
+import os
 import subprocess
 from pathlib import Path
 
-from codestory.core.git_interface.interface import GitInterface
 
+class GitInterface:
+    """
+    Git interface implementation that supports environment variable overrides.
 
-class SubprocessGitInterface(GitInterface):
+    The global_env_override dict contains specific keys to override in the
+    subprocess environment. This is used by GitSandbox to redirect Git object
+    storage without modifying the global os.environ, allowing concurrent
+    sandbox instances.
+    """
+
+    global_env_override: dict | None = None
+
+    def _build_env(self, env: dict | None) -> dict:
+        """
+        Build the subprocess environment by merging global_env_override.
+
+        Args:
+            env: Optional env dict passed by caller. If None, starts from os.environ.
+
+        Returns:
+            A new dict with global_env_override applied on top.
+        """
+        # Start from provided env or current environment
+        base_env = env.copy() if env is not None else os.environ.copy()
+
+        # Apply our overrides on top (only specific keys)
+        if self.global_env_override:
+            base_env.update(self.global_env_override)
+
+        return base_env
+
     def __init__(self, repo_path: str | Path) -> None:
         # Ensure repo_path is a Path object for consistency
         if isinstance(repo_path, Path):
@@ -73,7 +102,7 @@ class SubprocessGitInterface(GitInterface):
                 errors="replace",
                 capture_output=True,
                 check=True,
-                env=env,
+                env=self._build_env(env),
                 cwd=effective_cwd,
             )
             if result.stdout:
@@ -119,7 +148,7 @@ class SubprocessGitInterface(GitInterface):
                 encoding=None,
                 capture_output=True,
                 check=True,
-                env=env,
+                env=self._build_env(env),
                 cwd=effective_cwd,
             )
             if result.stdout:

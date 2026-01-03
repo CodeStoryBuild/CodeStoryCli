@@ -15,3 +15,4 @@
 #  * along with this program; if not, you can contact us at support@codestory.build
 #  */
 # -----------------------------------------------------------------------------
+from .git_interface import GitInterface

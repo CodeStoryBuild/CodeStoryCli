@@ -22,7 +22,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from codestory.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
+from codestory.core.git_interface import GitInterface
 
 # -----------------------------------------------------------------------------
 # Fixtures
@@ -31,7 +31,7 @@ from codestory.core.git_interface.SubprocessGitInterface import SubprocessGitInt
 
 @pytest.fixture
 def git_interface():
-    return SubprocessGitInterface(repo_path="/tmp/repo")
+    return GitInterface(repo_path="/tmp/repo")
 
 
 # -----------------------------------------------------------------------------
@@ -41,11 +41,11 @@ def git_interface():
 
 def test_init_path_conversion():
     """Test that string path is converted to Path object."""
-    gi = SubprocessGitInterface("/tmp/string_path")
+    gi = GitInterface("/tmp/string_path")
     assert isinstance(gi.repo_path, Path)
     assert str(gi.repo_path) == str(Path("/tmp/string_path"))
 
-    gi2 = SubprocessGitInterface(Path("/tmp/path_obj"))
+    gi2 = GitInterface(Path("/tmp/path_obj"))
     assert isinstance(gi2.repo_path, Path)
 
 
