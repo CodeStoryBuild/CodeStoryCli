@@ -21,8 +21,6 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from loguru import logger
-
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -145,12 +143,16 @@ class GitSynthesizer:
         Executes the synthesis plan using pure Git plumbing.
         Returns the hash of the final commit.
         """
+        from loguru import logger
+
         diff_generator = GitDiffGenerator(groups)
 
         original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
 
         # Create a template index populated with the base commit
-        template_fd, template_index_path = tempfile.mkstemp(prefix="codestory_template_index_")
+        template_fd, template_index_path = tempfile.mkstemp(
+            prefix="codestory_template_index_"
+        )
         os.close(template_fd)
 
         try:

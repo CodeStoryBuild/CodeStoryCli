@@ -16,15 +16,12 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import typer
 from colorama import Fore, Style
-from loguru import logger
 
 from codestory.context import CommitContext, FixContext, GlobalContext
 from codestory.core.exceptions import (
     DetachedHeadError,
     GitError,
-    handle_codestory_exception,
 )
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.logging.utils import time_block
@@ -100,6 +97,8 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
 
 def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str | None):
+    from loguru import logger
+
     validated_end_hash = validate_commit_hash(commit_hash)
     validated_start_hash = validate_commit_hash(start_commit) if start_commit else None
 
@@ -157,27 +156,3 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
         logger.success("Fix command completed successfully")
     else:
         logger.error(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
-
-
-def main(
-    ctx: typer.Context,
-    commit_hash: str = typer.Argument(
-        None, help="Hash of the end commit to split or fix"
-    ),
-    start_commit: str = typer.Option(
-        None,
-        "--start",
-        help="Hash of the start commit, non inclusive (optional). If not provided, uses end commit's parent.",
-    ),
-) -> None:
-    """Turn a past commit or range of commits into small logical commits.
-
-    Examples:
-        # Fix a specific commit (--start will be parent of def456)
-        cst fix def456
-
-        # Fix a range of commits from start to end
-        cst fix def456 --start abc123
-    """
-    with handle_codestory_exception():
-        run_fix(ctx.obj, commit_hash, start_commit)

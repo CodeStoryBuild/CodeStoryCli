@@ -18,8 +18,6 @@
 
 from itertools import groupby
 
-from loguru import logger
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
@@ -83,11 +81,9 @@ def __merge_diff_chunks(sorted_chunks: list[DiffChunk]) -> list[DiffChunk]:
         if __is_contiguous(last_chunk, current_chunk):
             current_group.append(current_chunk)
         else:
-            logger.debug(f"Current merge group: {current_group}")
             groups.append(current_group)
             current_group = [current_chunk]
 
-    logger.debug(f"Current merge group: {current_group}")
     groups.append(current_group)
 
     # Merge each group into a single new DiffChunk.

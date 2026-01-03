@@ -26,7 +26,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from loguru import logger
 from tqdm import tqdm
 
 from codestory.core.data.chunk import Chunk
@@ -356,6 +355,8 @@ class EmbeddingGrouper(LogicalGrouper):
     def generate_summaries(
         self, annotated_chunk_patches: list[list[dict]], pbar: tqdm | None = None
     ) -> list[str]:
+        from loguru import logger
+
         if not annotated_chunk_patches:
             return []
 
@@ -423,6 +424,8 @@ class EmbeddingGrouper(LogicalGrouper):
     def generate_cluster_summaries(
         self, clusters: dict[int, Cluster], pbar: tqdm | None = None
     ) -> dict[int, str]:
+        from loguru import logger
+
         if not clusters:
             return {}
 

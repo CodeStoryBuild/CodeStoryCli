@@ -21,7 +21,6 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from loguru import logger
 from tqdm import tqdm
 
 from codestory.core.data.chunk import Chunk
@@ -162,7 +161,6 @@ class RelevanceFilter:
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM JSON: {cleaned}")
             raise LLMResponseError("Model returned invalid JSON") from e
 
     def filter(
@@ -172,6 +170,8 @@ class RelevanceFilter:
         intent: str,
         pbar: tqdm | None = None,
     ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
+        from loguru import logger
+
         if not (chunks or immut_chunks):
             return [], [], []
 

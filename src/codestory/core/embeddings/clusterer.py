@@ -16,7 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 import numpy as np
-from loguru import logger
 
 
 class SklearnLouvainClusterer:
@@ -51,6 +50,7 @@ class SklearnLouvainClusterer:
 
         :param strictness: Float between 0.0 (Loose/Coarse) and 1.0 (Strict/Fine).
         """
+        from loguru import logger
 
         # 0. Clamp strictness to the defined [0.0, 1.0] range for safety
         self.alpha = np.clip(strictness, 0.0, 1.0)
@@ -78,6 +78,7 @@ class SklearnLouvainClusterer:
         import networkx as nx
         from sklearn.neighbors import NearestNeighbors
         from sklearn.preprocessing import normalize
+        from loguru import logger
 
         # Early exits for edge cases
         if embeddings is None or len(embeddings) == 0:

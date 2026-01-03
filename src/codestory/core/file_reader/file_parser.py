@@ -18,7 +18,7 @@
 
 from dataclasses import dataclass
 
-from loguru import logger
+
 from tree_sitter import Node
 from tree_sitter_language_pack import get_parser
 
@@ -57,6 +57,8 @@ class FileParser:
         Returns:
             ParsedFile containing the root node and detected language, or None if parsing failed
         """
+        from loguru import logger
+
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
             logger.debug(f"Failed to get detect language for {file_name}")

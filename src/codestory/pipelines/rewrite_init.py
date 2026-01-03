@@ -19,8 +19,6 @@
 
 from typing import Literal
 
-from loguru import logger
-
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.exceptions import GitError
@@ -39,6 +37,8 @@ def create_rewrite_pipeline(
     new_commit_hash: str,
     source: Literal["commit", "fix"],
 ):
+    from loguru import logger
+
     chunker = AtomicChunker(global_ctx.config.split_hunks)
 
     if global_ctx.get_model() is not None:

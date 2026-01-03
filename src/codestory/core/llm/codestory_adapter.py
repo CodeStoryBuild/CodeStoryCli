@@ -16,14 +16,12 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import asyncio
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from loguru import logger
 
 from codestory.constants import LOCAL_PROVIDERS
 from codestory.core.exceptions import LLMInitError, ModelRetryExhausted
@@ -84,6 +82,8 @@ class CodeStoryAdapter:
 
     def close(self):
         """Cleanup method to properly close the persistent event loop."""
+        import asyncio
+
         if self._loop is not None and not self._loop.is_closed():
             try:
                 # Cancel all running tasks immediately
@@ -94,6 +94,8 @@ class CodeStoryAdapter:
                 # Force stop the loop without waiting
                 self._loop.stop()
             except Exception as e:
+                from loguru import logger
+
                 logger.debug(f"Error closing event loop: {e}")
             finally:
                 self._loop = None
@@ -125,6 +127,8 @@ class CodeStoryAdapter:
     @contextmanager
     def _handle_llm_error(self, operation_type: str):
         """Context manager to unify error handling across sync and async calls."""
+        import asyncio
+
         try:
             yield
         except LLMInitError:
@@ -175,6 +179,8 @@ class CodeStoryAdapter:
         num_retries: int = 3,
     ) -> str:
         """Unified sync invoke method with retry logic. Returns the content string."""
+        from loguru import logger
+
         logger.debug(f"Invoking {self.model_string} (sync)")
         kwargs = self._prepare_request(messages)
 
@@ -210,6 +216,9 @@ class CodeStoryAdapter:
         num_retries: int = 3,
     ) -> str:
         """Unified async invoke method with retry logic. Returns the content string."""
+        from loguru import logger
+        import asyncio
+
         logger.debug(f"Invoking {self.model_string} (async)")
         kwargs = self._prepare_request(messages)
 
@@ -255,6 +264,9 @@ class CodeStoryAdapter:
         FAILS FAST: If one task raises an exception, the exception is raised immediately
         and all other pending tasks are cancelled.
         """
+        from loguru import logger
+        import asyncio
+
         if self.model_string.startswith("ollama:") and max_concurrent > 3:
             logger.debug("Ollama detected: limiting max_concurrent to 3")
             max_concurrent = 3
@@ -308,6 +320,8 @@ class CodeStoryAdapter:
         Synchronous wrapper for batched calls reusing a persistent loop.
         Ideal for CLI usage to prevent overhead of creating/destroying loops per call.
         """
+        import asyncio
+
         if self._loop is None or self._loop.is_closed():
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)

@@ -20,13 +20,11 @@ from typing import Literal
 
 import typer
 from colorama import Fore, Style
-from loguru import logger
 
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.exceptions import (
     GitError,
     ValidationError,
-    handle_codestory_exception,
 )
 from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.logging.utils import time_block
@@ -41,6 +39,8 @@ from codestory.core.validation import (
 def verify_repo_state(
     commands: GitCommands, target: str, auto_yes: bool = False
 ) -> bool:
+    from loguru import logger
+
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
 
     if commands.is_bare_repository():
@@ -85,6 +85,8 @@ def run_commit(
     intent: str | None,
     fail_on_syntax_errors: bool,
 ) -> None:
+    from loguru import logger
+
     # Validate inputs
     validated_target = validate_target_path(target)
 
@@ -152,55 +154,3 @@ def run_commit(
         )
     else:
         logger.error(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
-
-
-def main(
-    ctx: typer.Context,
-    target: str | None = typer.Argument(
-        None, help="Path to file or directory to commit."
-    ),
-    message: str | None = typer.Option(
-        None,
-        "-m",
-        help="Context or instructions for the AI to generate the commit message",
-    ),
-    intent: str | None = typer.Option(
-        None,
-        "--intent",
-        help="Intent or purpose for the commit, used for relevance filtering.",
-    ),
-    fail_on_syntax_errors: bool = typer.Option(
-        False,
-        "--fail-on-syntax-errors",
-        help="Fail the commit if syntax errors are detected in the changes.",
-    ),
-) -> None:
-    """
-    Commit current changes into small logical commits.
-    (If you wish to modify existing history, use codestory fix or codestory clean)
-
-    Examples:
-        # Commit all changes interactively
-        cst commit
-
-        # Commit specific directory with message
-        cst commit src/  -m "Make 2 commits, one for refactor, one for feature A..."
-
-        # Commit changes with an intent filter enabled
-        cst commit --intent "refactor abc into a class"
-    """
-    global_context: GlobalContext = ctx.obj
-    with handle_codestory_exception():
-        if global_context.config.relevance_filter_level != "none" and intent is None:
-            raise ValidationError(
-                "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
-            )
-        run_commit(
-            ctx.obj,
-            target,
-            message,
-            global_context.config.secret_scanner_aggression,
-            global_context.config.relevance_filter_level,
-            intent,
-            fail_on_syntax_errors,
-        )

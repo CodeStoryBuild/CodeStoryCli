@@ -19,7 +19,6 @@
 import subprocess
 from pathlib import Path
 
-from loguru import logger
 
 from codestory.core.git_interface.interface import GitInterface
 
@@ -59,6 +58,8 @@ class SubprocessGitInterface(GitInterface):
         env: dict | None = None,
         cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess[str] | None:
+        from loguru import logger
+
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
             cmd = ["git"] + args
@@ -102,6 +103,8 @@ class SubprocessGitInterface(GitInterface):
         env: dict | None = None,
         cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess[bytes] | None:
+        from loguru import logger
+
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
 
