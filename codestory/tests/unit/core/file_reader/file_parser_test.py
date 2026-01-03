@@ -1,8 +1,8 @@
 # -----------------------------------------------------------------------------
-# dslate - Dual Licensed Software
+# codestory - Dual Licensed Software
 # Copyright (c) 2025 Adem Can
 #
-# This file is part of DSLATE.
+# This file is part of codestory.
 #
 # codestory is available under a dual-license:
 #   1. AGPLv3 (Affero General Public License v3)
@@ -50,8 +50,8 @@ def test_detect_language_unknown(mock_get_lexer):
     assert lang is None
 
 
-@patch("dslate.core.file_reader.file_parser.get_parser")
-@patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
+@patch("codestory.core.file_reader.file_parser.get_parser")
+@patch("codestory.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_success(mock_detect, mock_get_parser):
     mock_detect.return_value = "python"
 
@@ -78,8 +78,8 @@ def test_parse_file_no_language(mock_detect):
     assert result is None
 
 
-@patch("dslate.core.file_reader.file_parser.get_parser")
-@patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
+@patch("codestory.core.file_reader.file_parser.get_parser")
+@patch("codestory.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_parser_error(mock_detect, mock_get_parser):
     mock_detect.return_value = "python"
     mock_get_parser.side_effect = Exception("Parser error")

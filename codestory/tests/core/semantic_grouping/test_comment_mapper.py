@@ -51,7 +51,7 @@ def test_pure_comment_lines_python():
     assert parsed is not None
 
     # QueryManager expects a path-like with .open(); point at packaged language_config
-    lang_cfg_path = files("dslate") / "resources" / "language_config.json"
+    lang_cfg_path = files("codestory") / "resources" / "language_config.json"
 
     q = QueryManager(lang_cfg_path)
     mapper = CommentMapper(q)

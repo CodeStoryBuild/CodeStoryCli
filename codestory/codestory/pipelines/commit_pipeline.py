@@ -287,7 +287,7 @@ class CommitPipeline:
             logger.info("No changes to process.")
 
             if self.source == "commit":
-                logger.info("[yellow]If you meant to modify existing git history, please use dslate fix or dslate clean commands[/yellow]")
+                logger.info("[yellow]If you meant to modify existing git history, please use codestory fix or codestory clean commands[/yellow]")
 
             return None
 
