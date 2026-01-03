@@ -20,7 +20,9 @@
 
 from dataclasses import dataclass
 
+
 from tree_sitter import Node
+
 
 from .query_manager import QueryManager
 

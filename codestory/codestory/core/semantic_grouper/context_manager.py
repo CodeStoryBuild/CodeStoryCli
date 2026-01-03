@@ -34,6 +34,7 @@ from .symbol_extractor import SymbolExtractor
 from .symbol_mapper import SymbolMap, SymbolMapper
 
 
+
 @dataclass(frozen=True)
 class AnalysisContext:
     """Contains the analysis context for a specific file version."""

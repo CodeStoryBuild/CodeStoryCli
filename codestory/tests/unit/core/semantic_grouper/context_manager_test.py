@@ -77,6 +77,8 @@ def mocks():
 
 @pytest.fixture
 def context_manager_deps(mocks):
+    query_mgr = Mock(spec=QueryManager)
+    # Default to returning None for parse; tests will override where needed
     with (
         patch(
             "codestory.core.semantic_grouper.context_manager.ScopeMapper",
@@ -94,7 +96,20 @@ def context_manager_deps(mocks):
             "codestory.core.semantic_grouper.context_manager.CommentMapper",
             return_value=mocks["comment_mapper"],
         ),
+        patch(
+            "codestory.core.semantic_grouper.context_manager.QueryManager.get_instance",
+            return_value=query_mgr,
+        ),
+        patch(
+            "codestory.core.semantic_grouper.context_manager.FileParser.parse_file",
+            autospec=True,
+        ) as parse_file_patch,
     ):
+        # include the patched instances for tests
+        mocks.update({
+            "query_manager": query_mgr,
+            "file_parser_parse": parse_file_patch,
+        })
         yield mocks
 
 
@@ -152,9 +167,7 @@ def test_simplify_overlapping_ranges(context_manager_deps):
     # We can test this static-like method by instantiating with empty chunks
     cm = ContextManager(
         [],
-        context_manager_deps["parser"],
         context_manager_deps["reader"],
-        context_manager_deps["qm"],
         False
     )
 
