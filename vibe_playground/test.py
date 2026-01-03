@@ -71,9 +71,11 @@ language = get_language("python")
 query = Query(language, query_source)
 cursor = QueryCursor(query)
 
+
 def my_predicate(name, args, pattern_index, captures):
     print(f"{name=}\n{args=}\n{pattern_index=}\n{captures=}\n\n")
     return True
+
 
 captures = cursor.captures(root, my_predicate)
 

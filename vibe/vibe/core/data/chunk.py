@@ -1,6 +1,7 @@
 from typing import Protocol
 from .diff_chunk import DiffChunk
 
+
 class Chunk(Protocol):
     def format_json(self) -> str:
         """

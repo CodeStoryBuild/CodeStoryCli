@@ -27,6 +27,7 @@ class Symbol:
     type: str
     definition_scope_id: str
 
+
 @dataclass
 class AnalysedHunk:
     """An internal representation of a single, continuous hunk range."""

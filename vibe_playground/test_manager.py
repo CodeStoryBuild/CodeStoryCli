@@ -16,6 +16,7 @@ class SymbolMap:
 
     line_classes: dict[int, dict[str, set[str]]]
 
+
 @dataclass(frozen=True)
 class ScopeMap:
     """Maps line numbers where scope changes

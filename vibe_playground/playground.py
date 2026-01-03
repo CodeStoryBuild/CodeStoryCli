@@ -9,6 +9,7 @@ from vibe.core.data.chunk import Chunk
 
 # --- 0. Protocol Definition (from your project) ---
 
+
 class Chunk(Protocol):
     """
     Protocol for a diff chunk.
@@ -24,6 +25,7 @@ class Chunk(Protocol):
     # We will dynamically add these attributes during analysis
     structural_scope_id: str
     used_definition_scope_ids: set[str]
+
 
 # --- 1. Core Data Structures ---
 
