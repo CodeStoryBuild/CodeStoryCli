@@ -5,6 +5,7 @@ from rich.console import Console
 console = Console()
 app = typer.Typer(help="Initialize vibe in a repository")
 
+
 @app.command()
 def repo():
     """Initialize vibe for the current repo"""

@@ -42,6 +42,7 @@ def git_repo() -> tuple[Path, str]:
 
 ## Test Cases
 
+
 def test_basic_modification(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
@@ -79,6 +80,7 @@ def test_basic_modification(git_repo):
     ).stdout.strip()
     assert log == "Modify line 3"
 
+
 def test_file_deletion(git_repo):
     repo_path, base_hash = git_repo
     synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
@@ -95,6 +97,7 @@ def test_file_deletion(git_repo):
     synthesizer.execute_plan([group], base_hash, "main")
 
     assert not (repo_path / "app.js").exists()
+
 
 def test_rename_file(git_repo):
     repo_path, base_hash = git_repo
@@ -119,6 +122,7 @@ def test_rename_file(git_repo):
 import subprocess
 
 # ... (imports and other setup)
+
 
 def test_critical_line_shift_scenario(git_repo):
     repo_path, base_hash = git_repo
@@ -193,6 +197,7 @@ def test_critical_line_shift_scenario(git_repo):
 
 
 # --- Pure Addition Tests ---
+
 
 def test_pure_addition_single_file(git_repo):
     """Test adding new content to an existing file without any deletions."""
@@ -338,6 +343,7 @@ def test_pure_addition_multiple_groups(git_repo):
 
 
 # --- Pure Deletion Tests ---
+
 
 def test_pure_deletion_partial_content(git_repo):
     """Test deleting only some lines from files without adding anything."""
@@ -501,6 +507,7 @@ def test_pure_deletion_multiple_groups(git_repo):
 
 
 # --- Large Mixed Change Tests ---
+
 
 def test_large_mixed_changes_single_group(git_repo):
     """Test a single group with many files and mixed change types."""
@@ -855,6 +862,7 @@ def test_complex_interdependent_changes(git_repo):
 
 
 # --- Edge Case Tests ---
+
 
 def test_empty_group_handling(git_repo):
     """Test handling of empty groups and groups with no changes."""

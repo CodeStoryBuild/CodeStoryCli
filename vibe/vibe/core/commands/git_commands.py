@@ -6,6 +6,7 @@ from ..data.r_diff_chunk import RenameDiffChunk
 from ..data.diff_chunk import DiffChunk
 from ..git_interface.interface import GitInterface
 
+
 # In GitCommands file, update or replace HunkWrapper
 class GitCommands:
     def __init__(self, git: GitInterface):

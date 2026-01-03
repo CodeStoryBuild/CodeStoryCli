@@ -16,8 +16,10 @@ console = Console()
 app = typer.Typer(help="Commit changes with AI-powered messages")
 git = SubprocessGitInterface(".")
 
+
 def is_whitespace_line(line: str) -> bool:
     return line.strip() == ""
+
 
 chk = PredicateChunker(is_whitespace_line)
 # chk = MaxLineChunker(2)
@@ -30,10 +32,7 @@ runner = AIGitPipeline(git, chk, grp)
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
-    target: str = typer.Argument(
-        ".", 
-        help="The target path to check for changes."
-    )
+    target: str = typer.Argument(".", help="The target path to check for changes."),
 ):
     """
     Commits changes with AI-powered messages. This is the main command.

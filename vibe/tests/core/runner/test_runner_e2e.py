@@ -19,6 +19,7 @@ from .test_helpers import DeterministicChunker, DeterministicGrouper
 
 # --- Test Fixtures ---
 
+
 @pytest.fixture
 def complex_git_repo():
     """Create a complex git repository with multiple files for comprehensive testing."""
@@ -79,6 +80,7 @@ def mock_inquirer_accept_all():
 
 
 # --- Test Cases ---
+
 
 def test_runner_basic_file_modification(complex_git_repo, mock_inquirer_accept_all):
     """Test basic file modification through the complete pipeline."""

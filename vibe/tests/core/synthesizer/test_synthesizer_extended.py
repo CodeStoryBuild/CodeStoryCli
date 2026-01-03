@@ -67,6 +67,7 @@ def multi_file_git_repo(tmp_path):
 
     return repo_path, base_hash
 
+
 def test_multi_file_disjoint_changes(multi_file_git_repo):
     """
     Tests the A1/A2 and B1/B2 scenario with two separate commit groups.

@@ -26,5 +26,6 @@ def main(ctx: typer.Context):
         typer.echo(ctx.get_help())
         raise typer.Exit()
 
+
 if __name__ == "__main__":
     app()
