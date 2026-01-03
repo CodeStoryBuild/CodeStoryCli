@@ -49,10 +49,10 @@ def main():
         # Include dynamically imported modules
         "--hidden-import=tree_sitter_language_pack.bindings",
         "--collect-all=tree_sitter_language_pack",
-        "--collect-all=codestory",
+        "--collect-all=codestory-cli",
         # Include package data
         "--copy-metadata=tree_sitter_language_pack",
-        "--copy-metadata=codestory",
+        "--copy-metadata=codestory-cli",
         str(entry_point),
     ]
 
