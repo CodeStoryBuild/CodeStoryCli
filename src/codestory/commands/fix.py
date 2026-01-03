@@ -28,6 +28,7 @@ from codestory.core.validation import (
     validate_commit_hash,
     validate_no_merge_commits_in_range,
 )
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def get_info(global_context: GlobalContext, fix_context: FixContext):
@@ -126,14 +127,17 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
     from codestory.pipelines.fix_pipeline import FixPipeline
     from codestory.pipelines.rewrite_init import create_rewrite_pipeline
 
-    rewrite_pipeline = create_rewrite_pipeline(
-        global_context, commit_context, base_hash, new_hash, source="fix"
-    )
+    with GitSandbox(global_context) as sandbox:
+        rewrite_pipeline = create_rewrite_pipeline(
+            global_context, commit_context, base_hash, new_hash, source="fix"
+        )
 
-    # Execute expansion
-    with time_block("Fix Pipeline E2E"):
-        service = FixPipeline(global_context, fix_context, rewrite_pipeline)
-        final_head = service.run()
+        with time_block("Fix Pipeline E2E"):
+            service = FixPipeline(global_context, fix_context, rewrite_pipeline)
+            final_head = service.run()
+        
+        if final_head:
+            sandbox.sync(final_head)
 
     if final_head is not None:
         final_head = final_head.strip()

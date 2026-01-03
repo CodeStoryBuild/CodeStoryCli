@@ -45,7 +45,7 @@ class CleanPipeline:
         self.global_context = global_context
         self.clean_context = clean_context
 
-    def run(self) -> bool:
+    def run(self) -> str | None:
         from loguru import logger
 
         # ------------------------------------------------------------------
@@ -57,7 +57,7 @@ class CleanPipeline:
             logger.warning(
                 "No commits eligible for cleaning (root or merge-only history)."
             )
-            return False
+            return None
 
         # Process from Oldest -> Newest
         commits_to_rewrite = list(reversed(raw_commits))
@@ -275,28 +275,14 @@ class CleanPipeline:
                 logger.success("Downstream commits successfully rebased.")
                 current_base_hash = new_parent
 
-            if original_branch:
-                # Atomically move the branch pointer to the new chain tip
-                self.global_context.git_commands.update_ref(
-                    original_branch, current_base_hash
-                )
-                # Sync the working directory to the new head (bare-repo friendly)
-                self.global_context.git_commands.read_tree(original_branch)
-            else:
-                # If detached, update HEAD
-                self.global_context.git_commands.update_ref("HEAD", current_base_hash)
-
-            logger.success(
-                "Clean complete: fixed={fixed}, copied={skipped}",
-                fixed=rewritten_count,
-                skipped=skipped_count,
-            )
-            return True
+            return current_base_hash
+            
+            
 
         except Exception as e:
             logger.error(f"Clean pipeline failed: {e}")
             logger.warning("No references were updated. Repository state is unchanged.")
-            return False
+            return None
 
     def _copy_commit_index_only(
         self, original_commit: str, new_base: str

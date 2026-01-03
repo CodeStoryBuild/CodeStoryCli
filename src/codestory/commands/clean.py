@@ -25,6 +25,7 @@ from codestory.core.validation import (
     validate_min_size,
     validate_no_merge_commits_in_range,
 )
+from codestory.core.synthesizer.git_sandbox import GitSandbox
 
 
 def run_clean(
@@ -88,11 +89,22 @@ def run_clean(
     # Execute cleaning
     from codestory.pipelines.clean_pipeline import CleanPipeline
 
-    with time_block("Clean Runner E2E"):
-        runner = CleanPipeline(global_context, clean_context)
-        success = runner.run()
+    with GitSandbox(global_context) as sandbox:
+        with time_block("Clean Runner E2E"):
+            runner = CleanPipeline(global_context, clean_context)
+            final_head = runner.run() # Now returns the hash string
+        
+        if final_head:
+            sandbox.sync(final_head)
 
-    if success:
+    if final_head:
+        # Update references
+        target_ref = global_context.current_branch
+        global_context.git_commands.update_ref(target_ref, final_head)
+        
+        if global_context.current_branch:
+             global_context.git_commands.read_tree(target_ref)
+        
         logger.success("Clean command completed successfully")
         return True
     else:
