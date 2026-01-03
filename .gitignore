@@ -211,3 +211,6 @@ vibe_playground/
 *.exe
 *.dmg
 dslateconfig.toml
+
+# docs
+dslate/site
