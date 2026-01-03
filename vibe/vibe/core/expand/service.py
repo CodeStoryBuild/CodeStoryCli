@@ -1,6 +1,6 @@
 import os
 import shutil
-import tempfile
+from tempfile import TemporaryDirectory
 from typing import Optional, Callable
 
 from rich.console import Console
@@ -82,87 +82,91 @@ class ExpandService:
             return False
         parent = parent.strip()
 
-        # Create worktree at parent commit and a temp branch
-        wt1_dir = tempfile.mkdtemp(prefix="vibe-expand-wt1-")
-        rewrite_branch: Optional[str] = None
-        try:
-            logger.info("Creating temporary worktree at {parent}", parent=_short(parent))
-            _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
-            wt1_git = SubprocessGitInterface(wt1_dir)
-
+        # Use TemporaryDirectory context managers for automatic cleanup
+        with TemporaryDirectory(prefix="vibe-expand-wt1-") as wt1_dir:
+            rewrite_branch: Optional[str] = None
             temp_branch = f"vibe-expand-{_short(resolved)}"
-            _run_git(wt1_git, ["checkout", "-b", temp_branch])
-
-            # Run expand pipeline on diff(parent, resolved)
-            logger.info("Analyzing and proposing groups for commit {commit}", commit=_short(resolved))
-            pipeline = create_expand_pipeline(
-                wt1_dir,
-                base_commit_hash=parent,
-                new_commit_hash=resolved,
-                console=console,
-            )
-            plan = pipeline.run(target=".", auto_yes=auto_yes)
-            if not plan:
-                logger.warning("Expansion cancelled; no changes applied")
-                return False
-
-            new_base = (_run_git(wt1_git, ["rev-parse", "HEAD"]) or "").strip()
-            logger.info("Created new base at {base}", base=_short(new_base))
-
-            # Prepare rebase of upstream commits onto the new base in a separate worktree
-            wt2_dir = tempfile.mkdtemp(prefix="vibe-expand-wt2-")
+            
             try:
-                rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
-                logger.info("Preparing rebase in isolated worktree")
-                _run_git(
-                    self.git,
-                    ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash],
-                )
-                wt2_git = SubprocessGitInterface(wt2_dir)
+                logger.info("Creating temporary worktree at {parent}", parent=_short(parent))
+                _run_git(self.git, ["worktree", "add", "--detach", wt1_dir, parent])
+                wt1_git = SubprocessGitInterface(wt1_dir)
 
-                # Rebase: move commits after resolved onto new_base
-                # git rebase --onto <new_base> <resolved> <rewrite_branch>
-                rebase_ok = (
-                    _run_git(
-                        wt2_git,
-                        ["rebase", "--onto", new_base, resolved, rewrite_branch],
-                    )
-                    is not None
+                _run_git(wt1_git, ["checkout", "-b", temp_branch])
+
+                # Run expand pipeline on diff(parent, resolved)
+                logger.info("Analyzing and proposing groups for commit {commit}", commit=_short(resolved))
+                pipeline = create_expand_pipeline(
+                    wt1_dir,
+                    base_commit_hash=parent,
+                    new_commit_hash=resolved,
+                    console=console,
                 )
-                if not rebase_ok:
-                    # Try to abort if needed
-                    _run_git(wt2_git, ["rebase", "--abort"])
-                    logger.error("Rebase failed during expansion")
+                plan = pipeline.run(target=".", auto_yes=auto_yes)
+                if not plan:
+                    logger.warning("Expansion cancelled; no changes applied")
                     return False
 
-                new_head = (
-                    _run_git(wt2_git, ["rev-parse", rewrite_branch]) or ""
-                ).strip()
+                new_base = (_run_git(wt1_git, ["rev-parse", "HEAD"]) or "").strip()
+                logger.info("Created new base at {base}", base=_short(new_base))
 
-                # Update original branch ref and working tree
-                if (
-                    _run_git(
-                        self.git,
-                        ["update-ref", f"refs/heads/{current_branch}", new_head],
-                    )
-                    is None
-                ):
-                    logger.error("Failed to update branch ref for {branch}", branch=current_branch)
-                    return False
+                # Prepare rebase of upstream commits onto the new base in a separate worktree
+                with TemporaryDirectory(prefix="vibe-expand-wt2-") as wt2_dir:
+                    try:
+                        rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
+                        logger.info("Preparing rebase in isolated worktree")
+                        _run_git(
+                            self.git,
+                            ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash],
+                        )
+                        wt2_git = SubprocessGitInterface(wt2_dir)
 
-                # If on that branch, sync working tree
-                _run_git(self.git, ["reset", "--hard", new_head])
-                logger.info("Commit expansion successful for {commit}", commit=_short(resolved))
-                return True
+                        # Rebase: move commits after resolved onto new_base
+                        # git rebase --onto <new_base> <resolved> <rewrite_branch>
+                        rebase_ok = (
+                            _run_git(
+                                wt2_git,
+                                ["rebase", "--onto", new_base, resolved, rewrite_branch],
+                            )
+                            is not None
+                        )
+                        if not rebase_ok:
+                            # Try to abort if needed
+                            _run_git(wt2_git, ["rebase", "--abort"])
+                            logger.error("Rebase failed during expansion")
+                            return False
+
+                        new_head = (
+                            _run_git(wt2_git, ["rev-parse", rewrite_branch]) or ""
+                        ).strip()
+
+                        # Update original branch ref and working tree
+                        if (
+                            _run_git(
+                                self.git,
+                                ["update-ref", f"refs/heads/{current_branch}", new_head],
+                            )
+                            is None
+                        ):
+                            logger.error("Failed to update branch ref for {branch}", branch=current_branch)
+                            return False
+
+                        # If on that branch, sync working tree
+                        _run_git(self.git, ["reset", "--hard", new_head])
+                        logger.info("Commit expansion successful for {commit}", commit=_short(resolved))
+                        return True
+
+                    finally:
+                        # Clean up git worktree
+                        _cleanup_worktree(self.git, wt2_dir)
+                        # Delete temporary rewrite branch if it exists
+                        if rewrite_branch:
+                            _run_git(self.git, ["branch", "-D", rewrite_branch])
 
             finally:
-                _cleanup_worktree(self.git, wt2_dir)
-                # Delete temporary rewrite branch if it exists
-                if rewrite_branch:
-                    _run_git(self.git, ["branch", "-D", rewrite_branch])
-
-        finally:
-            _cleanup_worktree(self.git, wt1_dir)
-            # Delete temp expand branch
-            _run_git(self.git, ["branch", "-D", f"vibe-expand-{_short(resolved)}"])
+                # Clean up git worktree
+                _cleanup_worktree(self.git, wt1_dir)
+                # Delete temp expand branch
+                _run_git(self.git, ["branch", "-D", temp_branch])
+        
         return False
