@@ -13,6 +13,7 @@ from dslate.context import (
 # GlobalConfig Tests
 # -----------------------------------------------------------------------------
 
+
 def test_global_config_defaults():
     """Test that GlobalConfig has expected default values."""
     config = GlobalConfig()
@@ -119,6 +120,7 @@ def test_global_context_from_config_custom(
 # Other Context Tests
 # -----------------------------------------------------------------------------
 
+
 def test_commit_context_defaults():
     ctx = CommitContext()
     assert ctx.target == "."
@@ -127,6 +129,7 @@ def test_commit_context_defaults():
 def test_fix_context():
     ctx = FixContext(commit_hash="abc1234")
     assert ctx.commit_hash == "abc1234"
+
 
 def test_clean_context_defaults():
     ctx = CleanContext()

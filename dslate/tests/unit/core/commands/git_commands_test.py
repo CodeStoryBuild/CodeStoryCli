@@ -49,6 +49,7 @@ def test_regex_patterns(git_commands):
 # Parse File Metadata Tests
 # -----------------------------------------------------------------------------
 
+
 def test_parse_file_metadata_standard(git_commands):
     lines = [
         b"diff --git a/test.txt b/test.txt",
@@ -73,6 +74,7 @@ def test_parse_file_metadata_new_file(git_commands):
     assert old is None
     assert new == b"new.txt"
     assert mode == b"100644"
+
 
 def test_parse_file_metadata_deleted_file(git_commands):
     lines = [
@@ -128,12 +130,12 @@ def test_get_full_working_diff_simple(git_commands, mock_git):
         b"+new\n"
     )
     mock_git.run_git_binary_out.return_value = diff_output
-    
+
     # Mock _get_binary_files to return empty set
     git_commands._get_binary_files = Mock(return_value=set())
 
     hunks = git_commands.get_full_working_diff("base", "new")
-    
+
     assert len(hunks) == 1
     assert isinstance(hunks[0], HunkWrapper)
     assert hunks[0].old_file_path == b"file.txt"

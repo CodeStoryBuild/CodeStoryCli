@@ -52,8 +52,8 @@ def test_extract_defined_symbols(MockQueryManager):
 def test_extract_defined_symbols_empty(MockQueryManager):
     qm = MockQueryManager.return_value
     qm.run_query.return_value = {}
-    
+
     extractor = SymbolExtractor(qm)
     symbols = extractor.extract_defined_symbols("python", Mock(), [])
-    
+
     assert symbols == set()

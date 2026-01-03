@@ -146,10 +146,12 @@ def test_validate_message_length_valid():
     assert validate_message_length("valid message") == "valid message"
     assert validate_message_length(None) is None
 
+
 def test_validate_message_length_too_long():
     long_msg = "a" * 1001
     with pytest.raises(ValidationError, match="Commit message is too long"):
         validate_message_length(long_msg)
+
 
 def test_validate_message_length_empty():
     with pytest.raises(ValidationError, match="Commit message cannot be empty"):
@@ -157,9 +159,11 @@ def test_validate_message_length_empty():
     with pytest.raises(ValidationError, match="Commit message cannot be empty"):
         validate_message_length("   ")
 
+
 def test_validate_message_length_null_bytes():
     with pytest.raises(ValidationError, match="contains null bytes"):
         validate_message_length("hello\x00world")
+
 
 def test_validate_message_length_type_error():
     with pytest.raises(ValidationError, match="Commit message must be a string"):
@@ -169,13 +173,16 @@ def test_validate_message_length_type_error():
 # validate_ignore_patterns
 # -----------------------------------------------------------------------------
 
+
 def test_validate_ignore_patterns_valid():
     assert validate_ignore_patterns(["a1b2", "C3D4"]) == ["a1b2", "c3d4"]
     assert validate_ignore_patterns(None) == []
 
+
 def test_validate_ignore_patterns_invalid_content():
     with pytest.raises(ValidationError, match="Invalid ignore pattern"):
         validate_ignore_patterns(["not-hex"])
+
 
 def test_validate_ignore_patterns_type_error():
     with pytest.raises(ValidationError, match="Ignore patterns must be a list"):
@@ -188,15 +195,18 @@ def test_validate_ignore_patterns_type_error():
 # validate_min_size
 # -----------------------------------------------------------------------------
 
+
 def test_validate_min_size_valid():
     assert validate_min_size(10) == 10
     assert validate_min_size(None) is None
+
 
 def test_validate_min_size_bounds():
     with pytest.raises(ValidationError, match="must be positive"):
         validate_min_size(0)
     with pytest.raises(ValidationError, match="too large"):
         validate_min_size(10001)
+
 
 def test_validate_min_size_type_error():
     with pytest.raises(ValidationError, match="must be an integer"):

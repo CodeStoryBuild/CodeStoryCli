@@ -14,6 +14,7 @@ from dslate.runtimeutil import (
 # ensure_utf8_output
 # -----------------------------------------------------------------------------
 
+
 def test_ensure_utf8_output():
     """Test that stdout and stderr are reconfigured to utf-8."""
     with patch("sys.stdout") as mock_stdout, patch("sys.stderr") as mock_stderr:
@@ -25,6 +26,7 @@ def test_ensure_utf8_output():
 
         mock_stdout.reconfigure.assert_called_once_with(encoding="utf-8")
         mock_stderr.reconfigure.assert_called_once_with(encoding="utf-8")
+
 
 def test_ensure_utf8_output_no_reconfigure():
     """Test that it handles streams without reconfigure method (e.g. during some tests)."""
@@ -40,6 +42,7 @@ def test_ensure_utf8_output_no_reconfigure():
 # -----------------------------------------------------------------------------
 # setup_signal_handlers
 # -----------------------------------------------------------------------------
+
 
 def test_setup_signal_handlers():
     """Test that signal handlers are registered."""
@@ -63,9 +66,11 @@ def test_setup_signal_handlers():
             handler(None, None)
         assert excinfo.value.exit_code == 130
 
+
 # -----------------------------------------------------------------------------
 # version_callback
 # -----------------------------------------------------------------------------
+
 
 def test_version_callback_no_flag():
     """Test that nothing happens if flag is False."""
