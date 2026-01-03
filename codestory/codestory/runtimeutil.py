@@ -26,6 +26,7 @@ import sys
 
 import typer
 from loguru import logger
+from colorama import Fore, Style
 
 
 def ensure_utf8_output():
@@ -40,7 +41,7 @@ def setup_signal_handlers():
     """Set up graceful shutdown on Ctrl+C."""
 
     def signal_handler(sig, frame):
-        logger.info("\n[yellow]Operation cancelled by user[/yellow]")
+        logger.info(f"\n{Fore.YELLOW}Operation cancelled by user{Style.RESET_ALL}")
         raise typer.Exit(130)  # Standard exit code for Ctrl+C
 
     signal.signal(signal.SIGINT, signal_handler)

@@ -20,8 +20,11 @@
 # -----------------------------------------------------------------------------
 
 
+from typing import Literal
 import typer
 from loguru import logger
+from colorama import Style, Fore
+
 
 from codestory.context import CommitContext, GlobalContext
 from codestory.core.branch_saver.branch_saver import BranchSaver
@@ -57,7 +60,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
         if auto_yes:
             unstage = True
             logger.debug(
-                "[yellow]Auto-confirm:[/yellow] Unstaging all changes to proceed."
+                f"{Fore.YELLOW}Auto-confirm:{Style.RESET_ALL} Unstaging all changes to proceed."
             )
         else:
             unstage = typer.confirm(
@@ -69,7 +72,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
             commands.reset()
         else:
             logger.info(
-                "[yellow]Operation cancelled. Please unstage changes to proceed.[/yellow]"
+                f"{Fore.YELLOW}Operation cancelled. Please unstage changes to proceed.{Style.RESET_ALL}"
             )
             return False
 
@@ -101,6 +104,13 @@ def main(
         "-m",
         help="Context or instructions for the AI to generate the commit message",
     ),
+    secret_scanner_aggression: Literal["safe", "balanced", "paranoid", "none"] = typer.Option("safe", "--secrets-aggression", help="Aggression level for secret scanning."),
+    relevance_filter_level: Literal["safe", "standard", "strict", "none"] = typer.Option("none", "--relevance-level", help="Relevance filter level for commit generation."),
+    intent: str | None = typer.Option(
+        None,
+        "--intent",
+        help="Intent or purpose for the commit, used for relevance filtering.",
+    ),
 ) -> None:
     """
     Commits current working directory changes into smaller logical commits.
@@ -113,6 +123,12 @@ def main(
         # Commit specific directory with message
         codestory commit src/  -m "Make 2 commits, one for refactor, one for feature A..."
     """
+    if relevance_filter_level != "none" and intent is None:
+        raise ValidationError(
+            "Relevance filter intent must be provided when relevance filter is active. (relevance-level != none)",
+        )
+
+
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
 
@@ -124,9 +140,9 @@ def main(
     if validated_message:
         validated_message = sanitize_user_input(validated_message)
 
-    commit_context = CommitContext(target=validated_target, message=validated_message)
+    commit_context = CommitContext(target=validated_target, message=validated_message, relevance_filter_level=relevance_filter_level, relevance_filter_intent=intent, secret_scanner_aggression=secret_scanner_aggression)
 
-    logger.debug("[green] Checking repository status... [/green]")
+    logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
     # verify repo state specifically for commit command
     if not verify_repo(
         global_context.git_commands,
@@ -138,7 +154,7 @@ def main(
     # next we create our base/new commits + backup branch for later
     branch_saver = BranchSaver(global_context.git_interface)
 
-    logger.debug("[green] Backing up current state... [/green]")
+    logger.debug(f"{Fore.GREEN} Backing up current state... {Style.RESET_ALL}")
     base_commit_hash, new_commit_hash, current_branch = (
         branch_saver.save_working_state()
     )
@@ -172,4 +188,4 @@ def main(
             "Commit command completed successfully",
         )
     else:
-        logger.info("[yellow]No commits were created[/yellow]")
+        logger.info(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
