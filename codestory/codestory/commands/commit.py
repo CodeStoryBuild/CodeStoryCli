@@ -97,7 +97,9 @@ def main(
         None, help="Path to file or directory to commit."
     ),
     message: str | None = typer.Option(
-        None, "-m", help="Context or instructions for the AI to generate the commit message"
+        None,
+        "-m",
+        help="Context or instructions for the AI to generate the commit message",
     ),
 ) -> None:
     """
