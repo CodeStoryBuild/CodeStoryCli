@@ -28,9 +28,6 @@ from colorama import Fore, Style, init
 from loguru import logger
 from platformdirs import user_config_dir
 
-# Initialize colorama for cross-platform colored output
-init(autoreset=True)
-
 from codestory.commands import clean, commit, config, fix
 from codestory.context import GlobalConfig, GlobalContext
 from codestory.core.config.config_loader import ConfigLoader
@@ -42,6 +39,10 @@ from codestory.runtimeutil import (
     setup_signal_handlers,
     version_callback,
 )
+
+# Initialize colorama for cross-platform colored output
+init(autoreset=True)
+
 
 # create app
 app = typer.Typer(
