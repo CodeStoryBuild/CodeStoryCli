@@ -305,7 +305,9 @@ class GitSynthesizer:
 
                     if last_end + 1 == new_start:
                         # adjacent
-                        new_chunk = GitSynthesizer.merge_two_single_type_chunks(last, chunk)
+                        new_chunk = GitSynthesizer.merge_two_single_type_chunks(
+                            last, chunk
+                        )
                         new_chunks[-1] = (new_chunk, sig)
                     elif last_end > new_start:
                         # overlapping, this is something that should not happen

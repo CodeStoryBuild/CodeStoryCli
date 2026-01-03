@@ -55,23 +55,28 @@ class AtomicChunker(MechanicalChunker):
         line_idx = change.line_number - 1
         return line_idx in comment_lines
 
-    def _chunk_is_context(self, atomic_chunk: DiffChunk, ctx_mgr: ContextManager) -> bool:
+    def _chunk_is_context(
+        self, atomic_chunk: DiffChunk, ctx_mgr: ContextManager
+    ) -> bool:
         if not atomic_chunk.parsed_content:
             return False
         for change in atomic_chunk.parsed_content:
             if not self._line_is_context(change, atomic_chunk, ctx_mgr):
                 return False
-            
+
         return True
 
-    def chunk(self, diff_chunks: list[Chunk], context_manager: ContextManager) -> list[Chunk]:
+    def chunk(
+        self, diff_chunks: list[Chunk], context_manager: ContextManager
+    ) -> list[Chunk]:
         mechanical_chunks: list[Chunk] = []
         for chunk in diff_chunks:
             if isinstance(chunk, DiffChunk):
                 atomic_chunks = chunk.split_into_atomic_chunks()
                 mechanical_chunks.extend(
                     self._group_by_chunk_predicate(
-                        lambda c: self._chunk_is_context(c, context_manager), atomic_chunks
+                        lambda c: self._chunk_is_context(c, context_manager),
+                        atomic_chunks,
                     )
                 )
             else:
@@ -117,7 +122,7 @@ class AtomicChunker(MechanicalChunker):
             if is_ctx:
                 # Attach context group to neighbor non-context group
                 # preference for next group if possible, else previous
-                if idx < len(grouped)-1:
+                if idx < len(grouped) - 1:
                     links[idx + 1].append(group)
                 else:
                     links[idx - 1].append(group)
@@ -130,7 +135,7 @@ class AtomicChunker(MechanicalChunker):
             all_chunks = [g[0] for g in grouped]
             if len(all_chunks) > 1:
                 return [CompositeDiffChunk(all_chunks)]
-            return all_chunks # Or just [grouped[0][0]]
+            return all_chunks  # Or just [grouped[0][0]]
 
         final_groups: list[Chunk] = []
         for idx in sorted(links.keys()):

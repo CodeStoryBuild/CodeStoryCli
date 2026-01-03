@@ -35,7 +35,7 @@ class LogicalGrouper(ABC):
     ) -> List[CommitGroup]:
         """Return a list of ChunkGroup"""
 
-    def get_total_chunks_per_file(self, all_chunks : list[Chunk]):
+    def get_total_chunks_per_file(self, all_chunks: list[Chunk]):
         all_chunks = []
         for chunk in all_chunks:
             all_chunks.extend(chunk.get_chunks())
@@ -49,9 +49,7 @@ class LogicalGrouper(ABC):
 
         return total_chunks_per_file
 
-    def get_descriptive_patch(self, chunk : Chunk, total_chunks : list[Chunk]):
+    def get_descriptive_patch(self, chunk: Chunk, total_chunks: list[Chunk]):
         diff = GitSynthesizer._generate_unified_diff(chunk.get_chunks(), total_chunks)
 
         return "\n\n".join(diff.values())
-
-

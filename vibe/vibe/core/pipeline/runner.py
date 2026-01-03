@@ -99,16 +99,19 @@ class AIGitPipeline:
         # start tracking progress
         with Progress() as p:
             # init context_manager
-            flat_chunks = [diff_chunk for chunk in raw_diff for diff_chunk in chunk.get_chunks()]
+            flat_chunks = [
+                diff_chunk for chunk in raw_diff for diff_chunk in chunk.get_chunks()
+            ]
             context_manager = ContextManager(
                 self.file_parser, self.file_reader, self.query_manager, flat_chunks
             )
 
-
             # create smallest mechanically valid chunks
             ck = p.add_task("Creating smallest mechanical chunks...", total=1)
             t_mech0 = perf_counter()
-            mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(raw_diff, context_manager)
+            mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
+                raw_diff, context_manager
+            )
             t_mech1 = perf_counter()
             p.advance(ck, 1)
 
@@ -126,11 +129,12 @@ class AIGitPipeline:
             # group semantically dependent chunks
             sem_grp = p.add_task("Linking semantically related chunks...", total=1)
             t_sem0 = perf_counter()
-            semantic_chunks = self.semantic_grouper.group_chunks(mechanical_chunks, context_manager)
+            semantic_chunks = self.semantic_grouper.group_chunks(
+                mechanical_chunks, context_manager
+            )
             t_sem1 = perf_counter()
             p.advance(sem_grp, 1)
             logger.debug(f"{semantic_chunks=}")
-
 
             logger.info(
                 "Semantic grouping summary: semantic_groups={groups}",
