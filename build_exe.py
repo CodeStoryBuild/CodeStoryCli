@@ -9,6 +9,7 @@ import subprocess
 import shutil
 from pathlib import Path
 
+
 def main():
     # Create build directory if it doesn't exist
     build_dir = Path("build")
@@ -55,6 +56,7 @@ def main():
     
     print(f"Executable created at: {output_path}")
     print("Build completed successfully!")
+
 
 if __name__ == "__main__":
     main()
