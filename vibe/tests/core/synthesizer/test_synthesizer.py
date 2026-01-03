@@ -9,7 +9,7 @@ from vibe.core.data.models import CommitGroup, Addition, Removal
 from vibe.core.data.s_diff_chunk import StandardDiffChunk
 from vibe.core.data.r_diff_chunk import RenameDiffChunk
 
-# --- Test Fixtures ---
+## Fixtures
 
 @pytest.fixture
 def git_repo() -> tuple[Path, str]:

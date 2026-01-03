@@ -155,7 +155,7 @@ def test_runner_with_file_deletion_and_addition(complex_git_repo, mock_inquirer_
     """Test pipeline with file deletions and new file additions."""
     repo_path = complex_git_repo
     
-    # Delete an existing file
+    # Remove an existing file
     (repo_path / "docs" / "api.md").unlink()
     
     # Add new files
