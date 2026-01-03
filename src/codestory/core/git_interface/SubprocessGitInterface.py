@@ -25,7 +25,7 @@ from codestory.core.git_interface.interface import GitInterface
 
 
 class SubprocessGitInterface(GitInterface):
-    def __init__(self, repo_path: str | Path | None = None) -> None:
+    def __init__(self, repo_path: str | Path) -> None:
         # Ensure repo_path is a Path object for consistency
         if isinstance(repo_path, Path):
             self.repo_path = repo_path
