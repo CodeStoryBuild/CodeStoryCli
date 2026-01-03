@@ -94,11 +94,16 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
+          # Extract version from git tag
+          $VERSION = "${{ github.ref_name }}"
+          $VERSION = $VERSION -replace '^(v|release[-/]?)', ''
+          if ([string]::IsNullOrEmpty($VERSION) -or $VERSION -notmatch '^\d') { $VERSION = "0.0.1" }
+          
           # Package entire cli.dist directory
           $issContent = @"
           [Setup]
           AppName=codestory
-          AppVersion=1.0
+          AppVersion=$VERSION
           DefaultDirName={autopf}\codestory
           DefaultGroupName=codestory
           OutputBaseFilename=codestory-windows-installer
