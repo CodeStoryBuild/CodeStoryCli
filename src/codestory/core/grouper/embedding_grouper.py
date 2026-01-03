@@ -49,7 +49,7 @@ from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages. 
 
 Given code changes with git patches and metadata (added/removed/modified symbols), write a concise commit message that describes what changed.
-
+{message}
 Rules:
 - Single line, max 72 characters
 - Imperative mood (Add, Update, Remove, Refactor)
@@ -66,7 +66,7 @@ Commit message:"""
 CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given multiple related commit messages, combine them into one cohesive commit message.
-
+{message}
 Rules:
 - Single line, max 72 characters
 - Imperative mood (Add, Update, Remove, Refactor)
@@ -83,7 +83,7 @@ Combined commit message:"""
 BATCHED_CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given a JSON array where each element contains multiple related commit messages, combine each group into one cohesive commit message.
-
+{message}
 Rules:
 - Output a JSON array of strings with one message per input group
 - Each message: single line, max 72 characters, imperative mood
@@ -104,7 +104,7 @@ Provide {count} combined commit messages as a JSON array:"""
 BATCHED_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
 Given a JSON array of code changes, write a commit message for each one. Each change includes git patches and metadata about added/removed/modified symbols.
-
+{message}
 Rules:
 - Output a JSON array of strings with one message per input change
 - Each message: single line, max 72 characters, imperative mood
@@ -112,7 +112,7 @@ Rules:
 - Match the input order exactly
 
 Example:
-Input: [{"git_patch": "..."}, {"git_patch": "..."}]
+Input: [{{"git_patch": "..."}}, {{"git_patch": "..."}}]
 Output: ["Add user authentication", "Update config parser"]"""
 
 BATCHED_SUMMARY_USER = """Here are {count} code changes:
