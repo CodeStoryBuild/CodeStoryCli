@@ -39,14 +39,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Switched to Nuitka and Zstandard (for compression)
-          pip install nuitka zstandard
-          # Install the project so Nuitka can find dependencies in the environment
+          # Switched to PyInstaller
+          pip install pyinstaller
+          # Install the project so PyInstaller can find dependencies in the environment
           pip install -e .
 
       # --- BUILD STEP ---
       
-      - name: Build Executable (Nuitka)
+      - name: Build Executable (PyInstaller)
         run: python build.py
 
       # --- TEST STEPS ---
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           echo ">>> Testing Standalone Build"
-          EXE_PATH="dist/cli.dist/${{ matrix.exe_name }}"
+          EXE_PATH="dist/cst/${{ matrix.exe_name }}"
           
           echo "Target Exe: $EXE_PATH"
           
@@ -107,7 +107,7 @@ jobs:
           ArchitecturesInstallIn64BitMode=x64
 
           [Files]
-          Source: "dist\cli.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          Source: "dist\cst\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
           [Registry]
           Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
@@ -146,8 +146,8 @@ jobs:
           mkdir -p dist/package/usr/bin
           mkdir -p dist/installers
           
-          # Copy entire cli.dist directory to /opt/codestory
-          cp -r dist/cli.dist/* dist/package/opt/codestory/
+          # Copy entire cst directory to /opt/codestory
+          cp -r dist/cst/* dist/package/opt/codestory/
           chmod +x dist/package/opt/codestory/cst
           
           # Create wrapper script in /usr/bin
@@ -184,8 +184,8 @@ jobs:
           mkdir -p dist/pkg_root/opt/codestory
           mkdir -p dist/pkg_root/usr/local/bin
           
-          # Copy entire cli.dist directory to /opt/codestory
-          cp -r dist/cli.dist/* dist/pkg_root/opt/codestory/
+          # Copy entire cst directory to /opt/codestory
+          cp -r dist/cst/* dist/pkg_root/opt/codestory/
           
           # Create wrapper script in /usr/local/bin
           cat > dist/pkg_root/usr/local/bin/cst <<'EOF'
@@ -211,10 +211,10 @@ jobs:
           # Package the standalone directory as a zip/tar.gz
           if [ "${{ matrix.platform }}" == "windows" ]; then
             cd dist
-            7z a -tzip ready_for_upload/cst-${{ matrix.platform }}-standalone.zip cli.dist/*
+            7z a -tzip ready_for_upload/cst-${{ matrix.platform }}-standalone.zip cst/*
             cd ..
           else
-            tar -czf dist/ready_for_upload/cst-${{ matrix.platform }}-standalone.tar.gz -C dist cli.dist
+            tar -czf dist/ready_for_upload/cst-${{ matrix.platform }}-standalone.tar.gz -C dist cst
           fi
           
           # Copy installers
