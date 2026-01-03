@@ -160,5 +160,7 @@ class FileParser:
             return "c"
 
         # If no mapping found, return None
-        logger.warning(f"No mapping found from lexer to language for lexer: {lexer_name}")
+        logger.warning(
+            f"No mapping found from lexer to language for lexer: {lexer_name}"
+        )
         return None

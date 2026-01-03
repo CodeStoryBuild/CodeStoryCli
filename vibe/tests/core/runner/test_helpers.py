@@ -7,7 +7,7 @@ from vibe.core.chunker.interface import MechanicalChunker
 from vibe.core.data.chunk import Chunk
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.line_changes import Addition, Removal
-from vibe.core.data.models import CommitGroup
+from vibe.core.data.commit_group import CommitGroup
 from vibe.core.grouper.interface import LogicalGrouper
 
 

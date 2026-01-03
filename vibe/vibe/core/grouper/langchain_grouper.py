@@ -1,4 +1,5 @@
 import json
+from typing import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import PydanticOutputParser
@@ -7,7 +8,8 @@ from loguru import logger
 from pydantic import BaseModel
 
 from ..data.chunk import Chunk
-from ..data.models import CommitGroup, ProgressCallback
+from ..data.immutable_chunk import ImmutableChunk
+from ..data.commit_group import CommitGroup
 from ..synthesizer.utils import get_patches_chunk
 from .interface import LogicalGrouper
 
@@ -58,28 +60,42 @@ class LangChainGrouper(LogicalGrouper):
         self.chat_model = chat_model
         self.output_parser = PydanticOutputParser(pydantic_object=GroupingResponse)
 
-    def _prepare_changes(self, chunks: list[Chunk]) -> str:
+    def _prepare_changes(
+        self, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
+    ) -> str:
         """Convert chunks to a structured format for LLM analysis."""
         changes = []
         diff_map = get_patches_chunk(chunks)
-        for i, _ in enumerate(chunks):
-            # Get the JSON representation of the chunk
+
+        for i in range(len(chunks)):
             data = {}
             data["change"] = diff_map.get(i, "(no diff)")
-            # Add a unique ID for reference
             data["chunk_id"] = i
             changes.append(data)
+
+        idx = len(chunks)
+
+        for immut_chunk in immut_chunks:
+            data = {}
+            patch_content = immut_chunk.file_patch.decode("utf-8", errors="replace")
+            if len(patch_content) > 200:
+                patch_content = patch_content[:200] + "..."
+            data["change"] = patch_content
+            data["chunk_id"] = idx
+            changes.append(data)
+            idx += 1
+
         return json.dumps({"changes": changes}, indent=2)
 
     def _create_commit_groups(
-        self, response: GroupingResponse, original_chunks: list[Chunk]
+        self, response: GroupingResponse, all_chunks: list[Chunk | ImmutableChunk]
     ) -> list[CommitGroup]:
         """
         Convert LLM's response into CommitGroup objects, with mitigations for
         duplicate and unassigned chunks.
         """
         # Create a lookup map for chunks from the original list
-        chunk_map = {i: chunk for i, chunk in enumerate(original_chunks)}
+        chunk_map = {i: chunk for i, chunk in enumerate(all_chunks)}
 
         commit_groups: list[CommitGroup] = []
         assigned_chunk_ids: set[int] = set()  # Track chunks that have been assigned
@@ -117,7 +133,7 @@ class LangChainGrouper(LogicalGrouper):
         # Mitigation 2: Handle chunks not assigned by the LLM
         unassigned_chunks: list[Chunk] = []
         unassigned_chunk_ids: list[int] = []
-        for i, chunk in enumerate(original_chunks):
+        for i, chunk in enumerate(all_chunks):
             if i not in assigned_chunk_ids:
                 unassigned_chunks.append(chunk)
                 unassigned_chunk_ids.append(i)
@@ -131,9 +147,8 @@ class LangChainGrouper(LogicalGrouper):
                 CommitGroup(
                     chunks=unassigned_chunks,
                     group_id="fallback-unassigned-changes",
-                    commit_message="chore: Fallback for unassigned changes",
-                    extended_message="These changes were not assigned to a specific group by the AI. "
-                    "Review them manually.",
+                    commit_message="Fallback for unassigned changes",
+                    extended_message="These changes were not assigned to a specific group by the AI, review them manually.",
                 )
             )
 
@@ -159,8 +174,9 @@ class LangChainGrouper(LogicalGrouper):
     def group_chunks(
         self,
         chunks: list[Chunk],
+        immut_chunks: list[ImmutableChunk],
         message: str,
-        on_progress: ProgressCallback | None = None,
+        on_progress: Callable[[int], None] | None = None,
     ) -> list[CommitGroup]:
         """
         Group chunks using LangChain chat model to analyze intentions and relationships.
@@ -176,14 +192,14 @@ class LangChainGrouper(LogicalGrouper):
         Raises:
             ValueError: If LLM's response cannot be parsed or is invalid
         """
-        if not chunks:
+        if not (chunks or immut_chunks):
             return []
 
         if on_progress:
             on_progress(5)
 
         # Prepare the changes for analysis
-        changes_json = self._prepare_changes(chunks)
+        changes_json = self._prepare_changes(chunks, immut_chunks)
 
         optional_guidance_message = (
             f"Custom user instructions: {message}" if message else ""
@@ -228,4 +244,4 @@ class LangChainGrouper(LogicalGrouper):
             on_progress(100)
 
         # Apply mitigations during the conversion to CommitGroup objects
-        return self._create_commit_groups(parsed_response, chunks)
+        return self._create_commit_groups(parsed_response, chunks + immut_chunks)

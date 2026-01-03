@@ -170,6 +170,12 @@ class ContextManager:
 
     def _generate_parsed_files(self) -> None:
         for (file_path, is_old_version), line_ranges in self._required_contexts.items():
+            if not line_ranges:
+                logger.debug(
+                    f"No line ranges for file: {file_path}, skipping semantic generation"
+                )
+                continue
+
             # Decode bytes file path for file_reader
             path_str = (
                 file_path.decode("utf-8", errors="replace")
@@ -260,7 +266,9 @@ class ContextManager:
                 if context is not None:
                     self._context_cache[(file_path, is_old_version)] = context
                 else:
-                    logger.warning(f"Failed to build context for {file_path} (old={is_old_version}): context is None")
+                    logger.warning(
+                        f"Failed to build context for {file_path} (old={is_old_version}): context is None"
+                    )
             except Exception as e:
                 # Log error but continue with other files
                 logger.warning(

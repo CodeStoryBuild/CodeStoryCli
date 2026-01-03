@@ -1,4 +1,4 @@
-from time import perf_counter
+import contextlib
 
 import inquirer
 from loguru import logger
@@ -9,8 +9,8 @@ from ..branch_saver.branch_saver import BranchSaver
 from ..chunker.interface import MechanicalChunker
 from ..commands.git_commands import GitCommands
 from ..data.chunk import Chunk
-from ..data.composite_diff_chunk import CompositeDiffChunk
-from ..data.models import CommitResult
+from ..data.immutable_chunk import ImmutableChunk
+from ..data.commit_group import CommitGroup
 from ..file_reader.file_parser import FileParser
 from ..file_reader.protocol import FileReader
 from ..git_interface.interface import GitInterface
@@ -20,6 +20,17 @@ from ..semantic_grouper.query_manager import QueryManager
 from ..semantic_grouper.semantic_grouper import SemanticGrouper
 from ..synthesizer.git_synthesizer import GitSynthesizer
 from ..synthesizer.utils import get_patches
+from ..logging.utils import time_block, log_chunks
+
+
+@contextlib.contextmanager
+def progress_bar(p: Progress, step_name: str):
+    ck = p.add_task(step_name, total=1)
+
+    try:
+        yield
+    finally:
+        p.advance(ck, 1)
 
 
 class AIGitPipeline:
@@ -61,10 +72,7 @@ class AIGitPipeline:
         self.base_commit_hash = base_commit_hash
         self.new_commit_hash = new_commit_hash
 
-    def run(
-        self, target: str = None, message: str = None, auto_yes: bool = False
-    ) -> list[CommitResult]:
-        _t_start = perf_counter()
+    def run(self, target: str = None, message: str = None, auto_yes: bool = False):
         # Initial invocation summary
         logger.info(
             "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
@@ -74,81 +82,58 @@ class AIGitPipeline:
             new=self.new_commit_hash,
         )
         # Diff between the base commit and the backup branch commit - all working directory changes
-        t0 = perf_counter()
-        raw_diff: list[Chunk] = self.commands.get_processed_working_diff(
-            self.base_commit_hash, self.new_commit_hash, target
-        )
-        t1 = perf_counter()
+        with time_block("raw_diff_generation_ms"):
+            raw_chunks, immmutable_chunks = self.commands.get_processed_working_diff(
+                self.base_commit_hash, self.new_commit_hash, target
+            )
 
-        logger.info(
-            "Raw diff summary: chunks={count} files={files}",
-            count=len(raw_diff),
-            files=len(
-                {
-                    (
-                        path.decode("utf-8", errors="replace")
-                        if isinstance(path, bytes)
-                        else path
-                    )
-                    for c in raw_diff
-                    for path in c.canonical_paths()
-                }
-            ),
+        log_chunks(
+            "raw_diff_generation_ms (with immutable groups)",
+            raw_chunks,
+            immmutable_chunks,
         )
-        logger.info("Timing: raw_diff_generation_ms={ms}", ms=int((t1 - t0) * 1000))
 
-        if not raw_diff:
+        if not (raw_chunks or immmutable_chunks):
             logger.info("No changes to process, exiting")
             return
 
         # start tracking progress
         with Progress() as p:
             # init context_manager
-            flat_chunks = [
-                diff_chunk for chunk in raw_diff for diff_chunk in chunk.get_chunks()
-            ]
-            context_manager = ContextManager(
-                self.file_parser, self.file_reader, self.query_manager, flat_chunks
-            )
+            if raw_chunks:
+                flat_chunks = [
+                    diff_chunk
+                    for chunk in raw_chunks
+                    for diff_chunk in chunk.get_chunks()
+                ]
+                context_manager = ContextManager(
+                    self.file_parser, self.file_reader, self.query_manager, flat_chunks
+                )
 
-            # create smallest mechanically valid chunks
-            ck = p.add_task("Creating smallest mechanical chunks...", total=1)
-            t_mech0 = perf_counter()
-            mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
-                raw_diff, context_manager
-            )
-            t_mech1 = perf_counter()
-            p.advance(ck, 1)
+                # create smallest mechanically valid chunks
+                with progress_bar(p, "Creating Mechanical Chunks"):
+                    with time_block("mechanical_chunking"):
+                        mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(
+                            raw_chunks, context_manager
+                        )
 
-            logger.debug(f"{mechanical_chunks=}")
+                log_chunks(
+                    "mechanical_chunks (without immutable groups)",
+                    mechanical_chunks,
+                    [],
+                )
 
-            logger.info(
-                "Mechanical chunking summary: mechanical_chunks={count}",
-                count=len(mechanical_chunks),
-            )
-            logger.info(
-                "Timing: mechanical_chunking_ms={ms}",
-                ms=int((t_mech1 - t_mech0) * 1000),
-            )
+                with progress_bar(p, "Creating Semantic Groups"):
+                    with time_block("semantic_grouping"):
+                        semantic_chunks = self.semantic_grouper.group_chunks(
+                            mechanical_chunks, context_manager
+                        )
 
-            # group semantically dependent chunks
-            sem_grp = p.add_task("Linking semantically related chunks...", total=1)
-            t_sem0 = perf_counter()
-            semantic_chunks = self.semantic_grouper.group_chunks(
-                mechanical_chunks, context_manager
-            )
-            t_sem1 = perf_counter()
-            p.advance(sem_grp, 1)
-            logger.debug(f"{semantic_chunks=}")
-
-            logger.info(
-                "Semantic grouping summary: semantic_groups={groups}",
-                groups=len(semantic_chunks),
-            )
-            logger.info(
-                "Timing: semantic_grouping_ms={ms}",
-                ms=int((t_sem1 - t_sem0) * 1000),
-            )
+                log_chunks(
+                    "Semantic Chunks (without immutable groups)", semantic_chunks, []
+                )
+            else:
+                semantic_chunks = []
 
             ai_grp = p.add_task("Using AI to create meaningfull commits....", total=1)
 
@@ -157,28 +142,21 @@ class AIGitPipeline:
                 p.update(ai_grp, completed=percent / 100)
 
             # take these semantically valid chunks, and now group them into logical commits
-            t_ai0 = perf_counter()
-            ai_groups: list[CompositeDiffChunk] = self.logical_grouper.group_chunks(
-                semantic_chunks, message, on_progress=on_progress
-            )
-            t_ai1 = perf_counter()
-            logger.info(
-                "Logical grouping (AI) summary: proposed_groups={groups}",
-                groups=len(ai_groups),
-            )
-            logger.info(
-                "Timing: logical_grouping_ms={ms}",
-                ms=int((t_ai1 - t_ai0) * 1000),
-            )
+            with time_block("semantic_grouping"):
+                ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
+                    semantic_chunks, immmutable_chunks, message, on_progress=on_progress
+                )
 
-        # Show a compact, rich-formatted preview of all proposed groups
         if not ai_groups:
             logger.warning("No proposed commits to apply")
             logger.info("No AI groups proposed; aborting pipeline")
-            return []
+            return
 
         logger.info("Proposed commits preview")
         # Prepare pretty diffs for each proposed group
+
+        all_affected_files = set()
+
         patch_map = get_patches(ai_groups)
         for idx, group in enumerate(ai_groups):
             num = idx + 1
@@ -194,26 +172,37 @@ class AIGitPipeline:
 
             affected_files = set()
             for chunk in group.chunks:
-                for diff_chunk in chunk.get_chunks():
-                    if diff_chunk.is_file_rename:
-                        old_path = (
-                            diff_chunk.old_file_path.decode("utf-8", errors="replace")
-                            if isinstance(diff_chunk.old_file_path, bytes)
-                            else diff_chunk.old_file_path
-                        )
-                        new_path = (
-                            diff_chunk.new_file_path.decode("utf-8", errors="replace")
-                            if isinstance(diff_chunk.new_file_path, bytes)
-                            else diff_chunk.new_file_path
-                        )
-                        affected_files.add(f"{old_path} -> {new_path}")
-                    else:
-                        path = diff_chunk.canonical_path()
-                        affected_files.add(
-                            path.decode("utf-8", errors="replace")
-                            if isinstance(path, bytes)
-                            else path
-                        )
+                if isinstance(chunk, ImmutableChunk):
+                    affected_files.add(
+                        chunk.canonical_path.decode("utf-8", errors="replace")
+                    )
+                else:
+                    for diff_chunk in chunk.get_chunks():
+                        if diff_chunk.is_file_rename:
+                            old_path = (
+                                diff_chunk.old_file_path.decode(
+                                    "utf-8", errors="replace"
+                                )
+                                if isinstance(diff_chunk.old_file_path, bytes)
+                                else diff_chunk.old_file_path
+                            )
+                            new_path = (
+                                diff_chunk.new_file_path.decode(
+                                    "utf-8", errors="replace"
+                                )
+                                if isinstance(diff_chunk.new_file_path, bytes)
+                                else diff_chunk.new_file_path
+                            )
+                            affected_files.add(f"{old_path} -> {new_path}")
+                        else:
+                            path = diff_chunk.canonical_path()
+                            affected_files.add(
+                                path.decode("utf-8", errors="replace")
+                                if isinstance(path, bytes)
+                                else path
+                            )
+
+            all_affected_files.update(affected_files)
 
             files_preview = ", ".join(sorted(affected_files))
             if len(files_preview) > 120:
@@ -231,7 +220,7 @@ class AIGitPipeline:
                 files=len(affected_files),
             )
 
-        # Single confirmation for all groups (unified for commit and expand)
+        # Single confirmation for all groups
         if auto_yes:
             apply_all = True
             logger.info("Auto-confirm: Applying all proposed commits")
@@ -244,63 +233,34 @@ class AIGitPipeline:
         if not apply_all:
             logger.info("No changes applied")
             logger.info("User declined applying commits")
-            return []
+            return
 
         logger.info(
             "Accepted groups summary: accepted_groups={groups}",
             groups=len(ai_groups),
         )
-        t_plan0 = perf_counter()
-        plan_success = self.synthesizer.execute_plan(
-            ai_groups,
-            self.commands.get_current_base_commit_hash(),
-            self.original_branch,
-        )
-        t_plan1 = perf_counter()
-        total_ms = int((perf_counter() - _t_start) * 1000)
+
+        with time_block("Executing Synthesizer Pipeline"):
+            plan_success = self.synthesizer.execute_plan(
+                ai_groups,
+                self.commands.get_current_base_commit_hash(),
+                self.original_branch,
+            )
+
         # Final pipeline summary
-        affected_files_summary = set()
-        for group in ai_groups:
-            for ch in group.chunks:
-                for dc in ch.get_chunks():
-                    if dc.is_file_rename:
-                        old_path = (
-                            dc.old_file_path.decode("utf-8", errors="replace")
-                            if isinstance(dc.old_file_path, bytes)
-                            else dc.old_file_path
-                        )
-                        new_path = (
-                            dc.new_file_path.decode("utf-8", errors="replace")
-                            if isinstance(dc.new_file_path, bytes)
-                            else dc.new_file_path
-                        )
-                        affected_files_summary.add(f"{old_path} -> {new_path}")
-                    else:
-                        path = dc.canonical_path()
-                        affected_files_summary.add(
-                            path.decode("utf-8", errors="replace")
-                            if isinstance(path, bytes)
-                            else path
-                        )
         commit_count = len(plan_success) if isinstance(plan_success, list) else 0
         logger.info(
-            "Pipeline summary: raw_chunks={raw} mechanical={mech} semantic_groups={sem} proposed_groups={prop} accepted_groups={acc} commits_created={commits} files_changed={files} total_ms={total}",
-            raw=len(raw_diff),
-            mech=len(mechanical_chunks),
-            sem=len(semantic_chunks),
-            prop=len(ai_groups),
+            "Pipeline summary: input_chunks={raw} mechanical={mech} semantic_groups={sem} final_groups={acc} commits_created={commits} files_changed={files}",
+            raw=len(raw_chunks) + len(immmutable_chunks),
+            mech=len(
+                mechanical_chunks if raw_chunks else []
+            ),  # if only immutable chunks, there are no mechanical chunks
+            sem=len(
+                semantic_chunks if raw_chunks else []
+            ),  # if only immutable chunks, there are no semantic chunks
             acc=len(ai_groups),
             commits=commit_count,
-            files=len(affected_files_summary),
-            total=total_ms,
-        )
-        logger.info(
-            "Timing breakdown: diff_ms={diff} mech_ms={mech} sem_ms={sem} ai_ms={ai} plan_ms={plan}",
-            diff=int((t1 - t0) * 1000),
-            mech=int((t_mech1 - t_mech0) * 1000),
-            sem=int((t_sem1 - t_sem0) * 1000),
-            ai=int((t_ai1 - t_ai0) * 1000),
-            plan=int((t_plan1 - t_plan0) * 1000),
+            files=len(all_affected_files),
         )
 
         if plan_success and target != "." and self.branch_saver is not None:

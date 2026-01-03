@@ -29,7 +29,7 @@ def make_git_commands():
 def test_get_working_diff_with_renames_empty():
     gc, git = make_git_commands()
     git.binary_output = b""
-    result = gc.get_working_diff_with_renames()
+    result = gc.get_full_working_diff()
     assert result == []
 
 
@@ -37,7 +37,7 @@ def test_get_working_diff_with_renames_decodes():
     gc, git = make_git_commands()
     # Minimal diff with one hunk
     git.binary_output = b"diff --git a/foo.txt b/foo.txt\n--- a/foo.txt\n+++ b/foo.txt\n@@ -1,0 +1,1 @@\n+hello\n"
-    result = gc.get_working_diff_with_renames()
+    result = gc.get_full_working_diff()
     assert isinstance(result, list)
     assert len(result) == 1
     h = result[0]
