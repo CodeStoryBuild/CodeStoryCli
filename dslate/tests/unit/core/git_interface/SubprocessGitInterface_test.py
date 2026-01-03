@@ -8,6 +8,7 @@ from dslate.core.git_interface.SubprocessGitInterface import SubprocessGitInterf
 # Fixtures
 # -----------------------------------------------------------------------------
 
+
 @pytest.fixture
 def git_interface():
     return SubprocessGitInterface(repo_path="/tmp/repo")
@@ -15,6 +16,7 @@ def git_interface():
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
+
 
 def test_init_path_conversion():
     """Test that string path is converted to Path object."""
@@ -24,6 +26,7 @@ def test_init_path_conversion():
 
     gi2 = SubprocessGitInterface(Path("/tmp/path_obj"))
     assert isinstance(gi2.repo_path, Path)
+
 
 @patch("subprocess.run")
 def test_run_git_text_success(mock_run, git_interface):
@@ -48,6 +51,7 @@ def test_run_git_text_success(mock_run, git_interface):
     assert kwargs["text"] is True
     assert kwargs["encoding"] == "utf-8"
     assert kwargs["cwd"] == str(git_interface.repo_path)
+
 
 @patch("subprocess.run")
 def test_run_git_text_cwd_override(mock_run, git_interface):

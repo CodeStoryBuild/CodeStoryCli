@@ -56,6 +56,7 @@ def test_split_hunks_true(context_manager):
     assert result[0].parsed_content[0].content == b"line1"
     assert result[1].parsed_content[0].content == b"line2"
 
+
 def test_split_hunks_false(context_manager):
     """Test that chunks are NOT split when split_hunks is False."""
     chunker = AtomicChunker(split_hunks=False)
@@ -104,6 +105,7 @@ def test_group_whitespace_context(context_manager):
     assert result[1].chunks[0].parsed_content[0].content == b"   "
     assert result[1].chunks[1].parsed_content[0].content == b"code2"
 
+
 def test_group_comment_context(context_manager):
     """Test grouping of comment lines via ContextManager."""
     chunker = AtomicChunker(split_hunks=True)
@@ -143,6 +145,7 @@ def test_all_context(context_manager):
     assert len(result) == 1
     assert isinstance(result[0], CompositeDiffChunk)
     assert len(result[0].chunks) == 2
+
 
 def test_no_context(context_manager):
     """Test when no chunks are context."""

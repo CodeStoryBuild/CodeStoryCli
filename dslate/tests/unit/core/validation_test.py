@@ -178,6 +178,7 @@ def test_validate_ignore_patterns_type_error():
     with pytest.raises(ValidationError, match="must be a string"):
         validate_ignore_patterns([123])
 
+
 # -----------------------------------------------------------------------------
 # validate_min_size
 # -----------------------------------------------------------------------------

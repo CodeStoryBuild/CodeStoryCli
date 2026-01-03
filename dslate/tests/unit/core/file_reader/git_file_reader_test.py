@@ -7,6 +7,7 @@ from dslate.core.git_interface.interface import GitInterface
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_read_new_content():
     mock_git = Mock(spec=GitInterface)
     mock_git.run_git_text_out.return_value = "content"

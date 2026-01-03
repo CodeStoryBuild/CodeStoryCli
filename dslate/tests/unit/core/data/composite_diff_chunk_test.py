@@ -7,9 +7,11 @@ from dslate.core.data.chunk import Chunk
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_init_empty_raises():
     with pytest.raises(RuntimeError, match="Chunks must be a nonempty list"):
         CompositeDiffChunk([])
+
 
 def test_canonical_paths():
     c1 = Mock(spec=Chunk)
@@ -26,6 +28,7 @@ def test_canonical_paths():
     paths = composite.canonical_paths()
     assert len(paths) == 2
     assert set(paths) == {b"a.txt", b"b.txt"}
+
 
 def test_hunk_ranges():
     c1 = Mock()
@@ -45,6 +48,7 @@ def test_hunk_ranges():
     assert (1, 1, 1, 1) in ranges[b"a.txt"]
     assert (3, 3, 3, 3) in ranges[b"a.txt"]
     assert ranges[b"b.txt"] == [(2, 2, 2, 2)]
+
 
 def test_get_chunks_flattening():
     # c1 is a leaf chunk

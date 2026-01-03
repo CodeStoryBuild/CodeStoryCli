@@ -36,6 +36,7 @@ def test_ensure_utf8_output_no_reconfigure():
         # Should not raise
         ensure_utf8_output()
 
+
 # -----------------------------------------------------------------------------
 # setup_signal_handlers
 # -----------------------------------------------------------------------------

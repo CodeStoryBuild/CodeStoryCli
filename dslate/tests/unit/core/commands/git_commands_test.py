@@ -98,6 +98,7 @@ def test_parse_file_metadata_rename(git_commands):
     assert old == b"old.txt"
     assert new == b"new.txt"
 
+
 def test_parse_file_metadata_fallback(git_commands):
     """Test fallback parsing when --- and +++ are missing (e.g. empty file addition)."""
     lines = [
@@ -135,6 +136,7 @@ def test_get_full_working_diff_simple(git_commands, mock_git):
     assert isinstance(hunks[0], HunkWrapper)
     assert hunks[0].old_file_path == b"file.txt"
     assert hunks[0].hunk_lines == [b"-old", b"+new"]
+
 
 def test_get_full_working_diff_binary(git_commands, mock_git):
     diff_output = (
@@ -186,6 +188,7 @@ def test_merge_overlapping_chunks_disjoint(git_commands):
     assert merged[0] == c1
     assert merged[1] == c2
 
+
 def test_merge_overlapping_chunks_overlap(git_commands):
     c1 = create_chunk("file.txt", 1, 5, 1, 5) # 1-6
     c2 = create_chunk("file.txt", 3, 5, 3, 5) # 3-8 (overlaps)
@@ -202,6 +205,7 @@ def test_merge_overlapping_chunks_touching(git_commands):
     merged = git_commands.merge_overlapping_chunks([c1, c2])
     assert len(merged) == 1
     assert isinstance(merged[0], CompositeDiffChunk)
+
 
 def test_merge_overlapping_chunks_different_files(git_commands):
     c1 = create_chunk("a.txt", 1, 5, 1, 5)
@@ -229,6 +233,7 @@ def test_get_binary_files(git_commands, mock_git):
     assert b"bin.dat" in binary_files
     assert b"text.txt" not in binary_files
     assert b"new.bin" in binary_files
+
 
 def test_is_binary_or_unparsable(git_commands):
     # Case 1: In binary set

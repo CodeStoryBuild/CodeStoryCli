@@ -125,7 +125,6 @@ def main(
     if ctx.invoked_subcommand not in dependent_commands:
         return
 
-
     config_args = setup_config_args(
         model=model,
         api_key=api_key,

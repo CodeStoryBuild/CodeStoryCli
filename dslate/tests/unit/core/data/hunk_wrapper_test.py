@@ -5,6 +5,7 @@ from dslate.core.data.hunk_wrapper import HunkWrapper
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_init_and_properties():
     hunk = HunkWrapper(
         new_file_path=b"new.txt",
@@ -37,6 +38,7 @@ def test_create_empty_content():
     assert hunk.new_len == 0
     assert hunk.file_mode == b"100755"
 
+
 def test_create_empty_addition():
     hunk = HunkWrapper.create_empty_addition(
         new_file_path=b"new.txt"
@@ -45,6 +47,7 @@ def test_create_empty_addition():
     assert hunk.new_file_path == b"new.txt"
     assert hunk.old_file_path is None
     assert hunk.hunk_lines == []
+
 
 def test_create_empty_deletion():
     hunk = HunkWrapper.create_empty_deletion(

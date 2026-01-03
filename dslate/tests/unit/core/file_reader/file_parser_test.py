@@ -46,7 +46,7 @@ def test_parse_file_success(mock_detect, mock_get_parser):
 @patch("dslate.core.file_reader.file_parser.FileParser._detect_language")
 def test_parse_file_no_language(mock_detect):
     mock_detect.return_value = None
-    
+
     result = FileParser.parse_file("test.txt", "content", [])
     assert result is None
 
@@ -55,7 +55,7 @@ def test_parse_file_no_language(mock_detect):
 def test_parse_file_parser_error(mock_detect, mock_get_parser):
     mock_detect.return_value = "python"
     mock_get_parser.side_effect = Exception("Parser error")
-    
+
     result = FileParser.parse_file("test.py", "content", [])
     assert result is None
 
@@ -66,9 +66,10 @@ def test_parse_file_parsing_exception(mock_detect, mock_get_parser):
     mock_parser = Mock()
     mock_parser.parse.side_effect = Exception("Parsing failed")
     mock_get_parser.return_value = mock_parser
-    
+
     result = FileParser.parse_file("test.py", "content", [])
     assert result is None
+
 
 def test_map_lexer_to_language():
     # Direct mapping

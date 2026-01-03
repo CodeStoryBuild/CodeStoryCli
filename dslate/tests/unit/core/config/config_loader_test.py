@@ -17,6 +17,7 @@ class TestConfig(BaseModel):
 # ConfigLoader Tests
 # -----------------------------------------------------------------------------
 
+
 def test_load_toml_exists():
     """Test loading a valid TOML file."""
     toml_content = b'val = "test"\nnumber = 42'
@@ -25,11 +26,13 @@ def test_load_toml_exists():
             data = ConfigLoader.load_toml(Path("config.toml"))
             assert data == {"val": "test", "number": 42}
 
+
 def test_load_toml_not_exists():
     """Test loading a non-existent file returns empty dict."""
     with patch("pathlib.Path.exists", return_value=False):
         data = ConfigLoader.load_toml(Path("missing.toml"))
         assert data == {}
+
 
 def test_load_toml_invalid():
     """Test loading an invalid TOML file handles exception."""
@@ -52,6 +55,7 @@ def test_load_toml_invalid():
             with pytest.raises(UnboundLocalError):
                 ConfigLoader.load_toml(Path("bad.toml"))
 
+
 def test_load_env():
     """Test loading environment variables with prefix."""
     with patch.dict("os.environ", {"APP_VAL": "env_val", "APP_NUMBER": "10", "OTHER": "ignore"}):
@@ -62,6 +66,7 @@ def test_load_env():
         # Code: if k.lower().startswith(app_prefix.lower()):
         # Example: APP_VAL -> starts with APP_. key_clean = VAL.
         # So it preserves case of the suffix.
+
 
 def test_precedence_order():
     """Test the precedence order: Args > Custom > Local > Env > Global."""
@@ -162,6 +167,7 @@ def test_precedence_order():
             None
         )
         assert config.val == "global"
+
 
 def test_validation_error():
     """Test that invalid types raise ValidationError."""

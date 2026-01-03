@@ -8,6 +8,7 @@ from dslate.core.data.line_changes import Addition, Removal
 # Helpers
 # -----------------------------------------------------------------------------
 
+
 def create_chunk(
     old_path=b"file.txt",
     new_path=b"file.txt",
@@ -25,6 +26,7 @@ def create_chunk(
 # Tests
 # -----------------------------------------------------------------------------
 
+
 def test_properties_standard():
     c = create_chunk(old_path=b"a.txt", new_path=b"a.txt")
     assert c.is_standard_modification
@@ -32,6 +34,7 @@ def test_properties_standard():
     assert not c.is_file_addition
     assert not c.is_file_deletion
     assert c.canonical_path() == b"a.txt"
+
 
 def test_properties_rename():
     c = create_chunk(old_path=b"a.txt", new_path=b"b.txt")
@@ -41,6 +44,7 @@ def test_properties_rename():
     assert not c.is_file_deletion
     assert c.canonical_path() == b"b.txt"
 
+
 def test_properties_addition():
     c = create_chunk(old_path=None, new_path=b"new.txt")
     assert not c.is_standard_modification
@@ -49,6 +53,7 @@ def test_properties_addition():
     assert not c.is_file_deletion
     assert c.canonical_path() == b"new.txt"
 
+
 def test_properties_deletion():
     c = create_chunk(old_path=b"del.txt", new_path=None)
     assert not c.is_standard_modification
@@ -56,6 +61,7 @@ def test_properties_deletion():
     assert not c.is_file_addition
     assert c.is_file_deletion
     assert c.canonical_path() == b"del.txt"
+
 
 def test_lengths_and_content():
     # 1 removal, 2 additions
@@ -69,6 +75,7 @@ def test_lengths_and_content():
     assert c.has_content
     assert c.old_len() == 1
     assert c.new_len() == 2
+
 
 def test_coordinates():
     # Additions at new lines 10 and 11
@@ -120,6 +127,7 @@ def test_is_disjoint():
     c_diff = create_chunk(old_path=b"other.txt")
     assert c1.is_disjoint_from(c_diff)
 
+
 def test_from_hunk():
     hunk = Mock(spec=HunkWrapper)
     hunk.new_file_path = b"file.txt"
@@ -138,6 +146,7 @@ def test_from_hunk():
     assert isinstance(c.parsed_content[1], Addition)
     assert c.parsed_content[1].content == b"new\n\\ No newline at end of file"
     assert c.contains_newline_marker
+
 
 def test_split_into_atomic_chunks():
     # Pure addition chunk with 2 lines
