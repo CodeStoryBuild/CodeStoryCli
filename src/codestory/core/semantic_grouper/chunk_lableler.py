@@ -18,10 +18,9 @@
 
 from dataclasses import dataclass
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.semantic_grouper.context_manager import (
     AnalysisContext,
     ContextManager,
@@ -153,7 +152,6 @@ class ChunkLabeler:
     def annotate_chunks(
         chunks: list[Chunk],
         context_manager: ContextManager,
-        pbar: tqdm | None = None,
     ) -> list[AnnotatedChunk | None]:
         """
         Generate semantic signatures for each original chunk.
@@ -161,13 +159,16 @@ class ChunkLabeler:
         # ensure these chunks are merged
         annotated_chunks = []
 
+        pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
-            pbar.total = len(chunks)
-            pbar.refresh()
+            pbar.set_postfix({"phase": "semantic", "chunks": f"0/{len(chunks)}"})
 
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
             if pbar is not None:
                 pbar.update(1)
+                pbar.set_postfix(
+                    {"phase": "semantic", "chunks": f"{i + 1}/{len(chunks)}"}
+                )
 
             annotated = ChunkLabeler.annotate_chunk(
                 chunk=chunk, context_manager=context_manager

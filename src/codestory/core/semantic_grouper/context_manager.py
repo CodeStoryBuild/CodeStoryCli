@@ -18,13 +18,12 @@
 
 from dataclasses import dataclass
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.exceptions import SyntaxErrorDetected
 from codestory.core.file_reader.file_parser import FileParser, ParsedFile
 from codestory.core.file_reader.git_file_reader import GitFileReader
+from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.semantic_grouper.comment_mapper import CommentMap, CommentMapper
 from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.scope_mapper import ScopeMap, ScopeMapper
@@ -67,7 +66,6 @@ class ContextManager:
         base_commit: str,
         patched_commit: str,
         fail_on_syntax_errors: bool = False,
-        pbar: tqdm | None = None,
     ):
         self.file_reader = file_reader
         self.base_commit = base_commit
@@ -92,20 +90,17 @@ class ContextManager:
         self._required_contexts: dict[tuple[bytes, bool], list[tuple[int, int]]] = {}
         self._analyze_required_contexts()
 
-        num_files = len(self._required_contexts)
-        if pbar is not None:
-            # We have 3 phases: Parsing, Shared Context, and Final Context
-            pbar.total = num_files * 3
-            pbar.refresh()
+        len(self._required_contexts)
+        ProgressBarManager.get_pbar()
 
         self._parsed_files: dict[tuple[bytes, bool], ParsedFile] = {}
-        self._generate_parsed_files(pbar=pbar)
+        self._generate_parsed_files()
 
         # First, build shared context
-        self._build_shared_contexts(pbar=pbar)
+        self._build_shared_contexts()
 
         # THen, Build all required contexts (dependant on shared context)
-        self._build_all_contexts(pbar=pbar)
+        self._build_all_contexts()
 
         # Log a summary of built contexts
         self._log_context_summary()
@@ -198,7 +193,7 @@ class ContextManager:
                 return (chunk.old_start - 1, chunk.old_start - 1)
             return (start - 1, end - 1)
 
-    def _generate_parsed_files(self, pbar: tqdm | None = None) -> None:
+    def _generate_parsed_files(self) -> None:
         from loguru import logger
 
         # Gather all required files
@@ -261,6 +256,7 @@ class ContextManager:
 
                 self._parsed_files[(file_path, is_old_version)] = parsed_file
             finally:
+                pbar = ProgressBarManager.get_pbar()
                 if pbar is not None:
                     pbar.update(1)
                     pbar.set_postfix(
@@ -295,7 +291,7 @@ class ContextManager:
 
         return new_ranges
 
-    def _build_shared_contexts(self, pbar: tqdm | None = None) -> None:
+    def _build_shared_contexts(self) -> None:
         """
         Build shared analysis contexts for all required file versions.
         """
@@ -326,6 +322,7 @@ class ContextManager:
                             )
                         )
                     finally:
+                        pbar = ProgressBarManager.get_pbar()
                         if pbar is not None:
                             pbar.update(1)
                             files_processed_in_this_phase += 1
@@ -342,12 +339,13 @@ class ContextManager:
                 logger.debug(f"Failed to build shared context for {language}: {e}")
 
         # Advance pbar for any files that were required but not parsed (so not in self._parsed_files)
+        pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
             remaining = total_files - files_processed_in_this_phase
             if remaining > 0:
                 pbar.update(remaining)
 
-    def _build_all_contexts(self, pbar: tqdm | None = None) -> None:
+    def _build_all_contexts(self) -> None:
         """
         Build analysis contexts for all required file versions.
         """
@@ -373,6 +371,7 @@ class ContextManager:
                             f"Failed to build context for {file_path} (old={is_old_version})"
                         )
             finally:
+                pbar = ProgressBarManager.get_pbar()
                 if pbar is not None:
                     pbar.update(1)
                     files_processed_in_this_phase += 1

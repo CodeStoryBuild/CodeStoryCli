@@ -20,8 +20,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
@@ -66,7 +64,6 @@ class SemanticGrouper:
         self,
         chunks: list[Chunk],
         context_manager: ContextManager,
-        pbar: tqdm | None = None,
     ) -> list[CompositeDiffChunk]:
         """
         Group chunks semantically based on overlapping symbol signatures.
@@ -74,7 +71,6 @@ class SemanticGrouper:
         Args:
             chunks: List of chunks to group semantically
             context_manager: Context manager for semantic analysis
-            pbar: Optional progress bar
 
         Returns:
             List of semantic groups, with fallback group last if it exists
@@ -86,9 +82,7 @@ class SemanticGrouper:
             return []
 
         # Generate signatures for each chunk
-        annotated_chunks = ChunkLabeler.annotate_chunks(
-            chunks, context_manager, pbar=pbar
-        )
+        annotated_chunks = ChunkLabeler.annotate_chunks(chunks, context_manager)
 
         # Separate chunks that can be analyzed from those that cannot
         analyzable_chunks = []

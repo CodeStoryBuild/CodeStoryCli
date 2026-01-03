@@ -20,9 +20,11 @@ import os
 import tempfile
 from collections.abc import Sequence
 
-from codestory.context import CleanContext, CommitContext, GlobalContext
+from codestory.context import CleanContext, GlobalContext
 from codestory.core.exceptions import CleanCommandError
-from codestory.pipelines.rewrite_init import create_rewrite_pipeline
+from codestory.pipelines.diff_context import DiffContext
+from codestory.pipelines.grouping_context import GroupingConfig, GroupingContext
+from codestory.pipelines.rewrite_pipeline import RewritePipeline
 
 
 class CleanPipeline:
@@ -143,23 +145,51 @@ class CleanPipeline:
                         t=len(commits_to_rewrite),
                     )
 
-                    commit_ctx = CommitContext(
+                    # Create DiffContext for this commit
+                    diff_context = DiffContext(
+                        self.global_context.git_commands,
+                        current_base_hash,
+                        commit_hash,
                         target=None,
-                        message=None,
+                        chunking_level=self.global_context.config.chunking_level,
                         fail_on_syntax_errors=False,
+                    )
+
+                    if not diff_context.has_changes():
+                        logger.debug(
+                            "Commit {commit} has no changes after processing, skipping.",
+                            commit=short,
+                        )
+                        current_idx = window_end_idx + 1
+                        continue
+
+                    # Create GroupingContext with no filtering (clean doesn't filter)
+                    grouping_config = GroupingConfig(
+                        fallback_grouping_strategy=self.global_context.config.fallback_grouping_strategy,
                         relevance_filter_level="none",
                         secret_scanner_aggression="none",
+                        batching_strategy=self.global_context.config.batching_strategy,
+                        cluster_strictness=self.global_context.config.cluster_strictness,
+                        relevance_intent=None,
+                        guidance_message=None,
+                        model=self.global_context.get_model(),
+                        embedder=self.global_context.get_embedder(),
                     )
 
-                    pipeline = create_rewrite_pipeline(
-                        self.global_context,
-                        commit_ctx,
-                        base_commit_hash=current_base_hash,
-                        new_commit_hash=commit_hash,
-                        source="fix",
-                    )
+                    grouping_context = GroupingContext(diff_context, grouping_config)
 
-                    new_tip_hash = pipeline.run()
+                    final_groups = grouping_context.final_logical_groups
+
+                    if not final_groups:
+                        logger.warning(
+                            f"Commit {short} resulted in empty change or was dropped."
+                        )
+                        current_idx = window_end_idx + 1
+                        continue
+
+                    # Run rewrite pipeline
+                    pipeline = RewritePipeline(self.global_context.git_commands)
+                    new_tip_hash = pipeline.run(current_base_hash, final_groups)
 
                     if new_tip_hash:
                         current_base_hash = new_tip_hash

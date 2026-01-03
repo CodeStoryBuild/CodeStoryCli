@@ -22,13 +22,12 @@ from dataclasses import dataclass, field
 from re import Pattern
 from typing import Literal
 
-from tqdm import tqdm
-
 # Assumed imports from your codebase
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.data.line_changes import Addition
+from codestory.core.logging.progress_manager import ProgressBarManager
 
 # -----------------------------------------------------------------------------
 # Configuration & Constants
@@ -234,7 +233,6 @@ def filter_hunks(
     chunks: list[Chunk],
     immut_chunks: list[ImmutableChunk],
     config: ScannerConfig | None = None,
-    pbar: tqdm | None = None,
 ) -> tuple[list[Chunk], list[ImmutableChunk], list[Chunk | ImmutableChunk]]:
     """
     Filters chunks and immutable chunks for hardcoded secrets.
@@ -246,7 +244,6 @@ def filter_hunks(
         chunks: List of mutable Chunk wrappers.
         immut_chunks: List of ImmutableChunk objects (binary/large files).
         config: Scanner configuration.
-        pbar: Optional progress bar.
 
     Returns:
         (accepted_chunks, accepted_immut_chunks, rejected_all)
@@ -261,14 +258,17 @@ def filter_hunks(
     rejected: list[Chunk | ImmutableChunk] = []
 
     total = len(chunks) + len(immut_chunks)
+    pbar = ProgressBarManager.get_pbar()
     if pbar is not None:
-        pbar.total = total
-        pbar.refresh()
+        pbar.set_postfix({"phase": "secrets", "scanned": f"0/{total}"})
 
     # 1. Process Mutable Chunks (Chunk wrappers)
+    processed = 0
     for chunk in chunks:
         if pbar is not None:
             pbar.update(1)
+            processed += 1
+            pbar.set_postfix({"phase": "secrets", "scanned": f"{processed}/{total}"})
         # Check all internal DiffChunk objects
         internal_diffs = chunk.get_chunks()
 
@@ -288,6 +288,8 @@ def filter_hunks(
     for immut_chunk in immut_chunks:
         if pbar is not None:
             pbar.update(1)
+            processed += 1
+            pbar.set_postfix({"phase": "secrets", "scanned": f"{processed}/{total}"})
         # We use the specialized ImmutableChunk check
         if scanner.check_immutable_chunk(immut_chunk):
             rejected.append(immut_chunk)

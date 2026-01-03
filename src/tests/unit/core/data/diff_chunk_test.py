@@ -161,23 +161,3 @@ def test_from_hunk():
     assert isinstance(c.parsed_content[1], Addition)
     assert c.parsed_content[1].content == b"new"
     assert c.parsed_content[1].newline_marker
-
-
-def test_split_into_atomic_chunks():
-    # Pure addition chunk with 2 lines
-    content = [Addition(1, 10, b"line1"), Addition(1, 11, b"line2")]
-    c = create_chunk(parsed_content=content, old_start=1)
-
-    atomic = c.split_into_atomic_chunks()
-
-    assert len(atomic) == 2
-    assert atomic[0].parsed_content[0].content == b"line1"
-    assert atomic[1].parsed_content[0].content == b"line2"
-
-    # Mixed chunk (should not split)
-    content_mixed = [Removal(1, 10, b"old"), Addition(2, 10, b"new")]
-    c_mixed = create_chunk(parsed_content=content_mixed, old_start=1)
-
-    atomic_mixed = c_mixed.split_into_atomic_chunks()
-    assert len(atomic_mixed) == 1
-    assert atomic_mixed[0] is c_mixed

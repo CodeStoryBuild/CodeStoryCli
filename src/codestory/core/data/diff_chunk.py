@@ -189,39 +189,6 @@ class DiffChunk:
     def pure_deletion(self) -> bool:
         return self.new_len() == 0 and self.has_content
 
-    def split_into_atomic_chunks(self) -> list["DiffChunk"]:
-        """
-        Splits a DiffChunk into a list of the most granular, yet still valid,
-        atomic DiffChunks.
-        """
-        # If the chunk has no content (e.g., a file mode change), it is already atomic.
-        if not self.has_content:
-            return [self]
-
-        # These initial checks are critical for establishing a valid starting point.
-        if self.old_start is None:
-            return [self]
-
-        # only try to be smart and split hunks if its a pure addition or deletion
-        # otherwise, things get messy fast
-        if not (self.pure_addition() or self.pure_deletion()):
-            return [self]
-
-        final_chunks = []
-
-        if self.parsed_content is not None:
-            for line in self.parsed_content:
-                atomic_chunk = DiffChunk.from_parsed_content_slice(
-                    old_file_path=self.old_file_path,
-                    new_file_path=self.new_file_path,
-                    file_mode=self.file_mode,
-                    contains_newline_fallback=self.contains_newline_fallback,
-                    parsed_slice=[line],
-                )
-                final_chunks.append(atomic_chunk)
-
-        return final_chunks
-
     @staticmethod
     def _sanitize_patch_content(content: bytes) -> bytes:
         """

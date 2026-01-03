@@ -24,8 +24,6 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from tqdm import tqdm
-
 from codestory.core.data.chunk import Chunk
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.immutable_chunk import ImmutableChunk
@@ -60,24 +58,23 @@ class EmbeddingGrouper(LogicalGrouper):
     def __init__(
         self,
         model: CodeStoryAdapter,
+        embedder: Embedder,
         batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
-        max_tokens: int = 4096,
-        custom_embedding_model: str | None = None,
         cluster_strictness: float = 0.5,
-        embedder: Embedder | None = None,
     ):
         self.model = model
+        self.max_tokens = model.config.max_tokens
+        self.patch_cutoff_chars = self.max_tokens // 4
+
+        self.embedder = embedder
         self.batching_strategy = batching_strategy
-        self.embedder = embedder or Embedder(custom_embedding_model)
         self.clusterer = Clusterer(cluster_strictness)
-        self.patch_cutoff_chars = 1000
-        self.max_tokens = max_tokens
 
         # Initialize chunk summarizer for generating summaries
         self._chunk_summarizer = ChunkSummarizer(
             codestory_adapter=model,
             batching_strategy=batching_strategy,
-            max_tokens=max_tokens,
+            max_tokens=self.max_tokens,
             patch_cutoff_chars=self.patch_cutoff_chars,
         )
 
@@ -87,7 +84,6 @@ class EmbeddingGrouper(LogicalGrouper):
         immut_chunks: list[ImmutableChunk],
         context_manager: ContextManager,
         message: str,
-        pbar: tqdm | None = None,
     ) -> list[CommitGroup]:
         """
         Group chunks into logical commit groups using embedding-based clustering.
@@ -97,7 +93,6 @@ class EmbeddingGrouper(LogicalGrouper):
             immut_chunks: List of ImmutableChunk objects (binary files, etc.)
             context_manager: ContextManager for semantic analysis
             message: Optional user-provided intent message
-            pbar: Optional progress bar
 
         Returns:
             List of CommitGroup objects, each containing related chunks and a commit message
@@ -119,7 +114,6 @@ class EmbeddingGrouper(LogicalGrouper):
             context_manager=context_manager,
             diff_generator=diff_generator,
             intent_message=message,
-            pbar=pbar,
         )
 
         # Step 2: Handle single chunk case (no clustering needed)
@@ -160,7 +154,6 @@ class EmbeddingGrouper(LogicalGrouper):
             cluster_messages_map = self._chunk_summarizer.summarize_clusters(
                 clusters={cid: cluster.summaries for cid, cluster in clusters.items()},
                 intent_message=message,
-                pbar=pbar,
             )
 
             # Create commit groups from clusters

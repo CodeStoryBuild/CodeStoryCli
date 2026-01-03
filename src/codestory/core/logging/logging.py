@@ -65,8 +65,15 @@ class StructuredLogger:
 
         # Console sink with simple formatting
         def console_sink(message):
+            from tqdm import tqdm
+
+            from codestory.core.logging.progress_manager import ProgressBarManager
+
             text = message.record["message"].rstrip("\n")
-            print(text)
+            if ProgressBarManager.is_active():
+                tqdm.write(text)
+            else:
+                print(text)
 
         # Add console sink with appropriate level
         logger.add(console_sink, level=console_level, format="{message}", catch=True)
