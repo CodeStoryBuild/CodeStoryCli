@@ -40,11 +40,10 @@ class CodestoryError(Exception):
 
 
 class GitError(CodestoryError):
-    """
-    Errors related to git operations.
+    """Errors related to git operations.
 
-    Raised when git commands fail or when git repository
-    state is invalid for the requested operation.
+    Raised when git commands fail or when git repository state is
+    invalid for the requested operation.
     """
 
     pass
@@ -71,11 +70,10 @@ class ValidationError(CodestoryError):
 
 
 class ConfigurationError(CodestoryError):
-    """
-    Configuration-related errors.
+    """Configuration-related errors.
 
-    Raised when configuration files are invalid, missing,
-    or contain incompatible settings.
+    Raised when configuration files are invalid, missing, or contain
+    incompatible settings.
     """
 
     pass
@@ -131,11 +129,10 @@ class ChunkingError(CodestoryError):
 
 
 class SynthesizerError(CodestoryError):
-    """
-    Errors during commit synthesis.
+    """Errors during commit synthesis.
 
-    Raised when the commit synthesis process fails
-    to create valid commits from chunks.
+    Raised when the commit synthesis process fails to create valid
+    commits from chunks.
     """
 
     pass
@@ -154,11 +151,10 @@ class LLMResponseError(CodestoryError):
 
 
 class LLMInitError(CodestoryError):
-    """
-    Errors during LLM initialization.
+    """Errors during LLM initialization.
 
-    Raised when LLM setup fails due to missing API keys,
-    invalid model configurations, or connection issues.
+    Raised when LLM setup fails due to missing API keys, invalid model
+    configurations, or connection issues.
     """
 
     pass
@@ -182,12 +178,11 @@ class SyntaxErrorDetected(CodestoryError):
 
 @contextmanager
 def handle_codestory_exception():
-    """
-    Function-based context manager to handle CodestoryError exceptions.
+    """Function-based context manager to handle CodestoryError exceptions.
 
     Yields control to the 'with' block's content. The code after 'yield'
-    acts as the '__exit__' method, running only if the 'with' block is done
-    or raises an exception.
+    acts as the '__exit__' method, running only if the 'with' block is
+    done or raises an exception.
     """
     try:
         yield

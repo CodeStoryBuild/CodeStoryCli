@@ -125,8 +125,7 @@ def setup_logger(
     silent: bool = False,
     no_log_files: bool = False,
 ) -> Path | None:
-    """
-    Set up enhanced logging for a command.
+    """Set up enhanced logging for a command.
 
     Args:
         command_name: Name of the command being executed
