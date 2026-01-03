@@ -10,6 +10,7 @@ import platform
 import subprocess
 import sys
 import shutil
+import importlib.util
 from pathlib import Path
 
 
@@ -60,47 +61,62 @@ def main():
         "--include-package=dslate",
         "--include-package-data=dslate",
         
-        # --- LANGCHAIN (Dynamic Imports) ---
-        # LangChain relies heavily on dynamic loading. We must include these explicitely.
+        # --- ESSENTIAL DEPENDENCIES ---
+        "--include-package=platformdirs",
+        "--include-package=typer",
+        "--include-package=rich",
+        "--include-package=loguru",
+        "--include-package=dotenv",
+        "--include-package=git",
+        
+        # --- LANGCHAIN ---
         "--include-package=langchain",
         "--include-package=langchain_core",
-        # Providers (Add others if you add more to pyproject.toml)
+        "--include-package=langchain_community",
         "--include-package=langchain_openai",
         "--include-package=langchain_anthropic",
         "--include-package=langchain_google_genai",
         "--include-package=langchain_ollama",
 
-        # --- SYNTAX HIGHLIGHTING ---
-        # Pygments loads lexers dynamically by string name
+        # --- UTILS ---
         "--include-package=pygments",
-
-        # --- CLI UTILS ---
         "--include-package=inquirer",
         "--include-package=readchar",
-
-        # --- PARSING ---
+        
+        # --- TREE SITTER FIX ---
         "--include-package=tree_sitter",
-        "--include-package-data=tree_sitter_language_pack",
-
-        # --- OUTPUT CONFIG ---
-        f"--output-dir={dist_path}",
-        f"--output-filename={exe_name}",
-        "--remove-output", # Removes the build/ temporary directory, keeps dist/
-        "--no-deployment-flag=self-execution",
+        # Note: --include-package-data IGNORES .pyd/.so files by default!
+        # We must manually force the bindings folder to be included as data directory.
     ]
 
-    # Add platform specific options
+    # --- DYNAMICALLY FIND TREE_SITTER BINDINGS ---
+    # This replicates PyInstaller's 'collect_all' for the bindings folder
+    try:
+        ts_spec = importlib.util.find_spec("tree_sitter_language_pack")
+        if ts_spec and ts_spec.submodule_search_locations:
+            ts_path = Path(ts_spec.submodule_search_locations[0])
+            bindings_path = ts_path / "bindings"
+            if bindings_path.exists():
+                print(f"Found tree-sitter bindings at: {bindings_path}")
+                # Force include the bindings folder. 
+                # Syntax: --include-data-dir=/source/path=package/internal/path
+                cmd.append(f"--include-data-dir={bindings_path}=tree_sitter_language_pack/bindings")
+            else:
+                print("Warning: tree_sitter_language_pack found but 'bindings' folder is missing.")
+    except ImportError:
+        print("Warning: tree_sitter_language_pack not found in environment.")
+
+    # --- FINAL CONFIG ---
+    cmd.extend([
+        f"--output-dir={dist_path}",
+        f"--output-filename={exe_name}",
+        "--remove-output",
+        "--no-deployment-flag=self-execution",
+    ])
+
     if is_windows:
-        # Crucial for CLI tools on Windows. 
-        # Without this, it might open a new window or hide stdout/stderr.
         cmd.append("--windows-console-mode=force")
         
-    elif system == "linux":
-        pass
-    elif system == "darwin":
-        pass
-
-    # Add the entry point
     cmd.append(str(entry_point))
 
     print(f"Building {exe_name} for {system} using Nuitka...")
@@ -112,17 +128,12 @@ def main():
         print(f"Build failed with error code {e.returncode}")
         sys.exit(e.returncode)
 
-    # Validation check
+    # Validation
     target_output = dist_path / exe_name
-
     if target_output.exists():
          print(f"Build successful! Artifact located at: {target_output}")
     else:
         print(f"Build finished but expected artifact {target_output} not found.")
-        print(f"Contents of {dist_path}:")
-        if dist_path.exists():
-            for item in dist_path.iterdir():
-                print(f" - {item.name}")
         sys.exit(1)
 
 
