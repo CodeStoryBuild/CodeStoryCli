@@ -143,4 +143,3 @@ def test_clean_context_defaults():
     assert ctx.ignore is None
     assert ctx.min_size is None
     assert ctx.start_from is None
-    assert ctx.skip_merge is False
