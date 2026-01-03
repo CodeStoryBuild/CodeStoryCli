@@ -88,18 +88,28 @@ def main():
         # We must manually force the bindings folder to be included as data directory.
     ]
 
-    # --- DYNAMICALLY FIND TREE_SITTER BINDINGS ---
-    # This replicates PyInstaller's 'collect_all' for the bindings folder
     try:
         ts_spec = importlib.util.find_spec("tree_sitter_language_pack")
         if ts_spec and ts_spec.submodule_search_locations:
             ts_path = Path(ts_spec.submodule_search_locations[0])
             bindings_path = ts_path / "bindings"
+            
             if bindings_path.exists():
                 print(f"Found tree-sitter bindings at: {bindings_path}")
-                # Force include the bindings folder. 
-                # Syntax: --include-data-dir=/source/path=package/internal/path
-                cmd.append(f"--include-data-dir={bindings_path}=tree_sitter_language_pack/bindings")
+                
+                # Determine the extension for the current OS
+                # Windows uses .pyd, Linux/Mac uses .so
+                ext_pattern = "*.pyd" if is_windows else "*.so"
+                
+                # FIX: Use --include-data-files with a wildcard. 
+                # This forces Nuitka to treat the binaries as raw data files 
+                # instead of ignoring them as "code extensions".
+                # Syntax: source_pattern=dest_folder_relative
+                source_pattern = bindings_path / ext_pattern
+                dest_path = "tree_sitter_language_pack/bindings/"
+                
+                cmd.append(f"--include-data-files={source_pattern}={dest_path}")
+                
             else:
                 print("Warning: tree_sitter_language_pack found but 'bindings' folder is missing.")
     except ImportError:
