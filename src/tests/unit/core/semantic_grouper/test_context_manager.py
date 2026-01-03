@@ -62,9 +62,17 @@ class Calculator:
 """,
         }
 
-    def read(self, path: str, old_content: bool = False) -> str | None:
-        """Read file content based on path and version."""
-        return self.files.get((path, old_content))
+    def read_all(
+        self,
+        old_commit_hash: str,
+        new_commit_hash: str,
+        old_files: list[str],
+        new_files: list[str],
+    ) -> tuple[list[str | None], list[str | None]]:
+        """Read all requested files."""
+        old_contents = [self.files.get((path, True)) for path in old_files]
+        new_contents = [self.files.get((path, False)) for path in new_files]
+        return old_contents, new_contents
 
 
 def test_context_manager():
@@ -105,7 +113,11 @@ def test_context_manager():
 
     # Create context manager
     context_manager = ContextManager(
-        chunks=diff_chunks, file_reader=file_reader, fail_on_syntax_errors=False
+        chunks=diff_chunks,
+        file_reader=file_reader,
+        base_commit="base",
+        patched_commit="head",
+        fail_on_syntax_errors=False,
     )
 
     # Test getting contexts

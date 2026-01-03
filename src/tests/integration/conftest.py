@@ -89,9 +89,9 @@ def run_cli(exe, args, cwd=None, env=None, input_str=None):
     """Helper to run the CLI executable."""
     cmd = [exe] if not exe.startswith("python") else exe.split()
 
-    # Add -y/--yes if not present and not asking for help/version, to avoid hanging on prompts
-    # But only if the command supports it. We'll let the tests handle this explicitly for now
-    # to avoid magic behavior, but we can add a helper arg if needed.
+    cmd.append("--model")
+    cmd.append("no-model")
+    cmd.append("--yes")
 
     cmd.extend(args)
 

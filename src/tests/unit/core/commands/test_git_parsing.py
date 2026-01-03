@@ -276,3 +276,22 @@ class TestGitDiffParsing:
     #     hunk = hunks[0]
     #     assert isinstance(hunk, ImmutableHunkWrapper)
     #     assert b"Subproject commit" in hunk.file_patch
+    def test_cat_file_batch(self, git_repo: Path):
+        """Test that cat_file_batch correctly reads multiple files."""
+        (git_repo / "file1.txt").write_text("content1")
+        (git_repo / "file2.txt").write_text("content2")
+        subprocess.check_call(["git", "add", "."])
+        subprocess.check_call(["git", "commit", "-m", "add files"])
+        commit_hash = self.git_commands.get_commit_hash("HEAD")
+
+        objs = [
+            f"{commit_hash}:file1.txt",
+            f"{commit_hash}:file2.txt",
+            f"{commit_hash}:missing.txt",
+        ]
+        contents = self.git_commands.cat_file_batch(objs)
+
+        assert len(contents) == 3
+        assert contents[0] == b"content1"
+        assert contents[1] == b"content2"
+        assert contents[2] is None

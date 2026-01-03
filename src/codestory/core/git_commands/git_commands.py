@@ -526,6 +526,64 @@ class GitCommands:
         """
         return self.git.run_git_text_out(["cat-file", "-p", obj])
 
+    def cat_file_batch(self, objs: list[str]) -> list[bytes | None]:
+        """
+        Returns the content of multiple git objects using git cat-file --batch.
+        Returns a list of bytes or None if an object doesn't exist.
+        """
+        if not objs:
+            return []
+
+        # We use --batch to get both headers and content.
+        # Format is: <object> SP <type> SP <size> LF <contents> LF
+        input_data = "\n".join(objs) + "\n"
+        output = self.git.run_git_binary_out(
+            ["cat-file", "--batch"], input_bytes=input_data.encode("utf-8")
+        )
+
+        if not output:
+            return [None] * len(objs)
+
+        results = []
+        offset = 0
+        output_len = len(output)
+
+        for _ in range(len(objs)):
+            if offset >= output_len:
+                results.append(None)
+                continue
+
+            # Find the end of the header line
+            header_end = output.find(b"\n", offset)
+            if header_end == -1:
+                results.append(None)
+                break
+
+            header = output[offset:header_end].split()
+            # If object is missing, header will be "<object> missing"
+            if len(header) < 3 or header[1] == b"missing":
+                results.append(None)
+                offset = header_end + 1
+                continue
+
+            try:
+                size = int(header[2])
+            except (ValueError, IndexError):
+                results.append(None)
+                offset = header_end + 1
+                continue
+
+            content_start = header_end + 1
+            content_end = content_start + size
+            content = output[content_start:content_end]
+
+            results.append(content)
+
+            # Move offset past content and the trailing newline
+            offset = content_end + 1
+
+        return results
+
     def add(self, args: list[str], env: dict | None = None) -> bool:
         """
         Run git add with the given arguments.
