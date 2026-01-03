@@ -45,7 +45,8 @@ def test_ensure_utf8_output():
 
 
 def test_ensure_utf8_output_no_reconfigure():
-    """Test that it handles streams without reconfigure method (e.g. during some tests)."""
+    """Test that it handles streams without reconfigure method (e.g. during some
+    tests)."""
     with patch("sys.stdout") as mock_stdout, patch("sys.stderr") as mock_stderr:
         # Ensure they don't have reconfigure
         del mock_stdout.reconfigure

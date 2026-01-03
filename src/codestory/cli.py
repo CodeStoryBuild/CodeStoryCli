@@ -269,8 +269,7 @@ def main_config(
         help="Delete configuration from both global and local scopes.",
     ),
 ) -> None:
-    """
-    Manage global and local codestory configurations.
+    """Manage global and local codestory configurations.
 
     Priority order: program arguments > custom config > local config > environment variables > global config
 

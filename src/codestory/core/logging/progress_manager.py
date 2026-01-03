@@ -16,8 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-"""
-Global progress bar manager for the codestory CLI.
+"""Global progress bar manager for the codestory CLI.
 
 Provides centralized control over tqdm progress bars, allowing:
 - Global access to the active progress bar
@@ -33,8 +32,7 @@ from tqdm import tqdm
 
 
 class ProgressBarManager:
-    """
-    Static class for managing global progress bar state.
+    """Static class for managing global progress bar state.
 
     Similar to loguru's centralized approach, this class provides:
     - set_pbar() context manager for push/pop of progress bars
@@ -47,7 +45,7 @@ class ProgressBarManager:
             # pbar is now active, logger output will use tqdm.write()
             pbar = ProgressBarManager.get_pbar()
             if pbar:
-                pbar.update(1)
+                pbar.set_postfix(...)
     """
 
     _pbar_stack: list[tqdm] = []
@@ -62,8 +60,7 @@ class ProgressBarManager:
         total: int | None = None,
         silent: bool = False,
     ) -> Generator[tqdm | None]:
-        """
-        Context manager to set or create the active progress bar.
+        """Context manager to set or create the active progress bar.
 
         On enter: pushes the pbar onto the stack. If pbar is None but description is
         provided, creates a new transient tqdm object.
@@ -108,8 +105,7 @@ class ProgressBarManager:
 
     @classmethod
     def get_pbar(cls) -> tqdm | None:
-        """
-        Get the currently active progress bar.
+        """Get the currently active progress bar.
 
         Returns:
             The top of the progress bar stack, or None if empty/silent
@@ -120,8 +116,7 @@ class ProgressBarManager:
 
     @classmethod
     def is_active(cls) -> bool:
-        """
-        Check if a progress bar is currently active.
+        """Check if a progress bar is currently active.
 
         Returns:
             True if there's an active pbar and not in silent mode
@@ -130,8 +125,7 @@ class ProgressBarManager:
 
     @classmethod
     def set_silent(cls, silent: bool) -> None:
-        """
-        Enable or disable silent mode.
+        """Enable or disable silent mode.
 
         When silent, set_pbar() does nothing and get_pbar() returns None.
 
