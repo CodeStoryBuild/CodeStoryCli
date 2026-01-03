@@ -62,19 +62,14 @@ def main():
         "--onefile",
         "--assume-yes-for-downloads",
         "--show-modules",
-        # --- FORCE INCLUSION ---
-        # 1. Include the root package
+        # Include the root package
         "--include-package=tree_sitter_language_pack",
-        # 2. CRITICAL: Explicitly force the bindings subpackage
-        #    Nuitka usually only includes modules it sees imported in your code.
-        #    Since you dynamically load these languages, Nuitka won't "see" them.
-        #    This flag forces it to scan and include everything in that folder.
+        # Explicitly force the bindings subpackage
+        # Nuitka usually only includes modules it sees imported in code.
         "--include-module=tree_sitter_language_pack.bindings",
         # --- CORE INCLUDES ---
         "--include-package=codestory",
         "--include-package-data=codestory",
-        # --- UTILS ---
-        "--include-package=readchar",
         "--include-package=tree_sitter",
     ]
 
