@@ -1,5 +1,6 @@
 {
     "python": {
+        "root_node_name": "module",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries":[
@@ -23,28 +24,13 @@
                 "((function_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((decorated_definition definition: (function_definition name: (identifier) @placeholder.name)) @placeholder)",
                 "((class_definition name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((while_statement) @placeholder)",
-                "((list) @placeholder)",
-                "((expression_statement) @placeholder)",
-                "((call) @placeholder)",
-                "((dictionary) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((with_statement) @placeholder)",
-                "((list_comprehension) @placeholder)",
-                "((generator_expression) @placeholder)",
-                "((set_comprehension) @placeholder)",
-                "((dictionary_comprehension) @placeholder)"
             ]
-        }
-        ,
+        },
         "comment_queries": ["((comment) @placeholder)", "(expression_statement (string) @placeholder)"],
         "share_tokens_between_files": "True"
     },
     "javascript": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -64,16 +50,6 @@
             "named_scope": [
                 "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((class_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((arrow_function) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((for_in_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -82,6 +58,7 @@
         "share_tokens_between_files": "True"
     },
     "typescript": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -107,16 +84,6 @@
                 "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
                 "((interface_declaration name: (type_identifier) @placeholder.name) @placeholder)",
                 "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((arrow_function) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((for_in_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -125,6 +92,7 @@
         "share_tokens_between_files": "True"
     },
     "java": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -148,14 +116,6 @@
                 "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((interface_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_expression) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -165,6 +125,7 @@
         "share_tokens_between_files": "True"
     },
     "cpp": {
+        "root_node_name": "translation_unit",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -189,14 +150,6 @@
                 "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
                 "((class_specifier name: (type_identifier) @placeholder.name) @placeholder)",
                 "((namespace_definition name: (namespace_identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -205,6 +158,7 @@
         "share_tokens_between_files": "True"
     },
     "csharp": {
+        "root_node_name": "compilation_unit",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -228,16 +182,6 @@
                 "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((namespace_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((foreach_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)",
-                "((global_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -246,6 +190,7 @@
         "share_tokens_between_files": "True"
     },
     "go": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -276,12 +221,6 @@
             "named_scope": [
                 "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
                 "((method_declaration name: (field_identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((expression_switch_statement) @placeholder)",
-                "((type_switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -290,6 +229,7 @@
         "share_tokens_between_files": "True"
     },
     "rust": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -316,13 +256,6 @@
                 "((struct_item name: (type_identifier) @placeholder.name) @placeholder)",
                 "((enum_item name: (type_identifier) @placeholder.name) @placeholder)",
                 "((mod_item name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_expression) @placeholder)",
-                "((for_expression) @placeholder)",
-                "((while_expression) @placeholder)",
-                "((loop_expression) @placeholder)",
-                "((match_expression) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -332,6 +265,7 @@
         "share_tokens_between_files": "True"
     },
     "ruby": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -355,17 +289,6 @@
                 "((singleton_method name: (identifier) @placeholder.name) @placeholder)",
                 "((class name: (constant) @placeholder.name) @placeholder)",
                 "((module name: (constant) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((lambda) @placeholder)",
-                "((if) @placeholder)",
-                "((unless) @placeholder)",
-                "((while) @placeholder)",
-                "((until) @placeholder)",
-                "((for) @placeholder)",
-                "((case) @placeholder)",
-                "((begin) @placeholder)",
-                "((do_block) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -374,6 +297,7 @@
         "share_tokens_between_files": "True"
     },
     "php": {
+        "root_node_name": "",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -398,15 +322,6 @@
                 "((method_declaration name: (name) @placeholder.name) @placeholder)",
                 "((class_declaration name: (name) @placeholder.name) @placeholder)",
                 "((namespace_definition name: (namespace_name) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((foreach_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -415,6 +330,7 @@
         "share_tokens_between_files": "True"
     },
     "swift": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -435,14 +351,6 @@
                 "((function_declaration name: (simple_identifier) @placeholder.name) @placeholder)",
                 "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
                 "((protocol_declaration name: (type_identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((guard_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -452,6 +360,7 @@
         "share_tokens_between_files": "True"
     },
     "kotlin": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -471,16 +380,6 @@
                 "((function_declaration (simple_identifier) @placeholder.name) @placeholder)",
                 "((class_declaration (type_identifier) @placeholder.name) @placeholder)",
                 "((object_declaration (type_identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_expression) @placeholder)",
-                "((when_expression) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_while_statement) @placeholder)",
-                "((try_expression) @placeholder)",
-                "((anonymous_initializer) @placeholder)",
-                "((lambda_literal) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -490,6 +389,7 @@
         "share_tokens_between_files": "True"
     },
     "scala": {
+        "root_node_name": "compilation_unit",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -512,14 +412,6 @@
                 "((class_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((object_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((trait_definition name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_expression) @placeholder)",
-                "((for_expression) @placeholder)",
-                "((while_expression) @placeholder)",
-                "((try_expression) @placeholder)",
-                "((match_expression) @placeholder)",
-                "((block) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -529,6 +421,7 @@
         "share_tokens_between_files": "True"
     },
     "r": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -542,13 +435,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((function_definition) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((repeat_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -557,6 +443,7 @@
         "share_tokens_between_files": "True"
     },
     "lua": {
+        "root_node_name": "chunk",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -575,15 +462,6 @@
         "scope_queries": {
             "named_scope": [
                 "((function_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((function_definition) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((repeat_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((table_constructor) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -592,6 +470,7 @@
         "share_tokens_between_files": "True"
     },
     "dart": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -614,15 +493,6 @@
             "named_scope": [
                 "((class_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((function_body) @placeholder)",
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((switch_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -632,6 +502,7 @@
         "share_tokens_between_files": "True"
     },
     "elixir": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -647,11 +518,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((anonymous_function) @placeholder)",
-                "((call) @placeholder)",
-                "((do_block) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -660,6 +526,7 @@
         "share_tokens_between_files": "True"
     },
     "haskell": {
+        "root_node_name": ["haskell", "declarations"],
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -680,13 +547,6 @@
         "scope_queries": {
             "named_scope": [
                 "((function name: (variable) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((lambda) @placeholder)",
-                "((local_binds) @placeholder)",
-                "((let) @placeholder)",
-                "((case) @placeholder)",
-                "((do) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -696,6 +556,7 @@
         "share_tokens_between_files": "False"
     },
     "ocaml": {
+        "root_node_name": "compilation_unit",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -714,14 +575,6 @@
         "scope_queries": {
             "named_scope": [
                 "((module_definition (module_binding (module_name) @placeholder.name)) @placeholder)"
-            ],
-            "structural_scope": [
-                "((value_definition) @placeholder)",
-                "((function_expression) @placeholder)",
-                "((if_expression) @placeholder)",
-                "((match_expression) @placeholder)",
-                "((try_expression) @placeholder)",
-                "((let_expression) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -730,6 +583,7 @@
         "share_tokens_between_files": "False"
     },
     "erlang": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -748,12 +602,6 @@
         "scope_queries": {
             "named_scope": [
                 "((function_clause name: (atom) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((case_expr) @placeholder)",
-                "((if_expr) @placeholder)",
-                "((receive_expr) @placeholder)",
-                "((try_expr) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -762,6 +610,7 @@
         "share_tokens_between_files": "True"
     },
     "clojure": {
+        "root_node_name": "source",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -775,13 +624,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((anon_fn_lit) @placeholder)",
-                "((list_lit) @placeholder)",
-                "((vec_lit) @placeholder)",
-                "((map_lit) @placeholder)",
-                "((set_lit) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -791,6 +633,7 @@
         "share_tokens_between_files": "True"
     },
     "solidity": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -814,13 +657,6 @@
                 "((function_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((modifier_definition name: (identifier) @placeholder.name) @placeholder)",
                 "((contract_declaration name: (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_while_statement) @placeholder)",
-                "((try_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -829,6 +665,7 @@
         "share_tokens_between_files": "True"
     },
     "julia": {
+        "root_node_name": "source_file",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -853,14 +690,6 @@
                 "((macro_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
                 "((struct_definition (type_head (identifier) @placeholder.name)) @placeholder)",
                 "((module_definition (identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((try_statement) @placeholder)",
-                "((let_statement) @placeholder)",
-                "((quote_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -870,6 +699,7 @@
         "share_tokens_between_files": "True"
     },
     "bash": {
+        "root_node_name": "program",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -887,15 +717,6 @@
         "scope_queries": {
             "named_scope": [
                 "((function_definition name: (word) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((case_statement) @placeholder)",
-                "((compound_statement) @placeholder)",
-                "((do_group) @placeholder)",
-                "((subshell) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -904,6 +725,7 @@
         "share_tokens_between_files": "True"
     },
     "c": {
+        "root_node_name": "translation_unit",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -929,14 +751,6 @@
                 "((struct_specifier name: (type_identifier) @placeholder.name) @placeholder)",
                 "((union_specifier name: (type_identifier) @placeholder.name) @placeholder)",
                 "((enum_specifier name: (type_identifier) @placeholder.name) @placeholder)"
-            ],
-            "structural_scope": [
-                "((if_statement) @placeholder)",
-                "((for_statement) @placeholder)",
-                "((while_statement) @placeholder)",
-                "((do_statement) @placeholder)",
-                "((switch_statement) @placeholder)",
-                "((compound_statement) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -945,6 +759,7 @@
         "share_tokens_between_files": "True"
     },
     "toml": {
+        "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -961,12 +776,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((table) @placeholder)",
-                "((table_array_element) @placeholder)",
-                "((array) @placeholder)",
-                "((inline_table) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -975,6 +784,7 @@
         "share_tokens_between_files": "False"
     },
     "json": {
+        "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -987,11 +797,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((object) @placeholder)",
-                "((array) @placeholder)",
-                "((pair) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -999,6 +804,7 @@
         "share_tokens_between_files": "False"
     },
     "yaml": {
+        "root_node_name": "stream",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -1011,13 +817,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((block_mapping) @placeholder)",
-                "((block_sequence) @placeholder)",
-                "((block_mapping_pair) @placeholder)",
-                "((flow_mapping) @placeholder)",
-                "((flow_sequence) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -1026,6 +825,7 @@
         "share_tokens_between_files": "False"
     },
     "markdown": {
+        "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -1036,15 +836,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((section) @placeholder)",
-                "((atx_heading) @placeholder)",
-                "((paragraph) @placeholder)",
-                "((list) @placeholder)",
-                "((list_item) @placeholder)",
-                "((fenced_code_block) @placeholder)",
-                "((block_quote) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -1053,6 +844,7 @@
         "share_tokens_between_files": "False"
     },
     "rst": {
+        "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -1063,18 +855,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((field_list) @placeholder)",
-                "((section) @placeholder)",
-                "((title) @placeholder)",
-                "((paragraph) @placeholder)",
-                "((bullet_list) @placeholder)",
-                "((enumerated_list) @placeholder)",
-                "((list_item) @placeholder)",
-                "((directive) @placeholder)",
-                "((block_quote) @placeholder)",
-                "((literal_block) @placeholder)"
             ]
         },
         "comment_queries": [
@@ -1083,6 +863,7 @@
         "share_tokens_between_files": "False"
     },
     "html": {
+        "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -1097,12 +878,6 @@
         },
         "scope_queries": {
             "named_scope": [
-            ],
-            "structural_scope": [
-                "((element) @placeholder)",
-                "((script_element) @placeholder)",
-                "((style_element) @placeholder)",
-                "((attribute) @placeholder)"
             ]
         },
         "comment_queries": [

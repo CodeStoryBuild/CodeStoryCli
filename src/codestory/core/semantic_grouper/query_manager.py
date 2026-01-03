@@ -34,12 +34,12 @@ class SharedTokenQueries:
 @dataclass(frozen=True)
 class ScopeQueries:
     named_scope: list[str]
-    structural_scope: list[str]
 
 
 @dataclass(frozen=True)
 class LanguageConfig:
     language_name: str
+    root_nodes: set[str]
     shared_token_queries: dict[str, SharedTokenQueries]
     scope_queries: ScopeQueries
     comment_queries: list[str]
@@ -61,12 +61,19 @@ class LanguageConfig:
 
         scope_queries_dict = json_dict.get("scope_queries", {})
         named_scope = scope_queries_dict.get("named_scope", [])
-        structural_scope = scope_queries_dict.get("structural_scope", [])
-        scope_queries = ScopeQueries(named_scope, structural_scope)
+        scope_queries = ScopeQueries(named_scope)
         comment_queries = json_dict.get("comment_queries", [])
         share_tokens_between_files = json_dict.get("share_tokens_between_files", False)
+        root_node_names = json_dict.get("root_node_name", "")
+        if isinstance(root_node_names, str):
+            root_nodes = {root_node_names.lower()}
+        elif isinstance(root_node_names, list):
+            root_nodes = {name.lower() for name in root_node_names}
+        else:
+            raise ValueError("root_node_name must be a string or list of strings")
         return cls(
             name,
+            root_nodes,
             shared_token_queries,
             scope_queries,
             comment_queries,
@@ -106,34 +113,23 @@ class LanguageConfig:
 
         return "\n".join(lines)
 
+    def get_root_node_name(self, language_name: str) -> str:
+        if language_name not in self.language_configs:
+            return ""
+        return self.language_configs[language_name].root_node_name
+
     def get_source(
         self,
         query_type: Literal[
-            "scope",
             "named_scope",
-            "structural_scope",
             "comment",
             "token_general",
             "token_definition",
         ],
     ):
-        if query_type == "scope":
-            named_lines = self.__get_source(
-                self.scope_queries.named_scope, "named_scope"
-            )
-            structural_lines = self.__get_source(
-                self.scope_queries.structural_scope, "structural_scope"
-            )
-            return "\n".join(named_lines + structural_lines)
         if query_type == "named_scope":
             return "\n".join(
                 self.__get_source(self.scope_queries.named_scope, "named_scope")
-            )
-        if query_type == "structural_scope":
-            return "\n".join(
-                self.__get_source(
-                    self.scope_queries.structural_scope, "structural_scope"
-                )
             )
         if query_type == "comment":
             return "\n".join(
@@ -181,12 +177,10 @@ class QueryManager:
         for name, cfg in self._language_configs.items():
             shared_classes = len(cfg.shared_token_queries)
             named_scope_count = len(cfg.scope_queries.named_scope)
-            structural_scope_count = len(cfg.scope_queries.structural_scope)
             comment_count = len(cfg.comment_queries)
             lang_summaries[name] = {
                 "shared_classes": shared_classes,
                 "named_scopes": named_scope_count,
-                "structural_scopes": structural_scope_count,
                 "comment_queries": comment_count,
                 "share_tokens_between_files": cfg.share_tokens_between_files,
             }
@@ -286,9 +280,7 @@ class QueryManager:
         language_name: str,
         tree_root: Node,
         query_type: Literal[
-            "scope",
             "named_scope",
-            "structural_scope",
             "comment",
             "token_general",
             "token_definition",
@@ -356,9 +348,7 @@ class QueryManager:
         language_name: str,
         tree_root: Node,
         query_type: Literal[
-            "scope",
             "named_scope",
-            "structural_scope",
             "comment",
             "token_general",
             "token_definition",
@@ -425,6 +415,9 @@ class QueryManager:
         if lang_config is None:
             raise ValueError(f"Missing config for language '{language_name}'")
         return lang_config
+
+    def get_root_node_name(self, language_name: str) -> set[str]:
+        return self.get_config(language_name).root_nodes
 
     @staticmethod
     def create_qualified_symbol(

@@ -40,9 +40,6 @@ class Signature:
     extern_old_symbols: set[
         str
     ]  # Symbols referenced but not defined in the old version
-    new_named_structural_scopes: set[str]
-    old_named_structural_scopes: set[str]
-    # scopes that can only really be used for structural links
     new_structural_scopes: set[str]
     old_structural_scopes: set[str]
     # FQNs constructed from named scopes, used for grouping
@@ -54,7 +51,7 @@ class Signature:
         # combine multiple signatures into one big one
         if len(signatures) == 0:
             return Signature(
-                set(), set(), set(), set(), set(), set(), set(), set(), set(), set()
+                set(), set(), set(), set(), set(), set(), set(), set(), set()
             )
 
         base_sig = next(sig for sig in signatures if sig is not None)
@@ -64,8 +61,6 @@ class Signature:
         base_extern_new_symbols = set(base_sig.extern_new_symbols)
         base_extern_old_symbols = set(base_sig.extern_old_symbols)
 
-        base_new_named_structural_scopes = set(base_sig.new_named_structural_scopes)
-        base_old_named_structural_scopes = set(base_sig.old_named_structural_scopes)
         base_new_structural_scopes = set(base_sig.new_structural_scopes)
         base_old_structural_scopes = set(base_sig.old_structural_scopes)
 
@@ -85,8 +80,6 @@ class Signature:
             base_extern_new_symbols.update(s.extern_new_symbols)
             base_extern_old_symbols.update(s.extern_old_symbols)
 
-            base_new_named_structural_scopes.update(s.new_named_structural_scopes)
-            base_old_named_structural_scopes.update(s.old_named_structural_scopes)
             base_new_structural_scopes.update(s.new_structural_scopes)
             base_old_structural_scopes.update(s.old_structural_scopes)
 
@@ -100,8 +93,6 @@ class Signature:
             def_old_symbols=base_old_symbols,
             extern_new_symbols=base_extern_new_symbols,
             extern_old_symbols=base_extern_old_symbols,
-            new_named_structural_scopes=base_new_named_structural_scopes,
-            old_named_structural_scopes=base_old_named_structural_scopes,
             new_structural_scopes=base_new_structural_scopes,
             old_structural_scopes=base_old_structural_scopes,
             new_fqns=base_new_fqns,
@@ -252,8 +243,6 @@ class ChunkLabeler:
         extern_old_symbols_acc = set()
         extern_new_symbols_acc = set()
 
-        new_named_structural_scopes_acc = set()
-        old_named_structural_scopes_acc = set()
         new_structural_scopes_acc = set()
         old_structural_scopes_acc = set()
 
@@ -271,7 +260,6 @@ class ChunkLabeler:
                 (
                     def_old_symbols,
                     extern_old_symbols,
-                    old_named_structural_scopes,
                     old_structural_scopes,
                     old_fqns,
                 ) = ChunkLabeler._get_signature_for_line_range(
@@ -280,7 +268,6 @@ class ChunkLabeler:
                 languages.add(old_context.parsed_file.detected_language)
                 def_old_symbols_acc.update(def_old_symbols)
                 extern_old_symbols_acc.update(extern_old_symbols)
-                old_named_structural_scopes_acc.update(old_named_structural_scopes)
                 old_structural_scopes_acc.update(old_structural_scopes)
                 old_fqns_acc.update(old_fqns)
 
@@ -293,7 +280,6 @@ class ChunkLabeler:
                 (
                     def_new_symbols,
                     extern_new_symbols,
-                    new_named_structural_scopes,
                     new_structural_scopes,
                     new_fqns,
                 ) = ChunkLabeler._get_signature_for_line_range(
@@ -302,7 +288,6 @@ class ChunkLabeler:
                 languages.add(new_context.parsed_file.detected_language)
                 def_new_symbols_acc.update(def_new_symbols)
                 extern_new_symbols_acc.update(extern_new_symbols)
-                new_named_structural_scopes_acc.update(new_named_structural_scopes)
                 new_structural_scopes_acc.update(new_structural_scopes)
                 new_fqns_acc.update(new_fqns)
 
@@ -316,7 +301,6 @@ class ChunkLabeler:
                 (
                     def_new_symbols_acc,
                     extern_new_symbols_acc,
-                    new_named_structural_scopes_acc,
                     new_structural_scopes_acc,
                     new_fqns_acc,
                 ) = ChunkLabeler._get_signature_for_line_range(
@@ -333,7 +317,6 @@ class ChunkLabeler:
                 (
                     def_old_symbols_acc,
                     extern_old_symbols_acc,
-                    old_named_structural_scopes_acc,
                     old_structural_scopes_acc,
                     old_fqns_acc,
                 ) = ChunkLabeler._get_signature_for_line_range(
@@ -347,8 +330,6 @@ class ChunkLabeler:
             def_old_symbols=def_old_symbols_acc,
             extern_new_symbols=extern_new_symbols_acc,
             extern_old_symbols=extern_old_symbols_acc,
-            new_named_structural_scopes=new_named_structural_scopes_acc,
-            old_named_structural_scopes=old_named_structural_scopes_acc,
             new_structural_scopes=new_structural_scopes_acc,
             old_structural_scopes=old_structural_scopes_acc,
             new_fqns=new_fqns_acc,
@@ -358,7 +339,7 @@ class ChunkLabeler:
     @staticmethod
     def _get_signature_for_line_range(
         start_line: int, end_line: int, file_name: str, context: AnalysisContext
-    ) -> tuple[set[str], set[str], set[str], set[str], set[str]]:
+    ) -> tuple[set[str], set[str], set[str], set[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -368,12 +349,11 @@ class ChunkLabeler:
             context: AnalysisContext containing symbol map and scope map
 
         Returns:
-            Tuple of (defined symbols, external symbols, named scopes, structural scopes, fqns) for the specified line range.
+            Tuple of (defined symbols, external symbols, structural scopes, fqns) for the specified line range.
             FQNs are constructed by tracking scope changes line-by-line to handle chunks spanning multiple scopes.
         """
         defined_range_symbols = set()
         extern_range_symbols = set()
-        named_structural_scopes_range = set()
         structural_scopes_range = set()
         fqns = set()  # Set of fully qualified names
 
@@ -382,7 +362,6 @@ class ChunkLabeler:
             return (
                 defined_range_symbols,
                 extern_range_symbols,
-                named_structural_scopes_range,
                 structural_scopes_range,
                 fqns,
             )
@@ -439,13 +418,6 @@ class ChunkLabeler:
 
             prev_scopes_list = current_scopes_list
 
-            # Collect structural scopes
-            named_structural_scopes = (
-                context.scope_map.structural_named_scope_lines.get(line)
-            )
-            if named_structural_scopes:
-                named_structural_scopes_range.update(named_structural_scopes)
-
             structural_scopes = context.scope_map.structural_scope_lines.get(line)
             if structural_scopes:
                 structural_scopes_range.update(structural_scopes)
@@ -459,7 +431,6 @@ class ChunkLabeler:
         return (
             defined_range_symbols,
             extern_range_symbols,
-            named_structural_scopes_range,
             structural_scopes_range,
             fqns,
         )

@@ -27,7 +27,6 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 class ScopeMap:
     """Maps each line number to scope inside it."""
 
-    structural_named_scope_lines: dict[int, set[str]]
     structural_scope_lines: dict[int, set[str]]
     # Ordered list of named scopes per line, sorted by start position (for FQN construction)
     semantic_named_scopes: dict[int, list[str]]
@@ -47,28 +46,17 @@ class ScopeMapper:
         line_ranges: list[tuple[int, int]],
     ) -> ScopeMap:
         """
-
         PASS 1: Traverses the AST to build a map of line numbers to their scope.
 
-
         Args:
-
             language_name: The programming language (e.g., "python", "javascript")
-
             root_node: The root node of the parsed AST
-
             file_name: Name of the file being processed (for debugging/context)
-
             line_ranges: list of tuples (start_line, end_line), to filter the tree sitter queries for a file
 
-
         Returns:
-
             ScopeMap containing the mapping of line numbers to named and structural scope names
-
         """
-
-        line_to_named_scope: dict[int, set[str]] = {}
         line_to_structural_scope: dict[int, set[str]] = {}
         # Track named scopes with their start positions for ordering
         line_to_named_scope_with_pos: dict[int, list[tuple[int, str]]] = {}
@@ -108,28 +96,42 @@ class ScopeMapper:
                         (scope_node.start_byte, fqn_name)
                     )
 
-        # Run structural_scope queries using the query manager
-        scope_captures = self.query_manager.run_query_captures(
-            language_name,
-            root_node,
-            query_type="scope",
-            line_ranges=line_ranges,
-        )
+        # Manual traversal for structural scopes: any multi-line node (except root)
+        root_nodes = self.query_manager.get_root_node_name(language_name)
+        file_name_str = file_name.decode("utf8", errors="replace")
 
-        # Process structural_scope captures
-        if "structural_scope" in scope_captures:
-            for node in scope_captures["structural_scope"]:
-                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}"
+        def traverse(node: Node):
+            # Check if node intersects with any line range
+            node_start = node.start_point[0]
+            node_end = node.end_point[0]
 
-                for line_num in range(node.start_point[0], node.end_point[0] + 1):
+            intersects = False
+            for r_start, r_end in line_ranges:
+                if not (node_end < r_start or node_start > r_end):
+                    intersects = True
+                    break
+
+            if not intersects:
+                return
+
+            # Skip root node and single-line nodes
+            # We check both node.parent is None and the explicit root_node_name from config
+            is_root = node.type.lower() in root_nodes
+            is_multi_line = node_start != node_end
+
+            if not is_root and is_multi_line:
+                scope_name = f"{file_name_str}:{node.id}"
+                for line_num in range(node_start, node_end + 1):
                     line_to_structural_scope.setdefault(line_num, set()).add(scope_name)
+                # Optimization: Stop early if we found a multi-line node
+                # because all its children will be grouped by this node's range anyway.
+                return
 
-        if "named_scope" in scope_captures:
-            for node in scope_captures["named_scope"]:
-                scope_name = f"{file_name.decode('utf8', errors='replace')}:{node.id}"
+            # Recurse into children
+            for child in node.children:
+                traverse(child)
 
-                for line_num in range(node.start_point[0], node.end_point[0] + 1):
-                    line_to_named_scope.setdefault(line_num, set()).add(scope_name)
+        traverse(root_node)
 
         # Build sorted named scope mapping
         line_to_named_scope_sorted: dict[int, list[str]] = {}
@@ -141,7 +143,6 @@ class ScopeMapper:
             line_to_named_scope_sorted[line_num] = sorted_scopes
 
         return ScopeMap(
-            structural_named_scope_lines=line_to_named_scope,
             structural_scope_lines=line_to_structural_scope,
             semantic_named_scopes=line_to_named_scope_sorted,
         )

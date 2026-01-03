@@ -216,6 +216,7 @@ class GlobalContext:
     git_commands: GitCommands
     config: GlobalConfig
     _model: CodeStoryAdapter | None = None
+    _embedder = None
 
     def get_model(self) -> CodeStoryAdapter | None:
         """Lazy-loaded getter for the model instance."""
@@ -235,6 +236,16 @@ class GlobalContext:
                 )
             )
         return self._model
+
+    def get_embedder(self):
+        """Lazy-loaded getter for the embedder instance."""
+        from codestory.core.embeddings.embedder import Embedder
+
+        if self._embedder is not None:
+            return self._embedder
+
+        self._embedder = Embedder(self.config.custom_embedding_model)
+        return self._embedder
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):

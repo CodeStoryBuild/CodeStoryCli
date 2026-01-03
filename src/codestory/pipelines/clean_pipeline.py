@@ -354,10 +354,16 @@ class CleanPipeline:
         author_date = lines[2]
         message = "\n".join(lines[3:])
 
-        with tempfile.NamedTemporaryFile() as index_path:
+        # Create a temporary index file to build the backup commit
+        temp_index_fd, temp_index_path = tempfile.mkstemp(
+            prefix="codestory_clean_index_"
+        )
+        os.close(temp_index_fd)
+
+        try:
             # Prepare the environment for git commands
             cmd_env = os.environ.copy()
-            cmd_env["GIT_INDEX_FILE"] = index_path
+            cmd_env["GIT_INDEX_FILE"] = temp_index_path
 
             # 1. Read the 3-way merge into the TEMP index
             # read-tree -i -m --aggressive <base> <current> <target>
@@ -399,6 +405,10 @@ class CleanPipeline:
             )
 
             return new_commit_hash.strip() if new_commit_hash else None
+        finally:
+            # Cleanup the temporary index file
+            if os.path.exists(temp_index_path):
+                os.unlink(temp_index_path)
 
     def _get_linear_history(self, start_from: str | None = None) -> list[str]:
         """

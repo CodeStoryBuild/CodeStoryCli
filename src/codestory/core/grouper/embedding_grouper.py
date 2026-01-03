@@ -152,10 +152,11 @@ class EmbeddingGrouper(LogicalGrouper):
         max_tokens: int = 4096,
         custom_embedding_model: str | None = None,
         cluster_strictness: float = 0.5,
+        embedder: Embedder | None = None,
     ):
         self.model = model
         self.batching_strategy = batching_strategy
-        self.embedder = Embedder(custom_embedding_model)
+        self.embedder = embedder or Embedder(custom_embedding_model)
         self.clusterer = Clusterer(cluster_strictness)
         self.patch_cutoff_chars = 1000
         self.max_tokens = max_tokens
@@ -587,7 +588,7 @@ class EmbeddingGrouper(LogicalGrouper):
         Main entry point.
         """
         from loguru import logger
-        
+
         if not (chunks or immut_chunks):
             return []
 

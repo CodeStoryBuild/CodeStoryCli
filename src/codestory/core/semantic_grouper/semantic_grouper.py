@@ -228,9 +228,7 @@ class SemanticGrouper:
                 symbol_to_chunks[symbol].append(i)
             # Convert named scope lists to sets for union operation
             for scope in (
-                sig.total_signature.new_named_structural_scopes
-                | sig.total_signature.old_named_structural_scopes
-                | sig.total_signature.new_structural_scopes
+                sig.total_signature.new_structural_scopes
                 | sig.total_signature.old_structural_scopes
             ):
                 scope_to_chunks[scope].append(i)

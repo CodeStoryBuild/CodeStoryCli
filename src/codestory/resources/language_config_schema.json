@@ -8,6 +8,10 @@
             "type": "object",
             "description": "Configuration for a specific language, identified by its name (e.g., 'python').",
             "properties": {
+                "root_node_name": {
+                    "type": "string",
+                    "description": "The name of the root node in the tree-sitter AST for this language (e.g., 'module' for Python, 'program' for JavaScript)."
+                },
                 "shared_token_queries": {
                     "type": "object",
                     "description": "Defines classes to join tokens semantically. For example, if a variable definition is changed in one diff, other diffs that use that variable can be grouped together. Each property within this object represents a distinct semantic class of tokens.",
@@ -40,7 +44,7 @@
                 },
                 "scope_queries": {
                     "type": "object",
-                    "description": "Tree-sitter queries that match entire scope blocks. Contains two categories: named scopes (with identifiable names) and structural scopes (control flow/expressions).",
+                    "description": "Tree-sitter queries that match entire scope blocks. Contains named scopes (with identifiable names).",
                     "properties": {
                         "named_scope": {
                             "type": "array",
@@ -49,17 +53,9 @@
                                 "type": "string",
                                 "description": "A tree-sitter query with a '@placeholder' capture."
                             }
-                        },
-                        "structural_scope": {
-                            "type": "array",
-                            "description": "Tree-sitter queries for structural scopes without meaningful names (e.g., if-statements, loops, expressions).",
-                            "items": {
-                                "type": "string",
-                                "description": "A tree-sitter query with a '@placeholder' capture."
-                            }
                         }
                     },
-                    "required": ["named_scope", "structural_scope"]
+                    "required": ["named_scope"]
                 },
                 "comment_queries": {
                     "type": "array",
@@ -76,6 +72,7 @@
                 }
             },
             "required": [
+                "root_node_name",
                 "shared_token_queries",
                 "scope_queries",
                 "comment_queries",
