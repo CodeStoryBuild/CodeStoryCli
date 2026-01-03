@@ -1,6 +1,4 @@
-import os
 import typer
-import inquirer
 from rich.console import Console
 from dotenv import load_dotenv
 from vibe.core.chunker.simple_chunker import SimpleChunker

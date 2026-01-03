@@ -139,23 +139,70 @@ class DiffChunk(Groupable):
         """
         A list of the most granular, yet still valid, DiffChunks.
         """
-        # cannot split non-pure hunks
+        # cannot split non-content hunks
         if not self.has_content:
             return [self]
 
-        has_additions = any(isinstance(c, Addition) for c in self.parsed_content)
-        has_removals = any(isinstance(c, Removal) for c in self.parsed_content)
-
-        # cannot split mixed chunks
-        if has_additions and has_removals:
+        # Group by relative positions for mixed chunks
+        if self.old_start is None or self.new_start is None:
             return [self]
 
-        # pure chunks so we can do whatever
+        removals = [item for item in self.parsed_content if isinstance(item, Removal)]
+        additions = [item for item in self.parsed_content if isinstance(item, Addition)]
+
+        # Pure chunks (only additions or only removals)
+        if not (removals and additions):
+            final_chunks = []
+            for line in self.parsed_content:
+                sub_chunk = self.from_parsed_content_slice(
+                    self.old_file_path, self.new_file_path, self.file_mode, [line]
+                )
+                final_chunks.append(sub_chunk)
+            return final_chunks
+
+        # Mixed chunks (both additions and removals)
+        # Group by relative position to match modifications
+        rel_removals = {(r.line_number - self.old_start): r for r in removals}
+        rel_additions = {(a.line_number - self.new_start): a for a in additions}
+
+        # All relative positions
+        all_positions = sorted(set(rel_removals.keys()) | set(rel_additions.keys()))
+
         final_chunks = []
-        for line in self.parsed_content:
-            sub_chunk = self.from_parsed_content_slice(
-                self.old_file_path, self.new_file_path, self.file_mode, [line]
-            )
+        for pos in all_positions:
+            chunk_content = []
+            if pos in rel_removals:
+                chunk_content.append(rel_removals[pos])
+            if pos in rel_additions:
+                chunk_content.append(rel_additions[pos])
+
+            # Calculate appropriate start positions for this atomic chunk
+            if len(chunk_content) == 1:
+                # Pure addition or removal
+                item = chunk_content[0]
+                if isinstance(item, Addition):
+                    sub_chunk = self.from_parsed_content_slice(
+                        self.old_file_path,
+                        self.new_file_path,
+                        self.file_mode,
+                        chunk_content,
+                    )
+                else:  # Removal
+                    sub_chunk = self.from_parsed_content_slice(
+                        self.old_file_path,
+                        self.new_file_path,
+                        self.file_mode,
+                        chunk_content,
+                    )
+            else:
+                # Matched modification
+                sub_chunk = self.from_parsed_content_slice(
+                    self.old_file_path,
+                    self.new_file_path,
+                    self.file_mode,
+                    chunk_content,
+                )
+
             final_chunks.append(sub_chunk)
 
         return final_chunks
