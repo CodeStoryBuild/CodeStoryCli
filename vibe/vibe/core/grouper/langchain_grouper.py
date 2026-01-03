@@ -7,6 +7,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from .interface import GrouperInterface, Groupable
 from ..data.models import CommitGroup, ProgressCallback
+from ..data.utils import flatten_diff_chunks
 
 
 class ChangeGroup(BaseModel):
@@ -60,10 +61,12 @@ class LangChainGrouper(GrouperInterface):
         changes = []
         for i, chunk in enumerate(chunks):
             # Get the JSON representation of the chunk
+            data = {}
             change = json.loads(chunk.format_json())
+            data["change"] = change
             # Add a unique ID for reference
-            change["chunk_id"] = str(i)
-            changes.append(change)
+            data["chunk_id"] = str(i)
+            changes.append(data)
         return json.dumps({"changes": changes}, indent=2)
 
     def _create_commit_groups(
@@ -143,9 +146,6 @@ class LangChainGrouper(GrouperInterface):
         # Prepare the changes for analysis
         changes_json = self._prepare_changes(chunks)
 
-        if on_progress:
-            on_progress(10)
-
         optional_guidance_message = (
             f"Custom user instructions: {message}" if message else ""
         )
@@ -161,9 +161,6 @@ class LangChainGrouper(GrouperInterface):
             optional_guidance_message=optional_guidance_message,
             changes_json=changes_json,
         )
-
-        if on_progress:
-            on_progress(15)
 
         # Expected number of groups for progress estimation
         estimated_groups = min(

@@ -71,9 +71,7 @@ class DeterministicChunker(ChunkerInterface):
                 sub_chunks.append(chunk_group[0])
             else:
                 # Multiple atomic chunks, wrap in CompositeDiffChunk
-                sub_chunks.append(
-                    CompositeDiffChunk(chunks=chunk_group, _file_path=chunk._file_path)
-                )
+                sub_chunks.append(CompositeDiffChunk(chunks=chunk_group))
 
             # Move to next group
             i = end_idx

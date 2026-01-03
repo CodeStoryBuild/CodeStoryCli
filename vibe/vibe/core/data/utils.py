@@ -91,11 +91,13 @@ def format_content_json(parsed_content) -> str:
         A JSON string representing the structured diff.
     """
     w_moves = detect_moves(parsed_content)
-    simplified_diff = detect_replacements(w_moves)
+    # TODO: replacements are hard to do correcty
+    # Think about if a sliding window is even worth it
+    # simplified_diff = detect_replacements(w_moves)
 
     structured_changes = []
 
-    for change in simplified_diff:
+    for change in w_moves:
         change_dict = {}
 
         if isinstance(change, Addition):
@@ -135,3 +137,17 @@ def format_content_json(parsed_content) -> str:
         structured_changes.append(change_dict)
 
     return structured_changes
+
+
+def flatten_diff_chunks(chunks):
+    from .c_diff_chunk import CompositeDiffChunk
+
+    # flatten composite diff chunks and diff chunks to be only diff chunks
+    primitive_chunks: List["DiffChunk"] = []
+    for chunk in chunks:
+        if isinstance(chunk, CompositeDiffChunk):
+            primitive_chunks.extend(chunk.chunks)
+        else:
+            primitive_chunks.append(chunk)
+
+    return primitive_chunks

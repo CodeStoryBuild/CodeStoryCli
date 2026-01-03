@@ -1,15 +1,17 @@
+from itertools import groupby
 import subprocess
 from typing import List, Optional, Tuple, Union
 import re
 
 from ..data.hunk_wrapper import HunkWrapper
 from ..data.diff_chunk import DiffChunk
+from ..data.c_diff_chunk import CompositeDiffChunk
 from ..git_interface.interface import GitInterface
-from .git_const import DEVNULL
 
 
 # In GitCommands file, update or replace HunkWrapper
 class GitCommands:
+
     def __init__(self, git: GitInterface):
         self.git = git
 
@@ -22,6 +24,7 @@ class GitCommands:
     _RENAME_TO_RE = re.compile(r"^rename to (.+)$")
     _OLD_PATH_RE = re.compile(r"^--- (?:(?:a/)?(.+)|/dev/null)$")
     _NEW_PATH_RE = re.compile(r"^\+\+\+ (?:(?:b/)?(.+)|/dev/null)$")
+    _A_B_PATHS_RE = re.compile(r".*a/(.+?) b/(.+)")
 
     def get_working_diff_with_renames(
         self, target: Optional[str] = None, similarity: int = 50
@@ -158,18 +161,14 @@ class GitCommands:
         # index 0000000..e69de29
         # no --- or +++ lines
         if not old_path and not new_path:
-
-            # The first line should be in the format "a/path b/path"
-            first_line_parts = lines[0].split(" ")
-            if (
-                len(first_line_parts) < 2
-                or not first_line_parts[0].startswith("a/")
-                or not first_line_parts[1].startswith("b/")
-            ):
-                return (None, None, file_mode)  # Unrecognized format
-
-            path_a = first_line_parts[0][2:]
-            path_b = first_line_parts[1][2:]
+            # Use regex to robustly extract a/ and b/ paths from the first line
+            path_a, path_b = None, None
+            for line in lines:
+                m = self._A_B_PATHS_RE.match(lines[0])
+                if not m:
+                    return (None, None, file_mode)  # Unrecognized format
+                path_a = m.group(1)
+                path_b = m.group(2)
 
             # Use other metadata clues from the block to determine the operation
             block_text = "\n".join(lines)
@@ -279,7 +278,78 @@ class GitCommands:
         for hunk in hunks:
             chunks.append(DiffChunk.from_hunk(hunk))
 
-        return chunks
+        # Merge overlapping or touching chunks into CompositeDiffChunks
+        merged = self.merge_overlapping_chunks(chunks)
+
+        return merged
+
+    def merge_overlapping_chunks(
+        self, chunks: List[DiffChunk]
+    ) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
+        """
+        Merge DiffChunks that are not disjoint (i.e., overlapping or touching)
+        into CompositeDiffChunks, grouped per canonical path (file).
+
+        A merge occurs if two chunks within the same file overlap or touch
+        in either their old or new line ranges.
+
+        Returns:
+            A list of DiffChunk and CompositeDiffChunk objects, each representing
+            a disjoint edit region.
+        """
+        if not chunks:
+            return []
+
+        # Sort once globally by canonical path, then by old/new start lines
+        chunks_sorted = sorted(
+            chunks,
+            key=lambda c: (
+                c.canonical_path(),
+                c.old_start if c.old_start is not None else -1,
+                c.new_start if c.new_start is not None else -1,
+            ),
+        )
+
+        merged_results: List[Union[DiffChunk, "CompositeDiffChunk"]] = []
+
+        # Helper for overlap/touch logic
+        def overlaps_or_touches(a: DiffChunk, b: DiffChunk) -> bool:
+            a_old_end = (a.old_start or 0) + a.old_len()
+            b_old_start = b.old_start or 0
+
+            a_new_end = (a.new_start or 0) + a.new_len()
+            b_new_start = b.new_start or 0
+
+            return (a_old_end >= b_old_start) or (a_new_end >= b_new_start)
+
+        # Group by canonical path (so merges only happen within same file)
+        for path, group in groupby(chunks_sorted, key=lambda c: c.canonical_path()):
+            file_chunks = list(group)
+            if not file_chunks:
+                continue
+
+            current_group: List[DiffChunk] = [file_chunks[0]]
+
+            for h in file_chunks[1:]:
+                last = current_group[-1]
+                if overlaps_or_touches(last, h):
+                    current_group.append(h)
+                else:
+                    # finalize group
+                    if len(current_group) == 1:
+                        merged_results.append(current_group[0])
+                    else:
+                        merged_results.append(CompositeDiffChunk(current_group.copy()))
+                    current_group = [h]
+
+            # finalize last group (if present)
+            if current_group:
+                if len(current_group) == 1:
+                    merged_results.append(current_group[0])
+                else:
+                    merged_results.append(CompositeDiffChunk(current_group))
+
+        return merged_results
 
     def get_current_branch(self) -> str:
         """

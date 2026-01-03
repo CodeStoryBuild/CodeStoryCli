@@ -1,6 +1,6 @@
 from typing import List, Callable
 from .interface import ChunkerInterface
-from ..data.models import DiffChunk
+from ..data.diff_chunk import DiffChunk
 from ..data.c_diff_chunk import CompositeDiffChunk
 
 
@@ -34,7 +34,7 @@ class PredicateChunker(ChunkerInterface):
                         else:
                             result.append(
                                 CompositeDiffChunk(
-                                    chunks=current_group, _file_path=chunk._file_path
+                                    chunks=current_group,
                                 )
                             )
                         current_group = []
@@ -49,7 +49,7 @@ class PredicateChunker(ChunkerInterface):
                         else:
                             result.append(
                                 CompositeDiffChunk(
-                                    chunks=separator_group, _file_path=chunk._file_path
+                                    chunks=separator_group,
                                 )
                             )
                         separator_group = []
@@ -64,7 +64,7 @@ class PredicateChunker(ChunkerInterface):
                 else:
                     result.append(
                         CompositeDiffChunk(
-                            chunks=separator_group, _file_path=chunk._file_path
+                            chunks=separator_group,
                         )
                     )
 
@@ -74,7 +74,7 @@ class PredicateChunker(ChunkerInterface):
                 else:
                     result.append(
                         CompositeDiffChunk(
-                            chunks=current_group, file_path=chunk._file_path
+                            chunks=current_group,
                         )
                     )
 

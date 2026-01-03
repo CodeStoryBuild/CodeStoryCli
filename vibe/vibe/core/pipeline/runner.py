@@ -1,9 +1,8 @@
-import subprocess
 from typing import List
 from rich.progress import Progress
 from rich.console import Console
 
-from vibe.core.data import models
+from ..data.c_diff_chunk import CompositeDiffChunk
 from ..git_interface.interface import GitInterface
 from ..commands.git_commands import GitCommands
 from ..synthesizer.git_synthesizer import GitSynthesizer
@@ -34,7 +33,6 @@ class AIGitPipeline:
 
         # Step 0: clean working area
         if self.commands.need_reset():
-            print("needs reset")
             unstage = inquirer.confirm(
                 "Staged changes detected, you must unstage all changes. Do you accept?",
                 default=False,
@@ -49,7 +47,6 @@ class AIGitPipeline:
                 return None
 
         if self.commands.need_track_untracked(target):
-            print("needs track untracked")
             track = inquirer.confirm(
                 f'Untracked files detected within "{target}"  Do you want to track these files?',
                 default=False,
@@ -66,25 +63,18 @@ class AIGitPipeline:
 
             raw_diff: List[DiffChunk] = self.commands.get_processed_diff(target)
 
-            if not chunks_disjoint(raw_diff):
-                raise RuntimeError("initial diff chunks are not disjoint!")
-            else:
-                for chunk in raw_diff:
-                    print("Chunk status right from diff")
-                    print(chunk.format_json())
-
             p.advance(tr, 1)
 
             ck = p.add_task("Chunking Diff", total=1)
 
-            chunks: List[DiffChunk] = self.chunker.chunk(raw_diff)
-
-            if not chunks_disjoint(chunks):
-                raise RuntimeError("Chunked chunks are not disjoint!")
-            else:
-                for chunk in chunks:
-                    print("chunk status after splitting chunks further")
-                    print(chunk.format_json())
+            # composite diff chunks are not able to be split further
+            split_chunks: List[DiffChunk] = self.chunker.chunk(
+                [chunk for chunk in raw_diff if isinstance(chunk, DiffChunk)]
+            )
+            # add back in the composite diff chunks
+            split_chunks.extend(
+                [chunk for chunk in raw_diff if isinstance(chunk, CompositeDiffChunk)]
+            )
 
             p.advance(ck, 1)
 
@@ -95,23 +85,11 @@ class AIGitPipeline:
                 p.update(clssfy, completed=percent / 100)
 
             grouped: List[CommitGroup] = self.grouper.group_chunks(
-                chunks, message, on_progress=on_progress
+                split_chunks, message, on_progress=on_progress
             )
 
             # Ensure progress bar is complete at the end
             p.update(clssfy, completed=1)
-
-        full_chunks = []
-
-        for group in grouped:
-            full_chunks.extend(group.chunks)
-
-        if not chunks_disjoint(full_chunks):
-            raise RuntimeError("Grouped chunks are not disjoint!")
-        else:
-            for chunk in full_chunks:
-                print("chunk status after grouping chunks")
-                print(chunk.format_json())
 
         console = Console()
 
@@ -135,10 +113,14 @@ class AIGitPipeline:
                     affected_files.add(chunk.canonical_path())
             console.print(f"[bold]Affected Files:[/bold] {', '.join(affected_files)}")
 
-            # for chunk in group.chunks:
-            #     console.print(f"[bold]File:[/bold] {chunk.file_path}")
-            #     console.print(f"[bold]AI Diff JSON:[/bold]")
-            #     console.print(chunk.format_json())
+            for chunk in group.chunks:
+                console.print(f"[bold]File:[/bold] {chunk.canonical_path()}")
+                console.print(f"[bold]AI Diff JSON:[/bold]")
+                content = chunk.format_json()
+                if len(content) > 100:
+                    console.print(content[:100] + "\n...(truncated)...")
+                else:
+                    console.print(content)
 
             accept = inquirer.confirm(f"Accept this group?", default=True)
             if accept:

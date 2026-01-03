@@ -57,7 +57,9 @@ class GitSynthesizer:
         output_bytes = self._run_git_binary(*args, **kwargs)
         return output_bytes.decode("utf-8", errors="replace").strip()
 
-    def _generate_unified_diff(self, chunks: List[DiffChunk]) -> Dict[str, str]:
+    def _generate_unified_diff(
+        self, chunks: List[DiffChunk], total_chunks_per_file: Dict[str, int]
+    ) -> Dict[str, str]:
         """
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file
         """
@@ -77,6 +79,9 @@ class GitSynthesizer:
                 )
                 continue
 
+            current_count = len(file_chunks)
+            total_expected = total_chunks_per_file.get(file_path, current_count)
+
             patch_lines = []
 
             # single chunk for metadata extraction
@@ -91,10 +96,7 @@ class GitSynthesizer:
             # multiple chunks means it must be standard chunks
             # a single chunk can be different types
             if multiple_chunks:
-                # TMP: check that chunks are of standard type
-                assert all(
-                    c.is_standard_modification for c in file_chunks
-                ), "Non-standard chunks found in multi-chunk file group"
+                # TMP: check that if there are multiple chunks, its split content
                 assert all(
                     c.has_content for c in file_chunks
                 ), "Standard chunk does not have content!"
@@ -104,26 +106,47 @@ class GitSynthesizer:
                 assert all(
                     c.new_file_path == new_file_path for c in file_chunks
                 ), "Standard chunk new file paths dont match!"
+                assert all(
+                    c.is_file_addition == single_chunk.is_file_addition
+                    for c in file_chunks
+                ), "Standard chunk file addition flags dont match!"
+                assert all(
+                    c.is_file_deletion == single_chunk.is_file_deletion
+                    for c in file_chunks
+                ), "Standard chunk file deletion flags dont match!"
+                assert all(
+                    c.is_file_rename == single_chunk.is_file_rename for c in file_chunks
+                ), "Standard chunk file rename flags dont match!"
 
+            if single_chunk.is_standard_modification:
                 patch_lines.append(
                     "diff --git a/{file_path} b/{file_path}".format(
                         file_path=new_file_path,
                     )
                 )
-            else:
-                if single_chunk.is_file_rename:
+            elif single_chunk.is_file_rename:
+                patch_lines.append(
+                    "diff --git a/{old_path} b/{new_path}".format(
+                        old_path=old_file_path, new_path=new_file_path
+                    )
+                )
+                patch_lines.append(
+                    "rename from {old_path}".format(old_path=old_file_path)
+                )
+                patch_lines.append(
+                    "rename to {new_path}".format(new_path=new_file_path)
+                )
+            elif single_chunk.is_file_deletion:
+                # possible edge case: file deletion with multiple chunks
+                if current_count < total_expected:
+                    # in this case, we treat it as a standard modification
                     patch_lines.append(
-                        "diff --git a/{old_path} b/{new_path}".format(
-                            old_path=old_file_path, new_path=new_file_path
+                        "diff --git a/{file_path} b/{file_path}".format(
+                            file_path=old_file_path,
                         )
                     )
-                    patch_lines.append(
-                        "rename from {old_path}".format(old_path=old_file_path)
-                    )
-                    patch_lines.append(
-                        "rename to {new_path}".format(new_path=new_file_path)
-                    )
-                elif single_chunk.is_file_deletion:
+                else:
+                    # we have all deletion chunks, so we can treat it as a deletion
                     patch_lines.append(
                         "diff --git a/{file_path} b/{file_path}".format(
                             file_path=old_file_path,
@@ -134,30 +157,37 @@ class GitSynthesizer:
                             mode=single_chunk.file_mode or "100644"
                         )
                     )
-                elif single_chunk.is_file_addition:
-                    patch_lines.append(
-                        "diff --git a/{file_path} b/{file_path}".format(
-                            file_path=new_file_path,
-                        )
+            elif single_chunk.is_file_addition:
+                patch_lines.append(
+                    "diff --git a/{file_path} b/{file_path}".format(
+                        file_path=new_file_path,
                     )
-                    patch_lines.append(
-                        "new file mode {mode}".format(
-                            mode=single_chunk.file_mode or "100644"
-                        )
+                )
+                patch_lines.append(
+                    "new file mode {mode}".format(
+                        mode=single_chunk.file_mode or "100644"
                     )
-                elif single_chunk.is_standard_modification:
-                    patch_lines.append(
-                        "diff --git a/{file_path} b/{file_path}".format(
-                            file_path=new_file_path,
-                        )
+                )
+            elif single_chunk.is_standard_modification:
+                patch_lines.append(
+                    "diff --git a/{file_path} b/{file_path}".format(
+                        file_path=new_file_path,
                     )
+                )
 
             old_file_header = (
                 f"a/{old_file_path}" if old_file_path is not None else DEVNULL
             )
+
             new_file_header = (
                 f"b/{new_file_path}" if new_file_path is not None else DEVNULL
             )
+
+            # second part of deletion edge case
+            # if we are in partial deletion state, new_file_header should act like a standard_change
+            # that is it should be old_file_header
+            if single_chunk.is_file_deletion and current_count < total_expected:
+                new_file_header = old_file_header
 
             patch_lines.append(
                 "--- {old_file_header}".format(old_file_header=old_file_header)
@@ -166,7 +196,7 @@ class GitSynthesizer:
                 "+++ {new_file_header}".format(new_file_header=new_file_header)
             )
 
-            # start adding hunks
+            terminator_needed = True
 
             if not multiple_chunks and not single_chunk.has_content:
                 patch_lines.append("@@ -0,0 +0,0 @@")
@@ -177,35 +207,61 @@ class GitSynthesizer:
                     key=lambda c: c.line_anchor,
                 )
 
-                # go over each chunk and generate the hunk headers and content
-                for sorted_chunk in sorted_file_chunks:
-                    removals = [
-                        p for p in sorted_chunk.parsed_content if isinstance(p, Removal)
-                    ]
-                    additions = [
-                        p
-                        for p in sorted_chunk.parsed_content
-                        if isinstance(p, Addition)
-                    ]
+                if single_chunk.is_file_addition:
+                    # file additions are handled differently
+                    # since they are a new file, we need to merge all chunks into a new contigous hunk
+                    additions = []
+                    for sorted_chunk in sorted_file_chunks:
+                        additions.extend(sorted_chunk.parsed_content)
 
-                    old_len = len(removals)
-                    new_len = len(additions)
-
-                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@"
+                    hunk_header = f"@@ -{0},{0} +{1},{len(additions)} @@"
                     patch_lines.append(hunk_header)
 
-                    for item in sorted_chunk.parsed_content:
-                        if isinstance(item, Removal):
-                            patch_lines.append(f"-{item.content}")
-                        elif isinstance(item, Addition):
-                            patch_lines.append(f"+{item.content}")
+                    for item in additions:
+                        patch_lines.append(f"+{item.content}")
 
-            patches[file_path] = "\n".join(patch_lines) + "\n"
+                else:
+                    # go over each chunk and generate the hunk headers and content
+                    for sorted_chunk in sorted_file_chunks:
+                        removals = [
+                            p
+                            for p in sorted_chunk.parsed_content
+                            if isinstance(p, Removal)
+                        ]
+                        additions = [
+                            p
+                            for p in sorted_chunk.parsed_content
+                            if isinstance(p, Addition)
+                        ]
+
+                        old_len = len(removals)
+                        new_len = len(additions)
+
+                        hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@"
+                        patch_lines.append(hunk_header)
+
+                        for item in sorted_chunk.parsed_content:
+                            if isinstance(item, Removal):
+                                patch_lines.append(f"-{item.content}")
+                            elif isinstance(item, Addition):
+                                if item.content == "\ No newline at end of file":
+                                    # special terminator patch
+                                    patch_lines.append(f"{item.content}")
+                                    terminator_needed = False
+                                else:
+                                    patch_lines.append(f"+{item.content}")
+
+            patches[file_path] = "\n".join(patch_lines) + (
+                "\n" if terminator_needed else ""
+            )
 
         return patches
 
     def _build_tree_from_changes(
-        self, base_commit_hash: str, chunks_for_commit: List[DiffChunk]
+        self,
+        base_commit_hash: str,
+        chunks_for_commit: List[DiffChunk],
+        total_chunks_per_file: Dict[str, int],
     ) -> str:
         """
         Creates a new Git tree object by applying a specific set of changes
@@ -220,7 +276,9 @@ class GitSynthesizer:
                     "worktree", "add", "--detach", str(worktree_path), base_commit_hash
                 )
 
-                patches = self._generate_unified_diff(chunks_for_commit)
+                patches = self._generate_unified_diff(
+                    chunks_for_commit, total_chunks_per_file
+                )
                 for file_path, patch_content in patches.items():
                     if not patch_content.strip():
                         logger.warning(f"Skipping empty patch for file: {file_path}")
@@ -244,9 +302,10 @@ class GitSynthesizer:
                         )
 
                 # 1. Define a path for a temporary index file INSIDE the worktree.
-                temp_index_path = worktree_path / ".git_temporary_index"
+                temp_index_path = Path(temp_dir) / ".git_temporary_index"
 
-                # 2. Clean up any existing lock file to prevent "File exists" errors
+                # 2. Clean up any existing index files for the temp index.
+                # 2. Clean up any existing lock files for the temp index.
                 temp_index_lock_path = Path(str(temp_index_path) + ".lock")
                 if temp_index_lock_path.exists():
                     temp_index_lock_path.unlink()
@@ -255,10 +314,10 @@ class GitSynthesizer:
                 env = os.environ.copy()
                 env["GIT_INDEX_FILE"] = str(temp_index_path)
 
-                # 4. Run 'git add' with this environment. It will now write to the temp index.
+                # 5. Run 'git add' with this environment. It will now write to the temp index.
                 self._run_git_binary("add", "-A", ".", cwd=worktree_path, env=env)
 
-                # 5. Run 'write-tree' with the SAME environment. It will read from the temp index.
+                # 6. Run 'write-tree' with the SAME environment. It will read from the temp index.
                 new_tree_hash = self._run_git_decoded(
                     "write-tree", cwd=worktree_path, env=env
                 )
@@ -286,6 +345,23 @@ class GitSynthesizer:
         to the ORIGINAL base commit. This ensures each commit build is isolated
         and stateless.
         """
+
+        # Build a global map of total chunk counts per file
+        # this will be used for file deletions where you want to adjust the patch header if not all deletion chunks are present
+        all_chunks = []
+        for group in groups:
+            for chunk in group.chunks:
+                if isinstance(chunk, CompositeDiffChunk):
+                    all_chunks.extend(chunk.chunks)
+                else:
+                    all_chunks.append(chunk)
+
+        total_chunks_per_file = {}
+        for file_path, file_chunks_iter in groupby(
+            sorted(all_chunks, key=lambda c: c.canonical_path()),
+            key=lambda c: c.canonical_path(),
+        ):
+            total_chunks_per_file[file_path] = len(list(file_chunks_iter))
 
         results: List[CommitResult] = []
 
@@ -317,7 +393,7 @@ class GitSynthesizer:
                 #    - ALWAYS apply the full set of accumulated changes.
                 #    This is the key to the stateless, cumulative rebuild.
                 new_tree_hash = self._build_tree_from_changes(
-                    original_base_commit_hash, primitive_chunks
+                    original_base_commit_hash, primitive_chunks, total_chunks_per_file
                 )
 
                 # 5. Create the new commit, chaining it to the previous one we made.

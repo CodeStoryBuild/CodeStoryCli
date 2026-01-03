@@ -12,7 +12,7 @@ Responsibilities:
 
 from typing import List
 from .interface import ChunkerInterface
-from ..data.models import DiffChunk
+from ..data.diff_chunk import DiffChunk
 from ..data.c_diff_chunk import CompositeDiffChunk
 
 
@@ -50,9 +50,7 @@ class MaxLineChunker(ChunkerInterface):
                 # Group atomic chunks into composite chunks
                 for i in range(0, len(atomic_chunks), self.max_chunks):
                     chunk_group = atomic_chunks[i : i + self.max_chunks]
-                    composite = CompositeDiffChunk(
-                        chunks=chunk_group, _file_path=chunk._file_path
-                    )
+                    composite = CompositeDiffChunk(chunks=chunk_group)
                     result.append(composite)
 
         return result

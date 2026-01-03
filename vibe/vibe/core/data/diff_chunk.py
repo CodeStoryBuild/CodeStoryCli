@@ -1,5 +1,9 @@
+from itertools import groupby
 from typing import Optional, List, Union
 from dataclasses import dataclass
+import json
+
+from loguru import logger
 
 from ..data.line_changes import Addition, Removal
 from ..data.hunk_wrapper import HunkWrapper
@@ -75,11 +79,19 @@ class DiffChunk(Groupable):
 
     @property
     def line_anchor(self):
-        """Return some value to get an idea of where the chunk is anchored.
-        Since diff chunks are disjoint, it does not matter if its old or new start
-        """
+        """Return some value to get an idea of where the chunk is anchored."""
 
-        return self.old_start
+        return (self.old_start, self.new_start)
+
+    def old_len(self) -> int:
+        if not self.parsed_content:
+            return 0
+        return sum(1 for c in self.parsed_content if isinstance(c, Removal))
+
+    def new_len(self) -> int:
+        if not self.parsed_content:
+            return 0
+        return sum(1 for c in self.parsed_content if isinstance(c, Addition))
 
     def format_json(self) -> str:
         """
@@ -94,82 +106,59 @@ class DiffChunk(Groupable):
             A JSON string representing the structured diff.
         """
 
-        if self.is_standard_modification:
-            return format_content_json(self.parsed_content)
+        if self.has_content:
+            changes = format_content_json(self.parsed_content)
         elif self.is_file_rename:
-            return {
+            changes = {
                 "type": "Rename",
                 "old_file_path": self.old_file_path,
                 "new_file_path": self.new_file_path,
             }
         elif self.is_file_addition:
-            return {
+            changes = {
                 "type": "FileAddition",
                 "new_file_path": self.new_file_path,
             }
         elif self.is_file_deletion:
-            return {
+            changes = {
                 "type": "FileDeletion",
                 "old_file_path": self.old_file_path,
             }
+        else:
+            logger.warning(
+                "A diff chunk with no content and no special purpouse was found!: {chunk}".format(
+                    chunk=self
+                )
+            )
 
-    def split_into_atomic_chunks(self) -> List["DiffChunk"]:
+        return json.dumps(changes, indent=2)
+
+    def split_into_atomic_chunks(
+        self,
+    ) -> List["DiffChunk"]:
         """
-        Splits the chunk into its most atomic units using a single-pass,
-        two-pointer merge algorithm.
+        A list of the most granular, yet still valid, DiffChunks.
         """
+        # cannot split non-pure hunks
         if not self.has_content:
             return [self]
 
-        removals = [r for r in self.parsed_content if isinstance(r, Removal)]
-        additions = [a for a in self.parsed_content if isinstance(a, Addition)]
+        has_additions = any(isinstance(c, Addition) for c in self.parsed_content)
+        has_removals = any(isinstance(c, Removal) for c in self.parsed_content)
 
-        atomic_chunks: List[DiffChunk] = []
-        r_ptr, a_ptr = 0, 0
+        # cannot split mixed chunks
+        if has_additions and has_removals:
+            return [self]
 
-        # A single loop merges removals and additions until both lists are exhausted.
-        while r_ptr < len(removals) or a_ptr < len(additions):
-            # Use float('inf') as a sentinel when a pointer is out of bounds.
-            # This ensures the other list's items are always processed.
-            rel_r_idx = (
-                removals[r_ptr].line_number - self.old_start
-                if r_ptr < len(removals)
-                else float("inf")
+        # pure chunks so we can do whatever
+        final_chunks = []
+        for line in self.parsed_content:
+            sub_chunk = self.from_parsed_content_slice(
+                self.old_file_path, self.new_file_path, self.file_mode, [line]
             )
-            rel_a_idx = (
-                additions[a_ptr].line_number - self.new_start
-                if a_ptr < len(additions)
-                else float("inf")
-            )
+            final_chunks.append(sub_chunk)
 
-            sub_slice = []
-            # Case 1: Matched pair (Modification)
-            if rel_r_idx == rel_a_idx:
-                sub_slice = [removals[r_ptr], additions[a_ptr]]
-                r_ptr += 1
-                a_ptr += 1
-            # Case 2: Unmatched removal comes first (Pure Deletion)
-            # This condition also handles leftover removals when additions are exhausted (rel_a_idx is 'inf').
-            elif rel_r_idx < rel_a_idx:
-                sub_slice = [removals[r_ptr]]
-                r_ptr += 1
-            # Case 3: Unmatched addition comes first (Pure Addition)
-            # This condition also handles leftover additions when removals are exhausted (rel_r_idx is 'inf').
-            else:  # rel_a_idx < rel_r_idx
-                sub_slice = [additions[a_ptr]]
-                a_ptr += 1
-
-            # Create the atomic chunk from the determined slice.
-            # The factory method handles the details of chunk creation.
-            atomic_chunk = self.from_parsed_content_slice(
-                self._file_path,
-                self.file_mode,
-                sub_slice,
-            )
-            if self:
-                atomic_chunks.append(atomic_chunk)
-
-        return atomic_chunks
+        return final_chunks
 
     @classmethod
     def from_hunk(cls, hunk: HunkWrapper) -> "DiffChunk":
@@ -192,8 +181,13 @@ class DiffChunk(Groupable):
                     Removal(content=line[1:], line_number=current_old_line)
                 )
                 current_old_line += 1
+            elif line.strip() == "\\ No newline at end of file":
+                # will always be at the end of the diff (so put a large line number)
+                parsed_content.append(
+                    Addition(content=line.strip(), line_number=current_new_line)
+                )
 
-        return DiffChunk(
+        return cls(
             new_file_path=hunk.new_file_path,
             old_file_path=hunk.old_file_path,
             file_mode=hunk.file_mode,
@@ -205,7 +199,8 @@ class DiffChunk(Groupable):
     @classmethod
     def from_parsed_content_slice(
         cls,
-        file_path: str,
+        old_file_path: str,
+        new_file_path: str,
         file_mode: str,
         parsed_slice: List[Union[Addition, Removal]],
     ) -> "DiffChunk":
@@ -235,7 +230,8 @@ class DiffChunk(Groupable):
             raise ValueError("Invalid input parsed_slice")
 
         return cls(
-            file_path=file_path,
+            old_file_path=old_file_path,
+            new_file_path=new_file_path,
             file_mode=file_mode,
             parsed_content=parsed_slice,
             old_start=old_start,
