@@ -22,6 +22,7 @@ import pytest
 
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.line_changes import Addition, Removal
+from codestory.core.semantic_grouper.scope_mapper import NamedScope
 from codestory.core.semantic_grouper.semantic_grouper import SemanticGrouper
 
 # -----------------------------------------------------------------------------
@@ -66,7 +67,8 @@ def context_manager():
         ctx.scope_map.structural_scope_lines = scopes or {}
         # Build sorted version from scopes dict
         ctx.scope_map.semantic_named_scopes = {
-            line: list(scope_set) for line, scope_set in (scopes or {}).items()
+            line: [NamedScope(name=s, scope_type="class") for s in scope_set]
+            for line, scope_set in (scopes or {}).items()
         }
 
         contexts[(path, is_old)] = ctx

@@ -32,8 +32,16 @@ class SharedTokenQueries:
 
 
 @dataclass(frozen=True)
+class ScopeQueryEntry:
+    """A single named scope query with its associated type."""
+
+    query: str
+    scope_type: str
+
+
+@dataclass(frozen=True)
 class ScopeQueries:
-    named_scope: list[str]
+    named_scope: tuple[ScopeQueryEntry, ...]  # Immutable tuple of query entries
 
 
 @dataclass(frozen=True)
@@ -60,8 +68,23 @@ class LanguageConfig:
             shared_token_queries[token_class] = query
 
         scope_queries_dict = json_dict.get("scope_queries", {})
-        named_scope = scope_queries_dict.get("named_scope", [])
-        scope_queries = ScopeQueries(named_scope)
+        named_scope_raw = scope_queries_dict.get("named_scope", [])
+
+        # Parse named_scope entries - support both new {query, type} format and legacy string format
+        named_scope_entries = []
+        for entry in named_scope_raw:
+            if isinstance(entry, dict):
+                # New format: {"query": "...", "type": "function"}
+                query = entry.get("query", "")
+                scope_type = entry.get("type", "unknown")
+                named_scope_entries.append(ScopeQueryEntry(query, scope_type))
+            elif isinstance(entry, str):
+                # Legacy format: just a query string
+                named_scope_entries.append(ScopeQueryEntry(entry, "unknown"))
+            else:
+                raise ValueError(f"Invalid named_scope entry format: {entry}")
+
+        scope_queries = ScopeQueries(tuple(named_scope_entries))
         comment_queries = json_dict.get("comment_queries", [])
         share_tokens_between_files = json_dict.get("share_tokens_between_files", False)
         root_node_names = json_dict.get("root_node_name", "")
@@ -113,11 +136,6 @@ class LanguageConfig:
 
         return "\n".join(lines)
 
-    def get_root_node_name(self, language_name: str) -> str:
-        if language_name not in self.language_configs:
-            return ""
-        return self.language_configs[language_name].root_node_name
-
     def get_source(
         self,
         query_type: Literal[
@@ -128,9 +146,9 @@ class LanguageConfig:
         ],
     ):
         if query_type == "named_scope":
-            return "\n".join(
-                self.__get_source(self.scope_queries.named_scope, "named_scope")
-            )
+            # Extract query strings from ScopeQueryEntry objects
+            query_strings = [entry.query for entry in self.scope_queries.named_scope]
+            return "\n".join(self.__get_source(query_strings, "named_scope"))
         if query_type == "comment":
             return "\n".join(
                 self.__get_source(self.comment_queries, "STRUCTURALCOMMENTQUERY")
@@ -410,6 +428,62 @@ class QueryManager:
 
         return results
 
+    def run_typed_scope_matches(
+        self,
+        language_name: str,
+        tree_root: Node,
+        line_ranges: list[tuple[int, int]] | None = None,
+    ) -> list[tuple[tuple[int, dict[str, list[Node]]], str]]:
+        """
+        Run named_scope queries individually to preserve type information.
+
+        Returns a list of (match, scope_type) tuples where:
+        - match is a tuple from cursor.matches() containing (pattern_index, captures_dict)
+        - scope_type is the type from the ScopeQueryEntry (e.g., "function", "class")
+
+        This differs from run_query_matches in that it runs each query separately
+        to preserve the type mapping from the language config.
+        """
+        from loguru import logger
+
+        language = get_language(language_name)
+        if language is None:
+            raise ValueError(f"Invalid language '{language_name}'")
+
+        lang_config = self._language_configs.get(language_name)
+        if lang_config is None:
+            raise ValueError(f"Missing config for language '{language_name}'")
+
+        results: list[tuple[tuple[int, dict[str, list[Node]]], str]] = []
+
+        for entry in lang_config.scope_queries.named_scope:
+            if not entry.query.strip():
+                continue
+
+            # Replace placeholder with named_scope capture class
+            query_src = entry.query.replace("@placeholder", "@named_scope")
+
+            try:
+                query = Query(language, query_src)
+                cursor = QueryCursor(query)
+
+                if line_ranges is None:
+                    cursor.set_point_range(tree_root.start_point, tree_root.end_point)
+                    for match in cursor.matches(tree_root):
+                        results.append((match, entry.scope_type))
+                else:
+                    for start_line, end_line in line_ranges:
+                        if end_line < start_line:
+                            continue
+                        cursor.set_point_range((start_line, 0), (end_line + 1, 0))
+                        for match in cursor.matches(tree_root):
+                            results.append((match, entry.scope_type))
+            except Exception as e:
+                logger.debug(f"Query failed for {entry.query}: {e}")
+                continue
+
+        return results
+
     def get_config(self, language_name: str) -> LanguageConfig:
         lang_config = self._language_configs.get(language_name)
         if lang_config is None:
@@ -425,3 +499,7 @@ class QueryManager:
     ) -> str:
         # returns something like "foo identifier_class python"
         return f"{token_name} {capture_class} {language}"
+
+    @staticmethod
+    def extract_qualified_symbol_name(symbol: str):
+        return symbol.partition(" ")[0]

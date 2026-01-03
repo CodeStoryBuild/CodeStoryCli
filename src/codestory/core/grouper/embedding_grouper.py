@@ -40,6 +40,7 @@ from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.llm import CodeStoryAdapter
 from codestory.core.semantic_grouper.chunk_lableler import AnnotatedChunk, ChunkLabeler
 from codestory.core.semantic_grouper.context_manager import ContextManager
+from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.utils.patch import truncate_patch, truncate_patch_bytes
 from codestory.core.utils.sanitize import sanitize_llm_text
 
@@ -569,10 +570,12 @@ class EmbeddingGrouper(LogicalGrouper):
                 # remove extra symbol info for cleaner output
                 # eg "foo identifier_class python" -> "foo"
                 new_symbols_cleaned = {
-                    sym.partition(" ")[0] for sym in signature.def_new_symbols
+                    QueryManager.extract_qualified_symbol_name(sym)
+                    for sym in signature.def_new_symbols_filtered
                 }
                 old_symbols_cleaned = {
-                    sym.partition(" ")[0] for sym in signature.def_old_symbols
+                    QueryManager.extract_qualified_symbol_name(sym)
+                    for sym in signature.def_old_symbols_filtered
                 }
 
                 modified_symbols = old_symbols_cleaned.intersection(new_symbols_cleaned)
@@ -590,9 +593,12 @@ class EmbeddingGrouper(LogicalGrouper):
                 if removed_symbols:
                     patch_json["removed_symbols"] = list(removed_symbols)
                 if signature.new_fqns or signature.old_fqns:
-                    patch_json["affected_scopes"] = list(
-                        signature.new_fqns | signature.old_fqns
-                    )
+                    all_fqns = signature.new_fqns | signature.old_fqns
+                    # Format: "file.py:Class.method (function)"
+                    patch_json["affected_scopes"] = [
+                        f"{typed_fqn.fqn} ({typed_fqn.fqn_type})"
+                        for typed_fqn in all_fqns
+                    ]
 
             annotated_patch.append(patch_json)
 

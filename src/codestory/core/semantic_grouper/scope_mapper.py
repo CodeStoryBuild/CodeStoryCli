@@ -24,12 +24,20 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 
 
 @dataclass(frozen=True)
+class NamedScope:
+    """A named scope with its name and type (e.g., function, class)."""
+
+    name: str
+    scope_type: str
+
+
+@dataclass(frozen=True)
 class ScopeMap:
     """Maps each line number to scope inside it."""
 
     structural_scope_lines: dict[int, set[str]]
     # Ordered list of named scopes per line, sorted by start position (for FQN construction)
-    semantic_named_scopes: dict[int, list[str]]
+    semantic_named_scopes: dict[int, list[NamedScope]]
 
 
 class ScopeMapper:
@@ -58,19 +66,20 @@ class ScopeMapper:
             ScopeMap containing the mapping of line numbers to named and structural scope names
         """
         line_to_structural_scope: dict[int, set[str]] = {}
-        # Track named scopes with their start positions for ordering
-        line_to_named_scope_with_pos: dict[int, list[tuple[int, str]]] = {}
+        # Track named scopes with their start positions and types for ordering
+        line_to_named_scope_with_pos: dict[
+            int, list[tuple[int, str, str]]
+        ] = {}  # (start_byte, name, scope_type)
 
-        # Run named_scope queries using run_query_matches to get matches with name captures
-        named_scope_matches = self.query_manager.run_query_matches(
+        # Run named_scope queries using run_typed_scope_matches to get matches with type info
+        typed_matches = self.query_manager.run_typed_scope_matches(
             language_name,
             root_node,
-            query_type="named_scope",
             line_ranges=line_ranges,
         )
 
-        # Process named_scope matches for fully-qualified names
-        for match in named_scope_matches:
+        # Process named_scope matches for fully-qualified names with types
+        for match, scope_type in typed_matches:
             # Get the scope nodes (captured as @named_scope) and name nodes
             name_nodes = match[1].get("named_scope.name", [])
             scope_nodes = match[1].get("named_scope", [])
@@ -93,7 +102,7 @@ class ScopeMapper:
                     scope_node.start_point[0], scope_node.end_point[0] + 1
                 ):
                     line_to_named_scope_with_pos.setdefault(line_num, []).append(
-                        (scope_node.start_byte, fqn_name)
+                        (scope_node.start_byte, fqn_name, scope_type)
                     )
 
         # Manual traversal for structural scopes: any multi-line node (except root)
@@ -133,12 +142,13 @@ class ScopeMapper:
 
         traverse(root_node)
 
-        # Build sorted named scope mapping
-        line_to_named_scope_sorted: dict[int, list[str]] = {}
+        # Build sorted named scope mapping with NamedScope objects
+        line_to_named_scope_sorted: dict[int, list[NamedScope]] = {}
         for line_num, scopes_with_pos in line_to_named_scope_with_pos.items():
-            # Sort by start position, then extract just the scope names
+            # Sort by start position, then create NamedScope objects
             sorted_scopes = [
-                scope for _, scope in sorted(scopes_with_pos, key=lambda x: x[0])
+                NamedScope(name=name, scope_type=scope_type)
+                for _, name, scope_type in sorted(scopes_with_pos, key=lambda x: x[0])
             ]
             line_to_named_scope_sorted[line_num] = sorted_scopes
 

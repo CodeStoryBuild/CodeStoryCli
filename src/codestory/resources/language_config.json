@@ -3,7 +3,7 @@
         "root_node_name": "module",
         "shared_token_queries": {
             "identifier_class": {
-                "general_queries":[
+                "general_queries": [
                     "((identifier) @placeholder)"
                 ],
                 "definition_queries": [
@@ -21,12 +21,24 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((decorated_definition definition: (function_definition name: (identifier) @placeholder.name)) @placeholder)",
-                "((class_definition name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((decorated_definition definition: (function_definition name: (identifier) @placeholder.name)) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                }
             ]
         },
-        "comment_queries": ["((comment) @placeholder)", "(expression_statement (string) @placeholder)"],
+        "comment_queries": [
+            "((comment) @placeholder)",
+            "(expression_statement (string) @placeholder)"
+        ],
         "share_tokens_between_files": "True"
     },
     "javascript": {
@@ -48,8 +60,14 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((class_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                }
             ]
         },
         "comment_queries": [
@@ -80,10 +98,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
-                "((interface_declaration name: (type_identifier) @placeholder.name) @placeholder)",
-                "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((interface_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "interface"
+                },
+                {
+                    "query": "((enum_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "enum"
+                }
             ]
         },
         "comment_queries": [
@@ -114,10 +144,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((interface_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                },
+                {
+                    "query": "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((interface_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "interface"
+                },
+                {
+                    "query": "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                }
             ]
         },
         "comment_queries": [
@@ -149,9 +191,18 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
-                "((class_specifier name: (type_identifier) @placeholder.name) @placeholder)",
-                "((namespace_definition name: (namespace_identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((namespace_definition name: (namespace_identifier) @placeholder.name) @placeholder)",
+                    "type": "namespace"
+                }
             ]
         },
         "comment_queries": [
@@ -180,10 +231,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((namespace_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((method_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                },
+                {
+                    "query": "((class_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((namespace_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "namespace"
+                },
+                {
+                    "query": "((constructor_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                }
             ]
         },
         "comment_queries": [
@@ -221,8 +284,14 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
-                "((method_declaration name: (field_identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((method_declaration name: (field_identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                }
             ]
         },
         "comment_queries": [
@@ -253,11 +322,26 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_item name: (identifier) @placeholder.name) @placeholder)",
-                "((impl_item type: (type_identifier) @placeholder.name) @placeholder)",
-                "((struct_item name: (type_identifier) @placeholder.name) @placeholder)",
-                "((enum_item name: (type_identifier) @placeholder.name) @placeholder)",
-                "((mod_item name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_item name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((impl_item type: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "impl"
+                },
+                {
+                    "query": "((struct_item name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "struct"
+                },
+                {
+                    "query": "((enum_item name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "enum"
+                },
+                {
+                    "query": "((mod_item name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "module"
+                }
             ]
         },
         "comment_queries": [
@@ -287,10 +371,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((method name: (identifier) @placeholder.name) @placeholder)",
-                "((singleton_method name: (identifier) @placeholder.name) @placeholder)",
-                "((class name: (constant) @placeholder.name) @placeholder)",
-                "((module name: (constant) @placeholder.name) @placeholder)"
+                {
+                    "query": "((method name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                },
+                {
+                    "query": "((singleton_method name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "method"
+                },
+                {
+                    "query": "((class name: (constant) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((module name: (constant) @placeholder.name) @placeholder)",
+                    "type": "module"
+                }
             ]
         },
         "comment_queries": [
@@ -320,10 +416,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition name: (name) @placeholder.name) @placeholder)",
-                "((method_declaration name: (name) @placeholder.name) @placeholder)",
-                "((class_declaration name: (name) @placeholder.name) @placeholder)",
-                "((namespace_definition name: (namespace_name) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition name: (name) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((method_declaration name: (name) @placeholder.name) @placeholder)",
+                    "type": "method"
+                },
+                {
+                    "query": "((class_declaration name: (name) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((namespace_definition name: (namespace_name) @placeholder.name) @placeholder)",
+                    "type": "namespace"
+                }
             ]
         },
         "comment_queries": [
@@ -350,9 +458,18 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration name: (simple_identifier) @placeholder.name) @placeholder)",
-                "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
-                "((protocol_declaration name: (type_identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration name: (simple_identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((protocol_declaration name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "interface"
+                }
             ]
         },
         "comment_queries": [
@@ -379,9 +496,18 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration (simple_identifier) @placeholder.name) @placeholder)",
-                "((class_declaration (type_identifier) @placeholder.name) @placeholder)",
-                "((object_declaration (type_identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration (simple_identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_declaration (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((object_declaration (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                }
             ]
         },
         "comment_queries": [
@@ -410,10 +536,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((class_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((object_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((trait_definition name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((class_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((object_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((trait_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "trait"
+                }
             ]
         },
         "comment_queries": [
@@ -436,8 +574,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -463,7 +600,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                }
             ]
         },
         "comment_queries": [
@@ -493,8 +633,14 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((class_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((enum_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((class_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                },
+                {
+                    "query": "((enum_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "enum"
+                }
             ]
         },
         "comment_queries": [
@@ -519,8 +665,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -528,7 +673,10 @@
         "share_tokens_between_files": "True"
     },
     "haskell": {
-        "root_node_name": ["haskell", "declarations"],
+        "root_node_name": [
+            "haskell",
+            "declarations"
+        ],
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
@@ -548,7 +696,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function name: (variable) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function name: (variable) @placeholder.name) @placeholder)",
+                    "type": "function"
+                }
             ]
         },
         "comment_queries": [
@@ -576,7 +727,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((module_definition (module_binding (module_name) @placeholder.name)) @placeholder)"
+                {
+                    "query": "((module_definition (module_binding (module_name) @placeholder.name)) @placeholder)",
+                    "type": "module"
+                }
             ]
         },
         "comment_queries": [
@@ -603,7 +757,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_clause name: (atom) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_clause name: (atom) @placeholder.name) @placeholder)",
+                    "type": "function"
+                }
             ]
         },
         "comment_queries": [
@@ -625,8 +782,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)",
@@ -656,9 +812,18 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((modifier_definition name: (identifier) @placeholder.name) @placeholder)",
-                "((contract_declaration name: (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((modifier_definition name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((contract_declaration name: (identifier) @placeholder.name) @placeholder)",
+                    "type": "class"
+                }
             ]
         },
         "comment_queries": [
@@ -688,10 +853,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
-                "((macro_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
-                "((struct_definition (type_head (identifier) @placeholder.name)) @placeholder)",
-                "((module_definition (identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((macro_definition (signature (call_expression (identifier) @placeholder.name))) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((struct_definition (type_head (identifier) @placeholder.name)) @placeholder)",
+                    "type": "struct"
+                },
+                {
+                    "query": "((module_definition (identifier) @placeholder.name) @placeholder)",
+                    "type": "module"
+                }
             ]
         },
         "comment_queries": [
@@ -718,7 +895,10 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition name: (word) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition name: (word) @placeholder.name) @placeholder)",
+                    "type": "function"
+                }
             ]
         },
         "comment_queries": [
@@ -749,10 +929,22 @@
         },
         "scope_queries": {
             "named_scope": [
-                "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
-                "((struct_specifier name: (type_identifier) @placeholder.name) @placeholder)",
-                "((union_specifier name: (type_identifier) @placeholder.name) @placeholder)",
-                "((enum_specifier name: (type_identifier) @placeholder.name) @placeholder)"
+                {
+                    "query": "((function_definition declarator: (function_declarator declarator: (identifier) @placeholder.name)) @placeholder)",
+                    "type": "function"
+                },
+                {
+                    "query": "((struct_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "struct"
+                },
+                {
+                    "query": "((union_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "struct"
+                },
+                {
+                    "query": "((enum_specifier name: (type_identifier) @placeholder.name) @placeholder)",
+                    "type": "enum"
+                }
             ]
         },
         "comment_queries": [
@@ -777,8 +969,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -798,11 +989,9 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
-        "comment_queries": [
-        ],
+        "comment_queries": [],
         "share_tokens_between_files": "False"
     },
     "yaml": {
@@ -818,8 +1007,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -830,15 +1018,12 @@
         "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
-                "general_queries": [
-                ],
-                "definition_queries": [
-                ]
+                "general_queries": [],
+                "definition_queries": []
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((html_block) @placeholder)"
@@ -849,15 +1034,12 @@
         "root_node_name": "document",
         "shared_token_queries": {
             "identifier_class": {
-                "general_queries": [
-                ],
-                "definition_queries": [
-                ]
+                "general_queries": [],
+                "definition_queries": []
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -879,8 +1061,7 @@
             }
         },
         "scope_queries": {
-            "named_scope": [
-            ]
+            "named_scope": []
         },
         "comment_queries": [
             "((comment) @placeholder)"
@@ -888,5 +1069,3 @@
         "share_tokens_between_files": "False"
     }
 }
-
-
