@@ -1,4 +1,4 @@
-# <img src="resources/icon.svg" width="32" height="32" align="center" /> Codestory CLI
+# <img src="resources/icon.svg" width="32" height="32" align="center" /> Codestory CLI (Cleaned History Version)
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/pytest.yml?label=tests)
 ![Docs Deployment](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/deploy-docs.yml?label=docs)
