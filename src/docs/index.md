@@ -1,8 +1,8 @@
 # CodeStory CLI
 
-codestory is a high-level interface layered on top of Git that helps you produce clean, logical commit histories without manually staging and composing many small commits.
+codestory is a high-level interface layered on top of Git that helps you produce clean, logical commit histories without manually staging and composing many small commits. It is not a replacement for Git — it is a workflow tool that programmatically constructs commit history while leaving your working tree untouched.
 
-This page is a technical landing for the CLI: what it does, how it works, and the guarantees it provides. It is not a replacement for Git — it is a workflow tool that programmatically constructs commit history while leaving your working tree untouched.
+This page is a technical landing for the CLI: what it does, how it works, and the guarantees it provides. 
 
 ## What problem it solves
 
@@ -10,12 +10,23 @@ Developers often accumulate large, multi-file changes and commit them as a singl
 
 codestory reads your working changes or existing commits and constructs a linearized sequence of atomic, logically grouped commits. It reduces cognitive debt by converting a large unstructured change into smaller, semantically meaningful steps.
 
+## Architecture Deep Dive
+
+For a detailed look at the internal logic, check out the design documentation:
+
+*   **[The Core Logic](./design/how-it-works.md)**: The high-level lifecycle of a change from start to finish.
+*   **[Mechanical Grouping](./design/mechanical-chunking.md)**: How we safely split Git hunks into robust building blocks.
+*   **[Semantic Grouping](./design/semantic-grouping.md)**: How we use Tree-sitter to respect language syntax and scope.
+*   **[Logical Grouping](./design/logical-grouping.md)**: How we use LLMs to understand intent and cross-file relationships.
+*   **[Commit Strategy](./design/commit-strategy.md)**: The incremental strategy used to apply partial changes without breaking history.
+
 ## How it works (technical overview)
 
 - **Read-only with respect to source files**: codestory never modifies source files in your working directory. It constructs and manipulates Git index objects (virtual indexes) to build the desired history, then writes a sequence of commits into your repository.
-- **Semantic grouping**: Source files are analyzed with language-aware parsers (AST-level) using Tree-sitter to ensure syntactically coupled edits remain together. Tree-sitter queries define the language semantics, allowing codestory to identify and group semantically dependent changes. This prevents splitting code in a way that would break compilation or tests.
-- **High-level analysis with models**: For logical relationships that static analysis cannot infer (documentation linked to code, cross-file design intent), codestory employs configurable model providers to detect logical dependencies and relevance.
-- **Commit linearization**: Changes are split into minimal logical units and ordered to form a linear history that best represents the development story.
+- **[Mechanical Splitting](./design/mechanical-chunking.md)**: Before analysis begins, changes are split into minimal, pairwise disjoint logical units. This ensures that no matter how we group them later, they remain mechanically valid.
+- **[Semantic Grouping](./design/semantic-grouping.md)**: Source files are analyzed with language-aware parsers (AST-level) using Tree-sitter to ensure syntactically coupled edits remain together. Tree-sitter queries define the language semantics, allowing codestory to identify and group semantically dependent changes.
+- **[High-level analysis with models](./design/logical-grouping.md)**: For logical relationships that static analysis cannot infer (documentation linked to code, cross-file design intent), codestory employs configurable model providers to detect logical dependencies and relevance.
+- **[Commit linearization](./design/commit-strategy.md)**: Once groups are formed, changes are ordered to form a linear history that best represents the development story using an incremental accumulation strategy.
 
 ## Safety and guarantees
 
