@@ -5,6 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, TypeAdapter
 from loguru import logger
 
+
 class ConfigLoader:
     """Handles loading and merging configuration from multiple sources into a unified model."""
 

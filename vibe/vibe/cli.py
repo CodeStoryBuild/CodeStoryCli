@@ -123,8 +123,6 @@ def main(
     validate_git_repository(global_context.git_interface)
 
 
-
-
 def run_app():
     """Run the application with global exception handling."""
     try:
