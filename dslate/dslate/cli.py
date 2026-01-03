@@ -32,7 +32,7 @@ from rich import print as rprint
 from dslate.commands import clean, commit, config, fix
 from dslate.context import GlobalConfig, GlobalContext
 from dslate.core.config.config_loader import ConfigLoader
-from dslate.core.exceptions import GitError, ValidationError, dslateError
+from dslate.core.exceptions import dslateError
 from dslate.core.logging.logging import setup_logger
 from dslate.runtimeutil import (
     ensure_utf8_output,

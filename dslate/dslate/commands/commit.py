@@ -96,19 +96,20 @@ def main(
     target: str | None = typer.Argument(
         None, help="Path to file or directory to commit."
     ),
-    message: str | None = typer.Argument(
-        None, help="Context or instructions for the AI to generate the commit message"
+    message: str | None = typer.Option(
+        None, "-m", help="Context or instructions for the AI to generate the commit message"
     ),
 ) -> None:
     """
-    Commits changes with AI-powered messages.
+    Commits current working directory changes into smaller logical commits.
+    (If you wish to modify existing history, use dslate fix or dslate clean)
 
     Examples:
         # Commit all changes interactively
         dslate commit
 
         # Commit specific directory with message
-        dslate commit src/ "Refactor user authentication"
+        dslate commit src/  -m "Make 2 commits, one for refactor, one for feature A..."
     """
     global_context: GlobalContext = ctx.obj
     validate_git_repository(global_context.git_interface)
@@ -142,7 +143,7 @@ def main(
 
     with time_block("Commit Command E2E"):
         runner = create_commit_pipeline(
-            global_context, commit_context, base_commit_hash, new_commit_hash
+            global_context, commit_context, base_commit_hash, new_commit_hash, "commit"
         )
 
         new_commit_hash = runner.run()
