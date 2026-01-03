@@ -37,7 +37,7 @@ def complex_git_repo():
         
         # Create initial files
         files_content = {
-            "README.md": "# Test Project\n\nA test project for end-to-end testing.\n",
+            "README.md": "# Test Project\n\nEnd-to-end testing project.\n",
             "src/main.py": "#!/usr/bin/env python3\n\ndef main():\n    print('Hello, World!')\n\nif __name__ == '__main__':\n    main()\n",
             "src/utils.py": "def helper_function():\n    return 'helper'\n\ndef another_helper():\n    return 'another'\n",
             "tests/test_main.py": "import unittest\nfrom src.main import main\n\nclass TestMain(unittest.TestCase):\n    def test_main(self):\n        pass\n",
