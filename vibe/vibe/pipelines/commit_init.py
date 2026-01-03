@@ -27,7 +27,9 @@ def create_commit_pipeline(
     if global_ctx.model is not None:
         logical_grouper = LangChainGrouper(global_ctx.model)
     else:
-        logger.warning("Using no ai grouping as commit_pipeline recieved no model!")
+        logger.warning(
+            "Using no ai grouping as commit_pipeline recieved no model!"
+        )
 
     if new_commit_hash is None:
         logger.info("[red] Failed to backup working state, exiting. [/red]")

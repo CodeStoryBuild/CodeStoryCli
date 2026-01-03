@@ -159,7 +159,9 @@ class QueryManager:
         self,
         language_name: str,
         tree_root: Node,
-        query_type: Literal["scope", "comment", "token_general", "token_definition"],
+        query_type: Literal[
+            "scope", "comment", "token_general", "token_definition"
+        ],
         line_ranges: list[tuple[int, int]] | None = None,
     ):
         """
@@ -183,7 +185,9 @@ class QueryManager:
 
             if not query_src.strip():
                 # Empty query -> no matches
-                logger.warning(f"Empty query for {language_name} {query_type=}!")
+                logger.warning(
+                    f"Empty query for {language_name} {query_type=}!"
+                )
                 return {}
 
             query = Query(language, query_src)

@@ -36,7 +36,9 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
     provider = config.provider.lower()
     api_key = config.api_key
 
-    logger.info(f"Creating LLM model: provider={provider}, model={config.model_name}")
+    logger.info(
+        f"Creating LLM model: provider={provider}, model={config.model_name}"
+    )
 
     # OpenAI
     if provider == "openai":
@@ -126,7 +128,9 @@ def create_llm_model(config: ModelConfig) -> BaseChatModel:
         # Azure requires additional environment variables
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         if not azure_endpoint:
-            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable not set")
+            raise ValueError(
+                "AZURE_OPENAI_ENDPOINT environment variable not set"
+            )
 
         if not api_key:
             api_key = os.getenv("AZURE_OPENAI_API_KEY")

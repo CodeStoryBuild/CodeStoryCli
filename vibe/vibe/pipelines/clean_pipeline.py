@@ -44,7 +44,9 @@ class CleanPipeline:
 
         total = len(commits)
 
-        logger.info("Starting vibe clean operation on {total} commits", total=total)
+        logger.info(
+            "Starting vibe clean operation on {total} commits", total=total
+        )
 
         expanded = 0
         skipped = 0
@@ -66,7 +68,8 @@ class CleanPipeline:
                 changes = self._count_line_changes(commit)
                 if changes is None:
                     logger.debug(
-                        "Skipping {commit}: unable to count changes", commit=short
+                        "Skipping {commit}: unable to count changes",
+                        commit=short,
                     )
                     skipped += 1
                     continue
@@ -96,7 +99,9 @@ class CleanPipeline:
         )
         return True
 
-    def _get_first_parent_commits(self, start_from: str | None = None) -> list[str]:
+    def _get_first_parent_commits(
+        self, start_from: str | None = None
+    ) -> list[str]:
         start_ref = start_from or "HEAD"
         if start_from:
             # Resolve the commit hash first to ensure it exists

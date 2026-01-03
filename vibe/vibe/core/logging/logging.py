@@ -152,9 +152,9 @@ def log_operation(operation: str, success: bool, **details) -> None:
     level = "info" if success else "error"
     status = "SUCCESS" if success else "FAILED"
 
-    logger.bind(operation=operation, success=success, **details).__getattribute__(
-        level
-    )(f"Operation {operation}: {status}")
+    logger.bind(
+        operation=operation, success=success, **details
+    ).__getattribute__(level)(f"Operation {operation}: {status}")
 
 
 def log_user_action(action: str, **context) -> None:

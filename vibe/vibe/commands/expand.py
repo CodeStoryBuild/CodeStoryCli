@@ -100,7 +100,9 @@ def main(
 
     # Execute expansion
     with time_block("Expand Pipeline E2E"):
-        service = ExpandPipeline(global_context, expand_context, commit_pipeline)
+        service = ExpandPipeline(
+            global_context, expand_context, commit_pipeline
+        )
         final_head = service.run()
 
     if final_head is not None:
@@ -108,7 +110,9 @@ def main(
 
         # Update the branch reference and sync the working directory
         logger.info(
-            "Finalizing update: {branch} -> {head}", branch=base_branch, head=final_head
+            "Finalizing update: {branch} -> {head}",
+            branch=base_branch,
+            head=final_head,
         )
 
         # Update the reference pointer
