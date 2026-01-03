@@ -29,6 +29,7 @@ from codestory.core.git_interface.SubprocessGitInterface import (
     SubprocessGitInterface,
 )
 from codestory.core.synthesizer.git_synthesizer import GitSynthesizer
+from codestory.core.git_commands.git_commands import GitCommands
 
 ## Fixtures
 
@@ -69,7 +70,7 @@ def git_repo() -> tuple[Path, str]:
 
 def test_basic_modification(git_repo):
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     hunk = HunkWrapper(
         new_file_path=b"app.js",
@@ -112,7 +113,7 @@ def test_basic_modification(git_repo):
 
 def test_file_deletion(git_repo):
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Read all lines from app.js for deletion
     lines = (repo_path / "app.js").read_text().splitlines()
@@ -137,7 +138,7 @@ def test_file_deletion(git_repo):
 
 def test_rename_file(git_repo):
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     hunk = HunkWrapper(
         new_file_path=b"server.js",
@@ -170,7 +171,7 @@ def test_rename_file(git_repo):
 
 def test_critical_line_shift_scenario(git_repo):
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Add a header (second commit)
 
@@ -253,7 +254,7 @@ def test_critical_line_shift_scenario(git_repo):
 def test_pure_addition_single_file(git_repo):
     """Test adding new content to an existing file without any deletions."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Add header line at the beginning
 
@@ -323,7 +324,7 @@ def test_pure_addition_single_file(git_repo):
 def test_pure_addition_new_files(git_repo):
     """Test creating entirely new files."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Add multiple new files
 
@@ -374,7 +375,7 @@ def test_pure_addition_new_files(git_repo):
 def test_pure_addition_multiple_groups(git_repo):
     """Test multiple groups that only add content."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Add to existing file
 
@@ -421,7 +422,7 @@ def test_pure_addition_multiple_groups(git_repo):
 def test_pure_deletion_partial_content(git_repo):
     """Test deleting only some lines from files without adding anything."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Remove lines 2 and 4
 
@@ -476,7 +477,7 @@ def test_pure_deletion_partial_content(git_repo):
 def test_pure_deletion_entire_files(git_repo):
     """Test deleting entire files completely."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Create files to delete
     (repo_path / "temp.txt").write_text("temporary content\n")
@@ -542,7 +543,7 @@ def test_pure_deletion_entire_files(git_repo):
 def test_pure_deletion_multiple_groups(git_repo):
     """Test multiple groups that only delete content."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Add more content first
     (repo_path / "app.js").write_text(
@@ -629,7 +630,7 @@ def test_pure_deletion_multiple_groups(git_repo):
 def test_large_mixed_changes_single_group(git_repo):
     """Test a single group with many files and mixed change types."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Create additional files
     (repo_path / "src").mkdir()
@@ -785,7 +786,7 @@ def test_large_mixed_changes_single_group(git_repo):
 def test_large_mixed_changes_multiple_groups(git_repo):
     """Test multiple groups each with several files and mixed operations."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Setup initial structure
     (repo_path / "frontend").mkdir()
@@ -947,7 +948,7 @@ def test_large_mixed_changes_multiple_groups(git_repo):
 def test_complex_interdependent_changes(git_repo):
     """Test changes that depend on each other across multiple files."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Create files that reference each other
     (repo_path / "main.py").write_text(
@@ -1060,7 +1061,7 @@ def test_complex_interdependent_changes(git_repo):
 def test_empty_group_handling(git_repo):
     """Test handling of empty groups and groups with no changes."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Empty group
 
@@ -1092,7 +1093,7 @@ def test_empty_group_handling(git_repo):
 def test_single_line_changes(git_repo):
     """Test edge cases with single character and single line changes."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Single character change
 
@@ -1147,7 +1148,7 @@ def test_single_line_changes(git_repo):
 def test_boundary_line_numbers(git_repo):
     """Test edge cases with line number boundaries."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Change at line 0
 
@@ -1204,7 +1205,7 @@ def test_boundary_line_numbers(git_repo):
 def test_unicode_and_special_characters(git_repo):
     """Test handling of unicode and special characters in file content."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Unicode content
 
@@ -1264,7 +1265,7 @@ def test_unicode_and_special_characters(git_repo):
 def test_conflicting_simultaneous_changes(git_repo):
     """Test handling of potentially conflicting changes to the same file regions."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Overlapping changes
     chunks = [
@@ -1323,7 +1324,7 @@ def test_conflicting_simultaneous_changes(git_repo):
 def test_very_large_file_changes(git_repo):
     """Test performance with larger files and many changes."""
     repo_path, base_hash = git_repo
-    synthesizer = GitSynthesizer(SubprocessGitInterface(repo_path))
+    synthesizer = GitSynthesizer(GitCommands(SubprocessGitInterface(repo_path)))
 
     # Create a large file
     large_content = "\n".join([f"line {i}" for i in range(1, 101)])  # 100 lines

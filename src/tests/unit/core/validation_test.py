@@ -121,7 +121,7 @@ def test_validate_default_branch_detached_head(mock_git_commands):
 def test_validate_default_branch_failed_check(mock_git_commands):
     mock_git_commands.get_show_current_branch.return_value = None
 
-    with pytest.raises(GitError, match="Failed to check git branch status"):
+    with pytest.raises(GitError, match="detached HEAD"):
         validate_default_branch(mock_git_commands)
 
 
