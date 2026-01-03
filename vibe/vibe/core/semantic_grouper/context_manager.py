@@ -162,7 +162,11 @@ class ContextManager:
     def _generate_parsed_files(self) -> None:
         for (file_path, is_old_version), line_ranges in self._required_contexts.items():
             # Decode bytes file path for file_reader
-            path_str = file_path.decode('utf-8', errors='replace') if isinstance(file_path, bytes) else file_path
+            path_str = (
+                file_path.decode("utf-8", errors="replace")
+                if isinstance(file_path, bytes)
+                else file_path
+            )
             content = self.file_reader.read(path_str, old_content=is_old_version)
             if content is None:
                 continue
