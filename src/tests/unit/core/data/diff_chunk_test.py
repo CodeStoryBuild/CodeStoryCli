@@ -133,7 +133,6 @@ def test_is_disjoint():
     assert c1.is_disjoint_from(
         c2
     )  # 1-6 vs 6-11 (touching is disjoint for application order?)
-    # Wait, is_disjoint logic: self_end <= other_start or other_end <= self_start
     # c1: 1 -> 6. c2: 6 -> 11. 6 <= 6 is True. So disjoint.
 
     assert not c1.is_disjoint_from(c3)  # 1-6 vs 3-8. Overlap.

@@ -43,7 +43,11 @@ class SemanticGrouper:
     def __init__(
         self,
         fallback_grouping_strategy: Literal[
-            "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
+            "all_together",
+            "by_file_path",
+            "by_file_name",
+            "by_file_extension",
+            "all_alone",
         ] = "all_together",
     ):
         """
@@ -76,10 +80,10 @@ class SemanticGrouper:
         if not chunks:
             return []
 
-        # Step 2: Generate signatures for each chunk
+        # Generate signatures for each chunk
         annotated_chunks = ChunkLabeler.annotate_chunks(chunks, context_manager)
 
-        # Step 3: Separate chunks that can be analyzed from those that cannot
+        # Separate chunks that can be analyzed from those that cannot
         analyzable_chunks = []
         fallback_chunks = []
 
@@ -90,13 +94,13 @@ class SemanticGrouper:
                 # TODO smarter fallback logic, for example using file extensions
                 fallback_chunks.append(annotated_chunk.chunk)
 
-        # Step 5: Group analyzable chunks using Union-Find based on overlapping signatures
+        # Group analyzable chunks using Union-Find based on overlapping signatures
         semantic_groups = []
         if analyzable_chunks:
             grouped_chunks = self._group_by_overlapping_signatures(analyzable_chunks)
             semantic_groups.extend(grouped_chunks)
 
-        # Step 6: Add fallback groups based on the configured strategy
+        # Add fallback groups based on the configured strategy
         if fallback_chunks:
             fallback_groups = self._group_fallback_chunks(fallback_chunks)
             semantic_groups.extend(fallback_groups)
@@ -161,7 +165,7 @@ class SemanticGrouper:
         """
         if not fallback_chunks:
             return []
-        
+
         if self.fallback_grouping_strategy == "all_alone":
             # no fallback grouping, just leave each chunk as is
             return [CompositeDiffChunk(chunks=[chunk]) for chunk in fallback_chunks]
@@ -223,7 +227,7 @@ class SemanticGrouper:
 
         uf = UnionFind(chunk_ids)
 
-        # Step 1: Create an inverted index from symbol -> list of chunk_ids
+        # Create an inverted index from symbol -> list of chunk_ids
         symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
         scope_to_chunks: dict[str, list[int]] = defaultdict(list)
         for i, sig in enumerate(signatures):
@@ -234,21 +238,21 @@ class SemanticGrouper:
             for scope in sig.scopes:
                 scope_to_chunks[scope].append(i)
 
-        # Step 2: Union chunks that share common symbols
+        # Union chunks that share common symbols
         for _, ids in symbol_to_chunks.items():
             if len(ids) > 1:
                 first_chunk_id = ids[0]
                 for i in range(1, len(ids)):
                     uf.union(first_chunk_id, ids[i])
 
-        # Step 2.5: Union chunks that share common scopes
+        # Union chunks that share common scopes
         for _, ids in scope_to_chunks.items():
             if len(ids) > 1:
                 first_chunk_id = ids[0]
                 for i in range(1, len(ids)):
                     uf.union(first_chunk_id, ids[i])
 
-        # Step 3: Group chunks by their root in the Union-Find structure
+        # Group chunks by their root in the Union-Find structure
         groups: dict[int, list[Chunk]] = defaultdict(list)
         for i in range(len(signatures)):
             root = uf.find(i)

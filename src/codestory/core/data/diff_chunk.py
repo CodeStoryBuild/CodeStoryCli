@@ -26,28 +26,6 @@ from codestory.core.data.line_changes import Addition, Removal
 
 @dataclass(frozen=True)
 class DiffChunk:
-    """
-    Represents a single diff chunk.
-
-    Responsibilities:
-    - Must contain enough information to reconstruct a patch for Git
-    - Preserves file path, line numbers, and content
-    - Can be serialized into a unified diff format
-
-    CRITICAL COORDINATE SYSTEM:
-    - old_start: ALWAYS in ORIGINAL/OLD file coordinates. This is the anchor.
-    - new_start: DOES NOT EXIST as a stored field! It's calculated on-the-fly
-      during patch generation based on old_start + cumulative_offset.
-    - Addition.old_line: Position in old file where addition occurs
-    - Addition.abs_new_line: Absolute new file position (ONLY for semantic grouping)
-    - Removal.old_line: Line being removed from old file
-    - Removal.abs_new_line: Absolute new file position (ONLY for semantic grouping)
-
-    This design ensures chunks can be split, recombined, and applied in ANY order
-    while maintaining 100% correctness. The new_start values are calculated ONLY
-    when generating patches, based on the cumulative effect of all prior chunks.
-    """
-
     # if old path == new path, this is just the file path (no rename, or new addition/deletion)
     # if old path (!None) != new path (!None), this is a rename operation
     # if old path is None and new path is not None, this is a new file addition
@@ -59,7 +37,7 @@ class DiffChunk:
         """
         Returns the relevant path for the chunk.
         For renames or standard chunks, this is new_file_path
-        For additions/deletions, this is the path that is not NONE
+        For new_file/file_deletions, this is the path that is not NONE
         """
 
         if self.new_file_path is not None:
@@ -329,11 +307,7 @@ class DiffChunk:
         contains_newline_marker: bool,
         parsed_slice: list[Addition | Removal],
     ) -> "DiffChunk":
-        """Create a DiffChunk from a slice of parsed content.
-
-        CRITICAL: We ONLY calculate old_start here. new_start does NOT exist!
-        The old_start is derived from the old_line values in the parsed content.
-        """
+        """Create a DiffChunk from a slice of parsed content."""
         if not parsed_slice:
             raise ValueError("parsed_slice cannot be empty")
 

@@ -58,7 +58,7 @@ class FixPipeline:
             end=_short(end_hash),
         )
 
-        # 1. Run the expansion pipeline
+        # Run the expansion pipeline
         # This generates the new commit(s) in the object database.
         # Returns the hash of the *last* commit in the new sequence.
         new_commit_hash = self.rewrite_pipeline.run()
@@ -66,7 +66,7 @@ class FixPipeline:
         if not new_commit_hash:
             raise FixCommitError("Commit pipeline returned no hash. Aborting.")
 
-        # 2. Identify the downstream commits to reparent
+        # Identify the downstream commits to reparent
         # We need the list of commits after end_hash.
         # When fixing a range (base_hash..end_hash), all commits in that range
         # are being replaced, so we only reparent commits strictly after end_hash.
@@ -97,7 +97,7 @@ class FixPipeline:
             current_parent = new_commit_hash
 
             for commit in commits_to_reparent:
-                # 3. Extract metadata from the existing commit
+                # Extract metadata from the existing commit
                 # %T  = Tree Hash (we preserve this exactly)
                 # %an = Author Name
                 # %ae = Author Email
@@ -129,7 +129,7 @@ class FixPipeline:
                 # Reassemble message (lines 4 to end), preserving newlines
                 message = "\n".join(lines[7:])
 
-                # 4. Create new commit object in ODB
+                # Create new commit object in ODB
                 # We inject the original author info via env vars so the
                 # resulting commit looks identical to the original, just moved.
                 env = {
