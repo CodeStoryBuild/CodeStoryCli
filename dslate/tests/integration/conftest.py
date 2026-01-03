@@ -64,8 +64,12 @@ def temp_dir():
 @pytest.fixture
 def git_repo(temp_dir):
     subprocess.run(["git", "init"], cwd=temp_dir, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=temp_dir, check=True)
-    subprocess.run(["git", "config", "user.name", "Test User"], cwd=temp_dir, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=temp_dir, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"], cwd=temp_dir, check=True
+    )
     # Initial commit to avoid empty repo issues
     (temp_dir / ".gitignore").write_text("__pycache__/")
     subprocess.run(["git", "add", "."], cwd=temp_dir, check=True)
@@ -76,11 +80,13 @@ def git_repo(temp_dir):
 @pytest.fixture
 def repo_factory(temp_dir):
     """Fixture to create RepoState instances."""
+
     def _create_repo(subdir="repo"):
         path = temp_dir / subdir
         repo = RepoState(path)
         repo.setup_repo()
         return repo
+
     return _create_repo
 
 

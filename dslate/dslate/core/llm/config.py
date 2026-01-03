@@ -88,4 +88,6 @@ def try_create_model(
     try:
         return create_llm_model(model_config)
     except Exception as e:
-        raise ConfigurationError("Invalid model provided! Please provide a model!") from e
+        raise ConfigurationError(
+            "Invalid model provided! Please provide a model!"
+        ) from e

@@ -54,7 +54,7 @@ def _truncate_text(text: str, max_length: int = 50) -> str:
     """Truncate text with ellipsis if it exceeds max_length."""
     if len(text) <= max_length:
         return text
-    return text[:max_length - 3] + "..."
+    return text[: max_length - 3] + "..."
 
 
 def _check_key_exists(key: str) -> None:
