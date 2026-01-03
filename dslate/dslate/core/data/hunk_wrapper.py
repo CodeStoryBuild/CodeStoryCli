@@ -36,10 +36,6 @@ class HunkWrapper:
     file_mode: bytes | None = b"100644"  # default to regular file
 
     @property
-    def is_rename(self) -> bool:
-        return self.old_file_path is not None
-
-    @property
     def file_path(self) -> bytes | None:
         # For backward compatibility or simple logic, provide a single file_path.
         return self.new_file_path
