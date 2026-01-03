@@ -15,6 +15,7 @@ class CleanOptions:
     ignore: Sequence[str] | None = None
     min_size: Optional[int] = None
     auto_yes: bool = False
+    start_from: Optional[str] = None
 
 
 class CleanRunner:
@@ -37,7 +38,7 @@ class CleanRunner:
         self.expand_service = expand_service or ExpandService(repo_path)
 
     def run(self, options: CleanOptions, console: Console) -> bool:
-        commits = self._get_first_parent_commits()
+        commits = self._get_first_parent_commits(options.start_from)
         if len(commits) < 2:
             logger.info("Nothing to do: fewer than 2 commits on branch")
             return True
@@ -113,8 +114,16 @@ class CleanRunner:
         except Exception:
             return True
 
-    def _get_first_parent_commits(self) -> list[str]:
-        out = self.git.run_git_text(["rev-list", "--first-parent", "HEAD"]) or ""
+    def _get_first_parent_commits(self, start_from: Optional[str] = None) -> list[str]:
+        start_ref = start_from or "HEAD"
+        if start_from:
+            # Resolve the commit hash first to ensure it exists
+            resolved = self.git.run_git_text(["rev-parse", start_from])
+            if resolved is None:
+                raise ValueError(f"Could not resolve commit: {start_from}")
+            start_ref = resolved.strip()
+        
+        out = self.git.run_git_text(["rev-list", "--first-parent", start_ref]) or ""
         return [l.strip() for l in out.splitlines() if l.strip()]
 
     def _is_merge(self, commit: str) -> bool:
