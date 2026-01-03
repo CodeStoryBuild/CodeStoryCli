@@ -17,6 +17,8 @@
 # -----------------------------------------------------------------------------
 
 from collections import defaultdict
+from pathlib import Path
+from typing import Literal
 
 from loguru import logger
 
@@ -34,9 +36,27 @@ class SemanticGrouper:
 
     The grouper flattens composite chunks into individual DiffChunks, generates
     semantic signatures for each chunk, and groups chunks with overlapping signatures
-    using a union-find algorithm. Chunks that cannot be analyzed are placed in a
-    fallback group for safety.
+    using a union-find algorithm. Chunks that cannot be analyzed are placed in
+    fallback groups based on the configured strategy.
     """
+
+    def __init__(
+        self,
+        fallback_grouping_strategy: Literal[
+            "all_together", "by_file_path", "by_file_name", "by_file_extension"
+        ] = "all_together",
+    ):
+        """
+        Initialize the SemanticGrouper with a fallback grouping strategy.
+
+        Args:
+            fallback_grouping_strategy: Strategy for grouping chunks that fail annotation.
+                - 'all_together': All fallback chunks in one group (default)
+                - 'by_file_path': Group by complete file path
+                - 'by_file_name': Group by file name only
+                - 'by_file_extension': Group by file extension
+        """
+        self.fallback_grouping_strategy = fallback_grouping_strategy
 
     def group_chunks(
         self, chunks: list[Chunk], context_manager: ContextManager
@@ -76,12 +96,10 @@ class SemanticGrouper:
             grouped_chunks = self._group_by_overlapping_signatures(analyzable_chunks)
             semantic_groups.extend(grouped_chunks)
 
-        # Step 6: Add fallback group if any chunks couldn't be analyzed
+        # Step 6: Add fallback groups based on the configured strategy
         if fallback_chunks:
-            fallback_group = CompositeDiffChunk(
-                chunks=fallback_chunks,
-            )
-            semantic_groups.append(fallback_group)
+            fallback_groups = self._group_fallback_chunks(fallback_chunks)
+            semantic_groups.extend(fallback_groups)
 
         return semantic_groups
 
@@ -99,6 +117,86 @@ class SemanticGrouper:
         for chunk in chunks:
             diff_chunks.extend(chunk.get_chunks())
         return diff_chunks
+
+    def _get_fallback_sig(self, path: bytes) -> str:
+        """
+        Get a signature for a file path based on the fallback grouping strategy.
+
+        Args:
+            path: The file path as bytes
+
+        Returns:
+            A string signature for grouping
+        """
+        path_str = path.decode("utf-8", errors="replace")
+
+        if self.fallback_grouping_strategy == "all_together":
+            return "all"
+        elif self.fallback_grouping_strategy == "by_file_path":
+            return path_str
+        elif self.fallback_grouping_strategy == "by_file_name":
+            return Path(path_str).name
+        elif self.fallback_grouping_strategy == "by_file_extension":
+            return Path(path_str).suffix or "(no extension)"
+        else:
+            logger.warning(
+                f"Unknown fallback_grouping_strategy '{self.fallback_grouping_strategy}', using 'all_together'"
+            )
+            return "all"
+
+    def _group_fallback_chunks(
+        self, fallback_chunks: list[Chunk]
+    ) -> list[CompositeDiffChunk]:
+        """
+        Group fallback chunks based on the configured strategy using union-find.
+
+        Each chunk can contain multiple diff chunks with different paths.
+        Chunks are grouped if they share any common signature based on the strategy.
+
+        Args:
+            fallback_chunks: Chunks that failed annotation
+
+        Returns:
+            List of composite chunks grouped according to the strategy
+        """
+        if not fallback_chunks:
+            return []
+
+        # Build signature sets for each chunk
+        chunk_signatures: list[set[str]] = []
+        for chunk in fallback_chunks:
+            # Get all canonical paths for this chunk (handles composite chunks)
+            paths = chunk.canonical_paths()
+            # Generate signatures for each path
+            sigs = {self._get_fallback_sig(path) for path in paths}
+            chunk_signatures.append(sigs)
+
+        # Use union-find to group chunks with overlapping signatures
+        chunk_ids = list(range(len(fallback_chunks)))
+        uf = UnionFind(chunk_ids)
+
+        # Create inverted index: signature -> list of chunk indices
+        sig_to_chunks: dict[str, list[int]] = defaultdict(list)
+        for i, sigs in enumerate(chunk_signatures):
+            for sig in sigs:
+                sig_to_chunks[sig].append(i)
+
+        # Union chunks that share common signatures
+        for _, chunk_indices in sig_to_chunks.items():
+            if len(chunk_indices) > 1:
+                first = chunk_indices[0]
+                for i in range(1, len(chunk_indices)):
+                    uf.union(first, chunk_indices[i])
+
+        # Group chunks by their root in union-find
+        groups: dict[int, list[Chunk]] = defaultdict(list)
+        for i in range(len(fallback_chunks)):
+            root = uf.find(i)
+            groups[root].append(fallback_chunks[i])
+
+        return [
+            CompositeDiffChunk(chunks=group_chunks) for group_chunks in groups.values()
+        ]
 
     def _group_by_overlapping_signatures(
         self,
