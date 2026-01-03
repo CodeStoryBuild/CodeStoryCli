@@ -2,7 +2,7 @@
 """
 Build script to create executable for codestory CLI tool using Nuitka.
 Usage:
-    python build_exe_opt.py
+    python build.py
 """
 
 import argparse

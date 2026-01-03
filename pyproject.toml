@@ -5,12 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "codestory-cli"
 version = "0.0.1"
-description = "An AI-powered abstraction layer above Git. Focus on vibecoding, let codestory handle the rest."
+description = "Every project should have a good story behind it. With a good story (git history), you can reason about changes in a way that would be impossible just looking at a codebase. But let us do the work in creating that story"
 authors = [
   { name = "Adem Can", email = "ademfcan@gmail.com" }
 ]
 readme = "README.md"
-license = { text = "MIT" }
+license = "GPL-2.0-only"
+license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
 dependencies = [
   "typer-slim>=0.12.0",
@@ -21,8 +22,9 @@ dependencies = [
   "platformdirs>=4.5.0",
   "httpx>=0.28.1",
   "tqdm>=4.67.1",
-  "hdbscan>=0.8.40",
-  "fastembed>=0.7.4"
+  "fastembed>=0.7.4",
+  "scikit-learn>=1.8.0",
+  "networkx>=3.0"
 ]
 
 [project.scripts]

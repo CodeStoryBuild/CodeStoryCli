@@ -47,7 +47,7 @@ jobs:
       # --- BUILD STEP ---
       
       - name: Build Executable (Nuitka)
-        run: python build_exe_opt.py
+        run: python build.py
 
       # --- TEST STEPS ---
 
