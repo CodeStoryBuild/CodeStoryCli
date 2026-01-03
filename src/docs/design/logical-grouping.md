@@ -22,16 +22,26 @@ While the model is great at grouping, it does have to use some assumptions when 
 
 That is why you can always override the custom commit messages with your own. You can also add arguments to the command to ensure the model understands your specific intent with the changes.
 
-### The Future: Embeddings & Semantics
-We are currently prototyping exciting ways to use language models in combination with our semantic grouping information (changed tokens, scopes, etc.). 
-
-We are working on generating **embeddings** to even more accurately group changes. We are incredibly excited about this direction and expect it to make the system even better at understanding *why* a change happened, not just *what* changed.
-
 ### Supported Models
-We currently support the major providers, as well as local options:
-*   **Google**
-*   **Anthropic**
-*   **OpenAI**
-*   **Ollama** (local models)
-
-We are working to add more models and configurable endpoints soon!
+We currently support most major providers, as well as local options. You can also specify a custom baseurl for custom endpoints
+Currently Supported Providers:
+- Ollama
+- Cohere
+- OpenAI
+- Google
+- Cerebras
+- XAI
+- Nebius
+- Hugging Face
+- Together
+- AWS
+- Anthropic
+- LMStudio
+- Groq
+- SambaNova
+- WatsonX
+- Inception
+- Fireworks
+- Azure
+- Deepseek
+- Mistral

@@ -11,4 +11,5 @@ theme:
 
 nav:
   - Introduction: index.md
+  - Architecture Design: design/index.md
   - CLI Reference: reference/root.md
