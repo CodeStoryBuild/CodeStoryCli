@@ -84,9 +84,9 @@ def test_analyze_required_contexts_mod(context_manager_deps):
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk]
+        [chunk],
     )
-    
+
     req = cm.get_required_contexts()
     assert (b"file.txt", True) in req
     assert (b"file.txt", False) in req
@@ -97,9 +97,9 @@ def test_analyze_required_contexts_add(context_manager_deps):
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk]
+        [chunk],
     )
-    
+
     req = cm.get_required_contexts()
     assert (b"file.txt", False) in req
     assert (b"file.txt", True) not in req
@@ -110,9 +110,9 @@ def test_analyze_required_contexts_del(context_manager_deps):
         context_manager_deps["parser"],
         context_manager_deps["reader"],
         context_manager_deps["qm"],
-        [chunk]
+        [chunk],
     )
-    
+
     req = cm.get_required_contexts()
     assert (b"file.txt", True) in req
     assert (b"file.txt", False) not in req

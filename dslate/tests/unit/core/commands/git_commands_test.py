@@ -56,7 +56,7 @@ def test_parse_file_metadata_standard(git_commands):
         b"diff --git a/test.txt b/test.txt",
         b"index 123..456 100644",
         b"--- a/test.txt",
-        b"+++ b/test.txt"
+        b"+++ b/test.txt",
     ]
     old, new, mode = git_commands._parse_file_metadata(lines)
     assert old == b"test.txt"
@@ -70,7 +70,7 @@ def test_parse_file_metadata_new_file(git_commands):
         b"new file mode 100644",
         b"index 000..123",
         b"--- /dev/null",
-        b"+++ b/new.txt"
+        b"+++ b/new.txt",
     ]
     old, new, mode = git_commands._parse_file_metadata(lines)
     assert old is None
@@ -84,7 +84,7 @@ def test_parse_file_metadata_deleted_file(git_commands):
         b"deleted file mode 100644",
         b"index 123..000",
         b"--- a/del.txt",
-        b"+++ /dev/null"
+        b"+++ /dev/null",
     ]
     old, new, mode = git_commands._parse_file_metadata(lines)
     assert old == b"del.txt"
@@ -99,7 +99,7 @@ def test_parse_file_metadata_rename(git_commands):
         b"rename from old.txt",
         b"rename to new.txt",
         b"--- a/old.txt",
-        b"+++ b/new.txt"
+        b"+++ b/new.txt",
     ]
     old, new, mode = git_commands._parse_file_metadata(lines)
     assert old == b"old.txt"
@@ -111,7 +111,7 @@ def test_parse_file_metadata_fallback(git_commands):
     lines = [
         b"diff --git a/empty.txt b/empty.txt",
         b"new file mode 100644",
-        b"index 000..123"
+        b"index 000..123",
     ]
     old, new, mode = git_commands._parse_file_metadata(lines)
     assert old is None

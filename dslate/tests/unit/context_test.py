@@ -33,7 +33,7 @@ def test_global_config_custom_values():
         model_temperature=0.5,
         aggresiveness="Extra",
         verbose=True,
-        auto_accept=True
+        auto_accept=True,
     )
     assert config.model == "openai:gpt-4"
     assert config.api_key == "sk-test"
