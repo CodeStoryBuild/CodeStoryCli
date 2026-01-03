@@ -44,10 +44,9 @@ def main():
         "--name",
         "vibe",
         "--clean",  # Clean PyInstaller cache and remove temporary files
-        "--collect-all",
-        "readchar",  # Include package metadata for readchar
-        "--collect-all",
-        f"vibe",  # Include package data
+        "--collect-all", "readchar",  # Include package metadata for readchar
+        "--collect-all", "vibe",  # Include package data
+        "--additional-hooks-dir=custom_hooks",
         "vibe/vibe/cli.py",  # Main script to execute
     ]
 
