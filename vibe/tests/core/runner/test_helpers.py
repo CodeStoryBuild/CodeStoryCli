@@ -34,7 +34,7 @@ class DeterministicChunker(MechanicalChunker):
         for chunk in diff_chunks:
             # Check if chunk should be split
             should_split = any(
-                keyword in chunk.format_json() for keyword in self.split_keywords
+                keyword.encode("utf-8") in chunk.parsed_content for keyword in self.split_keywords
             )
 
             if should_split:

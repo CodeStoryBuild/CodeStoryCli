@@ -34,8 +34,8 @@ def create_expand_pipeline(
     git_interface = SubprocessGitInterface(repo_path)
     commands = GitCommands(git_interface)
 
-    # chunker = AtomicChunker()
-    chunker = SimpleChunker()
+    chunker = AtomicChunker()
+    # chunker = SimpleChunker()
     # logical_grouper = SingleGrouper()
     logical_grouper = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash"))
 

@@ -72,11 +72,11 @@ class GitSynthesizer:
         chunks: List[DiffChunk], total_chunks_per_file: Dict[bytes, int]
     ) -> Dict[bytes, bytes]:
         """
-        Generates a dictionary of valid, cumulative unified diffs (patches) for each file
+        Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
+        This method is stateful and correctly recalculates hunk headers for subsets of chunks.
         """
         patches: Dict[bytes, bytes] = {}
 
-        # group chunks by file
         sorted_chunks = sorted(chunks, key=lambda c: c.canonical_path())
 
         for file_path, file_chunks_iter in groupby(
@@ -84,173 +84,95 @@ class GitSynthesizer:
         ):
             file_chunks: list[DiffChunk] = list(file_chunks_iter)
 
-            if len(file_chunks) == 0:
-                logger.warning(
-                    "No chunks found for file: {file_path}", file_path=file_path
-                )
+            if not file_chunks:
                 continue
 
             current_count = len(file_chunks)
             total_expected = total_chunks_per_file.get(file_path, current_count)
-
             patch_lines = []
-
-            # single chunk for metadata extraction
-            single_chunk: DiffChunk = file_chunks[0]
+            single_chunk = file_chunks[0]
 
             old_file_path = (
                 GitSynthesizer.sanitize_filename(single_chunk.old_file_path)
-                if single_chunk.old_file_path is not None
+                if single_chunk.old_file_path
                 else None
             )
             new_file_path = (
                 GitSynthesizer.sanitize_filename(single_chunk.new_file_path)
-                if single_chunk.new_file_path is not None
+                if single_chunk.new_file_path
                 else None
             )
 
-            multiple_chunks = len(file_chunks) > 1
-
-            # start by generating patch header
-            # multiple chunks means it must be standard chunks
-            # a single chunk can be different types
-            if multiple_chunks:
-                # TMP: check that if there are multiple chunks, its split content
-                assert all(
-                    c.has_content for c in file_chunks
-                ), "Standard chunk does not have content!"
-                assert all(
-                    c.old_file_path == single_chunk.old_file_path for c in file_chunks
-                ), "Standard chunk old file paths dont match!"
-                assert all(
-                    c.new_file_path == single_chunk.new_file_path for c in file_chunks
-                ), "Standard chunk new file paths dont match!"
-                assert all(
-                    c.is_file_addition == single_chunk.is_file_addition
-                    for c in file_chunks
-                ), "Standard chunk file addition flags dont match!"
-                assert all(
-                    c.is_file_deletion == single_chunk.is_file_deletion
-                    for c in file_chunks
-                ), "Standard chunk file deletion flags dont match!"
-                assert all(
-                    c.is_file_rename == single_chunk.is_file_rename for c in file_chunks
-                ), "Standard chunk file rename flags dont match!"
-
             if single_chunk.is_standard_modification:
-                patch_lines.append(
-                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
-                )
+                patch_lines.append(b"diff --git a/" + new_file_path + b" b/" + new_file_path)
             elif single_chunk.is_file_rename:
-                patch_lines.append(
-                    b"diff --git a/" + old_file_path + b" b/" + new_file_path
-                )
+                patch_lines.append(b"diff --git a/" + old_file_path + b" b/" + new_file_path)
                 patch_lines.append(b"rename from " + old_file_path)
                 patch_lines.append(b"rename to " + new_file_path)
             elif single_chunk.is_file_deletion:
-                # possible edge case: file deletion with multiple chunks
-                if current_count < total_expected:
-                    # in this case, we treat it as a standard modification
-                    patch_lines.append(
-                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
-                    )
-                else:
-                    # we have all deletion chunks, so we can treat it as a deletion
-                    patch_lines.append(
-                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
-                    )
-                    patch_lines.append(
-                        b"deleted file mode " + (single_chunk.file_mode or b"100644")
-                    )
+                # Treat partial deletions as a modification for the header
+                patch_lines.append(b"diff --git a/" + old_file_path + b" b/" + old_file_path)
+                if current_count >= total_expected:
+                    patch_lines.append(b"deleted file mode " + (single_chunk.file_mode or b"100644"))
             elif single_chunk.is_file_addition:
-                patch_lines.append(
-                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
-                )
-                patch_lines.append(
-                    b"new file mode " + (single_chunk.file_mode or b"100644")
-                )
-            elif single_chunk.is_standard_modification:
-                patch_lines.append(
-                    b"diff --git a/" + new_file_path + b" b/" + new_file_path
-                )
+                patch_lines.append(b"diff --git a/" + new_file_path + b" b/" + new_file_path)
+                patch_lines.append(b"new file mode " + (single_chunk.file_mode or b"100644"))
 
-            old_file_header = (
-                GitSynthesizer.sanitize_filename(b"a/" + old_file_path)
-                if old_file_path is not None
-                else DEVNULL
-            )
-
-            new_file_header = (
-                GitSynthesizer.sanitize_filename(b"b/" + new_file_path)
-                if new_file_path is not None
-                else DEVNULL
-            )
-
-            # second part of deletion edge case
-            # if we are in partial deletion state, new_file_header should act like a standard_change
-            # that is it should be old_file_header
+            old_file_header = b"a/" + old_file_path if old_file_path else DEVNULL
+            new_file_header = b"b/" + new_file_path if new_file_path else DEVNULL
             if single_chunk.is_file_deletion and current_count < total_expected:
                 new_file_header = old_file_header
 
             patch_lines.append(b"--- " + old_file_header)
             patch_lines.append(b"+++ " + new_file_header)
 
-            if not multiple_chunks and not single_chunk.has_content:
+            if not any(c.has_content for c in file_chunks):
                 patch_lines.append(b"@@ -0,0 +0,0 @@")
             else:
-                # Sort chunks by their old_start line to ensure correct order in the patch
-                sorted_file_chunks = sorted(
-                    file_chunks,
-                    key=lambda c: c.line_anchor,
-                )
-
+                # Sort chunks by their original line anchor to process them in order.
+                sorted_file_chunks = sorted(file_chunks, key=lambda c: c.line_anchor)
                 merged = GitSynthesizer.merge_chunks(sorted_file_chunks)
 
-                has_newline_fallback = False
+                # These counters track the end of the *last* hunk we wrote to the patch.
+                last_hunk_end_old = 0
+                last_hunk_end_new = 0
 
-                for sorted_chunk in merged:
-                    removals = [
-                        p for p in sorted_chunk.parsed_content if isinstance(p, Removal)
-                    ]
-                    additions = [
-                        p
-                        for p in sorted_chunk.parsed_content
-                        if isinstance(p, Addition)
-                    ]
+                for chunk in merged:
+                    if not chunk.has_content:
+                        continue
 
-                    old_len = len(removals)
-                    new_len = len(additions)
+                    old_len = chunk.old_len()
+                    new_len = chunk.new_len()
 
-                    hunk_header = f"@@ -{sorted_chunk.old_start},{old_len} +{sorted_chunk.new_start},{new_len} @@".encode(
-                        "utf-8"
-                    )
+                    # The `old_start` is always relative to the original file, so it's our stable anchor.
+                    # The `new_start` must be recalculated based on the state of the patch so far.
+                    # The number of unchanged lines between the last hunk and this one is the key.
+                    # This gap is calculated from the old file's perspective.
+                    gap_since_last_hunk = chunk.old_start - last_hunk_end_old
+                    
+                    # The new start line is where the last hunk ended in the new file, plus the gap.
+                    recalculated_new_start = last_hunk_end_new + gap_since_last_hunk
+
+                    hunk_header = f"@@ -{chunk.old_start},{old_len} +{recalculated_new_start},{new_len} @@".encode("utf-8")
                     patch_lines.append(hunk_header)
 
-                    for removal in removals:
-                        patch_lines.append(b"-" + removal.content)
+                    for item in chunk.parsed_content:
+                        if isinstance(item, Removal):
+                            patch_lines.append(b"-" + item.content)
+                        elif isinstance(item, Addition):
+                            patch_lines.append(b"+" + item.content)
 
-                    for addition in additions:
-                        patch_lines.append(b"+" + addition.content)
+                    # Update the trackers for the next iteration.
+                    last_hunk_end_old = chunk.old_start + old_len
+                    last_hunk_end_new = recalculated_new_start + new_len
 
-                    has_newline_fallback |= sorted_chunk.contains_newline_fallback
+                # Handle the no-newline marker for the last chunk in the file
+                if sorted_file_chunks and sorted_file_chunks[-1].contains_newline_marker:
+                     patch_lines.append(b"\\ No newline at end of file")
 
-                if has_newline_fallback:
-                    patch_lines.append(b"\\ No newline at end of file")
 
-            file_patch = b"\n".join(patch_lines)
-            has_newline = file_patch.endswith(b"\n")
-
-            if not has_newline:
-                file_patch += b"\n"
-
-            # else no need for a \n
-
+            file_patch = b"\n".join(patch_lines) + b"\n"
             patches[file_path] = file_patch
-
-            logger.debug(
-                "Patch generation progress: cumulative_patches={count}",
-                count=len(patches),
-            )
 
         return patches
 
