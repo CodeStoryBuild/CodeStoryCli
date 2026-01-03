@@ -1,7 +1,7 @@
 from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.diff_chunk import DiffChunk
 from ..data.commit_group import CommitGroup
+from ..data.immutable_chunk import ImmutableChunk
 from .diff_generator import DiffGenerator
 
 

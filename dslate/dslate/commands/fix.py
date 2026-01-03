@@ -30,7 +30,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
     )
     if not resolved:
         raise GitError(
-            "Commit not found: {commit}".format(commit=fix_context.commit_hash)
+            f"Commit not found: {fix_context.commit_hash}"
         )
 
     if (
@@ -40,10 +40,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         != 0
     ):
         raise GitError(
-            "Commit {commit} is not an ancestor of HEAD {head}; only linear expansions are supported".format(
-                commit=resolved[:7],
-                head=resolved[:7],
-            )
+            f"Commit {resolved[:7]} is not an ancestor of HEAD {resolved[:7]}; only linear expansions are supported"
         )
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)

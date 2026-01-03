@@ -330,10 +330,7 @@ class DiffChunk:
             # If only additions, old_start is where we're inserting in the old file
             # For pure additions, old_line represents the line AFTER which we insert
             # So old_start should be old_line (or 0 for new files)
-            if old_file_path is None:
-                old_start = 0  # New file
-            else:
-                old_start = additions[0].old_line
+            old_start = 0 if old_file_path is None else additions[0].old_line
         else:
             raise ValueError("Invalid input parsed_slice")
 

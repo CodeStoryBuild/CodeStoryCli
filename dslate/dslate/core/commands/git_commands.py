@@ -5,8 +5,8 @@ from typing import Union
 from ..data.composite_diff_chunk import CompositeDiffChunk
 from ..data.diff_chunk import DiffChunk
 from ..data.chunk import Chunk
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.hunk_wrapper import HunkWrapper
+from ..data.immutable_chunk import ImmutableChunk
 from ..data.immutable_hunk_wrapper import ImmutableHunkWrapper
 from ..git_interface.interface import GitInterface
 

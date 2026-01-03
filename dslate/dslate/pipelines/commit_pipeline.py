@@ -8,8 +8,8 @@ from rich.progress import Progress
 from ..core.chunker.interface import MechanicalChunker
 from ..core.commands.git_commands import GitCommands
 from ..core.data.chunk import Chunk
-from ..core.data.immutable_chunk import ImmutableChunk
 from ..core.data.commit_group import CommitGroup
+from ..core.data.immutable_chunk import ImmutableChunk
 from ..core.file_reader.file_parser import FileParser
 from ..core.file_reader.protocol import FileReader
 from ..core.git_interface.interface import GitInterface

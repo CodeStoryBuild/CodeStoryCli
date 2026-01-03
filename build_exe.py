@@ -20,9 +20,7 @@ def main():
             directory.mkdir()
 
     # Install PyInstaller if not already installed
-    try:
-        import PyInstaller
-    except ImportError:
+    if not importlib.util.find_spec("PyInstaller"):    
         print("Installing PyInstaller...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "PyInstaller"])
 
@@ -30,12 +28,7 @@ def main():
     system = platform.system().lower()
 
     # Define output executable name based on platform
-    if system == "windows":
-        exe_name = "dslate.exe"
-        separator = ";"
-    else:
-        exe_name = "dslate"
-        separator = ":"
+    exe_name = "dslate.exe" if system == "windows" else "dslate"
 
     # Set up PyInstaller command
     cmd = [

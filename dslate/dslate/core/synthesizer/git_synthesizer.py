@@ -5,9 +5,9 @@ from typing import Optional
 
 from loguru import logger
 
-from ..data.immutable_chunk import ImmutableChunk
 from ..data.diff_chunk import DiffChunk
 from ..data.commit_group import CommitGroup
+from ..data.immutable_chunk import ImmutableChunk
 from ..git_interface.interface import GitInterface
 from .diff_generator import DiffGenerator
 
