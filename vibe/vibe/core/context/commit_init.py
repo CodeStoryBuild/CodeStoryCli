@@ -18,6 +18,12 @@ from vibe.core.file_reader.git_file_reader import GitFileReader
 
 
 def verify_repo(commands: GitCommands, console: Console, target: str) -> bool:
+    # Step -1: ensure we're inside a git repository
+    if not commands.is_git_repo():
+        raise RuntimeError(
+            "Not a git repository (or any of the parent directories). Please run this command inside a Git repo."
+        )
+
     # Step 0: clean working area
     if commands.need_reset():
         unstage = inquirer.confirm(

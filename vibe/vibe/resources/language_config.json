@@ -33,6 +33,6 @@
             ]
         ,
         "comment_queries": ["((comment) @placeholder)"],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": "True"
     }
 }

@@ -286,6 +286,12 @@ class GitCommands:
         )
         return bool(untracked_files.strip())
 
+    def is_git_repo(self) -> bool:
+        """Return True if current cwd is inside a git work tree, else False."""
+        result = self.git.run_git_text(["rev-parse", "--is-inside-work-tree"])
+        # When not a repo, run_git_text returns None; treat as False
+        return bool(result and result.strip() == "true")
+
     def get_processed_working_diff(
         self, base_hash: str, new_hash: str, target: Optional[str] = None
     ) -> List[DiffChunk]:

@@ -19,8 +19,8 @@ class ChunkSignature:
 
     chunk_id: int
     symbols: Set[str]
+    scopes: Set[str]
     has_analysis_context: bool
-    scope: Optional[str] = None
 
 
 class SemanticGrouper:
@@ -143,7 +143,7 @@ class SemanticGrouper:
                     chunk_id=chunk_id,
                     symbols=set(),
                     has_analysis_context=False,
-                    scope=None,
+                    scopes=set(),
                 )
             else:
                 # Analysis succeeded, unpack symbols and scope
@@ -152,7 +152,7 @@ class SemanticGrouper:
                     chunk_id=chunk_id,
                     symbols=symbols,
                     has_analysis_context=True,
-                    scope=scope,
+                    scopes=scope,
                 )
             chunk_signatures.append(chunk_signature)
 
@@ -161,7 +161,7 @@ class SemanticGrouper:
     def _generate_signature_for_chunk(
         self, diff_chunks: List[DiffChunk], context_manager: ContextManager
     ) -> Optional[
-        tuple[Set[str], Optional[str]]
+        tuple[Set[str], Set[str]]
     ]:  # Return type is now Optional[tuple[Set[str], Optional[str]]]
         """
         Generate a semantic signature for a single chunk.
@@ -175,7 +175,7 @@ class SemanticGrouper:
             )  # An empty chunk has a valid, empty signature with no scope
 
         total_signature = set()
-        chunk_scope = None
+        total_scope = set()
 
         for diff_chunk in diff_chunks:
             try:
@@ -186,19 +186,17 @@ class SemanticGrouper:
                     diff_chunk, context_manager
                 )
                 total_signature.update(chunk_signature)
-
-                # Use the first non-None scope we encounter as the chunk scope
-                if chunk_scope is None and diff_chunk_scope is not None:
-                    chunk_scope = diff_chunk_scope
+                total_scope.update(diff_chunk_scope)
 
             except Exception as e:
                 logger.warning(
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
+                raise RuntimeError(e)
                 return None  # Signal failure explicitly
-        print(f"{total_signature=} {chunk_scope=}")
+        print(f"{total_signature=} {total_scope=}")
 
-        return (total_signature, chunk_scope)
+        return (total_signature, total_scope)
 
     def _has_analysis_context(
         self, diff_chunk: DiffChunk, context_manager: ContextManager
@@ -238,7 +236,7 @@ class SemanticGrouper:
 
     def _get_signature_for_diff_chunk(
         self, diff_chunk: DiffChunk, context_manager: ContextManager
-    ) -> tuple[Set[str], Optional[str]]:
+    ) -> tuple[Set[str], Set[str]]:
         """
         Generate signature and scope information for a single DiffChunk based on affected line ranges.
 
@@ -251,9 +249,10 @@ class SemanticGrouper:
             Scope is determined by the LCA scope of the chunk's line ranges.
         """
         signature = set()
-        chunk_scope = None
+        chunk_scope = set()
 
         if diff_chunk.is_standard_modification:
+            
             # For modifications, analyze both old and new line ranges
             file_path = diff_chunk.canonical_path()
 
@@ -265,8 +264,7 @@ class SemanticGrouper:
                     diff_chunk.old_start, old_end, old_context
                 )
                 signature.update(old_signature)
-                if chunk_scope is None and old_scope:
-                    chunk_scope = old_scope
+                chunk_scope.update(old_scope)
 
             # New version signature
             new_context = context_manager.get_context(file_path, False)
@@ -276,8 +274,7 @@ class SemanticGrouper:
                     diff_chunk.new_start, new_end, new_context
                 )
                 signature.update(new_signature)
-                if chunk_scope is None and new_scope:
-                    chunk_scope = new_scope
+                chunk_scope.update(old_scope)
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
@@ -308,8 +305,7 @@ class SemanticGrouper:
                     diff_chunk.old_start, old_end, old_context
                 )
                 signature.update(old_signature)
-                if chunk_scope is None and old_scope:
-                    chunk_scope = old_scope
+                chunk_scope.update(old_scope)
 
             if new_context and diff_chunk.new_start is not None:
                 new_end = diff_chunk.new_start + diff_chunk.new_len() - 1
@@ -317,14 +313,13 @@ class SemanticGrouper:
                     diff_chunk.new_start, new_end, new_context
                 )
                 signature.update(new_signature)
-                if chunk_scope is None and new_scope:
-                    chunk_scope = new_scope
+                chunk_scope.update(new_scope)
 
         return (signature, chunk_scope)
 
     def _get_signature_for_line_range(
         self, start_line: int, end_line: int, context: AnalysisContext
-    ) -> tuple[Set[str], Optional[str]]:
+    ) -> tuple[Set[str], Set[str]]:
         """
         Get signature and scope information for a specific line range using the analysis context.
 
@@ -337,28 +332,31 @@ class SemanticGrouper:
             Tuple of (symbols, scope) for the specified line range.
             Scope is the LCA scope, simplified to the scope of the first line.
         """
-        symbols = set()
+        range_symbols = set()
+        range_scope = set()
 
         if start_line < 1 or end_line < start_line:
             # Invalid line range (eg empty hunk)
-            return (symbols, None)
+            logger.warning(f"Invalid line range with start_line({start_line}) < 1 or end_line({end_line}) < start_line({start_line})")
+            return (range_symbols, range_scope)
 
         # convert to zero indexed
         start_index = start_line-1
         end_index = end_line-1
 
-        # Convert from 1-indexed chunks to 0-indexed scope/symbol maps
-        # Get scope from the first line (LCA scope)
-        lca_scope = context.scope_map.get_lca_scope_for_range((start_index, end_index))
-
-        lca_scope_id = lca_scope.id if lca_scope is not None else None
-
         # Collect symbols from fall lines in the range
         for line in range(start_index, end_index + 1):
-            line_symbols = context.symbol_map.line_symbols.get(line, set())
-            symbols.update(line_symbols)
-        
-        return (symbols, lca_scope_id)
+            line_symbols = context.symbol_map.line_symbols.get(line)
+            
+            if line_symbols:
+                range_symbols.update(line_symbols)
+
+            scopes = context.scope_map.scope_lines.get(line)
+            
+            if scopes:
+                range_scope.update(scopes)
+
+        return (range_symbols, range_scope)
 
     def _group_by_overlapping_signatures(
         self, chunk_signatures: List[ChunkSignature], original_chunks: List[Chunk]
@@ -381,34 +379,29 @@ class SemanticGrouper:
 
         # Step 1: Create an inverted index from symbol -> list of chunk_ids
         symbol_to_chunks: Dict[str, List[int]] = defaultdict(list)
-        for sig in chunk_signatures:
-            # Only consider chunks with symbols for grouping
-            if sig.symbols:
-                for symbol in sig.symbols:
-                    symbol_to_chunks[symbol].append(sig.chunk_id)
-
-        # Step 2: Union chunks that share common symbols
-        for symbol, ids in symbol_to_chunks.items():
-            if len(ids) > 1:
-                first_chunk_id = ids[0]
-                for i in range(1, len(ids)):
-                    uf.union(first_chunk_id, ids[i])
-
-        # Step 3: Additional grouping by scope (if scope is not None)
         scope_to_chunks: Dict[str, List[int]] = defaultdict(list)
         for sig in chunk_signatures:
-            if sig.scope is not None:  # Only group chunks that have a scope
-                scope_to_chunks[sig.scope].append(sig.chunk_id)
+            # Only consider chunks with symbols for grouping
+            for symbol in sig.symbols:
+                symbol_to_chunks[symbol].append(sig.chunk_id)
+            for scope in sig.scopes:
+                scope_to_chunks[scope].append(sig.chunk_id)
 
-        # Step 4: Union chunks that share the same scope
-        for scope, ids in scope_to_chunks.items():
+        # Step 2: Union chunks that share common symbols
+        for _, ids in symbol_to_chunks.items():
             if len(ids) > 1:
                 first_chunk_id = ids[0]
                 for i in range(1, len(ids)):
                     uf.union(first_chunk_id, ids[i])
-        print(f"{scope_to_chunks=}")
 
-        # Step 5: Group chunks by their root in the Union-Find structure
+        # Step 2.5: Union chunks that share common scopes
+        for _, ids in scope_to_chunks.items():
+            if len(ids) > 1:
+                first_chunk_id = ids[0]
+                for i in range(1, len(ids)):
+                    uf.union(first_chunk_id, ids[i])
+
+        # Step 3: Group chunks by their root in the Union-Find structure
         groups: Dict[int, List[Chunk]] = defaultdict(list)
         for signature in chunk_signatures:
             root = uf.find(signature.chunk_id)

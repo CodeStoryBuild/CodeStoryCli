@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from tree_sitter import Node
-from typing import Dict, Set
 
 from .query_manager import QueryManager
 from .scope_mapper import ScopeMap
@@ -10,7 +9,7 @@ from .scope_mapper import ScopeMap
 class SymbolMap:
     """Maps line number to a set of fully-qualified symbols on that line."""
 
-    line_symbols: Dict[int, Set[str]]
+    line_symbols: dict[int, set[str]]
 
 
 class SymbolMapper:
@@ -46,12 +45,11 @@ class SymbolMapper:
             line_ranges=line_ranges,
         )
 
-        line_symbols_mut: Dict[int, Set[str]] = {}
+        line_symbols_mut: dict[int, set[str]] = {}
 
         # Process each captured symbol
         for match_class, nodes in symbol_captures.items():
             for node in nodes:
-                start_line = node.start_point[0]
 
                 text = node.text.decode("utf8", errors="replace")
 
@@ -60,9 +58,13 @@ class SymbolMapper:
                 )
 
                 if qualified_symbol in defined_symbols:
-                    # we can group on this symbol
+                    start_line = node.start_point[0]
+                    end_line = node.start_point[1]
 
-                    # Add the qualified symbol to the line's symbol set
-                    line_symbols_mut.setdefault(start_line, set()).add(qualified_symbol)
+                    for i in range(start_line, end_line + 1):
+                        # we can group on this symbol
+
+                        # Add the qualified symbol to the line's symbol set
+                        line_symbols_mut.setdefault(start_line, set()).add(qualified_symbol)
 
         return SymbolMap(line_symbols=line_symbols_mut)
