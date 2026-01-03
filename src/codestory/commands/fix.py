@@ -23,7 +23,6 @@ from codestory.core.exceptions import (
     DetachedHeadError,
     GitError,
 )
-from codestory.core.git_interface.interface import GitInterface
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import (
     validate_commit_hash,
@@ -31,47 +30,42 @@ from codestory.core.validation import (
 )
 
 
-def get_info(git_interface: GitInterface, fix_context: FixContext):
+def get_info(global_context: GlobalContext, fix_context: FixContext):
     # Resolve current branch and head
-    current_branch = (
-        git_interface.run_git_text_out(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
-        or ""
-    )
-    head_hash = git_interface.run_git_text_out(["rev-parse", "HEAD"]).strip() or ""
-
+    current_branch = global_context.current_branch
     if not current_branch:
         raise DetachedHeadError("Detached HEAD is not supported for codestory fix")
 
-    # Verify end commit exists and is on current branch history
-    end_resolved = (
-        git_interface.run_git_text_out(["rev-parse", fix_context.end_commit_hash]) or ""
-    ).strip()
-    if not end_resolved:
+    # Resolve branch tip (use branch instead of ambiguous HEAD)
+    branch_head_hash = global_context.git_commands.get_commit_hash(current_branch)
+    if not branch_head_hash:
+        raise GitError(f"Failed to resolve branch: {current_branch}")
+
+    # Verify end commit exists and is on target branch history
+    try:
+        end_resolved = global_context.git_commands.get_commit_hash(
+            fix_context.end_commit_hash
+        )
+    except ValueError:
         raise GitError(f"Commit not found: {fix_context.end_commit_hash}")
 
-    is_ancestor = git_interface.run_git_text(
-        ["merge-base", "--is-ancestor", end_resolved, head_hash]
-    )
-    if is_ancestor is None or is_ancestor.returncode != 0:
+    if not global_context.git_commands.is_ancestor(end_resolved, branch_head_hash):
         raise GitError(
-            "The end commit must be an ancestor of HEAD (linear history only)."
+            f"The end commit must be an ancestor of the branch: {current_branch}."
         )
 
     # Determine base commit (start)
     if fix_context.start_commit_hash:
         # User provided explicit start commit
-        start_resolved = (
-            git_interface.run_git_text_out(["rev-parse", fix_context.start_commit_hash])
-            or ""
-        ).strip()
-        if not start_resolved:
+        try:
+            start_resolved = global_context.git_commands.get_commit_hash(
+                fix_context.start_commit_hash
+            )
+        except ValueError:
             raise GitError(f"Start commit not found: {fix_context.start_commit_hash}")
 
         # Validate that start < end (start is ancestor of end)
-        is_start_before_end = git_interface.run_git_text(
-            ["merge-base", "--is-ancestor", start_resolved, end_resolved]
-        )
-        if is_start_before_end is None or is_start_before_end.returncode != 0:
+        if not global_context.git_commands.is_ancestor(start_resolved, end_resolved):
             raise GitError(
                 "Start commit must be an ancestor of end commit (start < end)."
             )
@@ -83,15 +77,15 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         base_hash = start_resolved
     else:
         # Default: use end's parent as start (original behavior)
-        base_hash = (
-            git_interface.run_git_text_out(["rev-parse", f"{end_resolved}^"]) or ""
-        ).strip()
+        base_hash = global_context.git_commands.try_get_parent_hash(end_resolved)
 
         if not base_hash:
             raise GitError("Fixing the root commit is not supported yet!")
 
     # Validate that there are no merge commits in the range to be fixed
-    validate_no_merge_commits_in_range(git_interface, base_hash, head_hash)
+    validate_no_merge_commits_in_range(
+        global_context.git_commands, base_hash, current_branch
+    )
 
     return base_hash, end_resolved, current_branch
 
@@ -99,8 +93,16 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str | None):
     from loguru import logger
 
-    validated_end_hash = validate_commit_hash(commit_hash)
-    validated_start_hash = validate_commit_hash(start_commit) if start_commit else None
+    validated_end_hash = validate_commit_hash(
+        commit_hash, global_context.git_commands, global_context.current_branch
+    )
+    validated_start_hash = (
+        validate_commit_hash(
+            start_commit, global_context.git_commands, global_context.current_branch
+        )
+        if start_commit
+        else None
+    )
 
     fix_context = FixContext(
         end_commit_hash=validated_end_hash, start_commit_hash=validated_start_hash
@@ -108,9 +110,7 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
 
     logger.debug("Fix command started", fix_context=fix_context)
 
-    base_hash, new_hash, base_branch = get_info(
-        global_context.git_interface, fix_context
-    )
+    base_hash, new_hash, base_branch = get_info(global_context, fix_context)
 
     commit_context = CommitContext(
         target=None,
@@ -146,13 +146,13 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
         )
 
         # Update the reference pointer
-        global_context.git_interface.run_git_text_out(
-            ["update-ref", f"refs/heads/{base_branch}", final_head]
-        )
+        global_context.git_commands.update_ref(base_branch, final_head)
 
-        # Sync the working directory to the new head
-        global_context.git_interface.run_git_text_out(["read-tree", "HEAD"])
+        # Sync the working directory to the new head (use branch name rather than ambiguous HEAD)
+        global_context.git_commands.read_tree(base_branch)
 
         logger.success("Fix command completed successfully")
+        return True
     else:
         logger.error(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
+        return False

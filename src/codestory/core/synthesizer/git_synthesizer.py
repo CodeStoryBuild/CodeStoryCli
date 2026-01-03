@@ -19,7 +19,6 @@
 import os
 import shutil
 import tempfile
-from pathlib import Path
 
 from tqdm import tqdm
 
@@ -27,8 +26,8 @@ from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk
 from codestory.core.diff_generation.git_diff_generator import GitDiffGenerator
-from codestory.core.exceptions import GitError, SynthesizerError
-from codestory.core.git_interface.interface import GitInterface
+from codestory.core.exceptions import SynthesizerError
+from codestory.core.git_commands.git_commands import GitCommands
 
 
 class GitSynthesizer:
@@ -37,36 +36,8 @@ class GitSynthesizer:
     by manipulating the Git Index directly, avoiding worktree/filesystem overhead.
     """
 
-    def __init__(self, git: GitInterface):
-        self.git = git
-
-    def _run_git_binary(
-        self,
-        *args: str,
-        cwd: str | Path | None = None,
-        env: dict | None = None,
-        stdin_content: str | bytes | None = None,
-    ) -> bytes:
-        """Helper to run Git commands via the binary interface."""
-        input_data = None
-        if isinstance(stdin_content, str):
-            input_data = stdin_content.encode("utf-8")
-        elif isinstance(stdin_content, bytes):
-            input_data = stdin_content
-
-        result = self.git.run_git_binary_out(
-            args=list(args), input_bytes=input_data, env=env, cwd=cwd
-        )
-
-        if result is None:
-            raise GitError(f"Git command failed: {' '.join(args)}")
-
-        return result
-
-    def _run_git_decoded(self, *args: str, **kwargs) -> str:
-        """Helper to run Git and get a decoded string."""
-        output_bytes = self._run_git_binary(*args, **kwargs)
-        return output_bytes.decode("utf-8", errors="replace").strip()
+    def __init__(self, git_commands: GitCommands):
+        self.git_commands = git_commands
 
     def _build_tree_index_only(
         self,
@@ -105,15 +76,16 @@ class GitSynthesizer:
                     # 5. Apply patch to the INDEX only (--cached)
                     # --cached: modifies the index, ignores working dir
                     # --unidiff-zero: allows patches with 0 context lines (common in AI diffs)
-                    self._run_git_binary(
-                        "apply",
-                        "--cached",
-                        "--recount",
-                        "--whitespace=nowarn",
-                        "--unidiff-zero",
-                        "--verbose",
+                    self.git_commands.apply(
+                        combined_patch,
+                        [
+                            "--cached",
+                            "--recount",
+                            "--whitespace=nowarn",
+                            "--unidiff-zero",
+                            "--verbose",
+                        ],
                         env=env,
-                        stdin_content=combined_patch,
                     )
                 except RuntimeError as e:
                     raise SynthesizerError(
@@ -122,7 +94,9 @@ class GitSynthesizer:
                     ) from e
 
             # 6. Write the index state to a Tree Object in the Git database
-            new_tree_hash = self._run_git_decoded("write-tree", env=env)
+            new_tree_hash = self.git_commands.write_tree(env=env)
+            if not new_tree_hash:
+                raise SynthesizerError("Failed to write-tree from temporary index.")
 
             return new_tree_hash
 
@@ -132,9 +106,10 @@ class GitSynthesizer:
                 os.unlink(temp_index_path)
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
-        return self._run_git_decoded(
-            "commit-tree", tree_hash, "-p", parent_hash, "-m", message
-        )
+        res = self.git_commands.commit_tree(tree_hash, [parent_hash], message)
+        if not res:
+            raise SynthesizerError("Failed to create commit object.")
+        return res
 
     def execute_plan(
         self,
@@ -150,19 +125,22 @@ class GitSynthesizer:
 
         diff_generator = GitDiffGenerator(groups)
 
-        original_base_commit_hash = self._run_git_decoded("rev-parse", base_commit)
+        original_base_commit_hash = self.git_commands.get_commit_hash(base_commit)
 
         # Create a template index populated with the base commit
         template_fd, template_index_path = tempfile.mkstemp(
             prefix="codestory_template_index_"
         )
         os.close(template_fd)
+        # Git read-tree fails if the index file exists but is empty (0 bytes).
+        if os.path.exists(template_index_path):
+            os.unlink(template_index_path)
 
         try:
             # Populate the template index once
             env = os.environ.copy()
             env["GIT_INDEX_FILE"] = template_index_path
-            self._run_git_binary("read-tree", original_base_commit_hash, env=env)
+            self.git_commands.read_tree(original_base_commit_hash, env=env)
 
             # Track state
             last_synthetic_commit_hash = original_base_commit_hash

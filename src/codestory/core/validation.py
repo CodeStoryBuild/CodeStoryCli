@@ -31,24 +31,42 @@ from codestory.core.exceptions import (
     GitError,
     ValidationError,
 )
-from codestory.core.git_interface.interface import GitInterface
+from codestory.core.git_commands.git_commands import GitCommands
 
 
-def validate_commit_hash(value: str) -> str:
+def validate_commit_hash(
+    value: str, git_commands: GitCommands | None = None, branch: str | None = None
+) -> str:
     """
-    Validate and normalize a git commit hash.
+    Validate and normalize a git commit hash. If `value` is the string "HEAD",
+    and a `git_commands` and `branch` are provided, resolve it by running
+    `git rev-parse <branch>` and return the resolved commit hash.
 
     Args:
         value: The commit hash string to validate
+        git_commands: Optional GitCommands to resolve symbolic refs like HEAD
+        branch: Optional branch name to resolve HEAD against
 
     Returns:
-        The normalized (lowercase) commit hash
+        The normalized (lowercase) commit hash or the raw resolved hash
 
     Raises:
         ValidationError: If the commit hash format is invalid
     """
     if value == "HEAD":
-        return value
+        # Resolve HEAD relative to the provided branch if possible
+        if git_commands is not None and branch:
+            try:
+                return git_commands.get_commit_hash(branch)
+            except ValueError:
+                raise ValidationError(f"Failed to resolve branch: {branch}")
+        # If no branch given but git_commands is provided, fall back to rev-parse HEAD
+        if git_commands is not None:
+            try:
+                return git_commands.get_commit_hash("HEAD")
+            except ValueError:
+                raise ValidationError("Failed to resolve HEAD")
+        raise ValidationError("HEAD is ambiguous without a repository context")
 
     if not value or not isinstance(value, str):
         raise ValidationError("Commit hash cannot be empty")
@@ -237,61 +255,80 @@ def validate_min_size(value: int | None) -> int | None:
     return value
 
 
-def validate_git_repository(git_interface: GitInterface) -> None:
+def validate_git_repository(git_commands: GitCommands) -> None:
     """
     Validate that we're in a git repository.
 
     Args:
-        path: Path to check for git repository
+        git_commands: Git commands to run
 
     Raises:
         GitError: If git is not available or not in a repository
     """
     # Check if git is available
-    version_result = git_interface.run_git_text_out(["--version"])
-    if version_result is None:
-        raise GitError("Git version check failed")
-    # Check if we're in a git repository
-    is_in_repo = git_interface.run_git_text_out(
-        ["rev-parse", "--is-inside-work-tree"],
-    )
-    if is_in_repo is None or "fatal: not a git repository" in is_in_repo:
+    if not git_commands.is_git_repo():
         raise GitError("Current directory is not a git repository")
 
+
+def validate_default_branch(git_commands: GitCommands) -> None:
+    """
+    Validate that we are on a branch (not in detached HEAD state).
+
+    Args:
+        git_commands: Git commands to run
+
+    Raises:
+        DetachedHeadError: If in detached HEAD state
+        GitError: If failed to check branch status
+    """
     # validate that we are on a branch
-    branch_result = git_interface.run_git_text_out(["branch", "--show-current"])
-    if branch_result is None:
-        raise GitError("Failed to check git branch status")
-    original_branch = branch_result or ""
+    branch_name = git_commands.get_show_current_branch()
+
     # check that not a detached branch
-    if not original_branch.strip():
+    if not branch_name:
         msg = "Operation failed: You are in 'detached HEAD' state."
         raise DetachedHeadError(msg)
 
 
+def validate_branch(git_commands: GitCommands, branch_name: str) -> None:
+    """
+    Validate that a branch exists in the repository.
+
+    Args:
+        git_commands: Git commands to run
+        branch_name: The branch name to validate
+
+    Raises:
+        ValidationError: If the branch does not exist
+    """
+    try:
+        git_commands.get_commit_hash(branch_name)
+    except ValueError:
+        raise ValidationError(f"Branch '{branch_name}' does not exist.")
+
+
 def validate_no_merge_commits_in_range(
-    git_interface: GitInterface, start_commit: str, end_ref: str = "HEAD"
+    git_commands: GitCommands, start_commit: str, end_ref: str
 ) -> None:
     """
     Validate that there are no merge commits in the range from start_commit to end_ref.
 
     Args:
-        git_interface: Git interface to run commands
+        git_commands: Git commands to run
         start_commit: The starting commit hash (exclusive)
-        end_ref: The ending reference (inclusive), defaults to HEAD
+        end_ref: The ending reference (inclusive)
 
     Raises:
         ValidationError: If any merge commits are found in the range
     """
     # Use --merges flag to efficiently find only merge commits in the range
-    # This is much faster than checking each commit individually
-    merge_commits_out = git_interface.run_git_text_out(
-        ["rev-list", "--merges", "-n", "1", f"{start_commit}..{end_ref}"]
+    merge_commits = git_commands.get_rev_list(
+        f"{start_commit}..{end_ref}", merges=True, n=1
     )
 
-    if merge_commits_out and merge_commits_out.strip():
+    if merge_commits:
         # Found at least one merge commit
-        merge_commit = merge_commits_out.strip().split()[0]
+        merge_commit = merge_commits[0]
         raise ValidationError(
             f"Merge commit detected: {merge_commit[:7]}",
             f"Cannot rewrite history that contains merge commits. "

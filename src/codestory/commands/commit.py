@@ -18,7 +18,6 @@
 
 from typing import Literal
 
-import typer
 from colorama import Fore, Style
 
 from codestory.context import CommitContext, GlobalContext
@@ -36,9 +35,7 @@ from codestory.core.validation import (
 )
 
 
-def verify_repo_state(
-    commands: GitCommands, target: str, auto_yes: bool = False
-) -> bool:
+def verify_repo_state(commands: GitCommands, target: str) -> bool:
     from loguru import logger
 
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
@@ -64,7 +61,7 @@ def run_commit(
     relevance_filter_level: Literal["safe", "standard", "strict", "none"],
     intent: str | None,
     fail_on_syntax_errors: bool,
-) -> None:
+) -> bool:
     from loguru import logger
 
     # Validate inputs
@@ -89,10 +86,11 @@ def run_commit(
     verify_repo_state(
         global_context.git_commands,
         str(commit_context.target),
-        global_context.config.auto_accept,
     )
     # Create a dangling commit for the current working tree state.
-    tempcommiter = TempCommitCreator(global_context.git_interface)
+    tempcommiter = TempCommitCreator(
+        global_context.git_commands, global_context.current_branch
+    )
 
     base_commit_hash, new_commit_hash = tempcommiter.create_reference_commit()
 
@@ -111,11 +109,9 @@ def run_commit(
 
     # now that we rewrote our changes into a clean link of commits, update the current branch to reference this
     if new_commit_hash is not None and new_commit_hash != base_commit_hash:
-        current_branch = global_context.git_commands.get_current_branch()
+        current_branch = global_context.current_branch
 
-        global_context.git_interface.run_git_binary_out(
-            ["update-ref", f"refs/heads/{current_branch}", new_commit_hash]
-        )
+        global_context.git_commands.update_ref(current_branch, new_commit_hash)
 
         logger.debug(
             "Branch updated: branch={branch} new_head={head}",
@@ -123,14 +119,16 @@ def run_commit(
             head=new_commit_hash,
         )
 
-        # Sync the Git Index (Staging Area) to the new HEAD.
+        # Sync the Git Index (Staging Area) to the new branch tip.
         # This makes the files you just committed show up as "Clean".
         # Files you skipped (outside target) will show up as "Modified" (Unstaged).
         # We use 'read-tree' WITHOUT '-u' so it doesn't touch physical files.
-        global_context.git_interface.run_git_binary_out(["read-tree", "HEAD"])
+        global_context.git_commands.read_tree(current_branch)
 
         logger.success(
             "Commit command completed successfully",
         )
+        return True
     else:
         logger.error(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
+        return False

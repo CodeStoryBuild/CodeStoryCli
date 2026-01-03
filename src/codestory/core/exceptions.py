@@ -195,7 +195,7 @@ class SyntaxErrorDetected(CodestoryError):
 
 
 @contextmanager
-def handle_codestory_exception(exit_on_fail: bool = False):
+def handle_codestory_exception():
     """
     Function-based context manager to handle CodestoryError exceptions.
 
@@ -207,10 +207,8 @@ def handle_codestory_exception(exit_on_fail: bool = False):
         yield
 
     except CodestoryError as e:
-        typer.secho(f"Error: {e}", err=True)
-
-        if exit_on_fail:
-            raise typer.Exit(1)
+        typer.secho(f"Error: {str(e)}", err=True)
+        raise typer.Exit(1)
 
 
 # Convenience functions for creating common errors

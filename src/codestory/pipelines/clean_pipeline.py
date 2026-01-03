@@ -62,7 +62,7 @@ class CleanPipeline:
         # Process from Oldest -> Newest
         commits_to_rewrite = list(reversed(raw_commits))
 
-        original_branch = self.global_context.git_commands.get_current_branch()
+        original_branch = self.global_context.current_branch
 
         start_commit = commits_to_rewrite[0]
         end_commit = commits_to_rewrite[-1]
@@ -105,10 +105,11 @@ class CleanPipeline:
 
                 # Check filters
                 should_skip_clean = False
+
+                changes = self._count_line_changes(commit_hash)
                 if self._is_ignored(commit_hash, self.clean_context.ignore):
                     should_skip_clean = True
                 elif self.clean_context.min_size is not None:
-                    changes = self._count_line_changes(commit_hash)
                     if changes is not None and changes < self.clean_context.min_size:
                         should_skip_clean = True
                         logger.debug(
@@ -117,6 +118,9 @@ class CleanPipeline:
                             changes=changes,
                             min_size=self.clean_context.min_size,
                         )
+                elif changes < 1:
+                    # no changes, treat as empty commit and skip
+                    should_skip_clean = True
 
                 if should_skip_clean:
                     logger.debug(
@@ -143,16 +147,9 @@ class CleanPipeline:
                         t=len(commits_to_rewrite),
                     )
 
-                    original_msg = (
-                        self.global_context.git_interface.run_git_text_out(
-                            ["log", "-1", "--pretty=%B", commit_hash]
-                        )
-                        or "Update"
-                    )
-
                     commit_ctx = CommitContext(
                         target=None,
-                        message=original_msg.strip(),
+                        message=None,
                         fail_on_syntax_errors=False,
                         relevance_filter_level="none",
                         secret_scanner_aggression="none",
@@ -187,21 +184,17 @@ class CleanPipeline:
 
             # Check if there are downstream commits that need to be rebased
             # This happens when start_from is not HEAD
-            original_head = self.global_context.git_interface.run_git_text_out(
-                ["rev-parse", "HEAD"]
+            original_head = self.global_context.git_commands.get_commit_hash(
+                self.global_context.current_branch
             )
-            if original_head:
-                original_head = original_head.strip()
 
             # Check if there are commits after the cleaned range
             downstream_commits = None
             if end_commit != original_head:
-                # There are commits between end_commit and HEAD that need rebasing
-                downstream_check = self.global_context.git_interface.run_git_text_out(
-                    ["rev-list", f"{end_commit}..HEAD"]
+                # There are commits between end_commit and the branch tip that need rebasing
+                downstream_commits = self.global_context.git_commands.get_rev_list(
+                    f"{end_commit}..{self.global_context.current_branch}", reverse=True
                 )
-                if downstream_check and downstream_check.strip():
-                    downstream_commits = downstream_check.strip().splitlines()
 
             if downstream_commits:
                 logger.info(
@@ -210,14 +203,13 @@ class CleanPipeline:
 
                 # Use merge-tree to rebase downstream commits (bare-repo friendly)
                 # Process commits from oldest to newest
-                downstream_commits.reverse()
                 new_parent = current_base_hash
 
                 for commit in downstream_commits:
                     # Get commit metadata
                     log_format = "%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B"
-                    meta_out = self.global_context.git_interface.run_git_text_out(
-                        ["log", "-1", f"--format={log_format}", commit]
+                    meta_out = self.global_context.git_commands.get_commit_metadata(
+                        commit, log_format
                     )
 
                     if not meta_out:
@@ -251,23 +243,14 @@ class CleanPipeline:
                     # Use merge-tree to compute the new tree
                     # merge-tree --write-tree --merge-base <base> <branch1> <branch2>
                     # We want to replay commit's changes onto new_parent
-                    tree_out = self.global_context.git_interface.run_git_text_out(
-                        [
-                            "merge-tree",
-                            "--write-tree",
-                            "--merge-base",
-                            original_parent,
-                            new_parent,
-                            commit,
-                        ]
+                    new_tree = self.global_context.git_commands.merge_tree(
+                        original_parent, new_parent, commit
                     )
 
-                    if not tree_out:
+                    if not new_tree:
                         raise CleanCommandError(
                             f"Failed to merge-tree for commit {commit[:7]}. May have conflicts."
                         )
-
-                    new_tree = tree_out.strip()
 
                     # Create commit with the new tree
                     cmd_env = os.environ.copy()
@@ -278,9 +261,8 @@ class CleanPipeline:
                     cmd_env["GIT_COMMITTER_EMAIL"] = committer_email
                     cmd_env["GIT_COMMITTER_DATE"] = committer_date
 
-                    new_commit = self.global_context.git_interface.run_git_text_out(
-                        ["commit-tree", new_tree, "-p", new_parent, "-m", message],
-                        env=cmd_env,
+                    new_commit = self.global_context.git_commands.commit_tree(
+                        new_tree, [new_parent], message, env=cmd_env
                     )
 
                     if not new_commit:
@@ -288,25 +270,21 @@ class CleanPipeline:
                             f"Failed to create commit for {commit[:7]}"
                         )
 
-                    new_parent = new_commit.strip()
+                    new_parent = new_commit
 
                 logger.success("Downstream commits successfully rebased.")
                 current_base_hash = new_parent
 
             if original_branch:
                 # Atomically move the branch pointer to the new chain tip
-                self.global_context.git_interface.run_git_text(
-                    ["update-ref", f"refs/heads/{original_branch}", current_base_hash]
+                self.global_context.git_commands.update_ref(
+                    original_branch, current_base_hash
                 )
                 # Sync the working directory to the new head (bare-repo friendly)
-                self.global_context.git_interface.run_git_text_out(
-                    ["read-tree", "HEAD"]
-                )
+                self.global_context.git_commands.read_tree(original_branch)
             else:
                 # If detached, update HEAD
-                self.global_context.git_interface.run_git_text(
-                    ["update-ref", "HEAD", current_base_hash]
-                )
+                self.global_context.git_commands.update_ref("HEAD", current_base_hash)
 
             logger.success(
                 "Clean complete: fixed={fixed}, copied={skipped}",
@@ -338,8 +316,8 @@ class CleanPipeline:
         # Gather metadata from the original commit
         # Format: Name%nEmail%nDate%nBody
         log_format = "%an%n%ae%n%aI%n%B"
-        meta_out = self.global_context.git_interface.run_git_text_out(
-            ["log", "-1", f"--format={log_format}", original_commit]
+        meta_out = self.global_context.git_commands.get_commit_metadata(
+            original_commit, log_format
         )
 
         if not meta_out:
@@ -359,6 +337,10 @@ class CleanPipeline:
             prefix="codestory_clean_index_"
         )
         os.close(temp_index_fd)
+        # Git read-tree -m fails if the index file exists but is empty (0 bytes).
+        # We delete it so git can initialize it properly.
+        if os.path.exists(temp_index_path):
+            os.unlink(temp_index_path)
 
         try:
             # Prepare the environment for git commands
@@ -367,31 +349,26 @@ class CleanPipeline:
 
             # 1. Read the 3-way merge into the TEMP index
             # read-tree -i -m --aggressive <base> <current> <target>
-            res = self.global_context.git_interface.run_git_text_out(
-                [
-                    "read-tree",
-                    "-i",
-                    "-m",
-                    "--aggressive",
-                    original_parent,
-                    new_base,
-                    original_commit,
-                ],
+            res = self.global_context.git_commands.read_tree(
+                "",
+                index_only=True,
+                merge=True,
+                aggressive=True,
+                base=original_parent,
+                current=new_base,
+                target=original_commit,
                 env=cmd_env,
             )
 
-            if res is None:
+            if not res:
                 logger.error("Failed to read-tree for merge!")
                 return None
 
             # 2. Write the temp index to a tree object
-            tree_hash = self.global_context.git_interface.run_git_text_out(
-                ["write-tree"], env=cmd_env
-            )
+            tree_hash = self.global_context.git_commands.write_tree(env=cmd_env)
             if not tree_hash:
                 logger.error("Failed to write-tree.")
                 return None
-            tree_hash = tree_hash.strip()
 
             # 3. Create commit object from tree
             # Add author info to the env for commit-tree
@@ -399,12 +376,11 @@ class CleanPipeline:
             cmd_env["GIT_AUTHOR_EMAIL"] = author_email
             cmd_env["GIT_AUTHOR_DATE"] = author_date
 
-            new_commit_hash = self.global_context.git_interface.run_git_text_out(
-                ["commit-tree", tree_hash, "-p", new_base, "-m", message],
-                env=cmd_env,
+            new_commit_hash = self.global_context.git_commands.commit_tree(
+                tree_hash, [new_base], message, env=cmd_env
             )
 
-            return new_commit_hash.strip() if new_commit_hash else None
+            return new_commit_hash
         finally:
             # Cleanup the temporary index file
             if os.path.exists(temp_index_path):
@@ -412,35 +388,28 @@ class CleanPipeline:
 
     def _get_linear_history(self, start_from: str | None = None) -> list[str]:
         """
-        Returns a list of commit hashes from HEAD down to (but excluding) the first merge
-        or the root. Order is HEAD -> Oldest.
+        Returns a list of commit hashes from the start reference down to (but excluding)
+        the first merge or the root. Order is Newest -> Oldest.
         """
-        start_ref = start_from or "HEAD"
+        start_ref = start_from or self.global_context.current_branch
         if start_from:
-            resolved = self.global_context.git_interface.run_git_text_out(
-                ["rev-parse", start_from]
-            )
-            if resolved is None:
+            try:
+                start_ref = self.global_context.git_commands.get_commit_hash(start_from)
+            except ValueError:
                 raise CleanCommandError(f"Could not resolve commit: {start_from}")
-            start_ref = resolved.strip()
 
-        stop_commit_out = self.global_context.git_interface.run_git_text_out(
-            ["rev-list", "--merges", "-n", "1", start_ref]
+        stop_commits = self.global_context.git_commands.get_rev_list(
+            start_ref, merges=True, n=1
         )
 
         range_spec = start_ref
-        if stop_commit_out and stop_commit_out.strip():
-            stop_commit = stop_commit_out.strip()
+        if stop_commits:
+            stop_commit = stop_commits[0]
             range_spec = f"{stop_commit}..{start_ref}"
 
-        out = (
-            self.global_context.git_interface.run_git_text_out(
-                ["rev-list", "--first-parent", range_spec]
-            )
-            or ""
+        commits = self.global_context.git_commands.get_rev_list(
+            range_spec, first_parent=True
         )
-
-        commits = [line.strip() for line in out.splitlines() if line.strip()]
 
         if commits:
             last = commits[-1]
@@ -456,9 +425,7 @@ class CleanPipeline:
         return any(commit.startswith(token) for token in ignore)
 
     def _count_line_changes(self, commit: str) -> int | None:
-        out = self.global_context.git_interface.run_git_text_out(
-            ["diff", "--numstat", f"{commit}^", commit]
-        )
+        out = self.global_context.git_commands.get_diff_numstat(f"{commit}^", commit)
         if out is None:
             return None
         total = 0

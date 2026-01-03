@@ -21,12 +21,15 @@ from unittest.mock import Mock
 import pytest
 
 from codestory.core.exceptions import (
+    DetachedHeadError,
     GitError,
     ValidationError,
 )
+from codestory.core.git_commands.git_commands import GitCommands
 from codestory.core.validation import (
     sanitize_user_input,
     validate_commit_hash,
+    validate_default_branch,
     validate_git_repository,
     validate_ignore_patterns,
     validate_message_length,
@@ -75,41 +78,51 @@ def test_sanitize_user_input_type_error():
 
 
 @pytest.fixture
-def mock_git_interface():
-    return Mock()
+def mock_git_commands():
+    return Mock(spec=GitCommands)
 
 
-def test_validate_git_repository_success(mock_git_interface):
-    # Setup mock to return success for version, inside-work-tree, and branch
-    mock_git_interface.run_git_text_out.side_effect = [
-        "git version 2.30.0",  # --version
-        "true",  # rev-parse --is-inside-work-tree
-        "main",  # branch --show-current
-    ]
+def test_validate_git_repository_success(mock_git_commands):
+    # Setup mock to return success for is_git_repo
+    mock_git_commands.is_git_repo.return_value = True
 
     # Should not raise
-    validate_git_repository(mock_git_interface)
+    validate_git_repository(mock_git_commands)
 
 
-def test_validate_git_repository_not_in_repo(mock_git_interface):
-    mock_git_interface.run_git_text_out.side_effect = [
-        "git version 2.30.0",
-        "fatal: not a git repository",
-    ]
+def test_validate_git_repository_not_in_repo(mock_git_commands):
+    mock_git_commands.is_git_repo.return_value = False
 
-    with pytest.raises(GitError, match="Current directory is not a git repository"):
-        validate_git_repository(mock_git_interface)
+    with pytest.raises(GitError, match="Not a git repository"):
+        validate_git_repository(mock_git_commands)
 
 
-def test_validate_git_repository_detached_head(mock_git_interface):
-    mock_git_interface.run_git_text_out.side_effect = [
-        "git version 2.30.0",
-        "true",
-        "",  # Empty string indicates detached HEAD or no branch
-    ]
+# -----------------------------------------------------------------------------
+# validate_default_branch
+# -----------------------------------------------------------------------------
 
-    with pytest.raises(GitError, match="detached HEAD"):
-        validate_git_repository(mock_git_interface)
+
+def test_validate_default_branch_success(mock_git_commands):
+    mock_git_commands.get_show_current_branch.return_value = "main"
+
+    # Should not raise
+    validate_default_branch(mock_git_commands)
+
+
+def test_validate_default_branch_detached_head(mock_git_commands):
+    mock_git_commands.get_show_current_branch.return_value = (
+        ""  # Empty string indicates detached HEAD
+    )
+
+    with pytest.raises(DetachedHeadError, match="detached HEAD"):
+        validate_default_branch(mock_git_commands)
+
+
+def test_validate_default_branch_failed_check(mock_git_commands):
+    mock_git_commands.get_show_current_branch.return_value = None
+
+    with pytest.raises(GitError, match="Failed to check git branch status"):
+        validate_default_branch(mock_git_commands)
 
 
 # -----------------------------------------------------------------------------
@@ -120,6 +133,15 @@ def test_validate_git_repository_detached_head(mock_git_interface):
 def test_validate_commit_hash_valid():
     assert validate_commit_hash("a1b2c3d4") == "a1b2c3d4"
     assert validate_commit_hash("A1B2C3D4") == "a1b2c3d4"  # Normalization
+
+
+def test_validate_commit_hash_head_resolution(mock_git_commands):
+    mock_git_commands.get_commit_hash.return_value = "a1b2c3d4"
+    assert (
+        validate_commit_hash("HEAD", git_commands=mock_git_commands, branch="main")
+        == "a1b2c3d4"
+    )
+    mock_git_commands.get_commit_hash.assert_called_with("main")
 
 
 def test_validate_commit_hash_invalid_format():

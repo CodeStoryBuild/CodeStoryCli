@@ -28,7 +28,11 @@ from codestory.constants import APP_NAME
 from codestory.core.config.config_loader import ConfigLoader
 from codestory.core.exceptions import ValidationError, handle_codestory_exception
 from codestory.core.logging.logging import setup_logger
-from codestory.core.validation import validate_git_repository
+from codestory.core.validation import (
+    validate_branch,
+    validate_default_branch,
+    validate_git_repository,
+)
 from codestory.onboarding import check_run_onboarding
 from codestory.runtimeutil import (
     ensure_utf8_output,
@@ -101,12 +105,18 @@ def main_commit(
             raise ValidationError(
                 "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
             )
-        
-        if intent is not None and global_context.config.relevance_filter_level == "none":
-            from loguru import logger
-            logger.warning("You are using the --intent option, but have not enabled the relevance filter! Check 'cst config relevance_filter_level'")
 
-        run_commit(
+        if (
+            intent is not None
+            and global_context.config.relevance_filter_level == "none"
+        ):
+            from loguru import logger
+
+            logger.warning(
+                "You are using the --intent option, but have not enabled the relevance filter! Check 'cst config relevance_filter_level'"
+            )
+
+        if run_commit(
             ctx.obj,
             target,
             message,
@@ -114,7 +124,10 @@ def main_commit(
             global_context.config.relevance_filter_level,
             intent,
             fail_on_syntax_errors,
-        )
+        ):
+            raise typer.Exit(0)
+        else:
+            raise typer.Exit(1)
 
 
 @app.command(name="fix")
@@ -314,6 +327,11 @@ def create_global_callback():
             "--repo",
             help="Path to the git repository to operate on. Defaults to current directory.",
         ),
+        branch: str | None = typer.Option(
+            None,
+            "--branch",
+            help="Branch to operate on. Defaults to current branch.",
+        ),
         custom_config: str | None = typer.Option(
             None,
             "--custom-config",
@@ -324,7 +342,7 @@ def create_global_callback():
         """
         Global setup callback. Initialize global context/config used by commands
         """
-        with handle_codestory_exception(exit_on_fail=True):
+        with handle_codestory_exception():
             # conditions to not create global context
             if ctx.invoked_subcommand is None:
                 print(ctx.get_help())
@@ -374,12 +392,35 @@ def create_global_callback():
                     "Logical grouping is disabled as no model has been configured. Commit messages will not be generated. To set a model please check 'cst config model'."
                 )
 
-            global_context = GlobalContext.from_global_config(
-                config, Path(repo_path) if repo_path is not None else Path(".")
+            # Initialize git interface and commands to resolve branch
+            from codestory.core.git_commands.git_commands import GitCommands
+            from codestory.core.git_interface.SubprocessGitInterface import (
+                SubprocessGitInterface,
             )
+
+            resolved_repo_path = Path(repo_path) if repo_path is not None else Path(".")
+            git_interface = SubprocessGitInterface(resolved_repo_path)
+            git_commands = GitCommands(git_interface)
+
             validate_git_repository(
-                global_context.git_interface
+                git_commands
             )  # fail immediately if we arent in a valid git repo as we expect one
+
+            if branch:
+                validate_branch(git_commands, branch)
+                current_branch = branch
+            else:
+                validate_default_branch(git_commands)
+                # Get current branch (already validated we are on one by validate_default_branch)
+                current_branch = (git_commands.get_show_current_branch() or "").strip()
+
+            global_context = GlobalContext(
+                repo_path=resolved_repo_path,
+                git_interface=git_interface,
+                git_commands=git_commands,
+                config=config,
+                current_branch=current_branch,
+            )
 
             # Set up signal handlers with context for proper cleanup
             setup_signal_handlers(global_context)

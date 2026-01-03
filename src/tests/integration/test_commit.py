@@ -98,11 +98,51 @@ class TestCommitScenarios:
     def test_commit_clean(self, cli_exe, repo_factory):
         repo = repo_factory("clean")
         result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
-        assert (
-            "no commits were created" in result.stdout.lower()
-            or "no changes" in result.stdout.lower()
-            or "clean" in result.stdout.lower()
+        assert result.returncode == 1
+
+    def test_commit_on_different_branch(self, cli_exe, repo_factory):
+        """Test committing changes on a branch that is not currently checked out."""
+        repo = repo_factory("commit_branch")
+        repo.create_branch("feature")
+
+        # Make changes in working directory
+        repo.apply_changes({"feature.txt": "feature content"})
+
+        # Run commit on the 'feature' branch
+        # Even if we are on 'main', it should work because we use index-only manipulation
+        result = run_cli(
+            cli_exe, ["-y", "--branch", "feature", "commit"], cwd=repo.path
         )
+        assert result.returncode == 0
+
+        # Verify 'feature' branch was updated
+        feature_hash = repo.get_commit_hash("feature")
+        main_hash = repo.get_commit_hash("main")
+        assert feature_hash != main_hash
+
+        # Verify content on feature branch
+        repo.checkout("feature")
+        assert (repo.path / "feature.txt").exists()
+
+    def test_commit_specific_target(self, cli_exe, repo_factory):
+        """Test committing only a specific directory."""
+        repo = repo_factory("commit_target")
+        repo.apply_changes(
+            {
+                "src/app.py": "print('app')",
+                "docs/readme.md": "docs",
+            }
+        )
+
+        # Commit only 'src'
+        result = run_cli(cli_exe, ["-y", "commit", "src"], cwd=repo.path)
+        assert result.returncode == 0
+
+        # Verify that only src/app.py was committed by running commit again.
+        # If 'docs/readme.md' was also committed, the second run will say "No changes to process".
+        result2 = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
+        assert result2.returncode == 0
+        assert "no changes to process" not in result2.stdout.lower()
 
     def test_commit_detached(self, cli_exe, repo_factory):
         repo = repo_factory("detached")

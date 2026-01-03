@@ -58,3 +58,46 @@ class TestFix:
         result = run_cli(cli_exe, ["-y", "fix", root_hash], cwd=repo.path)
         # Check for the specific error message
         assert "not supported yet" in result.stderr.lower()
+
+    def test_fix_on_different_branch(self, cli_exe, repo_factory):
+        """Test fixing a commit on a branch that is not currently checked out."""
+        repo = repo_factory("fix_branch")
+        repo.create_branch("other")
+        repo.checkout("other")
+
+        repo.apply_changes({"other.txt": "content"})
+        repo.stage_all()
+        repo.commit("other commit")
+        other_hash = repo.get_commit_hash()
+
+        repo.checkout("main")
+
+        # Run fix on 'other' branch using --branch
+        result = run_cli(
+            cli_exe, ["-y", "--branch", "other", "fix", other_hash], cwd=repo.path
+        )
+        assert result.returncode == 0
+
+    def test_fix_with_start_commit(self, cli_exe, repo_factory):
+        """Test fixing a range of commits by specifying a start commit."""
+        repo = repo_factory("fix_range")
+        # Create 3 commits
+        hashes = []
+        for i in range(3):
+            repo.apply_changes({f"file{i}.txt": f"content{i}"})
+            repo.stage_all()
+            repo.commit(f"commit {i}")
+            hashes.append(repo.get_commit_hash())
+
+        # Fix from commit 0 to commit 2
+        result = run_cli(
+            cli_exe, ["-y", "fix", hashes[2], "--start", hashes[0]], cwd=repo.path
+        )
+        assert result.returncode == 0
+
+    def test_fix_invalid_hash(self, cli_exe, repo_factory):
+        """Test error handling for invalid commit hash."""
+        repo = repo_factory("fix_invalid")
+        result = run_cli(cli_exe, ["-y", "fix", "notahash"], cwd=repo.path)
+        assert result.returncode != 0
+        assert "invalid commit hash" in result.stderr.lower()

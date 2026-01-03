@@ -32,7 +32,6 @@ from codestory.core.diff_generation.git_diff_generator import GitDiffGenerator
 from codestory.core.diff_generation.semantic_diff_generator import SemanticDiffGenerator
 from codestory.core.file_reader.protocol import FileReader
 from codestory.core.git_commands.git_commands import GitCommands
-from codestory.core.git_interface.interface import GitInterface
 from codestory.core.grouper.interface import LogicalGrouper
 from codestory.core.logging.utils import log_chunks, time_block
 from codestory.core.relevance_filter.relevance_filter import (
@@ -140,7 +139,6 @@ class RewritePipeline:
         self,
         global_context: GlobalContext,
         commit_context: CommitContext,
-        git: GitInterface,
         commands: GitCommands,
         mechanical_chunker: MechanicalChunker,
         semantic_grouper: SemanticGrouper,
@@ -153,7 +151,6 @@ class RewritePipeline:
     ):
         self.global_context = global_context
         self.commit_context = commit_context
-        self.git = git
         self.commands = commands
         self.mechanical_chunker = mechanical_chunker
         self.semantic_grouper = semantic_grouper
@@ -196,6 +193,8 @@ class RewritePipeline:
                 logger.info(
                     f"{Fore.YELLOW}If you meant to modify existing git history, please use codestory fix or codestory clean commands{Style.RESET_ALL}"
                 )
+            if self.source == "fix":
+                logger.info(f"{Fore.YELLOW}Is this an empty commit?{Style.RESET_ALL}")
             return None
 
         # init context_manager
@@ -311,6 +310,7 @@ class RewritePipeline:
                     semantic_chunks,
                     immutable_chunks,
                     intent=self.commit_context.relevance_filter_intent,
+                    context_manager=context_manager,
                     pbar=pbar,
                 )
 
@@ -362,9 +362,9 @@ class RewritePipeline:
                 logical_groups
             )
         else:
-            display_patch_map = SemanticDiffGenerator(logical_groups).get_patches(
-                logical_groups
-            )
+            display_patch_map = SemanticDiffGenerator(
+                logical_groups, context_manager=context_manager
+            ).get_patches(logical_groups)
 
         accepted_groups = []
         user_rejected_groups = []
