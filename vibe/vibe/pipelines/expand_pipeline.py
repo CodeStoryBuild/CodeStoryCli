@@ -1,8 +1,9 @@
 from loguru import logger
-
 from vibe.context import GlobalContext, ExpandContext
 from vibe.pipelines.commit_pipeline import CommitPipeline
 
+# Assuming GitInterface is imported or available in the context
+# from vibe.core.git_interface.interface import GitInterface
 
 
 def _short(hash_: str) -> str:

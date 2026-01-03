@@ -42,6 +42,7 @@ def setup_config_args(**kwargs):
 
     return config_args
 
+
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
