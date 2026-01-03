@@ -27,6 +27,7 @@ from typing import Any, Literal, Union, get_args, get_origin
 
 import tomllib
 from loguru import logger
+
 from ..exceptions import ConfigurationError
 
 

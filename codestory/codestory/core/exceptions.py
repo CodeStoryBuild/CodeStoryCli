@@ -19,7 +19,8 @@
 # By using this file, you agree to the terms of one of the two licenses above.
 # -----------------------------------------------------------------------------
 
-from functools import wraps, partial
+from functools import partial, wraps
+
 from loguru import logger
 
 """

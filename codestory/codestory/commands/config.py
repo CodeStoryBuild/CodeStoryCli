@@ -30,8 +30,9 @@ import typer
 from colorama import Fore, Style, init
 from platformdirs import user_config_dir
 
-from ..context import GlobalConfig
 from codestory.core.exceptions import ConfigurationError, handle_codestory_exception
+
+from ..context import GlobalConfig
 
 # Initialize colorama
 init(autoreset=True)

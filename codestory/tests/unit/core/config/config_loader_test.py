@@ -24,9 +24,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from codestory.core.exceptions import ConfigurationError
 import pytest
 from codestory.core.config.config_loader import ConfigLoader
+from codestory.core.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------
 # Test Models

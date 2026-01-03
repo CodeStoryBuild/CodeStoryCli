@@ -25,7 +25,6 @@ from unittest.mock import Mock, patch
 
 from codestory.context import (
     CleanContext,
-    CommitContext,
     FixContext,
     GlobalConfig,
     GlobalContext,

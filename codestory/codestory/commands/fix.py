@@ -24,13 +24,16 @@ import typer
 from loguru import logger
 
 from codestory.context import CommitContext, FixContext, GlobalContext
-from codestory.core.exceptions import DetachedHeadError, GitError
+from codestory.core.exceptions import (
+    DetachedHeadError,
+    GitError,
+    handle_codestory_exception,
+)
 from codestory.core.git_interface.interface import GitInterface
 from codestory.core.logging.utils import time_block
 from codestory.core.validation import validate_commit_hash, validate_git_repository
 from codestory.pipelines.commit_init import create_commit_pipeline
 from codestory.pipelines.fix_pipeline import FixPipeline
-from codestory.core.exceptions import handle_codestory_exception
 
 
 def _help_callback(ctx: typer.Context, param, value: bool):

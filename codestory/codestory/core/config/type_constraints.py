@@ -64,7 +64,9 @@ class LiteralTypeConstraint(TypeConstraint):
             for a in self.allowed:
                 if isinstance(a, str) and a.lower() == value.lower():
                     return a
-        raise ConfigurationError(f"{value!r} not one of allowed values: {list(self.allowed)}")
+        raise ConfigurationError(
+            f"{value!r} not one of allowed values: {list(self.allowed)}"
+        )
 
 
 class BoolConstraint(TypeConstraint):
