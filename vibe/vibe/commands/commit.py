@@ -25,8 +25,8 @@ def is_whitespace_line(line: str) -> bool:
 
 
 # chk = PredicateChunker(is_whitespace_line)
-# chk = SimpleChunker()
-chk = MaxLineChunker(3)
+chk = SimpleChunker()
+# chk = MaxLineChunker(1)
 
 # grp = LangChainGrouper(ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GEMINIAPIKEY")))
 grp = RandomSizeGrouper(2)
