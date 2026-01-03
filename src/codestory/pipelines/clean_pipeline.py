@@ -16,11 +16,9 @@
 #  */
 # -----------------------------------------------------------------------------
 
-import contextlib
 import os
 import tempfile
-from collections.abc import Generator, Sequence
-
+from collections.abc import Sequence
 
 from codestory.context import CleanContext, CommitContext, GlobalContext
 from codestory.core.exceptions import CleanCommandError
