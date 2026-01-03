@@ -21,42 +21,8 @@ class SubprocessGitInterface(GitInterface):
         env: dict | None = None,
         cwd: str | Path | None = None,
     ) -> str | None:
-        # This method is not used by the synthesizer, but included for completeness
-        try:
-            effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
-            cmd = ["git"] + args
-            logger.debug(
-                f"Running git text command: {' '.join(cmd)} cwd={effective_cwd}"
-            )
-            result = subprocess.run(
-                cmd,
-                input=input_text,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                capture_output=True,
-                check=True,
-                env=env,
-                cwd=effective_cwd,
-            )
-            if result.stdout:
-                logger.debug(
-                    f"git stdout (text): {result.stdout[:2000]}"
-                    + ("...(truncated)" if len(result.stdout) > 2000 else "")
-                )
-
-            if result.stderr:
-                logger.debug(
-                    f"git stderr (text): {result.stderr[:2000]}"
-                    + ("...(truncated)" if len(result.stderr) > 2000 else "")
-                )
-            logger.debug(f"git returncode: {result.returncode}")
-            return result.stdout
-        except subprocess.CalledProcessError as e:
-            logger.error(
-                f"Git text command failed: {' '.join(e.cmd)} code={e.returncode} stderr={e.stderr}"
-            )
-            return None
+        result = self.run_git_text(args, input_text, env, cwd)
+        return result.stdout if result else None
 
     def run_git_binary_out(
         self,
@@ -65,38 +31,8 @@ class SubprocessGitInterface(GitInterface):
         env: dict | None = None,
         cwd: str | Path | None = None,
     ) -> bytes | None:
-        try:
-            effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
-
-            cmd = ["git"] + args
-            logger.debug(
-                f"Running git binary command: {' '.join(cmd)} cwd={effective_cwd}"
-            )
-
-            result = subprocess.run(
-                cmd,
-                input=input_bytes,
-                text=False,
-                encoding=None,
-                capture_output=True,
-                check=True,
-                env=env,
-                cwd=effective_cwd,
-            )
-            if result.stdout:
-                logger.debug(f"git stdout (binary length): {len(result.stdout)} bytes")
-            if result.stderr:
-                logger.debug(
-                    f"git stderr (binary): {result.stderr[:2000]!r}"
-                    + ("...(truncated)" if len(result.stderr) > 2000 else "")
-                )
-            logger.debug(f"git returncode: {result.returncode}")
-            return result.stdout
-        except subprocess.CalledProcessError as e:
-            logger.error(
-                f"Git binary command failed: {' '.join(e.cmd)} code={e.returncode} stderr={e.stderr.decode('utf-8', errors='ignore')}"
-            )
-            return None
+        result = self.run_git_binary(args, input_bytes, env, cwd)
+        return result.stdout if result else None
 
     def run_git_text(
         self,
@@ -104,8 +40,7 @@ class SubprocessGitInterface(GitInterface):
         input_text: str | None = None,
         env: dict | None = None,
         cwd: str | Path | None = None,
-    ) -> str | None:
-        # This method is not used by the synthesizer, but included for completeness
+    ) -> subprocess.CompletedProcess[str] | None:
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
             cmd = ["git"] + args
@@ -148,7 +83,7 @@ class SubprocessGitInterface(GitInterface):
         input_bytes: bytes | None = None,
         env: dict | None = None,
         cwd: str | Path | None = None,
-    ) -> bytes | None:
+    ) -> subprocess.CompletedProcess[bytes] | None:
         try:
             effective_cwd = str(cwd) if cwd is not None else str(self.repo_path)
 

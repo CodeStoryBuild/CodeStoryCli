@@ -93,7 +93,7 @@ def main(
         raise typer.Exit()
     else:
 
-        setup_logger(ctx.invoked_subcommand)
+        setup_logger(ctx.invoked_subcommand, debug=verbose)
 
         config_args = setup_config_args(
             model=model,
