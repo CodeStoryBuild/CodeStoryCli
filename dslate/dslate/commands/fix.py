@@ -36,7 +36,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
         != 0
     ):
         raise GitError(
-            f"Commit {resolved[:7]} is not an ancestor of HEAD {resolved[:7]}; only linear expansions are supported"
+            f"The commit must be an ancestor of HEAD (linear history only)."
         )
 
     # Determine parent commit (base) TODO Test empty tree hash (also this isnt perfect as git moves to sha256)
