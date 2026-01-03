@@ -21,9 +21,14 @@ import os
 import shutil
 import tempfile
 from contextlib import AbstractContextManager
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-from codestory.context import GlobalContext
 from codestory.core.exceptions import GitError
+
+if TYPE_CHECKING:
+    from codestory.context import GlobalContext
+    from codestory.core.git_interface import GitInterface
 
 
 class GitSandbox(AbstractContextManager):
@@ -32,6 +37,9 @@ class GitSandbox(AbstractContextManager):
 
     This prevents polluting the main repository with loose objects during
     intermediate processing. Use .sync(commit_hash) to migrate the result.
+
+    Can be instantiated with GitInterface + repo_path directly, or via the
+    from_context() class method for backward compatibility with GlobalContext.
     """
 
     # Keys that the sandbox overrides in the git interface environment
@@ -39,17 +47,38 @@ class GitSandbox(AbstractContextManager):
         ["GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES"]
     )
 
-    def __init__(self, context: GlobalContext):
-        self.context = context
+    def __init__(self, git_interface: "GitInterface", repo_path: Path):
+        """
+        Initialize GitSandbox with explicit git interface and repo path.
+
+        Args:
+            git_interface: The GitInterface instance to use for git operations.
+            repo_path: Path to the repository (used for fallback objects dir).
+        """
+        self.git_interface = git_interface
+        self.repo_path = repo_path
         self.temp_dir = None
         self.original_override: dict | None = None
         self.sandbox_override: dict = {}
+
+    @classmethod
+    def from_context(cls, context: "GlobalContext") -> "GitSandbox":
+        """
+        Create a GitSandbox from a GlobalContext (backward compatibility).
+
+        Args:
+            context: GlobalContext containing git_interface and repo_path.
+
+        Returns:
+            A new GitSandbox instance.
+        """
+        return cls(context.git_interface, context.repo_path)
 
     def __enter__(self):
         # Create temp directory for objects
         self.temp_dir = tempfile.mkdtemp(prefix="codestory_sandbox_")
 
-        git = self.context.git_interface
+        git = self.git_interface
 
         # Capture original override state (might be None or a dict)
         self.original_override = git.global_env_override
@@ -62,7 +91,7 @@ class GitSandbox(AbstractContextManager):
             objects_dir = objects_dir.strip()
         else:
             # Fallback if rev-parse fails (unlikely in valid repo)
-            objects_dir = str(self.context.repo_path / ".git" / "objects")
+            objects_dir = str(self.repo_path / ".git" / "objects")
 
         # Handle existing alternates (e.g. if the repo itself uses alternates)
         existing_alternates = os.environ.get("GIT_ALTERNATE_OBJECT_DIRECTORIES", "")
@@ -94,7 +123,7 @@ class GitSandbox(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore original git interface override state
-        git = self.context.git_interface
+        git = self.git_interface
         git.global_env_override = self.original_override
 
         # Cleanup temp dir
@@ -114,7 +143,7 @@ class GitSandbox(AbstractContextManager):
 
         logger.debug(f"Syncing sandbox objects for {new_commit_hash[:7]}...")
 
-        git = self.context.git_interface
+        git = self.git_interface
 
         # 1. Identify new objects
         # We calculate: Reachable(NewHash) - Reachable(All Refs in Main Repo)

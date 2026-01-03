@@ -130,7 +130,7 @@ def run_clean(
     # Execute cleaning
     from codestory.pipelines.clean_pipeline import CleanPipeline
 
-    with GitSandbox(global_context) as sandbox:
+    with GitSandbox.from_context(global_context) as sandbox:
         with time_block("Clean Runner E2E"):
             runner = CleanPipeline(global_context, clean_context)
             final_head = runner.run()
