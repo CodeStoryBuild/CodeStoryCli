@@ -54,7 +54,7 @@ def main(
     repo_path: str = typer.Option(
         ".",
         "--repo",
-        help="Where should operations be made?",
+        help="Path to the git repository to operate on.",
     ),
     custom_config: str | None = typer.Option(
         None,
@@ -64,7 +64,7 @@ def main(
     model: str | None = typer.Option(
         None,
         "--model",
-        help="Model to use (format: provider:model-name, e.g., openai:gpt-4, gemini:gemini-2.5-flash)",
+        help="AI model to use (e.g., openai:gpt-4).",
     ),
     api_key: str | None = typer.Option(
         None, "--api-key", help="API key for the model provider"
@@ -72,13 +72,13 @@ def main(
     model_temperature: float = typer.Option(
         0.7,
         "--temperature",
-        help="What temperature to use when creating the AI model",
+        help="Sampling temperature for the AI model (0.0 to 1.0).",
     ),
     verbose: bool | None = typer.Option(
         False,
         "--verbose",
         "-v",
-        help="Be extra verbose",
+        help="Enable verbose logging.",
     ),
     auto_accept: bool | None = typer.Option(
         False, "--yes", "-y", help="Automatically accept and commit all changes"

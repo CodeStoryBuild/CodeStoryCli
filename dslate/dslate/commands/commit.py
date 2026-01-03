@@ -31,7 +31,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
             )
         else:
             unstage = inquirer.confirm(
-                "Staged changes detected, you must unstage all changes. Do you accept?",
+                "Staged changes detected. dslate requires a clean staging area. Unstage all changes?",
                 default=False,
             )
 
@@ -39,7 +39,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
             commands.reset()
         else:
             logger.info(
-                "[yellow]Cannot proceed without unstaging changes, exiting.[/yellow]"
+                "[yellow]Operation cancelled. Please unstage changes to proceed.[/yellow]"
             )
             return False
 

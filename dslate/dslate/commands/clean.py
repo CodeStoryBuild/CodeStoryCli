@@ -20,20 +20,20 @@ def main(
     ignore: list[str] | None = typer.Option(
         None,
         "--ignore",
-        help="Commit hashes to skip (can be prefixes). Eg --ignore hash1 hash2...",
+        help="Commit hashes or prefixes to ignore.",
     ),
     min_size: int | None = typer.Option(
         None,
         "--min-size",
-        help="Skip commits with fewer than this many line changes (additions + deletions).",
+        help="Minimum change size (lines) to process.",
     ),
     start_from: str | None = typer.Argument(
         None,
-        help="Commit hash (or prefix) to start cleaning from (inclusive). If not provided, starts from HEAD.",
+        help="Starting commit hash or prefix (inclusive). Defaults to HEAD.",
     ),
     skip_merge: bool | None = typer.Argument(
         False,
-        help="Should the clean command skip cleaning merge commits?",
+        help="Skip merge commits during cleaning.",
     ),
 ) -> None:
     """Run 'dslate fix' iteratively from HEAD (or start_from) to the start of the repository fixing each commit.
