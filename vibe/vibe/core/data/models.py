@@ -11,12 +11,15 @@ class LineNumbered:
 
 @dataclass
 class Addition(LineNumbered):
-    """ Represents a single added line of code."""
+    """Represents a single added line of code."""
+
     ...
+
 
 @dataclass
 class Removal(LineNumbered):
-    """ Represents a single removed line of code."""
+    """Represents a single removed line of code."""
+
     ...
 
 
@@ -52,6 +55,7 @@ class CommitGroup:
     """
     A collection of DiffChunks that are committed together.
     """
+
     chunks: List[DiffChunk]
     group_id: str
     # branch_name: str
@@ -64,6 +68,7 @@ class CommitResult:
     """
     Result of a commit operation.
     """
+
     commit_hash: str
     group: CommitGroup
 
@@ -71,6 +76,7 @@ class CommitResult:
 @dataclass(frozen=True)
 class ChunkApplicationData:
     """A simplified, internal representation of a standard chunk's change data."""
+
     start_line: int
     line_count: int
     add_content: List[str]

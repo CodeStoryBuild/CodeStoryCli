@@ -16,6 +16,7 @@ from ..data.models import CommitGroup
 
 class ChangeGroup(BaseModel):
     """Represents a group of related changes as analyzed by Gemini."""
+
     group_id: str
     commit_message: str
     branch_name: str
@@ -144,5 +145,3 @@ class GeminiGrouper(GrouperInterface):
         grouping_response: List[ChangeGroup] = response.parsed
 
         return self._create_commit_groups(grouping_response, chunks)
-        
-        

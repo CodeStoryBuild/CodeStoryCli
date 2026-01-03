@@ -189,4 +189,3 @@ class GitCommands:
         Returns the commit hash of the current HEAD (base commit).
         """
         return self.git.run_git_text(["rev-parse", "HEAD"]).strip()
-

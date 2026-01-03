@@ -22,7 +22,7 @@ class MaxLineChunker(ChunkerInterface):
     def __init__(self, max_lines: int = 50):
         """
         Initialize the chunker with a maximum line threshold.
-        
+
         Args:
             max_lines: Maximum number of lines allowed in a single chunk
         """
@@ -31,15 +31,15 @@ class MaxLineChunker(ChunkerInterface):
     def chunk(self, diff_chunks: List[DiffChunk]) -> List[DiffChunk]:
         """
         Split hunks into smaller chunks if they exceed the maximum line count.
-        
+
         Args:
             diff_chunks: List of input DiffChunks to potentially split
-            
+
         Returns:
             List of DiffChunks, where any chunk exceeding max_lines is split
         """
         result: List[DiffChunk] = []
-        
+
         for chunk in diff_chunks:
             if isinstance(chunk, StandardDiffChunk):
                 start_num = None
@@ -68,5 +68,5 @@ class MaxLineChunker(ChunkerInterface):
                     sub_chunk = chunk.extract_by_lines(start_num, cur_num)
                     if sub_chunk:
                         result.append(sub_chunk)
-        
+
         return result
