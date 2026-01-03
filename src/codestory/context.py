@@ -114,7 +114,7 @@ class GlobalConfig:
         "api_key": "API key for the LLM provider",
         "api_base": "Custom API base URL for the LLM provider (optional)",
         "temperature": "Temperature for LLM responses (0.0-1.0)",
-        "max_tokens": "Maximum tokens to send for LLM requests",
+        "max_tokens": "Maximum tokens to send per llm request",
         "relevance_filtering": "Whether to filter changes by relevance to your intent ('cst commit' only)",
         "relevance_filter_similarity_threshold": "How similar do changes have to be to your intent to be included. Higher means more strict",
         "secret_scanner_aggression": "How aggresively to scan for secrets ('cst commit' only)",

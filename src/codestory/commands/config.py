@@ -325,6 +325,15 @@ def set_config(key: str, value: str, scope: str) -> None:
         _print_env_instructions(key, value)
         return
 
+    # Check for sensitive keys in local scope
+    if scope == "local" and key in ("api_key",):
+        print(
+            f"{Fore.YELLOW}Warning:{Style.RESET_ALL} You are setting a sensitive key ('{key}') in local configuration."
+        )
+        if not typer.confirm("Are you sure you want to proceed?", default=False):
+            print("Operation cancelled.")
+            raise typer.Exit(0)
+
     # Determine config file path based on scope
     if scope == "global":
         config_path = GLOBAL_CONFIG_FILE
