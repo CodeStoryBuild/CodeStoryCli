@@ -90,9 +90,9 @@ class StructuredLogger:
         # Log initialization
         logger.bind(
             command=self.command_name, logfile=str(logfile), log_level=log_level
-        ).info("Logger initialized")
+        ).debug("Logger initialized")
 
-        logger.info(f"Log File Created At: {logfile}")
+        logger.debug(f"Log File Created At: {logfile}")
 
         self.logfile = logfile
 
