@@ -9,7 +9,9 @@ from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterfac
 from vibe.core.context.expand_init import create_expand_pipeline
 
 
-def _run_git(git: SubprocessGitInterface, args: list[str], cwd: Optional[str] = None) -> Optional[str]:
+def _run_git(
+    git: SubprocessGitInterface, args: list[str], cwd: Optional[str] = None
+) -> Optional[str]:
     return git.run_git_text(args, cwd=cwd)
 
 
@@ -104,7 +106,9 @@ class ExpandService:
             )
             plan = pipeline.run(target=".")
             if not plan:
-                console.print("[yellow]Expansion cancelled; no changes applied.[/yellow]")
+                console.print(
+                    "[yellow]Expansion cancelled; no changes applied.[/yellow]"
+                )
                 return False
 
             new_base = (_run_git(wt1_git, ["rev-parse", "HEAD"]) or "").strip()
@@ -116,7 +120,8 @@ class ExpandService:
                 rewrite_branch = f"vibe-expand-rewrite-{_short(resolved)}"
                 console.print("[green]Preparing rebase in isolated worktree...[/green]")
                 _run_git(
-                    self.git, ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash]
+                    self.git,
+                    ["worktree", "add", "-b", rewrite_branch, wt2_dir, head_hash],
                 )
                 wt2_git = SubprocessGitInterface(wt2_dir)
 
@@ -124,14 +129,17 @@ class ExpandService:
                 # git rebase --onto <new_base> <resolved> <rewrite_branch>
                 rebase_ok = (
                     _run_git(
-                        wt2_git, ["rebase", "--onto", new_base, resolved, rewrite_branch]
+                        wt2_git,
+                        ["rebase", "--onto", new_base, resolved, rewrite_branch],
                     )
                     is not None
                 )
                 if not rebase_ok:
                     # Try to abort if needed
                     _run_git(wt2_git, ["rebase", "--abort"])
-                    console.print("[red]Rebase failed; repository left untouched.[/red]")
+                    console.print(
+                        "[red]Rebase failed; repository left untouched.[/red]"
+                    )
                     return False
 
                 new_head = (
@@ -148,7 +156,8 @@ class ExpandService:
                 # Update original branch ref and working tree
                 if (
                     _run_git(
-                        self.git, ["update-ref", f"refs/heads/{current_branch}", new_head]
+                        self.git,
+                        ["update-ref", f"refs/heads/{current_branch}", new_head],
                     )
                     is None
                 ):
@@ -169,5 +178,5 @@ class ExpandService:
         finally:
             _cleanup_worktree(self.git, wt1_dir)
             # Delete temp expand branch
-            _run_git(self.git, ["branch", "-D", f"vibe-expand-{_short(resolved)}"]) 
+            _run_git(self.git, ["branch", "-D", f"vibe-expand-{_short(resolved)}"])
         return False

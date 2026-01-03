@@ -55,7 +55,7 @@ class GitSynthesizer:
         """
         output_bytes = self._run_git_binary(*args, **kwargs)
         return output_bytes.decode("utf-8", errors="replace").strip()
-    
+
     @staticmethod
     def sanitize_filename(filename: str) -> str:
         """
@@ -98,9 +98,16 @@ class GitSynthesizer:
             # single chunk for metadata extraction
             single_chunk: DiffChunk = file_chunks[0]
 
-            old_file_path = GitSynthesizer.sanitize_filename(single_chunk.old_file_path) if single_chunk.old_file_path is not None else None 
-            new_file_path = GitSynthesizer.sanitize_filename(single_chunk.new_file_path) if single_chunk.new_file_path is not None else None 
-
+            old_file_path = (
+                GitSynthesizer.sanitize_filename(single_chunk.old_file_path)
+                if single_chunk.old_file_path is not None
+                else None
+            )
+            new_file_path = (
+                GitSynthesizer.sanitize_filename(single_chunk.new_file_path)
+                if single_chunk.new_file_path is not None
+                else None
+            )
 
             multiple_chunks = len(file_chunks) > 1
 
@@ -188,11 +195,15 @@ class GitSynthesizer:
                 )
 
             old_file_header = (
-                GitSynthesizer.sanitize_filename(f"a/{old_file_path}") if old_file_path is not None else DEVNULL
+                GitSynthesizer.sanitize_filename(f"a/{old_file_path}")
+                if old_file_path is not None
+                else DEVNULL
             )
 
             new_file_header = (
-                GitSynthesizer.sanitize_filename(f"b/{new_file_path}") if new_file_path is not None else DEVNULL
+                GitSynthesizer.sanitize_filename(f"b/{new_file_path}")
+                if new_file_path is not None
+                else DEVNULL
             )
 
             # second part of deletion edge case
@@ -270,7 +281,7 @@ class GitSynthesizer:
                     patch_lines.append("\\ No newline at end of file")
 
             patches[file_path] = "\n".join(patch_lines) + "\n"
-            
+
             logger.debug(
                 "Patch generation progress: cumulative_patches={count}",
                 count=len(patches),
@@ -421,7 +432,6 @@ class GitSynthesizer:
                 tree=new_tree_hash,
             )
             return new_tree_hash
-
 
     def _create_commit(self, tree_hash: str, parent_hash: str, message: str) -> str:
         return self._run_git_decoded(
