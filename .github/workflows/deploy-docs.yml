@@ -37,10 +37,9 @@ jobs:
         run: mkdocs build -f src/mkdocs.yml -d site
 
       - name: Prepare Subdirectory Structure
-        # We move 'site' into 'dist/codestorycli' so Cloudflare preserves the path
         run: |
-          mkdir -p dist/codestorycli
-          mv src/site/* dist/codestorycli/
+          mkdir -p dist/
+          mv src/site/* dist/
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
