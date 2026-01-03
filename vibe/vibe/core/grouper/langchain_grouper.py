@@ -21,9 +21,7 @@ class ChangeGroup(BaseModel):
     commit_message: str
     extended_message: str | None
     changes: list[int]  # List of chunk IDs that belong to this group
-    description: (
-        str | None
-    )  # Brief description of why these changes are grouped
+    description: str | None  # Brief description of why these changes are grouped
 
 
 class GroupingResponse(BaseModel):
@@ -60,9 +58,7 @@ class LangChainGrouper(LogicalGrouper):
     def __init__(self, chat_model: BaseChatModel):
         """Initialize the grouper with a LangChain chat model."""
         self.chat_model = chat_model
-        self.output_parser = PydanticOutputParser(
-            pydantic_object=GroupingResponse
-        )
+        self.output_parser = PydanticOutputParser(pydantic_object=GroupingResponse)
 
     def _prepare_changes(
         self, chunks: list[Chunk], immut_chunks: list[ImmutableChunk]
@@ -81,9 +77,7 @@ class LangChainGrouper(LogicalGrouper):
 
         for immut_chunk in immut_chunks:
             data = {}
-            patch_content = immut_chunk.file_patch.decode(
-                "utf-8", errors="replace"
-            )
+            patch_content = immut_chunk.file_patch.decode("utf-8", errors="replace")
             if len(patch_content) > 200:
                 patch_content = patch_content[:200] + "..."
             data["change"] = patch_content
@@ -106,9 +100,7 @@ class LangChainGrouper(LogicalGrouper):
         chunk_map = {i: chunk for i, chunk in enumerate(all_chunks)}
 
         commit_groups: list[CommitGroup] = []
-        assigned_chunk_ids: set[int] = (
-            set()
-        )  # Track chunks that have been assigned
+        assigned_chunk_ids: set[int] = set()  # Track chunks that have been assigned
 
         for group_response in response.groups:
             group_chunks: list[Chunk] = []
@@ -254,6 +246,4 @@ class LangChainGrouper(LogicalGrouper):
             on_progress(100)
 
         # Apply mitigations during the conversion to CommitGroup objects
-        return self._create_commit_groups(
-            parsed_response, chunks + immut_chunks
-        )
+        return self._create_commit_groups(parsed_response, chunks + immut_chunks)
