@@ -14,4 +14,5 @@ Beyond commits, vibe can help manage branches, PRs, protected branches, and lint
 - ✅ **DevOps integration** — linters, hooks, and workflows handled automatically.  
 - ⚡ **Pluggable AI backends** — choose local (Ollama/llama.cpp) or online endpoints.  
 
+
 ---

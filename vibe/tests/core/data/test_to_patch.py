@@ -122,3 +122,28 @@ def test_to_patch_single_line_change():
         "-old_code\n+new_code"
     )
     assert chunk.to_patch() == expected_patch
+
+def test_to_patch_rename_with_modification():
+    """Tests a DiffChunk representing a file rename plus a single line change."""
+    chunk = DiffChunk(
+        file_path="old_name.py",
+        new_name="new_name.py",
+        content="-old_line\n+new_line",
+        ai_content=[
+            Removal(3, "old_line"),
+            Addition(3, "new_line")
+        ],
+        old_start=3,
+        old_end=3,
+        new_start=3,
+        new_end=3
+    )
+
+    expected_patch = (
+        "rename from old_name.py\n"
+        "rename to new_name.py\n"
+        "@@ -3,1 +3,1 @@\n"
+        "-old_line\n+new_line"
+    )
+
+    assert chunk.to_patch() == expected_patch

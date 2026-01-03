@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 from typing import List, Optional, Union
 
 @dataclass
@@ -101,6 +102,77 @@ def detect_replacements(content: List[Union[Addition, Removal, Move]]) -> List[U
     return clarified
 
 
+def format_diff_for_llm(
+    file_path: str,
+    change_list: List[Union[Addition, Removal, Move, Replacement]]
+) -> str:
+    """
+    Converts a list of structured diff objects into a standardized JSON format 
+    optimized for LLM comprehension.
+
+    Args:
+        file_path: The path of the file being modified.
+        change_list: The list of Addition, Removal, Move, or Replacement objects.
+
+    Returns:
+        A JSON string representing the structured diff.
+    """
+    structured_changes = []
+
+    for change in change_list:
+        change_dict = {}
+
+        if isinstance(change, Addition):
+            change_dict = {
+                "type": "Addition",
+                "line_number": change.line_number,
+                "content": change.content
+            }
+        
+        elif isinstance(change, Removal):
+            change_dict = {
+                "type": "Removal",
+                "line_number": change.line_number, # Line number in the old file state
+                "content": change.content
+            }
+            
+        elif isinstance(change, Move):
+            change_dict = {
+                "type": "Move",
+                "from_line": change.from_line,
+                "to_line": change.to_line,
+                "content": change.content
+            }
+            
+        elif isinstance(change, Replacement):
+            change_dict = {
+                "type": "Replacement",
+                "line_number": change.line_number,
+                "old_content": change.old_content,
+                "new_content": change.new_content
+            }
+        
+        else:
+            # Skip or log unknown types
+            continue
+
+        structured_changes.append(change_dict)
+
+    # Wrap the changes into the final LLM-optimized JSON structure
+    output_data = {
+        "files": [
+            {
+                "file_path": file_path,
+                "changes": structured_changes
+            }
+        ]
+    }
+    
+    # Return the JSON string, using indentation for human readability 
+    # (though LLMs can handle non-indented JSON equally well).
+    return json.dumps(output_data, indent=2)
+
+
 @dataclass
 class DiffChunk:
     """
@@ -129,10 +201,18 @@ class DiffChunk:
     old_end: int
     new_start: int
     new_end: int
+    new_name: Optional[str] = None  # optional new name for renamed files
 
     def to_patch(self) -> str: 
         """ Convert this chunk into a unified diff string suitable for git apply. This is critical for committing chunks independently or creating patches. """ 
-        header = f"--- a/{self.file_path}\n+++ b/{self.file_path}\n"
+        
+        # If this chunk represents a rename, emit rename metadata
+        if self.new_name is not None:
+            header = f"rename from {self.file_path}\nrename to {self.new_name}\n"
+        else:
+            header = f"--- a/{self.file_path}\n+++ b/{self.file_path}\n"
+
+        
         old_len = self.old_end - self.old_start + 1
         new_len = self.new_end - self.new_start + 1
         hunk_range = f"@@ -{self.old_start}{',' + str(old_len) if old_len > 0 else ''} +{self.new_start}{',' + str(new_len) if new_len > 0 else ''} @@\n" 
@@ -191,6 +271,7 @@ class DiffChunk:
             
             new_chunks.append(DiffChunk(
                 file_path=self.file_path,
+                new_name=self.new_name,
                 content=new_content.strip(),
                 ai_content=new_ai_content,
                 old_start=new_old_start,
@@ -253,6 +334,7 @@ class DiffChunk:
         
         return DiffChunk(
             file_path=self.file_path,
+            new_name=self.new_name,
             content=new_content.strip(),
             ai_content=new_ai_content,
             old_start=new_old_start,

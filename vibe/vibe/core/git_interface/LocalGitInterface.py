@@ -150,8 +150,6 @@ class LocalGitInterface(GitInterface):
 
         return DiffChunk(
             file_path=file_path,
-            start_line=new_start,
-            end_line=new_end,
             content=raw_content,
             ai_content=ai_content,
             old_start=old_start,
