@@ -22,13 +22,41 @@
 
 INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
-Given a code change with a diff patch and optional metadata (languages, scopes, symbols), write a concise commit message.
-{message}
-Rules:
-- Single line, max 72 characters
-- Imperative mood (Add, Update, Remove, Refactor)
+Input Format
+The user will provide an annotated code change in XML.
+- <metadata>: Context about the languages and symbols of the change.
+- <patch>: The diff for the change, using specific line tags:
+  - [add]: Lines added (Focus on these for the intent).
+  - [rem]: Lines removed.
+  - [ctx]: Context lines (Use these for understanding, but do not describe them as changes).
+  - [h]:   File headers or hunk markers.
+
+Task
+Write a single, concise commit message for the change.
+
+Constraints
+- Imperative mood (e.g., "Add", "Fix", "Update").
+- Max 72 characters.
 - Describe the change, not the goal
-- Output only the commit message"""
+- Focus on the logic in <patch>, using <metadata> for context
+- Output only the commit message
+
+Example input:
+<metadata>
+languages: python
+symbols: class Authenticator
+</metadata>
+<patch>
+[h] --- a/auth.py
+[h] +++ b/auth.py
+[ctx] class Authenticator:
+[add]     def login(self, user, pwd):
+[add]         return True
+</patch>
+
+Example output:
+Add login method to Authenticator
+"""
 
 INITIAL_SUMMARY_USER = """Here is a code change:
 
@@ -43,17 +71,54 @@ Commit message:"""
 
 BATCHED_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
-Given multiple code changes (each with diff patches and optional metadata), write one commit message per change.
+Given multiple code changes in XML format (each wrapped in a <change_group> tag with an index), write one commit message per change.
 {message}
+
+Input Format
+The user will provide code changes in XML.
+- <metadata>: Context about the languages and symbols for the change.
+- <patch>: The diff for the change, using specific line tags:
+  - [add]: Lines added (Focus on these for the intent).
+  - [rem]: Lines removed.
+  - [ctx]: Context lines (Use these for understanding, but do not describe them as changes).
+  - [h]:   File headers or hunk markers.
+
 Rules:
 - Output a numbered list with one message per change
 - Each message: single line, max 72 characters, imperative mood
 - Match the input order exactly
 
+Example input:
+### Change 1
+<metadata>
+languages: python
+symbols: class Authenticator
+</metadata>
+<patch>
+[h] --- a/auth.py
+[h] +++ b/auth.py
+[add] def login(user, pwd):
+[add]     return True
+</patch>
+
+---
+
+### Change 2
+<metadata>
+languages: python
+symbols: function parse_config
+</metadata>
+<patch>
+[h] --- a/config.py
+[h] +++ b/config.py
+[rem] def parse_config(path):
+[add] def parse_config(path, soft=True):
+</patch>
+
 Example output:
-1. Add user authentication
-2. Update config parser
-3. Fix memory leak in cache"""
+1. Add login method to Authenticator
+2. Update config parser with soft mode
+"""
 
 BATCHED_SUMMARY_USER = """Here are {count} code changes:
 
@@ -74,7 +139,15 @@ Rules:
 - Single line, max 72 characters
 - Imperative mood (Add, Update, Remove, Refactor)
 - Capture all key changes
-- Output only the commit message"""
+- Output only the commit message
+
+Example input:
+- Add login method
+- Fix session validation
+- Update logout logic
+
+Example output:
+Update authentication logic and add login method"""
 
 CLUSTER_SUMMARY_USER = """Here are related commit messages:
 
@@ -92,9 +165,18 @@ Rules:
 - Each message: single line, max 72 characters, imperative mood
 - Match the input order exactly
 
+Example input:
+### Group 1
+- Add login method
+- Fix session validation
+
+### Group 2
+- Update config parser
+- Add tests for parser
+
 Example output:
-1. Add authentication system
-2. Fix parser and update tests"""
+1. Add login and session validation
+2. Update config parser and add tests"""
 
 BATCHED_CLUSTER_SUMMARY_USER = """Here are {count} groups of related commit messages:
 
