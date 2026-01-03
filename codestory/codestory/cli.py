@@ -26,8 +26,8 @@ import typer
 from dotenv import load_dotenv
 from loguru import logger
 from platformdirs import user_config_dir
-from rich.traceback import install
 from rich import print as rprint
+from rich.traceback import install
 
 from codestory.commands import clean, commit, config, fix
 from codestory.context import GlobalConfig, GlobalContext
@@ -36,9 +36,9 @@ from codestory.core.exceptions import codestoryError
 from codestory.core.logging.logging import setup_logger
 from codestory.runtimeutil import (
     ensure_utf8_output,
+    get_log_dir_callback,
     setup_signal_handlers,
     version_callback,
-    get_log_dir_callback
 )
 
 # create app

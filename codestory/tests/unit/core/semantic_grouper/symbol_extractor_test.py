@@ -22,7 +22,6 @@
 
 from unittest.mock import Mock, patch
 from codestory.core.semantic_grouper.symbol_extractor import SymbolExtractor
-from codestory.core.semantic_grouper.query_manager import QueryManager
 
 # -----------------------------------------------------------------------------
 # Tests

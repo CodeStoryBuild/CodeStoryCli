@@ -40,7 +40,7 @@ def create_commit_pipeline(
     commit_ctx: CommitContext,
     base_commit_hash: str,
     new_commit_hash: str,
-    source: Literal["commit", "fix"]
+    source: Literal["commit", "fix"],
 ):
     chunker = AtomicChunker(global_ctx.aggresiveness != "Conservative")
 
@@ -78,7 +78,7 @@ def create_commit_pipeline(
         query_manager,
         base_commit_hash,
         new_commit_hash,
-        source
+        source,
     )
 
     return pipeline

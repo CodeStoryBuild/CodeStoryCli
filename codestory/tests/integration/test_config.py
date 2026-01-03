@@ -20,7 +20,6 @@
 # -----------------------------------------------------------------------------
 
 
-import os
 
 
 from tests.integration.conftest import run_cli
