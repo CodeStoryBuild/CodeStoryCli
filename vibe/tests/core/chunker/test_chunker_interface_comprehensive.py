@@ -412,27 +412,25 @@ def test_multiple_input_chunks_same_file(chunker_cls, chunker_kwargs):
 def test_multiple_input_chunks_different_files(chunker_cls, chunker_kwargs):
     """Test chunker with multiple input chunks from different files."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     chunk1 = StandardDiffChunk(
         _file_path="file1.py",
-       
         parsed_content=[
             Addition(content="line1", line_number=1),
         ],
         old_start=0,
         new_start=1,
     )
-    
+
     chunk2 = StandardDiffChunk(
         _file_path="file2.py",
-       
         parsed_content=[
             Removal(content="line1", line_number=1),
         ],
         old_start=1,
         new_start=0,
     )
-    
+
     # Test each chunk separately since they're from different files
     run_chunker_invariants(chunker, chunk1)
     run_chunker_invariants(chunker, chunk2)
@@ -488,16 +486,16 @@ def test_output_composite_chunks_are_valid(chunker_cls, chunker_kwargs):
 def test_rename_chunk_passthrough(chunker_cls, chunker_kwargs):
     """Test that rename chunks pass through unchanged."""
     chunker = load_chunker(chunker_cls, chunker_kwargs)
-    
+
     # Use from_raw_patch factory method to create RenameDiffChunk
     rename_chunk = RenameDiffChunk.from_raw_patch(
         old_file_path="old_name.py",
         new_file_path="new_name.py",
         patch_content="@@ -0,0 +0,0 @@",
     )
-    
+
     output = chunker.chunk([rename_chunk])
-    
+
     # Rename chunks should pass through unchanged
     assert len(output) == 1
     assert isinstance(output[0], RenameDiffChunk)

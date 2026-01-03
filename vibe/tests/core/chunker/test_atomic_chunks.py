@@ -83,6 +83,7 @@ def assert_atomic_chunks_preserve_input(
 # Test Cases: Basic Scenarios
 # ============================================================================
 
+
 def test_atomic_pure_additions():
     """Test splitting pure additions into atomic chunks."""
     chunk = StandardDiffChunk(
@@ -95,19 +96,19 @@ def test_atomic_pure_additions():
         old_start=0,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 3 atomic chunks (one per addition)
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -116,7 +117,6 @@ def test_atomic_pure_removals():
     """Test splitting pure removals into atomic chunks."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="line1", line_number=10),
             Removal(content="line2", line_number=11),
@@ -125,19 +125,19 @@ def test_atomic_pure_removals():
         old_start=10,
         new_start=0,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 3 atomic chunks (one per removal)
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -146,7 +146,6 @@ def test_atomic_matched_modifications():
     """Test splitting matched modifications (replacement) into atomic chunks."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new1", line_number=1),
             Removal(content="old1", line_number=1),
@@ -158,20 +157,20 @@ def test_atomic_matched_modifications():
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 3 atomic chunks (one per matched pair)
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic (1 removal + 1 addition)
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
         assert len(atomic_chunk.parsed_content) == 2
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -180,7 +179,6 @@ def test_atomic_mixed_pattern():
     """Test splitting mixed pattern (modifications + pure additions/removals)."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new1", line_number=1),
             Removal(content="old1", line_number=1),
@@ -191,30 +189,37 @@ def test_atomic_mixed_pattern():
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # The algorithm matches by relative position:
     # Relative position 0: old1 (line 1-1=0) matches new1 (line 1-1=0) -> modification
     # Relative position 1: old4 (line 2-1=1) matches new2 (line 2-1=1) -> modification
     # Relative position 2: new3 (line 3-1=2) has no removal -> pure addition
     # So we get 3 atomic chunks: 2 modifications + 1 pure addition
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Verify the structure: 2 modifications + 1 pure addition
     modifications = [c for c in atomic_chunks if len(c.parsed_content) == 2]
-    pure_additions = [c for c in atomic_chunks if len(c.parsed_content) == 1 
-                      and isinstance(c.parsed_content[0], Addition)]
-    assert len(modifications) == 2, f"Expected 2 modifications, got {len(modifications)}"
-    assert len(pure_additions) == 1, f"Expected 1 pure addition, got {len(pure_additions)}"
-    
+    pure_additions = [
+        c
+        for c in atomic_chunks
+        if len(c.parsed_content) == 1 and isinstance(c.parsed_content[0], Addition)
+    ]
+    assert (
+        len(modifications) == 2
+    ), f"Expected 2 modifications, got {len(modifications)}"
+    assert (
+        len(pure_additions) == 1
+    ), f"Expected 1 pure addition, got {len(pure_additions)}"
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -223,20 +228,19 @@ def test_atomic_single_addition():
     """Test that a single addition remains unchanged."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="single", line_number=5),
         ],
         old_start=0,
         new_start=5,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 1 atomic chunk
     assert len(atomic_chunks) == 1
     assert_is_atomic(atomic_chunks[0])
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
 
@@ -245,20 +249,19 @@ def test_atomic_single_removal():
     """Test that a single removal remains unchanged."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="single", line_number=10),
         ],
         old_start=10,
         new_start=0,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 1 atomic chunk
     assert len(atomic_chunks) == 1
     assert_is_atomic(atomic_chunks[0])
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
 
@@ -267,7 +270,6 @@ def test_atomic_single_modification():
     """Test that a single modification remains as one atomic chunk."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new", line_number=5),
             Removal(content="old", line_number=5),
@@ -275,14 +277,14 @@ def test_atomic_single_modification():
         old_start=5,
         new_start=5,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 1 atomic chunk
     assert len(atomic_chunks) == 1
     assert_is_atomic(atomic_chunks[0])
     assert len(atomic_chunks[0].parsed_content) == 2
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
 
@@ -329,36 +331,35 @@ def test_atomic_large_chunk():
     """Test splitting a large chunk into many atomic chunks."""
     parsed_content = []
     content_lines = []
-    
+
     # Create 50 modifications
     for i in range(50):
-        parsed_content.append(Addition(content=f"new_{i}", line_number=i+1))
+        parsed_content.append(Addition(content=f"new_{i}", line_number=i + 1))
         content_lines.append(f"+new_{i}")
-        parsed_content.append(Removal(content=f"old_{i}", line_number=i+1))
+        parsed_content.append(Removal(content=f"old_{i}", line_number=i + 1))
         content_lines.append(f"-old_{i}")
-    
+
     chunk = StandardDiffChunk(
         _file_path="large.py",
-       
         parsed_content=parsed_content,
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 50 atomic chunks (one per modification)
     assert len(atomic_chunks) == 50
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
         # Each should be a modification (2 items)
         assert len(atomic_chunk.parsed_content) == 2
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -367,7 +368,6 @@ def test_atomic_interleaved_pattern():
     """Test complex interleaved pattern of additions and removals."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="a", line_number=1),
             Addition(content="b", line_number=2),
@@ -379,32 +379,31 @@ def test_atomic_interleaved_pattern():
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce atomic chunks based on relative positions
     assert len(atomic_chunks) > 0
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
 
 def test_atomic_non_matching_line_numbers():
     """Test splitting when additions and removals have different starting positions.
-    
+
     Note: The algorithm matches by RELATIVE position, not absolute line numbers.
     Even though absolute line numbers differ, relative positions are the same.
     """
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Removal(content="old1", line_number=10),
             Removal(content="old2", line_number=11),
@@ -415,30 +414,35 @@ def test_atomic_non_matching_line_numbers():
         old_start=10,
         new_start=20,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # The algorithm uses RELATIVE positions:
     # old1: 10-10=0, new1: 20-20=0 -> matched (modification)
     # old2: 11-10=1, new2: 21-20=1 -> matched (modification)
     # old3: 12-10=2, no addition at relative 2 -> pure removal
     # Result: 2 modifications + 1 removal = 3 atomic chunks
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Verify the structure: 2 modifications + 1 removal
     modifications = [c for c in atomic_chunks if len(c.parsed_content) == 2]
-    pure_removals = [c for c in atomic_chunks if len(c.parsed_content) == 1 
-                     and isinstance(c.parsed_content[0], Removal)]
-    assert len(modifications) == 2, f"Expected 2 modifications, got {len(modifications)}"
+    pure_removals = [
+        c
+        for c in atomic_chunks
+        if len(c.parsed_content) == 1 and isinstance(c.parsed_content[0], Removal)
+    ]
+    assert (
+        len(modifications) == 2
+    ), f"Expected 2 modifications, got {len(modifications)}"
     assert len(pure_removals) == 1, f"Expected 1 pure removal, got {len(pure_removals)}"
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -481,7 +485,6 @@ def test_atomic_all_at_same_position():
     """Test splitting multiple changes at the same position."""
     chunk = StandardDiffChunk(
         _file_path="test.py",
-       
         parsed_content=[
             Addition(content="new1", line_number=5),
             Addition(content="new2", line_number=6),
@@ -493,19 +496,19 @@ def test_atomic_all_at_same_position():
         old_start=5,
         new_start=5,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # Should produce 3 atomic chunks (matched pairs)
     assert len(atomic_chunks) == 3
-    
+
     # Each chunk should be atomic
     for atomic_chunk in atomic_chunks:
         assert_is_atomic(atomic_chunk)
-    
+
     # Should preserve input
     assert_atomic_chunks_preserve_input(atomic_chunks, chunk)
-    
+
     # Should be disjoint
     assert chunks_disjoint(atomic_chunks)
 
@@ -514,11 +517,11 @@ def test_atomic_all_at_same_position():
 # Test Cases: Validation
 # ============================================================================
 
+
 def test_atomic_chunks_have_valid_file_paths():
     """Test that all atomic chunks preserve the file path."""
     chunk = StandardDiffChunk(
         _file_path="important/file.py",
-       
         parsed_content=[
             Addition(content="line1", line_number=1),
             Addition(content="line2", line_number=2),
@@ -527,9 +530,9 @@ def test_atomic_chunks_have_valid_file_paths():
         old_start=0,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # All atomic chunks should have the same file path
     for atomic_chunk in atomic_chunks:
         assert atomic_chunk._file_path == "important/file.py"
@@ -548,9 +551,9 @@ def test_atomic_chunks_are_contiguous():
         old_start=1,
         new_start=1,
     )
-    
+
     atomic_chunks = ChunkerInterface.split_into_atomic_chunks(chunk)
-    
+
     # All atomic chunks should be valid (contiguity checked in __post_init__)
     for atomic_chunk in atomic_chunks:
         assert atomic_chunk.parsed_content is not None
