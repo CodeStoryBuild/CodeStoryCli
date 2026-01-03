@@ -10,7 +10,10 @@ import pytest
 from dslate.tests.integration.repo_utils import RepoState
 
 # Get executable path from environment variable
-CLI_EXE = os.environ.get("CLI_ARTIFACT_PATH")
+_RAW_CLI_PATH = os.environ.get("CLI_ARTIFACT_PATH")
+
+# Convert to absolute path immediately so it works regardless of cwd
+CLI_EXE = os.path.abspath(_RAW_CLI_PATH) if _RAW_CLI_PATH else None
 
 
 @pytest.fixture(scope="session")
