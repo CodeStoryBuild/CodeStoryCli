@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import json
 from dataclasses import dataclass, asdict
+from cryptography.fernet import Fernet
 
 
 @dataclass

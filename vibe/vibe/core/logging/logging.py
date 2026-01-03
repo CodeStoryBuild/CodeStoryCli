@@ -1,7 +1,15 @@
+"""
+Enhanced logging configuration for the vibe CLI application.
+
+This module provides structured logging with proper formatting,
+log levels, and file management for better observability and debugging.
+"""
+
 from platformdirs import user_log_path
 from pathlib import Path
 from typing import Optional, Dict, Any
 import os
+import sys
 
 import typer
 from rich.console import Console
