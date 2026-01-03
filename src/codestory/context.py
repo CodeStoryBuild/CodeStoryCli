@@ -110,13 +110,7 @@ class GlobalContext:
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
 
-        return GlobalContext(
-            repo_path,
-            model,
-            git_interface,
-            git_commands,
-            config
-        )
+        return GlobalContext(repo_path, model, git_interface, git_commands, config)
 
 
 @dataclass(frozen=True)
