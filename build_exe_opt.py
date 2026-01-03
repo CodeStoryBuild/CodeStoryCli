@@ -96,12 +96,19 @@ def main():
         print(f"Build failed with error code {e.returncode}")
         sys.exit(e.returncode)
 
-    # Validation
-    target_output = dist_path / exe_name
+    # Validation - Nuitka creates a .dist directory for standalone builds
+    # The directory is named after the entry point (cli.py -> cli.dist)
+    standalone_dir = dist_path / "cli.dist"
+    target_output = standalone_dir / exe_name
     if target_output.exists():
         print(f"Build successful! Artifact located at: {target_output}")
     else:
         print(f"Build finished but expected artifact {target_output} not found.")
+        print(f"Checking if standalone directory exists: {standalone_dir.exists()}")
+        if standalone_dir.exists():
+            print(f"Contents of {standalone_dir}:")
+            for item in standalone_dir.iterdir():
+                print(f"  - {item.name}")
         sys.exit(1)
 
 
