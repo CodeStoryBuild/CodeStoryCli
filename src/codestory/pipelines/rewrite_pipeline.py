@@ -213,7 +213,9 @@ class RewritePipeline:
             )
 
             with (
-                transient_step("Creating Semantic Groups", self.global_context.config.silent),
+                transient_step(
+                    "Creating Semantic Groups", self.global_context.config.silent
+                ),
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
@@ -306,7 +308,8 @@ class RewritePipeline:
         # take these semantically valid, filtered chunks, and now group them into logical commits
         with (
             transient_step(
-                "Using AI to create meaningful commits...", self.global_context.config.silent
+                "Using AI to create meaningful commits...",
+                self.global_context.config.silent,
             ) as pbar,
             time_block("logical_grouping"),
         ):
@@ -389,7 +392,10 @@ class RewritePipeline:
             # Log the diff for this group at debug level
             diff_text = patch_map.get(idx, "") or "(no diff)"
 
-            if not (self.global_context.config.silent and self.global_context.config.auto_accept):
+            if not (
+                self.global_context.config.silent
+                and self.global_context.config.auto_accept
+            ):
                 print(f"Diff for #{num}:")
                 if diff_text != "(no diff)":
                     print_patch_cleanly(diff_text, max_length=120)
