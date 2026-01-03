@@ -23,6 +23,7 @@
 import subprocess
 from .conftest import run_cli
 
+
 class TestFix:
     def test_fix_linear(self, cli_exe, repo_factory):
         """Test fixing a commit in linear history."""

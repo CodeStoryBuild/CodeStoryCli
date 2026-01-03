@@ -26,6 +26,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional, Union
 
+
 class RepoState:
     def __init__(self, path: Path):
         self.path = path

@@ -24,6 +24,7 @@ import pytest
 import subprocess
 from .conftest import run_cli
 
+
 class TestCommitScenarios:
     @pytest.mark.parametrize("scenario_name, changes", [
         ("new_file", {"new_file.txt": "new content"}),

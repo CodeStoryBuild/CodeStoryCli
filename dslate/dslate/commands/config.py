@@ -93,11 +93,11 @@ def _help_callback(ctx: typer.Context, param, value: bool):
 def _add_to_gitignore(config_filename: str) -> None:
     """Add config file to .gitignore if it exists, otherwise print warning."""
     gitignore_path = Path(".gitignore")
-    
+
     if gitignore_path.exists():
         # Read existing .gitignore
         gitignore_content = gitignore_path.read_text()
-        
+
         # Check if config file is already in .gitignore
         if config_filename not in gitignore_content:
             # Add config file to .gitignore

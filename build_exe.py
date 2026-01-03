@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     parser = argparse.ArgumentParser(description="Build dslate executable")
     parser.add_argument("--mode", choices=["file", "folder"], required=True, 
@@ -67,6 +68,7 @@ def main():
     else:
         print(f"Build failed: Executable not found at {check_path}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

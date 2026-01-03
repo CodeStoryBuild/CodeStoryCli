@@ -22,6 +22,7 @@
 
 from .conftest import run_cli
 
+
 class TestBasicCLI:
     def test_help(self, cli_exe):
         result = run_cli(cli_exe, ["--help"])

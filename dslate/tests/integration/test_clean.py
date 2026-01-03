@@ -23,6 +23,7 @@
 import subprocess
 from .conftest import run_cli
 
+
 class TestClean:
     def test_clean_repo(self, cli_exe, repo_factory):
         """Test cleaning a repo."""
