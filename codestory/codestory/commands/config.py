@@ -361,6 +361,7 @@ def _get_config(key: str | None, scope: str | None) -> None:
 
         display_config(table_data)
 
+
 @handle_codestory_exception
 def main(
     ctx: typer.Context,

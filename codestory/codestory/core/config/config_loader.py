@@ -157,7 +157,10 @@ class ConfigLoader:
 
     @staticmethod
     def coerce_value(
-        value: Any, typ: Any, field_name: str | None = None, constraints_map: dict | None = None
+        value: Any,
+        typ: Any,
+        field_name: str | None = None,
+        constraints_map: dict | None = None,
     ) -> Any:
         """Coerce a value to the given type with manual validation.
 

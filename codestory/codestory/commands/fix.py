@@ -77,6 +77,7 @@ def get_info(git_interface: GitInterface, fix_context: FixContext):
 
     return parent, resolved, current_branch
 
+
 @handle_codestory_exception
 def main(
     ctx: typer.Context,

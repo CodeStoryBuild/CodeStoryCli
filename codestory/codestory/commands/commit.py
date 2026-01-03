@@ -82,6 +82,7 @@ def verify_repo(commands: GitCommands, target: str, auto_yes: bool = False) -> b
 
     return True
 
+
 @handle_codestory_exception
 def main(
     ctx: typer.Context,

@@ -45,6 +45,7 @@ def _help_callback(ctx: typer.Context, param, value: bool):
     typer.echo(ctx.get_help())
     raise typer.Exit()
 
+
 @handle_codestory_exception
 def main(
     ctx: typer.Context,

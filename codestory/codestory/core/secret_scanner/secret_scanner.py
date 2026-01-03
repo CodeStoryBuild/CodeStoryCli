@@ -15,6 +15,7 @@ from ..data.line_changes import Addition
 
 AggressionLevel = Literal["safe", "balanced", "paranoid"]
 
+
 @dataclass
 class ScannerConfig:
     aggression: AggressionLevel = "balanced"

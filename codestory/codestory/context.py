@@ -59,6 +59,7 @@ class GlobalConfig:
         "silent": BoolConstraint(),
     }
 
+
 @dataclass(frozen=True)
 class GlobalContext:
     repo_path: Path
