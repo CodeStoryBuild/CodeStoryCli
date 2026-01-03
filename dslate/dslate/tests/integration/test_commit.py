@@ -8,14 +8,24 @@ class TestCommitScenarios:
         ("deleted_file", {"README.md": None}), # Assuming README.md exists from setup
         ("modified_file", {"README.md": "modified content"}),
         ("renamed_file", {"README.md": ("README.md", "README_renamed.md")}),
-        ("renamed_modified", {"README.md": ("README.md", "README_renamed.md"), "README_renamed.md": "modified content"}), # This logic depends on apply_changes implementation order/logic
+        ("renamed_modified", {"README.md": ("README.md", "README_renamed.md"), "README_renamed.md": "modified content"}),
         ("binary_new", {"data.bin": b"\x00\x01\x02"}),
         ("mixed_changes", {
             "new_file.txt": "new content",
             "README.md": "modified content",
             "data.bin": b"\x00\x01\x02"
         }),
-        # Pure additions/deletions are covered by new_file/deleted_file
+        ("complex_refactor", {
+            "src/old_module.py": ("src/old_module.py", "src/new_module/renamed.py"),
+            "src/new_module/renamed.py": "updated content in renamed file",
+            "src/unused.py": None,
+            "docs/readme.txt": "documentation update"
+        }),
+        ("deep_nested", {
+            "a/b/c/d/e/f/deep.txt": "deep content",
+            "x/y/z/other.txt": "other deep content"
+        }),
+        ("large_batch", {f"file_{i}.txt": f"content {i}" for i in range(20)})
     ])
     def test_commit_scenarios(self, cli_exe, repo_factory, scenario_name, changes):
         """Test commit command with various file state scenarios."""
@@ -59,13 +69,13 @@ class TestCommitScenarios:
 
     def test_commit_clean(self, cli_exe, repo_factory):
         repo = repo_factory("clean")
-        result = run_cli(cli_exe, ["commit"], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
         assert result.returncode != 0
         assert "no commits were created" in result.stdout.lower() or "no changes" in result.stdout.lower() or "clean" in result.stdout.lower()
 
     def test_commit_detached(self, cli_exe, repo_factory):
         repo = repo_factory("detached")
         subprocess.run(["git", "checkout", "--detach", "HEAD"], cwd=repo.path, check=True)
-        result = run_cli(cli_exe, ["commit"], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "commit"], cwd=repo.path)
         assert result.returncode != 0
         assert "detached head" in result.stderr.lower() or "detached head" in result.stdout.lower()

@@ -28,7 +28,7 @@ class TestFix:
         # Get root commit hash
         root_hash = subprocess.run(["git", "rev-list", "--max-parents=0", "HEAD"], cwd=repo.path, capture_output=True, text=True).stdout.strip()
         
-        result = run_cli(cli_exe, ["fix", root_hash], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "fix", root_hash], cwd=repo.path)
         assert result.returncode != 0
         # Check for the specific error message
         assert "root commit" in result.stderr.lower() or "root commit" in result.stdout.lower()
