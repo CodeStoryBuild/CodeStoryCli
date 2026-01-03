@@ -95,7 +95,11 @@ jobs:
         run: |
           pip install pytest
           
-          pytest dslate/dslate/tests/integration
+          if [ "${{ runner.os }}" != "Windows" ]; then
+            chmod +x ${{ matrix.exe_path }}
+          fi
+          
+          pytest -vv dslate/dslate/tests/integration
         shell: bash
         env:
           CLI_ARTIFACT_PATH: ${{ matrix.exe_path }}
