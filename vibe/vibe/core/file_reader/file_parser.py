@@ -12,6 +12,7 @@ class ParsedFile:
 
     root_node: Node
     detected_language: str
+    line_ranges: list[tuple[int, int]]
 
 
 class FileParser:
@@ -48,17 +49,21 @@ class FileParser:
     }
 
     @classmethod
-    def parse_file(cls, file_name: str, file_content: str) -> Optional[ParsedFile]:
+    def parse_file(
+        cls, file_name: str, file_content: str, line_ranges: list[tuple[int, int]]
+    ) -> Optional[ParsedFile]:
         """
         Parse a file by detecting its language and creating an AST.
 
         Args:
             file_name: Name of the file (used for language detection)
             file_content: Content of the file to parse
+            line_ranges: Relevant ranges of the file we need
 
         Returns:
             ParsedFile containing the root node and detected language, or None if parsing failed
         """
+        # TODO see if we can parse only the relevant ranges in line_ranges
         # Detect language using Pygments
         detected_language = cls._detect_language(file_name, file_content)
         if not detected_language:
@@ -77,7 +82,11 @@ class FileParser:
             tree = parser.parse(content_bytes)
             root_node = tree.root_node
 
-            return ParsedFile(root_node=root_node, detected_language=detected_language)
+            return ParsedFile(
+                root_node=root_node,
+                detected_language=detected_language,
+                line_ranges=line_ranges,
+            )
         except Exception:
             # If parsing fails, return None
             return None

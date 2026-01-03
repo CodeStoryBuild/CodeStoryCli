@@ -75,10 +75,6 @@ class AIGitPipeline:
         )
         t1 = perf_counter()
 
-        logger.debug(
-            "raw_diff JSON dump:\n"
-            + "\n".join([chunk.format_json() for chunk in raw_diff])
-        )
         logger.info(
             "Raw diff summary: chunks={count} files={files}",
             count=len(raw_diff),
@@ -99,10 +95,6 @@ class AIGitPipeline:
             t_mech1 = perf_counter()
             p.advance(ck, 1)
 
-            logger.debug(
-                "Mechanical chunks JSON dump:\n"
-                + "\n".join([chunk.format_json() for chunk in mechanical_chunks])
-            )
             logger.info(
                 "Mechanical chunking summary: mechanical_chunks={count}",
                 count=len(mechanical_chunks),
@@ -119,10 +111,6 @@ class AIGitPipeline:
             t_sem1 = perf_counter()
             p.advance(sem_grp, 1)
 
-            logger.debug(
-                "Semantic chunks JSON dump:\n"
-                + "\n".join([chunk.format_json() for chunk in semantic_chunks])
-            )
             logger.info(
                 "Semantic grouping summary: semantic_groups={groups}",
                 groups=len(semantic_chunks),

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from importlib.resources.abc import Traversable
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Literal
 from loguru import logger
 
 from tree_sitter import Query, QueryCursor, Node
@@ -10,44 +10,60 @@ from tree_sitter_language_pack import get_language
 
 @dataclass(frozen=True)
 class SharedTokenQueries:
-    queries: List[str]
-    token_filters: set[str]
-
-
-@dataclass(frozen=True)
-class ScopeQueries:
-    queries: List[str]
+    general_queries: list[str]
+    definition_queries: list[str]
 
 
 @dataclass(frozen=True)
 class LanguageConfig:
     language_name: str
-    shared_token_queries: Dict[str, SharedTokenQueries]
-    scope_queries: ScopeQueries
+    shared_token_queries: dict[str, SharedTokenQueries]
+    scope_queries: list[str]
+    comment_queries: list[str]
+    share_tokens_between_files: bool
 
     @classmethod
     def from_json_dict(cls, name: str, json_dict: dict) -> "LanguageConfig":
         shared_token_queries: Dict[str, SharedTokenQueries] = {}
         for token_class, items in json_dict.get("shared_token_queries", {}).items():
-            if isinstance(items, list):
-                query = SharedTokenQueries(items, set())
-            elif isinstance(items, dict):
-                queries = items.get("queries", [])
-                filters = set(items.get("filters", []))
-                query = SharedTokenQueries(queries, filters)
+            if isinstance(items, dict):
+                general_queries = items.get("general_queries", [])
+                definition_queries = items.get("definition_queries", [])
+                query = SharedTokenQueries(general_queries, definition_queries)
             else:
                 raise ValueError(
                     f"Invalid shared_token_queries entry for {token_class}"
                 )
             shared_token_queries[token_class] = query
 
-        scope_queries = ScopeQueries(json_dict.get("scope_queries", []))
-        return cls(name, shared_token_queries, scope_queries)
+        scope_queries = json_dict.get("scope_queries", [])
+        comment_queries = json_dict.get("comment_queries", [])
+        share_tokens_between_files = json_dict.get("share_tokens_between_files", False)
+        return cls(
+            name,
+            shared_token_queries,
+            scope_queries,
+            comment_queries,
+            share_tokens_between_files,
+        )
 
-    def get_scope_source(self) -> str:
-        return "\n".join(f"({q} @scope_query)" for q in self.scope_queries.queries)
+    def __get_source(self, queries: list[str], capture_class) -> str:
+        lines = []
+        for query in queries:
+            if not "@placeholder" in query:
+                raise ValueError(
+                    f"{query} in the language {self.language_name} {capture_class=} config, is missing a capture class @placeholder!"
+                )
 
-    def get_shared_token_source(self) -> str:
+            else:
+                # TODO consider if multiple @placeholders should be supported or warned against
+                # .replace will replace all instances of it
+                query_filled = query.replace("@placeholder", f"@{capture_class}")
+                lines.append(query_filled)
+
+        return lines
+
+    def __get_shared_token_source(self, is_general_query: bool) -> str:
         """
         Build query source for all shared tokens, injecting #not-eq? predicates
         for each configured filter. Each predicate line uses the capture name so
@@ -55,22 +71,31 @@ class LanguageConfig:
         """
         lines: List[str] = []
         for capture_class, capture_queries in self.shared_token_queries.items():
-            for query in capture_queries.queries:
-                if capture_queries.token_filters:
-                    lines.append(f"(")
+            queries = (
+                capture_queries.general_queries
+                if is_general_query
+                else capture_queries.definition_queries
+            )
+            lines.extend(self.__get_source(queries, capture_class))
 
-                lines.append(f"({query} @{capture_class})")
-
-                for flt in capture_queries.token_filters:
-                    # Add a predicate that the QueryCursor will call. Predicate names
-                    # do not include the leading '#', binding is done by name.
-                    # We escape double-quotes in the filter string to keep the query valid.
-                    escaped = flt.replace('"', r"\"")
-                    lines.append(f'(#not-eq? @{capture_class} "{escaped}")')
-
-                if capture_queries.token_filters:
-                    lines.append(")")
         return "\n".join(lines)
+
+    def get_source(
+        self,
+        query_type: Literal["scope", "comment", "token_general", "token_definition"],
+    ):
+        if query_type == "scope":
+            return "\n".join(
+                self.__get_source(self.scope_queries, "STRUCTURALSCOPEQUERY")
+            )
+        if query_type == "comment":
+            return "\n".join(
+                self.__get_source(self.comment_queries, "STRUCTURALCOMMENTQUERY")
+            )
+        if query_type == "token_definition":
+            return self.__get_shared_token_source(is_general_query=False)
+        if query_type == "token_general":
+            return self.__get_shared_token_source(is_general_query=True)
 
 
 class QueryManager:
@@ -80,7 +105,7 @@ class QueryManager:
     """
 
     def __init__(self, language_config_path: Traversable):
-        self.language_configs: Dict[str, LanguageConfig] = self._init_configs(
+        self._language_configs: Dict[str, LanguageConfig] = self._init_configs(
             language_config_path
         )
         # cache per-language/per-query-type: key -> (Query, QueryCursor)
@@ -88,20 +113,19 @@ class QueryManager:
 
         # Log language configuration summary
         lang_summaries = {}
-        for name, cfg in self.language_configs.items():
+        for name, cfg in self._language_configs.items():
             shared_classes = len(cfg.shared_token_queries)
-            shared_filters = sum(
-                len(v.token_filters) for v in cfg.shared_token_queries.values()
-            )
-            scope_count = len(cfg.scope_queries.queries)
+            scope_count = len(cfg.scope_queries)
+            comment_count = len(cfg.comment_queries)
             lang_summaries[name] = {
                 "shared_classes": shared_classes,
-                "shared_filters": shared_filters,
                 "scope_queries": scope_count,
+                "comment_queries": comment_count,
+                "share_tokens_between_files": cfg.share_tokens_between_files,
             }
         logger.info(
             "Language config loaded: languages={n} details={details}",
-            n=len(self.language_configs),
+            n=len(self._language_configs),
             details=lang_summaries,
         )
 
@@ -125,57 +149,36 @@ class QueryManager:
         except Exception as e:
             raise RuntimeError("Failed to parse language configs!") from e
 
-    @staticmethod
-    def not_eq_predicate(name: str, args, pattern_index: int, captures: dict) -> bool:
-        # Only handle our predicate of interest
-        if name != "not-eq?":
-            return True
-
-        # Expect args to be: (capture_name, "capture"), (pattern_string, "string")
-        try:
-            cap_name, cap_type = args[0]
-            filter_text, filter_type = args[1]
-        except Exception:
-            # malformed predicate usage -> do not reject at the predicate layer
-            return True
-
-        if cap_type != "capture" or filter_type != "string":
-            return True
-
-        for node in captures.get(cap_name, []):
-            text = node.text.decode("utf8")
-            if text == filter_text:
-                # found a node whose text equals the filter -> reject the whole pattern
-                return False
-        return True
-
-    def run_query(self, language_name: str, tree_root: Node, is_scope_query: bool):
+    def run_query(
+        self,
+        language_name: str,
+        tree_root: Node,
+        query_type: Literal["scope", "token_general", "token_definition"],
+        line_ranges: list[tuple[int, int]] | None = None,
+    ):
         """
         Run either the scope or shared token query for the language on `tree_root`.
-        Uses QueryCursor(query) + cursor.captures(node, predicates=...).
-        Returns a list of (Node, capture_name) tuples.
+        If `line_ranges` is provided, only matches within those 0-indexed (start, end) line ranges are returned.
+        Returns a dict: {capture_name: [Node, ...]}
         """
-        key = f"{language_name}:{'scope' if is_scope_query else 'token'}"
+        key = f"{language_name}:{query_type}"
 
         language = get_language(language_name)
         if language is None:
             raise ValueError(f"Invalid language '{language_name}'")
 
-        lang_config = self.language_configs.get(language_name)
+        lang_config = self._language_configs.get(language_name)
         if lang_config is None:
             raise ValueError(f"Missing config for language '{language_name}'")
 
         # Build and cache Query + QueryCursor if not present
         if key not in self._cursor_cache:
-            if is_scope_query:
-                query_src = lang_config.get_scope_source()
-            else:
-                query_src = lang_config.get_shared_token_source()
+            query_src = lang_config.get_source(query_type)
 
-            # If there are no queries (empty string), create an empty Query to avoid errors
             if not query_src.strip():
                 # Empty query -> no matches
-                return []
+                logger.warning(f"Empty query for {language_name} {query_type=}!")
+                return {}
 
             query = Query(language, query_src)
             cursor = QueryCursor(query)
@@ -183,4 +186,36 @@ class QueryManager:
         else:
             query, cursor = self._cursor_cache[key]
 
-        return cursor.captures(tree_root, QueryManager.not_eq_predicate)
+        # If no line_ranges provided, just run over the whole tree
+        if line_ranges is None:
+            # make sure the capture range is the whole file
+            cursor.set_point_range(tree_root.start_point, tree_root.end_point)
+            return cursor.captures(tree_root)
+
+        # Otherwise, loop over line ranges
+        # Prepare result dictionary
+        results: dict[str, list[Node]] = {}
+        for start_line, end_line in line_ranges:
+            if end_line < start_line:
+                # cases like empty hunks will head to invalid range
+                continue
+            start_point = (start_line, 0)
+            end_point = (end_line + 1, 0)  # end is exclusive
+
+            # Reset cursor and restrict to this range
+            cursor.set_point_range(start_point, end_point)
+
+            for capture_name, nodes in cursor.captures(tree_root).items():
+                results.setdefault(capture_name, []).extend(nodes)
+
+        return results
+
+    def get_config(self, language_name: str) -> LanguageConfig:
+        lang_config = self._language_configs.get(language_name)
+        if lang_config is None:
+            raise ValueError(f"Missing config for language '{language_name}'")
+        return lang_config
+
+    @staticmethod
+    def create_qualified_symbol(capture_class: str, token_name: str) -> str:
+        return f"{capture_class}:{token_name}"
