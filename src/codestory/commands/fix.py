@@ -92,7 +92,12 @@ def get_info(global_context: GlobalContext, fix_context: FixContext):
     return base_hash, end_resolved, current_branch
 
 
-def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str | None):
+def run_fix(
+    global_context: GlobalContext,
+    commit_hash: str,
+    start_commit: str | None,
+    message: str | None,
+):
     from loguru import logger
 
     validated_end_hash = validate_commit_hash(
@@ -116,8 +121,7 @@ def run_fix(global_context: GlobalContext, commit_hash: str, start_commit: str |
 
     commit_context = CommitContext(
         target=None,
-        # no message because we dont rely on commit messages. Later we will rely on our own internal understanding of the repo
-        message=None,
+        message=message,
         # no filters because we cannot selectively edit changes in a fix
         relevance_filter_level="none",
         relevance_filter_intent=None,
