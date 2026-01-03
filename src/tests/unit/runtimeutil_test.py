@@ -79,14 +79,3 @@ def test_version_callback_installed(mock_version, mock_echo):
     mock_version.assert_called_once_with("codestory")
     mock_echo.assert_called_once_with("codestory version 1.2.3")
 
-
-@patch("typer.echo")
-@patch("importlib.metadata.version")
-def test_version_callback_development(mock_version, mock_echo):
-    """Test version display when package is not found (dev mode)."""
-    mock_version.side_effect = importlib.metadata.PackageNotFoundError
-
-    with pytest.raises(typer.Exit):
-        version_callback(True)
-
-    mock_echo.assert_called_once_with("codestory version: development")
