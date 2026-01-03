@@ -252,7 +252,7 @@ class DiffChunk:
         contains_newline_marker_rem = False
 
         for line in hunk.hunk_lines:
-            sanitized_content = DiffChunk._sanitize_patch_content(line)
+            sanitized_content = DiffChunk._sanitize_patch_content(line[1:])
             if line.startswith("+"):
                 parsed_content.append(
                     Addition(content=sanitized_content, line_number=current_new_line)
