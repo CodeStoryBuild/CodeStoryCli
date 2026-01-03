@@ -35,7 +35,9 @@ class LanguageConfig:
                 filters = set(items.get("filters", []))
                 query = SharedTokenQueries(queries, filters)
             else:
-                raise ValueError(f"Invalid shared_token_queries entry for {token_class}")
+                raise ValueError(
+                    f"Invalid shared_token_queries entry for {token_class}"
+                )
             shared_token_queries[token_class] = query
 
         scope_queries = ScopeQueries(json_dict.get("scope_queries", []))
@@ -62,8 +64,8 @@ class LanguageConfig:
                     # Add a predicate that the QueryCursor will call. Predicate names
                     # do not include the leading '#', binding is done by name.
                     # We escape double-quotes in the filter string to keep the query valid.
-                    escaped = flt.replace('"', r'\"')
-                    lines.append(f"(#not-eq? @{capture_class} \"{escaped}\")")
+                    escaped = flt.replace('"', r"\"")
+                    lines.append(f'(#not-eq? @{capture_class} "{escaped}")')
 
                 if capture_queries.token_filters:
                     lines.append(")")

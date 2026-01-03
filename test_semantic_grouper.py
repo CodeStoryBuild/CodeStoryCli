@@ -7,7 +7,7 @@ import sys
 import os
 
 # Add the vibe module to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'vibe'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vibe"))
 
 from vibe.core.semantic_grouper.semantic_grouper import SemanticGrouper
 from vibe.core.semantic_grouper.query_manager import QueryManager
@@ -18,11 +18,14 @@ from vibe.core.data.line_changes import Addition, Removal
 
 class MockFileReader:
     """Mock file reader for testing."""
-    
+
     def __init__(self):
         self.file_contents = {
             # New version of fileA.py
-            ("vibe_playground/fileA.py", False): '''def calculate():
+            (
+                "vibe_playground/fileA.py",
+                False,
+            ): """def calculate():
     return 42
 
 print(calculate())
@@ -36,9 +39,12 @@ class Greeter:
 
 def farewell():
     print("Goodbye")
-''',
+""",
             # Old version of fileA.py (slightly different)
-            ("vibe_playground/fileA.py", True): '''def calculate():
+            (
+                "vibe_playground/fileA.py",
+                True,
+            ): """def calculate():
     return 41
 
 print(calculate())
@@ -52,9 +58,9 @@ class Greeter:
 
 def farewell():
     print("Goodbye")
-'''
+""",
         }
-    
+
     def read(self, path: str, old_content: bool = False) -> str | None:
         return self.file_contents.get((path, old_content))
 
