@@ -77,18 +77,19 @@ def run_onboarding(ctx: typer.Context):
     model = typer.prompt("What AI model would you like to use? Format=provider:model (e.g., openai:gpt-4)")
     api_key = typer.prompt("What is your API key?")
     global_ = typer.confirm("Do you want to set this as the global configuration?")
-    config.main(ctx, key="model", value=model, global_scope=global_)
-    config.main(ctx, key="api_key", value=api_key, global_scope=global_)
+    config.main(ctx, key="model", value=model, global_scope=global_, env_scope=False)
+    config.main(ctx, key="api_key", value=api_key, global_scope=global_, env_scope=False)
     rprint("[bold]Configuration completed![/bold]")
     rprint("[bold]You can always change these settings and more later using the 'config' command.[/bold]")
     return
 
 def check_run_onboarding(ctx: typer.Context):
     # check a file in user config dir
-    onboarding_file = Path(user_config_dir("dslate")) / "onboardingflag"
+    onboarding_file = Path(user_config_dir("dslate")) / "onboarding_flag"
     if not onboarding_file.exists():
         run_onboarding(ctx)
         onboarding_file.touch()
+        raise typer.Exit(0)
     else:
         return
 
@@ -177,6 +178,8 @@ def main(
         # check if this is first run of command
         # if so, run onboarding for user
         check_run_onboarding(ctx)
+
+        logger.warning("No configuration found. Using default values.")
 
     logger.debug(f"Used {used_configs} to build global context.")
     global_context = GlobalContext.from_global_config(config, Path(repo_path))
