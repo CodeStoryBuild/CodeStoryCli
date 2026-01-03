@@ -9,6 +9,7 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 # Fixtures
 # -------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def tools():
     """
@@ -20,9 +21,11 @@ def tools():
     parser = FileParser()
     return parser, mapper
 
+
 # -------------------------------------------------------------------------
 # Parameterized Tests
 # -------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     "language, filename, content, expected_lines",

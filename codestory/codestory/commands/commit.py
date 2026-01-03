@@ -21,6 +21,7 @@
 
 
 from typing import Literal
+
 import typer
 from loguru import logger
 from colorama import Style, Fore
