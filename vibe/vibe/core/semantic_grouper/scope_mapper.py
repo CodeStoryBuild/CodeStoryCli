@@ -43,7 +43,7 @@ class ScopeMapper:
             language_name, root_node, query_type="scope", line_ranges=line_ranges
         )
 
-        for capture_name, nodes in scope_captures.items():
+        for _, nodes in scope_captures.items():
             for node in nodes:
                 scope_name = f"{file_name}:{node.id}"
                 for line_num in range(
