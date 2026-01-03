@@ -192,12 +192,14 @@ def main_clean(
         "--min-size",
         help="Minimum change size (lines) to process.",
     ),
-    start_from: str | None = typer.Argument(
+    start_from: str | None = typer.Option(
         None,
+        "--start",
         help="Where to start cleaning from (inclusive). Defaults to earliest possible commit.",
     ),
-    end_at: str | None = typer.Argument(
+    end_at: str | None = typer.Option(
         None,
+        "--end",
         help="Where to end cleaning at. (inclusive). Defaults to HEAD.",
     ),
 ) -> None:
