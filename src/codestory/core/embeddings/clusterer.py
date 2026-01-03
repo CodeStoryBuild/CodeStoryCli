@@ -19,8 +19,6 @@
 import networkx as nx
 import numpy as np
 from loguru import logger
-from sklearn.neighbors import NearestNeighbors
-from sklearn.preprocessing import normalize
 
 
 class SklearnLouvainClusterer:
@@ -44,6 +42,10 @@ class SklearnLouvainClusterer:
         self.labels_ = np.array([])
 
     def fit(self, embeddings: list[list[float]]) -> np.ndarray:
+        import networkx as nx
+        from sklearn.neighbors import NearestNeighbors
+        from sklearn.preprocessing import normalize
+
         # Early exits for edge cases
         if embeddings is None or len(embeddings) == 0:
             return np.array([])
