@@ -114,7 +114,9 @@ class CommentMapper:
             line_text = lines[line_idx]
 
             # Efficiently strip all whitespace and get the length of what remains.
-            non_whitespace_text = line_text.translate(_WHITESPACE_TRANSLATION_TABLE)
+            non_whitespace_text = line_text.translate(
+                _WHITESPACE_TRANSLATION_TABLE
+            )
 
             # If there's no non-whitespace text, it's a blank line, not a comment line.
             if not non_whitespace_text:

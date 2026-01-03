@@ -344,7 +344,9 @@ def test_runner_with_file_rename(complex_git_repo):
     )
 
 
-def test_runner_content_based_grouping(complex_git_repo, mock_inquirer_accept_all):
+def test_runner_content_based_grouping(
+    complex_git_repo, mock_inquirer_accept_all
+):
     """Test pipeline with content-based grouping strategy."""
     repo_path = complex_git_repo
 

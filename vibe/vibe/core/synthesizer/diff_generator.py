@@ -19,7 +19,9 @@ class DiffGenerator:
                         diff_chunks.extend(group_chunk.get_chunks())
             # else skip Immutable Chunks, they dont use total chunks per file
 
-        self.total_chunks_per_file = self.__get_total_chunks_per_file(diff_chunks)
+        self.total_chunks_per_file = self.__get_total_chunks_per_file(
+            diff_chunks
+        )
 
     def __get_total_chunks_per_file(self, chunks: list[DiffChunk]):
         total_chunks_per_file = {}
@@ -39,7 +41,9 @@ class DiffGenerator:
         Generates a dictionary of valid, cumulative unified diffs (patches) for each file.
         This method is stateful and correctly recalculates hunk headers for subsets of chunks.
         """
-        regular_chunks = [chunk for chunk in chunks if isinstance(chunk, DiffChunk)]
+        regular_chunks = [
+            chunk for chunk in chunks if isinstance(chunk, DiffChunk)
+        ]
         immutable_chunks = [
             chunk for chunk in chunks if isinstance(chunk, ImmutableChunk)
         ]
@@ -52,7 +56,9 @@ class DiffGenerator:
         # process immutable chunks
         for immutable_chunk in immutable_chunks:
             # add newline delimiter to sepatate from other patches in the stream
-            patches[immutable_chunk.canonical_path] = immutable_chunk.file_patch + b"\n"
+            patches[immutable_chunk.canonical_path] = (
+                immutable_chunk.file_patch + b"\n"
+            )
 
         # process regular chunks
         sorted_chunks = sorted(regular_chunks, key=lambda c: c.canonical_path())
@@ -80,12 +86,17 @@ class DiffGenerator:
                 [file_chunk.is_file_addition for file_chunk in file_chunks]
             )
             standard_modification = all(
-                [file_chunk.is_standard_modification for file_chunk in file_chunks]
+                [
+                    file_chunk.is_standard_modification
+                    for file_chunk in file_chunks
+                ]
             ) or (
                 all([file_chunk.is_file_deletion for file_chunk in file_chunks])
                 and current_count < total_expected
             )
-            file_rename = all([file_chunk.is_file_rename for file_chunk in file_chunks])
+            file_rename = all(
+                [file_chunk.is_file_rename for file_chunk in file_chunks]
+            )
 
             # Determine file change type for hunk calculation
             if file_addition:
@@ -112,11 +123,17 @@ class DiffGenerator:
                 if single_chunk.is_file_deletion:
                     # use old file and "pretend its a modification as we dont have all deletion chunks yet"
                     patch_lines.append(
-                        b"diff --git a/" + old_file_path + b" b/" + old_file_path
+                        b"diff --git a/"
+                        + old_file_path
+                        + b" b/"
+                        + old_file_path
                     )
                 else:
                     patch_lines.append(
-                        b"diff --git a/" + new_file_path + b" b/" + new_file_path
+                        b"diff --git a/"
+                        + new_file_path
+                        + b" b/"
+                        + new_file_path
                     )
             elif file_rename:
                 patch_lines.append(
@@ -130,7 +147,8 @@ class DiffGenerator:
                     b"diff --git a/" + old_file_path + b" b/" + old_file_path
                 )
                 patch_lines.append(
-                    b"deleted file mode " + (single_chunk.file_mode or b"100644")
+                    b"deleted file mode "
+                    + (single_chunk.file_mode or b"100644")
                 )
             elif file_addition:
                 patch_lines.append(
@@ -140,8 +158,12 @@ class DiffGenerator:
                     b"new file mode " + (single_chunk.file_mode or b"100644")
                 )
 
-            old_file_header = b"a/" + old_file_path if old_file_path else DEVNULLBYTES
-            new_file_header = b"b/" + new_file_path if new_file_path else DEVNULLBYTES
+            old_file_header = (
+                b"a/" + old_file_path if old_file_path else DEVNULLBYTES
+            )
+            new_file_header = (
+                b"b/" + new_file_path if new_file_path else DEVNULLBYTES
+            )
             if single_chunk.is_file_deletion and current_count < total_expected:
                 new_file_header = old_file_header
 
@@ -153,7 +175,9 @@ class DiffGenerator:
             else:
                 # Sort chunks by their sort key (old_start, then abs_new_line)
                 # This maintains correct ordering even for chunks at the same old_start
-                sorted_file_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
+                sorted_file_chunks = sorted(
+                    file_chunks, key=lambda c: c.get_sort_key()
+                )
                 # you must merge chunks to get valid patches
                 sorted_file_chunks = self.__merge_chunks(sorted_file_chunks)
 
@@ -167,7 +191,9 @@ class DiffGenerator:
                 # - old_start tells us where the change occurs in the old file
                 # - new_start = old_start + cumulative_offset (where it lands in new file)
 
-                cumulative_offset = 0  # Net lines added so far (additions - deletions)
+                cumulative_offset = (
+                    0  # Net lines added so far (additions - deletions)
+                )
 
                 for chunk in sorted_file_chunks:
                     if not chunk.has_content:
@@ -178,11 +204,13 @@ class DiffGenerator:
                     is_pure_addition = old_len == 0
 
                     # Use the helper function to calculate hunk starts
-                    hunk_old_start, hunk_new_start = self.__calculate_hunk_starts(
-                        file_change_type=file_change_type,
-                        old_start=chunk.old_start,
-                        is_pure_addition=is_pure_addition,
-                        cumulative_offset=cumulative_offset,
+                    hunk_old_start, hunk_new_start = (
+                        self.__calculate_hunk_starts(
+                            file_change_type=file_change_type,
+                            old_start=chunk.old_start,
+                            is_pure_addition=is_pure_addition,
+                            cumulative_offset=cumulative_offset,
+                        )
                     )
 
                     hunk_header = f"@@ -{hunk_old_start},{old_len} +{hunk_new_start},{new_len} @@".encode()
@@ -317,7 +345,9 @@ class DiffGenerator:
 
         return last_old_end >= current_old_start
 
-    def __merge_chunks(self, sorted_chunks: list["DiffChunk"]) -> list["DiffChunk"]:
+    def __merge_chunks(
+        self, sorted_chunks: list["DiffChunk"]
+    ) -> list["DiffChunk"]:
         """
         Merges a list of sorted, atomic DiffChunks into the smallest possible
         list of larger, valid DiffChunks.

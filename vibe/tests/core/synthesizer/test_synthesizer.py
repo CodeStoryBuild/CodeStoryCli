@@ -521,7 +521,10 @@ def test_pure_deletion_multiple_groups(git_repo):
     )
 
     new_base_hash = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo_path, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
     # Remove from app.js
