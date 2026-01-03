@@ -124,7 +124,6 @@ def tools():
             True,
             "Nested functions share outer function scope",
         ),
-
         # === JAVASCRIPT ===
         (
             "javascript",
@@ -467,7 +466,6 @@ def tools():
             False,
             "Object literal methods in TypeScript are distinct scopes",
         ),
-
         # === C# ===
         (
             "csharp",
@@ -524,7 +522,6 @@ def tools():
             True,
             "Lines inside a C# if block share the block scope",
         ),
-
         # === R ===
         (
             "r",
@@ -589,7 +586,6 @@ def tools():
             True,
             "Lines in same R for loop share scope",
         ),
-
         # === LUA ===
         (
             "lua",
@@ -709,7 +705,6 @@ def tools():
             True,
             "Lines in a Java if block share the block scope",
         ),
-
         # === CPP additional ===
         (
             "cpp",
@@ -756,7 +751,6 @@ def tools():
             True,
             "Lines in C++ for loop share scope",
         ),
-
         # === GO additional ===
         (
             "go",
@@ -817,7 +811,6 @@ def tools():
             True,
             "Line inside Go if share block scope",
         ),
-
         # === RUST additional ===
         (
             "rust",
@@ -870,7 +863,6 @@ def tools():
             True,
             "Lines inside a Rust if block share scope",
         ),
-
         # === RUBY additional ===
         (
             "ruby",
@@ -933,7 +925,6 @@ def tools():
             True,
             "Lines in same Ruby if block share scope",
         ),
-
         # === PHP additional ===
         (
             "php",
@@ -988,7 +979,6 @@ def tools():
             True,
             "Lines in same PHP if block share scope",
         ),
-
         # === SWIFT additional ===
         (
             "swift",
@@ -1035,7 +1025,6 @@ def tools():
             True,
             "Nested functions share outer scope in Swift (if applicable)",
         ),
-
         # === KOTLIN additional ===
         (
             "kotlin",
@@ -1117,7 +1106,6 @@ def tools():
             True,
             "Scala nested object and outer share enclosing scope",
         ),
-
         # === DART ===
         (
             "dart",
@@ -1164,7 +1152,6 @@ def tools():
             True,
             "Nested Dart functions share enclosing scope (if applicable)",
         ),
-
         # === ELIXIR ===
         (
             "elixir",
@@ -1239,7 +1226,6 @@ def tools():
             True,
             "Lines in same Elixir if block share scope",
         ),
-
         # === HASKELL ===
         (
             "haskell",
@@ -1288,7 +1274,6 @@ def tools():
             False,
             "Top-level functions in Haskell are separate scopes",
         ),
-
         # === OCAML ===
         (
             "ocaml",
@@ -1335,7 +1320,6 @@ def tools():
             True,
             "If expression branches in OCaml belong to the same enclosing scope",
         ),
-
         # === ERLANG ===
         (
             "erlang",
@@ -1384,7 +1368,6 @@ def tools():
             True,
             "Erlang if expression branches share scope",
         ),
-
         # === CLOJURE ===
         (
             "clojure",
@@ -1432,7 +1415,6 @@ def tools():
             True,
             "Clojure do block lines share inner scope",
         ),
-
         # === SOLIDITY ===
         (
             "solidity",
@@ -1479,7 +1461,6 @@ def tools():
             True,
             "Struct members in Solidity are within struct scope",
         ),
-
         # === JULIA ===
         (
             "julia",
@@ -1576,7 +1557,6 @@ def tools():
             True,
             "Lines in same for loop share scope",
         ),
-
     ],
 )
 def test_scope_based_grouping(
@@ -1591,7 +1571,7 @@ def test_scope_based_grouping(
 ):
     """
     Test that two code chunks share (or don't share) scopes as expected.
-    
+
     Args:
         tools: Fixture providing parser and scope_mapper
         language: Programming language
