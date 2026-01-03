@@ -114,7 +114,7 @@ def main_commit(
                 "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
             )
 
-        if intent is not None and global_context.config.relevance_filtering:
+        if not global_context.config.relevance_filtering and intent is not None:
             from loguru import logger
 
             logger.warning(
