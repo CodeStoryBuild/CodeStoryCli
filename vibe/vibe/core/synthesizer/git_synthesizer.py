@@ -218,12 +218,11 @@ class GitSynthesizer:
                     patch_lines.append(hunk_header)
 
                     for item in additions:
-                        if item.content.strip() == "\\ No newline at end of file":
-                            # special terminator patch
-                            patch_lines.append(f"{item.content}")
-                            terminator_needed = False
-                        else:
-                            patch_lines.append(f"+{item.content}")
+                        patch_lines.append(f"+{item.content}")
+
+                    if single_chunk.contains_newline_marker:
+                        patch_lines.append("\\ No newline at end of file")
+                        terminator_needed = False
 
                 else:
                     # go over each chunk and generate the hunk headers and content
@@ -249,22 +248,20 @@ class GitSynthesizer:
                             if isinstance(item, Removal):
                                 patch_lines.append(f"-{item.content}")
                             elif isinstance(item, Addition):
-                                print(f"{item.content=}")
-                                if (
-                                    item.content.strip()
-                                    == "\\ No newline at end of file"
-                                ):
-                                    # special terminator patch
-                                    patch_lines.append(f"{item.content}")
-                                    terminator_needed = False
-                                else:
-                                    patch_lines.append(f"+{item.content}")
+                                patch_lines.append(f"+{item.content}")
+
+                        if sorted_chunk.contains_newline_marker:
+                            patch_lines.append("\\ No newline at end of file")
+                            terminator_needed = False
 
             patches[file_path] = "\n".join(patch_lines) + (
                 "\n" if terminator_needed else ""
             )
 
-            print(f"{patches=}")
+            logger.info(
+                "Patch generation progress: cumulative_patches={count}",
+                count=len(patches),
+            )
 
         return patches
 
@@ -290,12 +287,22 @@ class GitSynthesizer:
                 patches = self._generate_unified_diff(
                     chunks_for_commit, total_chunks_per_file
                 )
+                logger.info(
+                    "Tree build patch set summary: files={files} total_lines={lines}",
+                    files=len(patches),
+                    lines=sum(len(p.splitlines()) for p in patches.values()),
+                )
                 for file_path, patch_content in patches.items():
                     if not patch_content.strip():
                         logger.warning(f"Skipping empty patch for file: {file_path}")
                         continue
 
                     try:
+                        logger.info(
+                            "Applying patch: file={file} patch_lines={lines}",
+                            file=file_path,
+                            lines=patch_content.splitlines(),
+                        )
                         self._run_git_binary(
                             "apply",
                             "--index",
@@ -332,7 +339,10 @@ class GitSynthesizer:
                 new_tree_hash = self._run_git_decoded(
                     "write-tree", cwd=worktree_path, env=env
                 )
-
+                logger.info(
+                    "Tree object created: tree_hash={tree}",
+                    tree=new_tree_hash,
+                )
                 return new_tree_hash
 
             finally:
@@ -383,6 +393,12 @@ class GitSynthesizer:
         # Determine if we are on a branch or detached HEAD for the final update.
         current_branch = self._run_git_decoded("rev-parse", "--abbrev-ref", "HEAD")
 
+        logger.info(
+            "Execute plan summary: groups={groups} base_commit={base} branch_to_update={branch}",
+            groups=len(groups),
+            base=original_base_commit_hash,
+            branch=current_branch,
+        )
         for group in groups:
             try:
                 # 3. Accumulate the chunks from the current group.
@@ -409,6 +425,17 @@ class GitSynthesizer:
                 new_commit_hash = self._create_commit(
                     new_tree_hash, last_synthetic_commit_hash, full_message
                 )
+                logger.info(
+                    "Commit created: commit_hash={commit} parent={parent} chunks_cumulative={chunks} message_preview={preview}",
+                    commit=new_commit_hash,
+                    parent=last_synthetic_commit_hash,
+                    chunks=len(primitive_chunks),
+                    preview=(
+                        (full_message[:80] + "…")
+                        if len(full_message) > 80
+                        else full_message
+                    ),
+                )
 
                 # 6. The commit we just made becomes the parent for the NEXT loop iteration.
                 last_synthetic_commit_hash = new_commit_hash
@@ -429,5 +456,11 @@ class GitSynthesizer:
             )
             # Update the working directory to reflect the new branch state
             self._run_git_binary("reset", "--hard", final_commit_hash)
+            logger.info(
+                "Branch updated: branch={branch} new_head={head} commits_created={count}",
+                branch=current_branch,
+                head=final_commit_hash,
+                count=len(results),
+            )
 
         return results

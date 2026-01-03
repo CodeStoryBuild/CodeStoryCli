@@ -8,6 +8,7 @@ from vibe.core.data.diff_chunk import DiffChunk
 from .query_manager import QueryManager
 from .scope_mapper import ScopeMapper, ScopeMap
 from .symbol_mapper import SymbolMapper, SymbolMap
+from loguru import logger
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,40 @@ class ContextManager:
         # Build all required contexts
         self._build_all_contexts()
 
+        # Log a summary of built contexts
+        self._log_context_summary()
+
+    def _log_context_summary(self) -> None:
+        total_required = len(self._required_contexts)
+        total_built = len(self._context_cache)
+        files_with_context = {fp for fp, _ in self._context_cache.keys()}
+        languages: Dict[str, int] = {}
+        for ctx in self._context_cache.values():
+            lang = ctx.parsed_file.detected_language or "unknown"
+            languages[lang] = languages.get(lang, 0) + 1
+
+        missing = set(self._required_contexts) - set(self._context_cache.keys())
+
+        logger.info(
+            "Context build summary: required={required} built={built} files={files}",
+            required=total_required,
+            built=total_built,
+            files=len(files_with_context),
+        )
+        if languages:
+            logger.info(
+                "Context languages distribution: {dist}",
+                dist=languages,
+            )
+        if missing:
+            # log a few missing samples to avoid huge logs
+            sample = list(missing)[:10]
+            logger.warning(
+                "Missing contexts (sample up to 10): {sample} (total_missing={cnt})",
+                sample=sample,
+                cnt=len(missing),
+            )
+
     def _analyze_required_contexts(self) -> None:
         """
         Analyze diff chunks to determine which file versions need context.
@@ -98,8 +133,8 @@ class ContextManager:
                     self._context_cache[(file_path, is_old_version)] = context
             except Exception as e:
                 # Log error but continue with other files
-                print(
-                    f"Warning: Failed to build context for {file_path} (old={is_old_version}): {e}"
+                logger.warning(
+                    f"Failed to build context for {file_path} (old={is_old_version}): {e}"
                 )
 
     def _build_context(
@@ -127,8 +162,9 @@ class ContextManager:
 
         # for now, reject errored files
         if parsed_file.root_node.has_error:
-            print(
-                f"WARNING: the {"old version" if is_old_version else "new version"} of {file_path} has syntax errors!"
+            version = "old version" if is_old_version else "new version"
+            logger.warning(
+                f"Syntax errors detected in {version} of {file_path}; skipping context build"
             )
             return None
 

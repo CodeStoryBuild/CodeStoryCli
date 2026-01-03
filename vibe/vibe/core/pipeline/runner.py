@@ -1,4 +1,5 @@
 from typing import List
+from time import perf_counter
 
 from rich.progress import Progress
 from rich.console import Console
@@ -21,6 +22,7 @@ from ..semantic_grouper.semantic_grouper import SemanticGrouper
 
 
 import inquirer
+from loguru import logger
 
 
 class AIGitPipeline:
@@ -57,13 +59,32 @@ class AIGitPipeline:
         self.new_commit_hash = new_commit_hash
 
     def run(self, target: str = None, message: str = None) -> List[CommitResult]:
-        # Diff between the base commit and the backup branch commit
-        # This gives us all changes that were in the working directory
+        _t_start = perf_counter()
+        # Initial invocation summary
+        logger.info(
+            "Pipeline run started: target={target} message_present={msg_present} base_commit={base} new_commit={new}",
+            target=target,
+            msg_present=message is not None,
+            base=self.base_commit_hash,
+            new=self.new_commit_hash,
+        )
+        # Diff between the base commit and the backup branch commit - all working directory changes
+        t0 = perf_counter()
         raw_diff: List[Chunk] = self.commands.get_processed_working_diff(
             self.base_commit_hash, self.new_commit_hash, target
         )
+        t1 = perf_counter()
 
-        print("raw_diff: \n".join([chunk.format_json() for chunk in raw_diff]))
+        logger.debug(
+            "raw_diff JSON dump:\n"
+            + "\n".join([chunk.format_json() for chunk in raw_diff])
+        )
+        logger.info(
+            "Raw diff summary: chunks={count} files={files}",
+            count=len(raw_diff),
+            files=len({path for c in raw_diff for path in c.canonical_paths()}),
+        )
+        logger.info("Timing: raw_diff_generation_ms={ms}", ms=int((t1 - t0) * 1000))
 
         if not raw_diff:
             self.console.print("[gray] No changes to process, exiting. [/gray]")
@@ -73,24 +94,42 @@ class AIGitPipeline:
         with Progress() as p:
             # create smallest mechanically valid chunks
             ck = p.add_task("Creating smallest mechanical chunks...", total=1)
+            t_mech0 = perf_counter()
             mechanical_chunks: list[Chunk] = self.mechanical_chunker.chunk(raw_diff)
+            t_mech1 = perf_counter()
             p.advance(ck, 1)
 
-            print(
-                "Mechanical chunk: \n".join(
-                    [chunk.format_json() for chunk in mechanical_chunks]
-                )
+            logger.debug(
+                "Mechanical chunks JSON dump:\n"
+                + "\n".join([chunk.format_json() for chunk in mechanical_chunks])
+            )
+            logger.info(
+                "Mechanical chunking summary: mechanical_chunks={count}",
+                count=len(mechanical_chunks),
+            )
+            logger.info(
+                "Timing: mechanical_chunking_ms={ms}",
+                ms=int((t_mech1 - t_mech0) * 1000),
             )
 
             # group semantically dependent chunks
             sem_grp = p.add_task("Linking semantically related chunks...", total=1)
+            t_sem0 = perf_counter()
             semantic_chunks = self.semantic_grouper.group_chunks(mechanical_chunks)
+            t_sem1 = perf_counter()
             p.advance(sem_grp, 1)
 
-            print(
-                "Semantic chunk: \n".join(
-                    [chunk.format_json() for chunk in semantic_chunks]
-                )
+            logger.debug(
+                "Semantic chunks JSON dump:\n"
+                + "\n".join([chunk.format_json() for chunk in semantic_chunks])
+            )
+            logger.info(
+                "Semantic grouping summary: semantic_groups={groups}",
+                groups=len(semantic_chunks),
+            )
+            logger.info(
+                "Timing: semantic_grouping_ms={ms}",
+                ms=int((t_sem1 - t_sem0) * 1000),
             )
 
             ai_grp = p.add_task("Using AI to create meaningfull commits....", total=1)
@@ -100,8 +139,18 @@ class AIGitPipeline:
                 p.update(ai_grp, completed=percent / 100)
 
             # take these semantically valid chunks, and now group them into logical commits
+            t_ai0 = perf_counter()
             ai_groups: list[CompositeDiffChunk] = self.logical_grouper.group_chunks(
                 semantic_chunks, message, on_progress=on_progress
+            )
+            t_ai1 = perf_counter()
+            logger.info(
+                "Logical grouping (AI) summary: proposed_groups={groups}",
+                groups=len(ai_groups),
+            )
+            logger.info(
+                "Timing: logical_grouping_ms={ms}",
+                ms=int((t_ai1 - t_ai0) * 1000),
             )
 
         final_groups = []
@@ -112,6 +161,13 @@ class AIGitPipeline:
                 self.console.print(
                     f"[bold]Extended Message:[/bold] {group.extended_message}"
                 )
+            logger.info(
+                "Group suggestion: group_id={gid} chunks={chunk_count} commit_msg_len={mlen} extended_present={ext}",
+                gid=getattr(group, "group_id", None),
+                chunk_count=len(group.chunks),
+                mlen=len(group.commit_message or ""),
+                ext=group.extended_message is not None,
+            )
 
             affected_files = set()
             for chunk in group.chunks:
@@ -126,6 +182,11 @@ class AIGitPipeline:
             self.console.print(
                 f"[bold]Affected Files:[/bold] {', '.join(affected_files)}"
             )
+            logger.info(
+                "Group affected files: group_id={gid} files={files}",
+                gid=getattr(group, "group_id", None),
+                files=len(affected_files),
+            )
 
             for chunk in group.chunks:
                 self.console.print(f"[bold]File:[/bold] {chunk.canonical_paths()}")
@@ -135,12 +196,23 @@ class AIGitPipeline:
                     self.console.print(content[:1000] + "\n...(truncated)...")
                 else:
                     self.console.print(content)
+                logger.debug(
+                    "Chunk detail logged: group_id={gid} chunk_paths={paths} content_len={clen}",
+                    gid=getattr(group, "group_id", None),
+                    paths=chunk.canonical_paths(),
+                    clen=len(content),
+                )
 
             accept = inquirer.confirm(f"Accept this group?", default=True)
 
             if accept:
                 final_groups.append(group)
                 self.console.print(f"[green]Group added to queue[/green]")
+                logger.info(
+                    "Group accepted: group_id={gid} total_accepted={accepted}",
+                    gid=getattr(group, "group_id", None),
+                    accepted=len(final_groups),
+                )
             else:
                 still_continue = inquirer.confirm(
                     f"Do you still wish to continue with the other groups?",
@@ -148,13 +220,55 @@ class AIGitPipeline:
                 )
                 if not still_continue:
                     self.console.print("[yellow] Exiting without any changes [/yellow]")
+                    logger.info(
+                        "Pipeline aborted by user: accepted_groups={accepted}",
+                        accepted=len(final_groups),
+                    )
                     return None
 
         if final_groups:
+            logger.info(
+                "Accepted groups summary: accepted_groups={groups}",
+                groups=len(final_groups),
+            )
+            t_plan0 = perf_counter()
             plan_success = self.synthesizer.execute_plan(
                 final_groups,
                 self.commands.get_current_base_commit_hash(),
                 self.original_branch,
+            )
+            t_plan1 = perf_counter()
+            total_ms = int((perf_counter() - _t_start) * 1000)
+            # Final pipeline summary
+            affected_files_summary = set()
+            for group in final_groups:
+                for ch in group.chunks:
+                    for dc in ch.get_chunks():
+                        if dc.is_file_rename:
+                            affected_files_summary.add(
+                                f"{dc.old_file_path} -> {dc.new_file_path}"
+                            )
+                        else:
+                            affected_files_summary.add(dc.canonical_path())
+            commit_count = len(plan_success) if isinstance(plan_success, list) else 0
+            logger.info(
+                "Pipeline summary: raw_chunks={raw} mechanical={mech} semantic_groups={sem} proposed_groups={prop} accepted_groups={acc} commits_created={commits} files_changed={files} total_ms={total}",
+                raw=len(raw_diff),
+                mech=len(mechanical_chunks),
+                sem=len(semantic_chunks),
+                prop=len(ai_groups),
+                acc=len(final_groups),
+                commits=commit_count,
+                files=len(affected_files_summary),
+                total=total_ms,
+            )
+            logger.info(
+                "Timing breakdown: diff_ms={diff} mech_ms={mech} sem_ms={sem} ai_ms={ai} plan_ms={plan}",
+                diff=int((t1 - t0) * 1000),
+                mech=int((t_mech1 - t_mech0) * 1000),
+                sem=int((t_sem1 - t_sem0) * 1000),
+                ai=int((t_ai1 - t_ai0) * 1000),
+                plan=int((t_plan1 - t_plan0) * 1000),
             )
 
             if plan_success and target != ".":
@@ -165,4 +279,5 @@ class AIGitPipeline:
             return plan_success
         else:
             self.console.print("[yellow]No changes accepted, not proceeding.[/yellow]")
+            logger.info("Pipeline completed with no accepted groups")
             return False

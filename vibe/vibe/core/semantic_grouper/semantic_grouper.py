@@ -10,7 +10,7 @@ from vibe.core.file_reader.file_parser import FileParser
 from .context_manager import ContextManager, AnalysisContext
 from .query_manager import QueryManager
 from .union_find import UnionFind
-import logging
+from loguru import logger
 
 
 @dataclass(frozen=True)
@@ -73,7 +73,7 @@ class SemanticGrouper:
             )
         except Exception as e:
             # If context building fails completely, put everything in fallback
-            logging.warning(f"Context building failed, using fallback group: {e}")
+            logger.warning(f"Context building failed, using fallback group: {e}")
             return [CompositeDiffChunk(chunks=chunks)]
 
         # Step 3: Generate signatures for each chunk
@@ -197,7 +197,7 @@ class SemanticGrouper:
                     chunk_scope = diff_chunk_scope
 
             except Exception as e:
-                logging.warning(
+                logger.warning(
                     f"Signature generation failed for diff chunk {diff_chunk.canonical_path()}: {e}"
                 )
                 return None  # Signal failure explicitly
@@ -351,8 +351,10 @@ class SemanticGrouper:
         # Get scope from the first line (LCA scope)
         lca_scope = context.scope_map.scope_lines.get(start_line - 1)
 
-        print(f"{context.scope_map=}")
-        print(f"{context.symbol_map=}")
+        logger.debug(
+            f"scope_map for chunk range start={start_line} end={end_line}: {context.scope_map}"
+        )
+        logger.debug(f"symbol_map snapshot: {context.symbol_map}")
 
         # Collect symbols from all lines in the range
         for line in range(start_line, end_line + 1):
@@ -374,7 +376,7 @@ class SemanticGrouper:
         if not chunk_signatures:
             return []
 
-        print(f"{chunk_signatures=}")
+        logger.debug(f"chunk_signatures count={len(chunk_signatures)}")
 
         chunk_ids = [sig.chunk_id for sig in chunk_signatures]
         if not chunk_ids:
