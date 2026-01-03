@@ -36,9 +36,7 @@
 
 """
 
-
 from dataclasses import dataclass
-
 
 from tree_sitter import Node
 
@@ -46,14 +44,10 @@ from codestory.core.semantic_grouper.query_manager import QueryManager
 
 
 @dataclass(frozen=True)
-
 class ScopeMap:
-
     """Maps each line number to scope inside it."""
 
-
     scope_lines: dict[int, set[str]]
-
 
 
 class ScopeMapper:

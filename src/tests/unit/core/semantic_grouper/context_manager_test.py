@@ -19,6 +19,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.file_reader.protocol import FileReader
 from codestory.core.semantic_grouper.context_manager import (
@@ -103,10 +104,12 @@ def context_manager_deps(mocks):
         ) as parse_file_patch,
     ):
         # include the patched instances for tests
-        mocks.update({
-            "query_manager": query_mgr,
-            "file_parser_parse": parse_file_patch,
-        })
+        mocks.update(
+            {
+                "query_manager": query_mgr,
+                "file_parser_parse": parse_file_patch,
+            }
+        )
         yield mocks
 
 

@@ -24,6 +24,7 @@ Tests verify that chunks are grouped based on shared defined symbols that are mo
 from textwrap import dedent
 
 import pytest
+
 from codestory.core.file_reader.file_parser import FileParser
 from codestory.core.semantic_grouper.query_manager import QueryManager
 from codestory.core.semantic_grouper.symbol_extractor import SymbolExtractor

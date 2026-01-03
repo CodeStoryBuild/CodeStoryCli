@@ -21,6 +21,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+
 from codestory.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 
 # -----------------------------------------------------------------------------

@@ -20,6 +20,7 @@ import json
 from unittest.mock import Mock
 
 import pytest
+
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.immutable_chunk import ImmutableChunk

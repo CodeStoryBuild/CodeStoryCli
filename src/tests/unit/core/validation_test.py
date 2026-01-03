@@ -19,6 +19,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from codestory.core.exceptions import (
     GitError,
     ValidationError,

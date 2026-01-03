@@ -19,6 +19,7 @@
 from unittest.mock import Mock
 
 import pytest
+
 from codestory.core.chunker.atomic_chunker import AtomicChunker
 from codestory.core.data.composite_diff_chunk import CompositeDiffChunk
 from codestory.core.data.diff_chunk import DiffChunk

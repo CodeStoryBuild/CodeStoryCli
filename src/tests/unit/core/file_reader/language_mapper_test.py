@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------------------
 
 import pytest
+
 from codestory.core.file_reader.language_mapper import detect_tree_sitter_language
 
 # -----------------------------------------------------------------------------

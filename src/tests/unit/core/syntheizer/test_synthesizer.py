@@ -21,6 +21,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+
 from codestory.core.data.commit_group import CommitGroup
 from codestory.core.data.diff_chunk import DiffChunk
 from codestory.core.data.hunk_wrapper import HunkWrapper
