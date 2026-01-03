@@ -22,7 +22,6 @@ def create_expand_pipeline(
     base_commit_hash: str,
     new_commit_hash: str,
     console: Console,
-    enforce_all_accept: bool = True,
 ):
     """
     Create an AIGitPipeline configured to operate on an arbitrary commit range
@@ -71,7 +70,6 @@ def create_expand_pipeline(
         new_branch=new_branch,
         base_commit_hash=base_commit_hash,
         new_commit_hash=new_commit_hash,
-        enforce_all_accept=enforce_all_accept,
     )
 
     return pipeline

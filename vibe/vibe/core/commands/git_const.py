@@ -1,1 +1,1 @@
-DEVNULL = "/dev/null"
+DEVNULL = b"/dev/null"

@@ -42,15 +42,15 @@ class CompositeDiffChunk:
 
         return list(set(paths))
 
-    def hunk_ranges(self) -> dict[str, list[tuple[int, int, int, int]]]:
+    def hunk_ranges(self) -> dict[bytes, list[tuple[int, int, int, int]]]:
         """
         Aggregate hunk ranges from all child chunks.
 
-        Returns a dict keyed by canonical path (string) with lists of tuples
+        Returns a dict keyed by canonical path (bytes) with lists of tuples
         describing (old_start, old_len, new_start, new_len). If multiple
         child chunks reference the same path, their ranges are concatenated.
         """
-        aggregated: dict[str, list[tuple[int, int, int, int]]] = {}
+        aggregated: dict[bytes, list[tuple[int, int, int, int]]] = {}
         for chunk in self.chunks:
             for path, path_ranges in chunk.hunk_ranges().items():
                 aggregated.setdefault(path, []).extend(path_ranges)
