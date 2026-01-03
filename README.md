@@ -14,13 +14,36 @@ Codestory provides powerful commands to enhance your version control workflow: c
 
 Think of this as a natural transition to a higher-level version control, where you can worry less about housekeeping and focus on building.
 
-## Getting Started
+## Quick Start
 
-For installation instructions and usage guides, visit [Getting Started](https://cli.codestory.build/getting-started).
+```bash
+# Initialize and follow onboarding
+cst
+
+# Commit all changes into small, logical commits with AI-generated messages
+cst commit
+
+# Commit with specific instructions for the AI
+cst commit -m "Split this into 2 commits: refactor then feature"
+
+# Fix a specific past commit
+cst fix <commit-sha>
+
+# Clean entire repository history
+cst clean
+```
 
 ## Documentation
 
-Comprehensive documentation is available at [cli.codestory.build/docs/](https://cli.codestory.build/docs/).
+For comprehensive guides, configuration priority, and supported languages, visit our documentation site:
+
+👉 **[docs](https://cli.codestory.build/docs)**
+
+The documentation site provides detailed information on:
+- [Installation and Setup](https://cli.codestory.build/docs/usage/)
+- [Configuration Scopes (Global vs. Local vs. Env)](https://cli.codestory.build/docs/#configuration)
+- [Supported Model Providers and Languages](https://cli.codestory.build/docs/#supported-providers-languages)
+- [Core Design and Architecture](https://cli.codestory.build/docs/#architecture-design)
 
 ## Contributing
 

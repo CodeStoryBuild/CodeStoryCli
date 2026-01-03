@@ -111,7 +111,8 @@ def main_commit(
     ):
         if global_context.config.relevance_filtering and intent is None:
             raise ValidationError(
-                "--intent must be provided when relevance filter is active. Check cst config if you want to disable relevance filtering",
+                "--intent must be provided when relevance filter is active. "
+                "You can provide an intent like --intent \"refactor xyz\", or disable filtering with 'cst config relevance_filtering false'"
             )
 
         if not global_context.config.relevance_filtering and intent is not None:
