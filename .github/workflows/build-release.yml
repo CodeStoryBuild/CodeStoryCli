@@ -95,7 +95,7 @@ jobs:
         run: |
           pip install pytest
           
-          pytest dslate/tests/integration
+          pytest dslate/dslate/tests/integration
         shell: bash
         env:
           CLI_ARTIFACT_PATH: ${{ matrix.exe_path }}
