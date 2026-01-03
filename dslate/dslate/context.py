@@ -44,7 +44,7 @@ class GlobalConfig(BaseModel):
     api_key: str | None = Field(
         default=None, description="API key for the LLM provider"
     )
-    model_temperature: float = Field(
+    temperature: float = Field(
         default=0.7, description="Temperature for LLM responses (0.0-1.0)"
     )
     aggresiveness: Literal["Conservative", "Regular", "Extra"] = Field(
@@ -64,13 +64,13 @@ class GlobalContext:
     git_interface: GitInterface
     git_commands: GitCommands
     verbose: bool
-    model_temperature: float
+    temperature: float
     aggresiveness: Literal["Conservative", "Regular", "Extra"]
     auto_accept: bool
 
     @classmethod
     def from_global_config(cls, config: GlobalConfig, repo_path: Path):
-        model = try_create_model(config.model, config.api_key, config.model_temperature)
+        model = try_create_model(config.model, config.api_key, config.temperature)
 
         git_interface = SubprocessGitInterface(repo_path)
         git_commands = GitCommands(git_interface)
@@ -81,7 +81,7 @@ class GlobalContext:
             git_interface,
             git_commands,
             config.verbose,
-            config.model_temperature,
+            config.temperature,
             config.aggresiveness,
             config.auto_accept,
         )

@@ -50,6 +50,12 @@ def try_create_model(
     model_name = None
     api_key = api_key_arg
 
+    if not isinstance(temperature, float) or not isinstance(temperature, int):
+        raise ConfigurationError("Temperature must be a number.")    
+
+    if temperature < 0 or temperature > 1:
+        raise ConfigurationError("Temperature must be between 0 and 1.")
+
     if model_arg == "no-model" or model_arg is None:
         # explicit no model usage (will default to single grouper)
         logger.warning("No model specified. Using no logical grouping.")
