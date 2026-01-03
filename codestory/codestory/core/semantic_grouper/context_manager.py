@@ -79,7 +79,7 @@ class ContextManager:
         self.comment_mapper = CommentMapper(query_manager)
 
         # Context storage: (file_type (language name)) -> SharedContext
-        self._shared_context_cache: dict[str, SharedContext] = {}
+        self._shared_context_cache: dict[tuple[str, bool], SharedContext] = {}
         # Context storage: (file_path, is_old_version) -> AnalysisContext
         self._context_cache: dict[tuple[bytes, bool], AnalysisContext] = {}
 
@@ -258,10 +258,12 @@ class ContextManager:
 
         languages: dict[str, list[ParsedFile]] = {}
 
-        for _, parsed_file in self._parsed_files.items():
-            languages.setdefault(parsed_file.detected_language, []).append(parsed_file)
+        for (_, is_old), parsed_file in self._parsed_files.items():
+            languages.setdefault((parsed_file.detected_language, is_old), []).append(
+                parsed_file
+            )
 
-        for language, parsed_files in languages.items():
+        for (language, is_old), parsed_files in languages.items():
             defined_symbols: set[str] = set()
             try:
                 for parsed_file in parsed_files:
@@ -274,8 +276,7 @@ class ContextManager:
                     )
 
                 context = SharedContext(defined_symbols)
-                self._shared_context_cache[language] = context
-            # TODO change all these to custom subclassed exceptions
+                self._shared_context_cache[(language, is_old)] = context
             except Exception as e:
                 logger.debug(f"Failed to build shared context for {language}: {e}")
 
@@ -335,7 +336,7 @@ class ContextManager:
             parsed_file.detected_language
         ).share_tokens_between_files:
             symbols = self._shared_context_cache.get(
-                parsed_file.detected_language
+                (parsed_file.detected_language, is_old_version)
             ).defined_symbols
         else:
             symbols = self.symbol_extractor.extract_defined_symbols(
