@@ -25,10 +25,10 @@ from codestory.commands.config import set_config
 from codestory.constants import LOCAL_PROVIDERS, ONBOARDING_FLAG, get_cloud_providers
 
 CODESTORY_ASCII = r"""
-  ___  __  ____  ____    ____  ____  __  ____  _  _ 
+  ___  __  ____  ____    ____  ____  __  ____  _  _
  / __)/  \(    \(  __)  / ___)(_  _)/  \(  _ \( \/ )
-( (__(  O )) D ( ) _)   \___ \  )( (  O ))   / )  / 
- \___)\__/(____/(____)  (____/ (__) \__/(__\_)(__/  
+( (__(  O )) D ( ) _)   \___ \  )( (  O ))   / )  /
+ \___)\__/(____/(____)  (____/ (__) \__/(__\_)(__/
 """
 
 
