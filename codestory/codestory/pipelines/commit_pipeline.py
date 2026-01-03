@@ -186,9 +186,7 @@ class CommitPipeline:
             )
 
             with (
-                transient_step(
-                    "Creating Semantic Groups", self.global_context.silent
-                ),
+                transient_step("Creating Semantic Groups", self.global_context.silent),
                 time_block("semantic_grouping"),
             ):
                 semantic_chunks = self.semantic_grouper.group_chunks(
@@ -210,7 +208,6 @@ class CommitPipeline:
             ) as pbar,
             time_block("logical_grouping"),
         ):
-            
             # Simple progress callback to keep the animation alive
             def on_progress(percent):
                 if pbar is not None:

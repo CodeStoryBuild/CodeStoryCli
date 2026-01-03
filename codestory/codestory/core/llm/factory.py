@@ -1,5 +1,3 @@
-
-
 import os
 import httpx
 from dataclasses import dataclass
@@ -19,6 +17,7 @@ class ModelConfig:
     api_key: str | None = None
     temperature: float = 0.7
     max_tokens: int | None = None
+
 
 class CodeStoryAdapter:
     """

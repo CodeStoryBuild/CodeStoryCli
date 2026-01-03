@@ -46,6 +46,7 @@ def test_simple_detections(filename, expected_lang):
 # 2. Ambiguity Resolution Tests
 # -----------------------------------------------------------------------------
 
+
 def test_ambiguous_h_file():
     """Test distinguishing between C and C++ header files."""
     c_content = "#include <stdio.h>\nint main() { return 0; }"
@@ -56,6 +57,7 @@ def test_ambiguous_h_file():
     # Default fallback
     assert detect_tree_sitter_language("header.h", "") == "c"
 
+
 def test_ambiguous_m_file():
     """Test distinguishing between Objective-C and Matlab files."""
     objc_content = "#import <Foundation/Foundation.h>\n@interface MyClass : NSObject"
@@ -65,6 +67,7 @@ def test_ambiguous_m_file():
     assert detect_tree_sitter_language("calc.m", matlab_content) == "matlab"
     # Default fallback
     assert detect_tree_sitter_language("unknown.m", "") == "objc"
+
 
 def test_ambiguous_v_file():
     """Test distinguishing between Verilog and V files."""
@@ -106,10 +109,12 @@ def test_shebang_detection(shebang, expected_lang):
 # 4. Edge Cases & Paths
 # -----------------------------------------------------------------------------
 
+
 def test_paths_with_directories():
     """Ensure directory paths don't confuse the filename extractor."""
     assert detect_tree_sitter_language("src/components/Button.tsx") == "tsx"
     assert detect_tree_sitter_language("./deeply/nested/Makefile") == "make"
+
 
 def test_unknown_extension():
     """Ensure unknown extensions return None."""
