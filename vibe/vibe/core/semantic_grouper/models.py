@@ -9,17 +9,20 @@ from vibe.core.data.chunk import Chunk
 @dataclass
 class Scope:
     """Represents a structural scope like a function or class."""
+
     id: str
     type: str
     name: str | None
     start_line: int
     end_line: int
-    parent: Optional['Scope'] = None
-    children: list['Scope'] = field(default_factory=list)
+    parent: Optional["Scope"] = None
+    children: list["Scope"] = field(default_factory=list)
+
 
 @dataclass
 class Symbol:
     """Represents a defined symbol."""
+
     name: str
     type: str
     definition_scope_id: str

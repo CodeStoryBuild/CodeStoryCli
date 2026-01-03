@@ -31,18 +31,6 @@ def main(ctx: typer.Context):
     """
     Global setup callback. Initialize shared objects here.
     """
-    git = SubprocessGitInterface(".")
-    chk = AtomicChunker()
-    grp = SingleGrouper()
-    console = Console()
-    runner = AIGitPipeline(git, chk, grp, console)
-
-    # Store objects in context
-    ctx.obj = {
-        "console": console,
-        "runner": runner
-    }
-
     # default behavior
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())

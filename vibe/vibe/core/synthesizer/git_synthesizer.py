@@ -218,7 +218,12 @@ class GitSynthesizer:
                     patch_lines.append(hunk_header)
 
                     for item in additions:
-                        patch_lines.append(f"+{item.content}")
+                        if item.content.strip() == "\\ No newline at end of file":
+                            # special terminator patch
+                            patch_lines.append(f"{item.content}")
+                            terminator_needed = False
+                        else:
+                            patch_lines.append(f"+{item.content}")
 
                 else:
                     # go over each chunk and generate the hunk headers and content
@@ -244,7 +249,11 @@ class GitSynthesizer:
                             if isinstance(item, Removal):
                                 patch_lines.append(f"-{item.content}")
                             elif isinstance(item, Addition):
-                                if item.content == "\\ No newline at end of file":
+                                print(f"{item.content=}")
+                                if (
+                                    item.content.strip()
+                                    == "\\ No newline at end of file"
+                                ):
                                     # special terminator patch
                                     patch_lines.append(f"{item.content}")
                                     terminator_needed = False

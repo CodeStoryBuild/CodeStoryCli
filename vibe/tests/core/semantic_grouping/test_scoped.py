@@ -1,9 +1,9 @@
 from tree_sitter import Node
 
-from vibe.semantic_grouping.semantic_grouper.query_manager import QueryManager
-from vibe.semantic_grouping.semantic_grouper.scope_mapper import ScopeMapper, ScopeMap
-from vibe.semantic_grouping.semantic_grouper.symbol_mapper import SymbolMapper, SymbolMap
-from vibe.semantic_grouping.file_reader.file_parser import FileParser
+from vibe.core.semantic_grouper.query_manager import QueryManager
+from vibe.core.semantic_grouper.scope_mapper import ScopeMapper, ScopeMap
+from vibe.core.semantic_grouper.symbol_mapper import SymbolMapper, SymbolMap
+from vibe.core.file_reader.file_parser import FileParser
 
 
 # --- MAIN EXECUTION ---
@@ -50,7 +50,9 @@ for line, symbols in sorted(sym_map.line_symbols.items()):
         parts = symbol.split(":", 2)
         if len(parts) == 3:
             scope_name, match_class, text = parts
-            print(f"  Symbol: {repr(text):<10} | Line: {line:<5} | Qualified Name: {symbol}")
+            print(
+                f"  Symbol: {repr(text):<10} | Line: {line:<5} | Qualified Name: {symbol}"
+            )
 
 print("\n--- Final Scoped Symbol Map ---")
 for line, symbols in sorted(sym_map.line_symbols.items()):

@@ -4,7 +4,7 @@ Deterministic test helpers for predictable end-to-end testing.
 
 from typing import List
 from vibe.core.chunker.interface import MechanicalChunker
-from vibe.core.grouper.interface import AIGrouper, Groupable
+from vibe.core.grouper.interface import LogicalGrouper, Groupable
 from vibe.core.data.diff_chunk import DiffChunk
 from vibe.core.data.models import CommitGroup
 from vibe.core.data.line_changes import Addition, Removal
@@ -79,7 +79,7 @@ class DeterministicChunker(MechanicalChunker):
         return sub_chunks if sub_chunks else [chunk]
 
 
-class DeterministicGrouper(AIGrouper):
+class DeterministicGrouper(LogicalGrouper):
     """
     A deterministic grouper that groups chunks based on file patterns and content for testing.
     """

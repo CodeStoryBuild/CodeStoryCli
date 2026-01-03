@@ -26,7 +26,11 @@ class GitCommands:
     _A_B_PATHS_RE = re.compile(r".*a/(.+?) b/(.+)")
 
     def get_working_diff_with_renames(
-        self, base_hash : str, new_hash : str, target: Optional[str] = None, similarity: int = 50
+        self,
+        base_hash: str,
+        new_hash: str,
+        target: Optional[str] = None,
+        similarity: int = 50,
     ) -> List[HunkWrapper]:
         """
         Generates a list of raw hunks, correctly parsing rename-and-modify diffs.
@@ -42,7 +46,7 @@ class GitCommands:
         if diff_output_bytes:
             diff_output = diff_output_bytes.decode("utf-8", errors="replace")
         return self._parse_hunks_with_renames(diff_output)
-    
+
     def get_file_diff_with_renames(
         self, fileA: str, fileB: str, similarity: int = 50
     ) -> List[HunkWrapper]:
@@ -60,8 +64,6 @@ class GitCommands:
         if diff_output_bytes:
             diff_output = diff_output_bytes.decode("utf-8", errors="replace")
         return self._parse_hunks_with_renames(diff_output)
-
-    
 
     def _parse_hunks_with_renames(
         self, diff_output: Optional[str]
@@ -274,7 +276,7 @@ class GitCommands:
             self.git.run_git_text(["diff", "--cached", "--quiet"])
             return False  # No staged changes (exit code 0)
         except Exception:
-            return True   # Staged changes exist (exit code 1)
+            return True  # Staged changes exist (exit code 1)
 
     def need_track_untracked(self, target: Optional[str] = None) -> bool:
         """Checks if there are any untracked files within a target that need to be tracked."""
@@ -284,7 +286,9 @@ class GitCommands:
         )
         return bool(untracked_files.strip())
 
-    def get_processed_working_diff(self, base_hash : str, new_hash : str, target: Optional[str] = None) -> List[DiffChunk]:
+    def get_processed_working_diff(
+        self, base_hash: str, new_hash: str, target: Optional[str] = None
+    ) -> List[DiffChunk]:
         """
         Parses the git diff once and converts each hunk directly into an
         atomic DiffChunk object (DiffChunk).
@@ -293,8 +297,9 @@ class GitCommands:
         hunks = self.get_working_diff_with_renames(base_hash, new_hash, target)
         return self.parse_and_merge_hunks(hunks)
 
-
-    def parse_and_merge_hunks(self, hunks: List[HunkWrapper]) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
+    def parse_and_merge_hunks(
+        self, hunks: List[HunkWrapper]
+    ) -> List[Union[DiffChunk, "CompositeDiffChunk"]]:
         chunks: List[DiffChunk] = []
         for hunk in hunks:
             chunks.append(DiffChunk.from_hunk(hunk))

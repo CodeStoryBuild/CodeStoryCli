@@ -1,12 +1,12 @@
 import time
 from typing import List
 
-from vibe.core.grouper.interface import AIGrouper
+from vibe.core.grouper.interface import LogicalGrouper
 from ..data.models import CommitGroup
 from .interface import Groupable
 
 
-class SingleGrouper(AIGrouper):
+class SingleGrouper(LogicalGrouper):
     def group_chunks(
         self, chunks: List[Groupable], message: str, on_progress=None
     ) -> List[CommitGroup]:

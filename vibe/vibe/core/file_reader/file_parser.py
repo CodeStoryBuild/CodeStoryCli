@@ -9,6 +9,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class ParsedFile:
     """Contains the parsed AST root and detected language for a file."""
+
     root_node: Node
     detected_language: str
 

@@ -1,5 +1,6 @@
 import typer
-from vibe.core.pipeline.runner import AIGitPipeline
+from vibe.core.context.commit_init import createPipeline
+
 
 # Define the main commit command
 def main(
@@ -10,5 +11,7 @@ def main(
     """
     Commits changes with AI-powered messages.
     """
-    runner: AIGitPipeline = ctx.obj["runner"]
+    # TODO proper repo check first
+    repo_path = "."
+    runner = createPipeline(repo_path, target)
     runner.run(target, message)

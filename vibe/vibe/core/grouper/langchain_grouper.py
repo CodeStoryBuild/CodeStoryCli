@@ -5,7 +5,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from .interface import AIGrouper, Groupable
+from .interface import LogicalGrouper, Groupable
 from ..data.models import CommitGroup, ProgressCallback
 from ..data.utils import flatten_diff_chunks
 
@@ -50,7 +50,7 @@ Return a JSON response that strictly follows the schema.
 Ensure every chunk_id is assigned to exactly one group."""
 
 
-class LangChainGrouper(AIGrouper):
+class LangChainGrouper(LogicalGrouper):
     def __init__(self, chat_model: BaseChatModel):
         """Initialize the grouper with a LangChain chat model."""
         self.chat_model = chat_model

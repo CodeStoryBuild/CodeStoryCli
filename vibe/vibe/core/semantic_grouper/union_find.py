@@ -1,5 +1,6 @@
 class UnionFind:
     """A simple Union-Find data structure for grouping."""
+
     def __init__(self, elements):
         self.parent = {el: el for el in elements}
 
