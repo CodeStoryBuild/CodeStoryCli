@@ -227,6 +227,17 @@ class DiffChunk:
 
         return final_chunks
 
+    @staticmethod
+    def _sanitize_patch_content(content: str) -> str:
+        """
+        Sanitize text for use in a Git patch.
+        """
+        # Replace non-breaking space with a regular space
+        content = content.replace('\xa0', ' ')
+
+        # TODO add more sanitization filters
+        return content
+
     @classmethod
     def from_hunk(cls, hunk: HunkWrapper) -> "DiffChunk":
         """
@@ -241,14 +252,15 @@ class DiffChunk:
         contains_newline_marker_rem = False
 
         for line in hunk.hunk_lines:
+            sanitized_content = DiffChunk._sanitize_patch_content(line)
             if line.startswith("+"):
                 parsed_content.append(
-                    Addition(content=line[1:], line_number=current_new_line)
+                    Addition(content=sanitized_content, line_number=current_new_line)
                 )
                 current_new_line += 1
             elif line.startswith("-"):
                 parsed_content.append(
-                    Removal(content=line[1:], line_number=current_old_line)
+                    Removal(content=sanitized_content, line_number=current_old_line)
                 )
                 current_old_line += 1
             elif line.strip() == "\\ No newline at end of file":
