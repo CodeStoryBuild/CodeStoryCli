@@ -115,14 +115,14 @@ class ContextManager:
 
         missing = set(self._required_contexts.keys()) - set(self._context_cache.keys())
 
-        logger.info(
+        logger.debug(
             "Context build summary: required={required} built={built} files={files}",
             required=total_required,
             built=total_built,
             files=len(files_with_context),
         )
         if languages:
-            logger.info(
+            logger.debug(
                 "Context languages distribution: {dist}",
                 dist=languages,
             )

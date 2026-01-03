@@ -54,7 +54,7 @@ class FixPipeline:
     def run(self) -> str:
         base_hash = self.commit_pipeline.base_commit_hash
 
-        logger.info(
+        logger.debug(
             "Starting expansion for base {base}",
             base=_short(base_hash),
         )
@@ -88,7 +88,7 @@ class FixPipeline:
         if not original_chain:
             # Edge case: The base was HEAD (or detached), nothing to replay.
             # We simply update HEAD to the new result.
-            logger.info("No downstream history found. Updating HEAD directly.")
+            logger.debug("No downstream history found. Updating HEAD directly.")
             final_head = new_commit_hash
         else:
             # original_chain[0] is the commit we just fixed (resolved).
@@ -96,10 +96,10 @@ class FixPipeline:
             commits_to_reparent = original_chain[1:]
 
             if not commits_to_reparent:
-                logger.info("No additional downstream commits to preserve.")
+                logger.debug("No additional downstream commits to preserve.")
                 final_head = new_commit_hash
             else:
-                logger.info(
+                logger.debug(
                     "Reparenting {count} downstream commits...",
                     count=len(commits_to_reparent),
                 )

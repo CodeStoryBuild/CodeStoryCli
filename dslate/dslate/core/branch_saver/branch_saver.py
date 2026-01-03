@@ -69,7 +69,7 @@ class BranchSaver:
         # check if branch is empty
         head_commit = (self._run(["rev-parse", "HEAD"]) or "").strip()
         if not head_commit:
-            logger.info(
+            logger.debug(
                 f"Branch '{original_branch}' is empty: creating initial empty commit"
             )
             self._run(["commit", "--allow-empty", "-m", "Initial commit"])

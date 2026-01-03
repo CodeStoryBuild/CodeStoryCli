@@ -1,5 +1,7 @@
 # -----------------------------------------------------------------------------
+
 # dslate - Dual Licensed Software
+
 # Copyright (c) 2025 Adem Can
 #
 # This file is part of DSLATE.
