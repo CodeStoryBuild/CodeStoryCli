@@ -17,32 +17,14 @@
 # -----------------------------------------------------------------------------
 
 import asyncio
-import logging
-import os
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any
 
-import litellm
 from loguru import logger
 
+from codestory.constants import LOCAL_PROVIDERS
 from codestory.core.exceptions import LLMInitError
-
-# Disable LiteLLM logging at module level to prevent any logging worker errors
-os.environ["LITELLM_LOG"] = "CRITICAL"
-litellm.success_callback = []
-litellm.failure_callback = []
-litellm.completion_call_details_callback = []
-litellm.callbacks = []
-litellm.logging = False
-litellm.set_verbose = False
-litellm.suppress_debug_info = True
-litellm.drop_params = True
-
-
-logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
-logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
-logging.getLogger("LiteLLM API").setLevel(logging.CRITICAL)
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
 
 
 @dataclass
@@ -61,118 +43,155 @@ class ModelConfig:
 
 class CodeStoryAdapter:
     """
-    A unified interface for calling LLM APIs using LiteLLM.
-    Supports sync and async invocation with batched parallel calls.
-    Supports all LiteLLM providers via the provider/model format.
+    A unified interface for calling LLM APIs using aisuite.
+    Designed for CLI utility usage with persistent event loop management.
     """
 
     def __init__(self, config: ModelConfig):
+        import aisuite
+
         self.config = config
         self.model_string = config.model_string
-        self._loop = None
+        self._loop = None  # Persistent loop for CLI context
+
+        # Parse provider from model string (format: provider:model)
+        try:
+            self.provider = self.model_string.split(":")[0]
+        except IndexError:
+            raise LLMInitError(
+                f"Invalid model string format: '{self.model_string}'. Expected 'provider:model'"
+            )
+
+        # Configure provider-specific settings
+        provider_config = {}
+        if config.api_key:
+            provider_config["api_key"] = config.api_key
+        if config.api_base:
+            provider_config["base_url"] = config.api_base
+
+        # Create aisuite client
+        # passing {provider: config} allows specific config per provider
+        client_config = {self.provider: provider_config} if provider_config else {}
+        try:
+            if client_config:
+                self.client = aisuite.Client(client_config)
+            else:
+                self.client = aisuite.Client()
+        except Exception as e:
+            raise LLMInitError(f"Failed to initialize aisuite client: {e}") from e
 
     def close(self):
-        """Cleanup method to properly close the event loop."""
-        # Close the persistent event loop if it exists
+        """Cleanup method to properly close the persistent event loop."""
         if self._loop is not None and not self._loop.is_closed():
-            self._loop.close()
-            self._loop = None
+            try:
+                # Cancel all running tasks
+                pending = asyncio.all_tasks(self._loop)
+                for task in pending:
+                    task.cancel()
+
+                # Allow cancellation to propagate
+                if pending:
+                    self._loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
+
+                self._loop.close()
+            except Exception as e:
+                logger.warning(f"Error closing event loop: {e}")
+            finally:
+                self._loop = None
+
+    def is_local(self) -> bool:
+        return self.provider in LOCAL_PROVIDERS
+
+    # --- Helpers ---
+
+    def _prepare_request(self, messages: str | list[dict[str, str]]) -> dict[str, Any]:
+        """Prepares the arguments for the aisuite API call."""
+        if isinstance(messages, str):
+            messages = [{"role": "user", "content": messages}]
+
+        kwargs = {
+            "model": self.model_string,
+            "messages": messages,
+        }
+        if self.config.temperature is not None:
+            kwargs["temperature"] = self.config.temperature
+        if self.config.max_tokens is not None:
+            kwargs["max_tokens"] = self.config.max_tokens
+
+        if self.provider == "ollama":
+            kwargs["keep_alive"] = -1
+
+        return kwargs
+
+    @contextmanager
+    def _handle_llm_error(self, operation_type: str):
+        """Context manager to unify error handling across sync and async calls."""
+        try:
+            yield
+        except LLMInitError:
+            raise
+        except asyncio.CancelledError:
+            raise LLMInitError(f"{operation_type} was cancelled.")
+        except Exception as e:
+            error_str = str(e).lower()
+            if any(x in error_str for x in ["auth", "unauthorized", "api key"]):
+                raise LLMInitError(
+                    f"Authentication failed for {self.provider}. "
+                    f"Please check your API key is set correctly. "
+                    f"Error: {e}"
+                ) from e
+
+            elif any(x in error_str for x in ["not found", "model"]):
+                raise LLMInitError(
+                    f"Model {self.model_string} not found. "
+                    f"Please check the model name is correct. "
+                    f"Error: {e}"
+                ) from e
+
+            elif "rate limit" in error_str:
+                raise LLMInitError(
+                    f"Rate limit exceeded for {self.model_string}. "
+                    f"Please try again later. "
+                    f"Error: {e}"
+                ) from e
+
+            elif any(x in error_str for x in ["connection", "network"]):
+                raise LLMInitError(
+                    f"Failed to connect to API for {self.model_string}. "
+                    f"Please check your internet connection. "
+                    f"Error: {e}"
+                ) from e
+
+            else:
+                raise LLMInitError(
+                    f"LLM request failed for {self.model_string}: {e}"
+                ) from e
 
     # --- Unified Invocation Methods ---
 
     def invoke(self, messages: str | list[dict[str, str]]) -> str:
         """Unified sync invoke method. Returns the content string."""
-        if isinstance(messages, str):
-            messages = [{"role": "user", "content": messages}]
-
         logger.debug(f"Invoking {self.model_string} (sync)")
+        kwargs = self._prepare_request(messages)
 
-        try:
-            response = litellm.completion(
-                model=self.model_string,
-                messages=messages,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                api_key=self.config.api_key,
-                api_base=self.config.api_base,
-            )
+        with self._handle_llm_error("Sync invocation"):
+            response = self.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
-
-        except litellm.AuthenticationError as e:
-            provider = self.model_string.partition("/")[0]
-            raise LLMInitError(
-                f"Authentication failed for {provider}. "
-                f"Please check your API key is set correctly. "
-                f"Error: {str(e)}"
-            )
-        except litellm.NotFoundError as e:
-            raise LLMInitError(
-                f"Model {self.model_string} not found. "
-                f"Please check the model name is correct. "
-                f"Error: {str(e)}"
-            )
-        except litellm.RateLimitError as e:
-            raise LLMInitError(
-                f"Rate limit exceeded for {self.model_string}. "
-                f"Please try again later. "
-                f"Error: {str(e)}"
-            )
-        except litellm.APIConnectionError as e:
-            raise LLMInitError(
-                f"Failed to connect to API for {self.model_string}. "
-                f"Please check your internet connection. "
-                f"Error: {str(e)}"
-            )
-        except Exception as e:
-            raise LLMInitError(f"LLM request failed for {self.model_string}: {str(e)}")
 
     async def async_invoke(self, messages: str | list[dict[str, str]]) -> str:
         """Unified async invoke method. Returns the content string."""
-        if isinstance(messages, str):
-            messages = [{"role": "user", "content": messages}]
-
         logger.debug(f"Invoking {self.model_string} (async)")
+        kwargs = self._prepare_request(messages)
 
-        try:
-            response = await litellm.acompletion(
-                model=self.model_string,
-                messages=messages,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                api_key=self.config.api_key,
-                api_base=self.config.api_base,
+        with self._handle_llm_error("Async invocation"):
+            # Run in executor since aisuite is often blocking/sync
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None, lambda: self.client.chat.completions.create(**kwargs)
             )
             return response.choices[0].message.content
-
-        except litellm.AuthenticationError as e:
-            provider = self.model_string.split("/")[0]
-            raise LLMInitError(
-                f"Authentication failed for {provider}. "
-                f"Please check your API key is set correctly. "
-                f"Error: {str(e)}"
-            ) from e
-        except litellm.NotFoundError as e:
-            raise LLMInitError(
-                f"Model {self.model_string} not found. "
-                f"Please check the model name is correct. "
-                f"Error: {str(e)}"
-            ) from e
-        except litellm.RateLimitError as e:
-            raise LLMInitError(
-                f"Rate limit exceeded for {self.model_string}. "
-                f"Please try again later. "
-                f"Error: {str(e)}"
-            ) from e
-        except litellm.APIConnectionError as e:
-            raise LLMInitError(
-                f"Failed to connect to API for {self.model_string}. "
-                f"Please check your internet connection. "
-                f"Error: {str(e)}"
-            ) from e
-        except Exception as e:
-            raise LLMInitError(
-                f"LLM request failed for {self.model_string}: {str(e)}"
-            ) from e
 
     async def async_invoke_batch(
         self,
@@ -180,12 +199,13 @@ class CodeStoryAdapter:
         max_concurrent: int = 10,
         sleep_between_tasks: float = -1,
     ) -> list[str]:
-        """Run a batch of invocations in parallel and return list of responses."""
-        # Lower concurrency for local models
-        if self.model_string.startswith("ollama/") and max_concurrent > 3:
-            logger.debug(
-                "When using ollama, max_concurrent will be lowered to a maximum of 3"
-            )
+        """
+        Run a batch of invocations in parallel.
+        FAILS FAST: If one task raises an exception, the exception is raised immediately
+        and all other pending tasks are cancelled.
+        """
+        if self.model_string.startswith("ollama:") and max_concurrent > 3:
+            logger.debug("Ollama detected: limiting max_concurrent to 3")
             max_concurrent = 3
 
         semaphore = asyncio.Semaphore(max_concurrent)
@@ -194,42 +214,48 @@ class CodeStoryAdapter:
             async with semaphore:
                 if sleep_between_tasks > 0:
                     await asyncio.sleep(sleep_between_tasks)
-
                 return await self.async_invoke(item)
 
+        # Create tasks. We keep the reference to preserve order of results.
         tasks = [asyncio.create_task(sem_task(item)) for item in batch]
 
-        # Use wait with FIRST_EXCEPTION to fail fast on any error
+        # Wait for the first exception (FAIL FAST)
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
 
-        # Check if any task raised an exception
-        for task in done:
-            if task.exception() is not None:
-                # Cancel all pending tasks
-                for pending_task in pending:
-                    pending_task.cancel()
-                # Raise the first exception found
-                raise task.exception()
+        # Check for any exception in the completed tasks
+        failed_task = next((t for t in done if t.exception() is not None), None)
 
-        # If no exceptions, wait for all tasks to complete
-        if pending:
-            done, _ = await asyncio.wait(pending)
+        if failed_task:
+            first_exception = failed_task.exception()
 
-        # Collect all results
+            # Cancel all pending tasks immediately
+            for task in pending:
+                task.cancel()
+
+            # Await the cancellation of pending tasks to ensure clean loop state
+            # return_exceptions=True ensures we don't raise CancelledError here
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
+
+            # Raise ONLY the first exception encountered
+            raise first_exception
+
+        # If no exceptions, strict return of results in original order
+        # (done set is unordered, so we iterate over original tasks list)
         return [task.result() for task in tasks]
 
     def invoke_batch(
         self, batch: list[str | list[dict[str, str]]], max_concurrent: int = 10
     ) -> list[str]:
         """
-        Synchronous convenience wrapper for batched calls.
-        Reuses the same event loop to avoid conflicts with litellm's logging worker.
+        Synchronous wrapper for batched calls reusing a persistent loop.
+        Ideal for CLI usage to prevent overhead of creating/destroying loops per call.
         """
-        # No running loop - create or reuse a persistent loop
         if self._loop is None or self._loop.is_closed():
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
 
+        # Use the persistent loop to run the batch
         return self._loop.run_until_complete(
             self.async_invoke_batch(batch, max_concurrent)
         )

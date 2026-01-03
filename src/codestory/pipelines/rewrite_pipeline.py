@@ -270,7 +270,7 @@ class RewritePipeline:
         if (
             self.can_reject_changes
             and self.commit_context.relevance_filter_level != "none"
-            and self.global_context.model is not None
+            and self.global_context.get_model() is not None
         ):
             with (
                 transient_step(
@@ -280,7 +280,7 @@ class RewritePipeline:
                 time_block("relevance_filtering"),
             ):
                 relevance_filter = RelevanceFilter(
-                    self.global_context.model,
+                    self.global_context.get_model(),
                     RelevanceFilterConfig(
                         level=self.commit_context.relevance_filter_level
                     ),
@@ -306,7 +306,7 @@ class RewritePipeline:
                 logger.info("These chunks will simply stay as uncommited changes\n")
 
         if self.commit_context.relevance_filter_level != "none" and (
-            self.global_context.model is None or not self.can_reject_changes
+            self.global_context.get_model() is None or not self.can_reject_changes
         ):
             logger.warning(
                 "Relevance filter level is set to '{level}' but not currently able to reject changes",
