@@ -50,7 +50,7 @@ def generate_annotated_patches(
     patch_generator: PatchGenerator,
     patch_cutoff_chars: int = DEFAULT_PATCH_CUTOFF_CHARS,
 ) -> list[str]:
-    """Generate annotated patches for a list of containers as markdown strings.
+    """Generate annotated patches for a list of containers as XML strings.
 
     Args:
         containers: List of AtomicContainer objects
@@ -59,7 +59,7 @@ def generate_annotated_patches(
         patch_cutoff_chars: Maximum characters per patch before truncation
 
     Returns:
-        List of markdown-formatted annotated patches, one per container
+        List of XML-formatted annotated patches, one per container
     """
     patches = []
     pbar = ProgressBarManager.get_pbar()
@@ -89,7 +89,7 @@ def generate_annotated_patch(
     patch_generator: PatchGenerator,
     patch_cutoff_chars: int = DEFAULT_PATCH_CUTOFF_CHARS,
 ) -> str:
-    """Generate a markdown-formatted annotated patch for a single container."""
+    """Generate an XML-formatted annotated patch for a single container."""
     merged_container = merge_container(container)
 
     annotated_container = ContainerLabler.annotate_container(
