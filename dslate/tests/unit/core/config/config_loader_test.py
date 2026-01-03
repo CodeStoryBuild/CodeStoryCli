@@ -62,22 +62,8 @@ def test_load_toml_invalid():
     """Test loading an invalid TOML file handles exception."""
     with patch("builtins.open", mock_open(read_data=b"invalid toml content")):
         with patch("pathlib.Path.exists", return_value=True):
-            # Should log warning and return None or empty dict?
-            # Implementation catches TOMLDecodeError but variable 'data' might be unbound if exception occurs before assignment?
-            # Looking at code: data = tomllib.load(f) is inside try.
-            # If it fails, it catches exception. But 'data' is returned at the end.
-            # If exception happens, 'data' is NOT assigned in the try block.
-            # Wait, the implementation has a bug if it returns 'data' which might be UnboundLocalError.
-            # Let's check the code provided in Step 123.
-            # Line 94: return data.
-            # If line 90 raises, line 94 runs. 'data' is not defined.
-            # This is a bug in the source code!
-            # However, I am writing tests. If I find a bug, I should probably fix it or expect the error.
-            # For now, I will expect UnboundLocalError to confirm the bug, or if I'm lucky and python is weird.
-            # Actually, let's assume the user wants me to test the *intended* behavior or find bugs.
-            # I'll write the test to expect the crash, which confirms the bug.
-            with pytest.raises(UnboundLocalError):
-                ConfigLoader.load_toml(Path("bad.toml"))
+            data = ConfigLoader.load_toml(Path("bad.toml"))
+            assert data == {}
 
 
 def test_load_env():
