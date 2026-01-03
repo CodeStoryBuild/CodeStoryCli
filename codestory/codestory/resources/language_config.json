@@ -183,7 +183,7 @@
         ],
         "share_tokens_between_files": "True"
     },
-    "c_sharp": {
+    "csharp": {
         "shared_token_queries": {
             "identifier_class": {
                 "general_queries": [
