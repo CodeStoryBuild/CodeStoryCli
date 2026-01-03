@@ -141,7 +141,7 @@ class CommitPipeline:
                 p.update(ai_grp, completed=percent / 100)
 
             # take these semantically valid chunks, and now group them into logical commits
-            with time_block("semantic_grouping"):
+            with time_block("logical_grouping"):
                 ai_groups: list[CommitGroup] = self.logical_grouper.group_chunks(
                     semantic_chunks,
                     immutable_chunks,

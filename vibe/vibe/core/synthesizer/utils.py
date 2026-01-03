@@ -6,11 +6,7 @@ from .diff_generator import DiffGenerator
 
 
 def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
-    flattened_chunks = []
-    for chunk in chunks:
-        flattened_chunks.extend(chunk.get_chunks())
-
-    diff_generator = DiffGenerator(flattened_chunks)
+    diff_generator = DiffGenerator(chunks)
 
     patch_map = {}
     for i, chunk in enumerate(chunks):
@@ -29,13 +25,7 @@ def get_patches_chunk(chunks: list[Chunk]) -> dict[int, str]:
 
 
 def get_patches(groups: list[CommitGroup]) -> dict[int, str]:
-    flattened_chunks = []
-    for group in groups:
-        for chunk in group.chunks:
-            if isinstance(chunk, DiffChunk):
-                flattened_chunks.extend(chunk.get_chunks())
-
-    diff_generator = DiffGenerator(flattened_chunks)
+    diff_generator = DiffGenerator(groups)
 
     patch_map = {}
     for i, group in enumerate(groups):
