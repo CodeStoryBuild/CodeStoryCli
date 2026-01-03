@@ -88,19 +88,44 @@ def run_commit(
         global_context.git_commands,
         commit_context.target,
     )
+
+    # check if branch is empty
+    current_branch = global_context.current_branch
+    try:
+        head_commit = global_context.git_commands.get_commit_hash(current_branch)
+    except ValueError:
+        head_commit = ""
+
+    if not head_commit:
+        logger.debug(
+            f"Branch '{current_branch}' is empty: creating initial empty commit"
+        )
+        # Create an empty tree
+        empty_tree_hash = global_context.git_commands.write_tree()
+        if not empty_tree_hash:
+            raise GitError("Failed to create empty tree")
+
+        # Create initial commit
+        head_commit = global_context.git_commands.commit_tree(
+            empty_tree_hash, [], "Initial commit"
+        )
+        if not head_commit:
+            raise GitError("Failed to create initial commit")
+
+        # Update branch to point to initial commit
+        global_context.git_commands.update_ref(current_branch, head_commit)
+
     # Create a dangling commit for the current working tree state.
     # This also runs in a sandbox to avoid polluting the main object directory.
     with GitSandbox(global_context) as tempcommit_sandbox:
-        tempcommiter = TempCommitCreator(
+        new_working_commit_hash = TempCommitCreator.create_reference_commit(
             global_context.git_commands,
-            global_context.current_branch,
             commit_context.target,
+            head_commit,
         )
 
-        base_commit_hash, new_commit_hash = tempcommiter.create_reference_commit()
-
         # Sync the temp commit to the real object store so the rewrite pipeline can see it
-        tempcommit_sandbox.sync(new_commit_hash)
+        tempcommit_sandbox.sync(new_working_commit_hash)
 
     from codestory.pipelines.rewrite_init import create_rewrite_pipeline
 
@@ -109,19 +134,18 @@ def run_commit(
             runner = create_rewrite_pipeline(
                 global_context,
                 commit_context,
-                base_commit_hash,
-                new_commit_hash,
+                head_commit,
+                new_working_commit_hash,
                 source="commit",
             )
 
             new_commit_hash = runner.run()
 
-        # Only sync if we actually have a result
-        if new_commit_hash and new_commit_hash != base_commit_hash:
+        if new_commit_hash and new_commit_hash != head_commit:
             sandbox.sync(new_commit_hash)
 
     # now that we rewrote our changes into a clean link of commits, update the current branch to reference this
-    if new_commit_hash is not None and new_commit_hash != base_commit_hash:
+    if new_commit_hash is not None and new_commit_hash != head_commit:
         current_branch = global_context.current_branch
 
         global_context.git_commands.update_ref(current_branch, new_commit_hash)
