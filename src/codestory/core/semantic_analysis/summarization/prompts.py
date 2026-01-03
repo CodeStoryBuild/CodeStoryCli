@@ -48,23 +48,23 @@ Commit message:"""
 
 BATCHED_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
-Given a JSON array of code changes, write a commit message for each one. Each change includes git patches and metadata about added/removed/modified symbols.
+Given multiple code changes (each with diff patches and optional metadata), write one commit message per change.
 {message}
 Rules:
-- Output a JSON array of strings with one message per input change
+- Output a numbered list with one message per change
 - Each message: single line, max 72 characters, imperative mood
-- Output ONLY the JSON array, no other text
 - Match the input order exactly
 
-Example:
-Input: [{{"git_patch": "..."}}, {{"git_patch": "..."}}]
-Output: ["Add user authentication", "Update config parser"]"""
+Example output:
+1. Add user authentication
+2. Update config parser
+3. Fix memory leak in cache"""
 
 BATCHED_SUMMARY_USER = """Here are {count} code changes:
 
 {changes}
 
-Provide {count} commit messages as a JSON array:"""
+Provide {count} commit messages as a numbered list:"""
 
 
 # -----------------------------------------------------------------------------
@@ -90,20 +90,19 @@ Combined commit message:"""
 
 BATCHED_CLUSTER_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
-Given a JSON array where each element contains multiple related commit messages, combine each group into one cohesive commit message.
+Given multiple groups of related commit messages, combine each group into one cohesive commit message.
 {message}
 Rules:
-- Output a JSON array of strings with one message per input group
+- Output a numbered list with one message per group
 - Each message: single line, max 72 characters, imperative mood
-- Output ONLY the JSON array, no other text
 - Match the input order exactly
 
-Example:
-Input: [["Add login", "Add logout"], ["Fix parser", "Update tests"]]
-Output: ["Add authentication system", "Fix parser and update tests"]"""
+Example output:
+1. Add authentication system
+2. Fix parser and update tests"""
 
 BATCHED_CLUSTER_SUMMARY_USER = """Here are {count} groups of related commit messages:
 
 {groups}
 
-Provide {count} combined commit messages as a JSON array:"""
+Provide {count} combined commit messages as a numbered list:"""
