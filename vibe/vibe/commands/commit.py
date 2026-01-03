@@ -11,6 +11,8 @@ from vibe.core.grouper.random_size_grouper import RandomSizeGrouper
 from vibe.core.git_interface.SubprocessGitInterface import SubprocessGitInterface
 from vibe.core.pipeline.runner import AIGitPipeline
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 load_dotenv()
 
 console = Console()

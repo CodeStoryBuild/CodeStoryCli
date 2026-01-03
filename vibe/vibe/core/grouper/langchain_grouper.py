@@ -2,6 +2,7 @@ import json
 from typing import List, Optional
 from pydantic import BaseModel
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from vibe.core.data.diff_chunk import DiffChunk

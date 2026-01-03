@@ -10,7 +10,7 @@ install(show_locals=False)
 from vibe.commands import init
 from vibe.commands.commit import main as commit_main
 
-app = typer.Typer(help="✨ vibe: an AI-powered abstraction layer above Git")
+app = typer.Typer(help="✨ vibe: an AI-powered abstraction layer above Git", pretty_exceptions_show_locals=False)
 console = Console()
 
 # Register init as a subcommand

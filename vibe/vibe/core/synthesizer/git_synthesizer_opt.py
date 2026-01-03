@@ -3,6 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Dict, Union, Tuple
 from itertools import groupby
+import shutil
 import io
 
 ## Imports
