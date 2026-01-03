@@ -22,7 +22,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Literal
 
-
 from codestory.constants import LOCAL_PROVIDERS
 from codestory.core.exceptions import LLMInitError, ModelRetryExhausted
 
@@ -216,8 +215,9 @@ class CodeStoryAdapter:
         num_retries: int = 3,
     ) -> str:
         """Unified async invoke method with retry logic. Returns the content string."""
-        from loguru import logger
         import asyncio
+
+        from loguru import logger
 
         logger.debug(f"Invoking {self.model_string} (async)")
         kwargs = self._prepare_request(messages)
@@ -264,8 +264,9 @@ class CodeStoryAdapter:
         FAILS FAST: If one task raises an exception, the exception is raised immediately
         and all other pending tasks are cancelled.
         """
-        from loguru import logger
         import asyncio
+
+        from loguru import logger
 
         if self.model_string.startswith("ollama:") and max_concurrent > 3:
             logger.debug("Ollama detected: limiting max_concurrent to 3")

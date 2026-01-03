@@ -76,9 +76,9 @@ class SklearnLouvainClusterer:
 
     def fit(self, embeddings: list[list[float]]) -> np.ndarray:
         import networkx as nx
+        from loguru import logger
         from sklearn.neighbors import NearestNeighbors
         from sklearn.preprocessing import normalize
-        from loguru import logger
 
         # Early exits for edge cases
         if embeddings is None or len(embeddings) == 0:
