@@ -74,7 +74,7 @@ class TestClean:
             hashes.append(repo.get_commit_hash())
 
         # Clean starting from commit 2
-        result = run_cli(cli_exe, ["-y", "clean", hashes[2]], cwd=repo.path)
+        result = run_cli(cli_exe, ["-y", "clean", "--start", hashes[2]], cwd=repo.path)
         print(result.stdout)
         print(result.stderr)
         assert result.returncode == 0
