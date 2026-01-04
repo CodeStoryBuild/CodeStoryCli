@@ -30,12 +30,17 @@ from codestory.core.exceptions import LLMResponseError
 from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.semantic_analysis.annotation.utils import sanitize_llm_text
 from codestory.core.semantic_analysis.summarization.prompts import (
+    BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM,
+    BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_USER,
     BATCHED_CLUSTER_SUMMARY_SYSTEM,
     BATCHED_CLUSTER_SUMMARY_USER,
+    BATCHED_DESCRIPTIVE_SUMMARY_SYSTEM,
     BATCHED_SUMMARY_SYSTEM,
     BATCHED_SUMMARY_USER,
+    CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM,
     CLUSTER_SUMMARY_SYSTEM,
     CLUSTER_SUMMARY_USER,
+    INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_USER,
 )
@@ -57,7 +62,11 @@ class SummaryTask:
     prompt: str
     is_multiple: bool
     indices: list[int]
+    prompt: str
+    is_multiple: bool
+    indices: list[int]
     original_patches: list[str]
+    output_style: Literal["brief", "descriptive"]
 
 
 @dataclass
@@ -67,7 +76,11 @@ class ClusterSummaryTask:
     prompt: str
     is_multiple: bool
     cluster_ids: list[int]
+    prompt: str
+    is_multiple: bool
+    cluster_ids: list[int]
     summaries_groups: list[list[str]]
+    source_style: Literal["brief", "descriptive"]
 
 
 class ContainerSummarizer:
@@ -104,8 +117,9 @@ class ContainerSummarizer:
         self,
         containers: list[AtomicContainer],
         user_message: str | None = None,
+        output_style: Literal["brief", "descriptive"] = "brief",
     ) -> list[str]:
-        """Generate commit message summaries for a list of chunks.
+        """Generate summaries for a list of chunks.
 
         Args:
             chunks: List of Chunk or ImmutableDiffChunk objects
@@ -131,8 +145,11 @@ class ContainerSummarizer:
             annotated_patches.append(patch)
 
         # Generate summaries from patches
+        # Generate summaries from patches
         formatted_intent = self._create_user_guidance_message(user_message)
-        return self._generate_summaries(annotated_patches, formatted_intent)
+        return self._generate_summaries(
+            annotated_patches, formatted_intent, output_style
+        )
 
     def summarize_container(
         self,
@@ -140,6 +157,7 @@ class ContainerSummarizer:
         context_manager: ContextManager,
         patch_generator: PatchGenerator,
         user_message: str | None = None,
+        output_style: Literal["brief", "descriptive"] = "brief",
     ) -> str:
         """Generate a summary for a single container.
 
@@ -155,6 +173,7 @@ class ContainerSummarizer:
         summaries = self.summarize_containers(
             containers=[container],
             user_message=user_message,
+            output_style=output_style,
         )
         return summaries[0]
 
@@ -258,7 +277,9 @@ class ContainerSummarizer:
         return self._partition_items(items, cost_fn, base_prompt_cost, strategy)
 
     def _create_summary_tasks(
-        self, partitions: list[list[tuple[int, str]]]
+        self,
+        partitions: list[list[tuple[int, str]]],
+        output_style: Literal["brief", "descriptive"],
     ) -> list[SummaryTask]:
         """Converts partitions of patches into actionable LLM Tasks.
 
@@ -278,6 +299,7 @@ class ContainerSummarizer:
                         is_multiple=False,
                         indices=indices,
                         original_patches=patches,
+                        output_style=output_style,
                     )
                 )
             else:
@@ -294,6 +316,7 @@ class ContainerSummarizer:
                         is_multiple=True,
                         indices=indices,
                         original_patches=patches,
+                        output_style=output_style,
                     )
                 )
         return tasks
@@ -302,6 +325,7 @@ class ContainerSummarizer:
         self,
         annotated_chunk_patches: list[str],
         intent_message: str,
+        output_style: Literal["brief", "descriptive"],
     ) -> list[str]:
         """Generate summaries for annotated chunk patches (markdown strings)."""
         from loguru import logger
@@ -319,7 +343,7 @@ class ContainerSummarizer:
         )
 
         # 2. Create Tasks
-        tasks = self._create_summary_tasks(partitions)
+        tasks = self._create_summary_tasks(partitions, output_style)
 
         logger.debug(
             f"Generating summaries for {len(annotated_chunk_patches)} changes (Strategy: {strategy})."
@@ -344,9 +368,9 @@ class ContainerSummarizer:
             [
                 {
                     "role": "system",
-                    "content": BATCHED_SUMMARY_SYSTEM.format(message=intent_message)
-                    if t.is_multiple
-                    else INITIAL_SUMMARY_SYSTEM.format(message=intent_message),
+                    "content": self._get_summary_system_prompt(
+                        t.output_style, t.is_multiple, intent_message
+                    ),
                 },
                 {"role": "user", "content": t.prompt},
             ]
@@ -375,6 +399,21 @@ class ContainerSummarizer:
 
         return final_summaries
 
+    def _get_summary_system_prompt(
+        self,
+        style: Literal["brief", "descriptive"],
+        is_multiple: bool,
+        intent_message: str,
+    ) -> str:
+        if style == "brief":
+            if is_multiple:
+                return BATCHED_SUMMARY_SYSTEM.format(message=intent_message)
+            return INITIAL_SUMMARY_SYSTEM.format(message=intent_message)
+        else:
+            if is_multiple:
+                return BATCHED_DESCRIPTIVE_SUMMARY_SYSTEM.format(message=intent_message)
+            return INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM.format(message=intent_message)
+
     # -------------------------------------------------------------------------
     # Cluster Summarization Methods
     # -------------------------------------------------------------------------
@@ -383,6 +422,7 @@ class ContainerSummarizer:
         self,
         clusters: dict[int, list[str]],
         user_message: str | None = None,
+        source_style: Literal["brief", "descriptive"] = "brief",
     ) -> dict[int, str]:
         """Generate combined commit messages for clusters of related summaries.
 
@@ -410,7 +450,7 @@ class ContainerSummarizer:
         )
 
         # Create tasks
-        cluster_tasks = self._create_cluster_summary_tasks(partitions)
+        cluster_tasks = self._create_cluster_summary_tasks(partitions, source_style)
 
         logger.debug(
             f"Generating cluster summaries for {len(clusters)} clusters (Strategy: {strategy})."
@@ -435,11 +475,9 @@ class ContainerSummarizer:
             [
                 {
                     "role": "system",
-                    "content": BATCHED_CLUSTER_SUMMARY_SYSTEM.format(
-                        message=formatted_intent
-                    )
-                    if t.is_multiple
-                    else CLUSTER_SUMMARY_SYSTEM.format(message=formatted_intent),
+                    "content": self._get_cluster_system_prompt(
+                        t.source_style, t.is_multiple, formatted_intent
+                    ),
                 },
                 {"role": "user", "content": t.prompt},
             ]
@@ -468,6 +506,25 @@ class ContainerSummarizer:
 
         return cluster_messages_map
 
+    def _get_cluster_system_prompt(
+        self,
+        source_style: Literal["brief", "descriptive"],
+        is_multiple: bool,
+        intent_message: str,
+    ) -> str:
+        if source_style == "brief":
+            if is_multiple:
+                return BATCHED_CLUSTER_SUMMARY_SYSTEM.format(message=intent_message)
+            return CLUSTER_SUMMARY_SYSTEM.format(message=intent_message)
+        else:
+            if is_multiple:
+                return BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM.format(
+                    message=intent_message
+                )
+            return CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM.format(
+                message=intent_message
+            )
+
     def _partition_cluster_summaries(
         self, clusters: dict[int, list[str]], strategy: str, intent_message: str
     ) -> list[list[tuple[int, list[str]]]]:
@@ -486,7 +543,9 @@ class ContainerSummarizer:
         return self._partition_items(cluster_items, cost_fn, base_prompt_cost, strategy)
 
     def _create_cluster_summary_tasks(
-        self, partitions: list[list[tuple[int, list[str]]]]
+        self,
+        partitions: list[list[tuple[int, list[str]]]],
+        source_style: Literal["brief", "descriptive"],
     ) -> list[ClusterSummaryTask]:
         """Convert partitions into cluster summary tasks."""
         tasks = []
@@ -504,6 +563,7 @@ class ContainerSummarizer:
                         is_multiple=False,
                         cluster_ids=cluster_ids,
                         summaries_groups=summaries_groups,
+                        source_style=source_style,
                     )
                 )
             else:
@@ -513,15 +573,22 @@ class ContainerSummarizer:
                     + "\n".join(f"- {s}" for s in group_summaries)
                     for i, group_summaries in enumerate(summaries_groups)
                 )
-                prompt = BATCHED_CLUSTER_SUMMARY_USER.format(
-                    count=len(group), groups=groups_md
-                )
+                if source_style == "descriptive":
+                    prompt = BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_USER.format(
+                        count=len(group), groups=groups_md
+                    )
+                else:
+                    prompt = BATCHED_CLUSTER_SUMMARY_USER.format(
+                        count=len(group), groups=groups_md
+                    )
+
                 tasks.append(
                     ClusterSummaryTask(
                         prompt=prompt,
                         is_multiple=True,
                         cluster_ids=cluster_ids,
                         summaries_groups=summaries_groups,
+                        source_style=source_style,
                     )
                 )
         return tasks

@@ -86,13 +86,19 @@ class EmbeddingGrouper(Grouper):
             return []
 
         summaries = self.chunk_summarizer.summarize_containers(
-            containers, user_message=self.user_message
+            containers, user_message=self.user_message, output_style="descriptive"
         )
 
         # Step 2: Handle single chunk case (no clustering needed)
-        # summaries length matches containers length
+        # NOTE: summaries length matches containers length
         if len(summaries) == 1:
-            return [CommitGroup(container=containers[0], commit_message=summaries[0])]
+            # We have a descriptive summary, we need a commit message.
+            cluster_msg = self.chunk_summarizer.summarize_clusters(
+                clusters={0: [summaries[0]]},
+                user_message=self.user_message,
+                source_style="descriptive",
+            )[0]
+            return [CommitGroup(container=containers[0], commit_message=cluster_msg)]
 
         # Step 3: Embed summaries and cluster them
         embeddings = self.embedder.embed(summaries)
@@ -100,37 +106,43 @@ class EmbeddingGrouper(Grouper):
 
         groups: list[CommitGroup] = []
         clusters: dict[int, Cluster] = {}
+        next_noise_id = -1
 
         # Step 4: Build clusters - group chunks and their summaries by cluster label
         for container, summary, cluster_label in zip(
             containers, summaries, cluster_labels, strict=True
         ):
-            if cluster_label == -1:
-                # Noise: assign as its own group, reuse summary as commit message
-                group = CommitGroup(
-                    container=container,
-                    commit_message=summary,
-                )
-                groups.append(group)
-            else:
-                if cluster_label not in clusters:
-                    clusters[cluster_label] = Cluster(containers=[], summaries=[])
+            target_label = cluster_label
+            if target_label == -1:
+                # Assign unique ID for noise
+                target_label = next_noise_id
+                next_noise_id -= 1
 
-                clusters[cluster_label].containers.append(container)
-                clusters[cluster_label].summaries.append(summary)
+            if target_label not in clusters:
+                clusters[target_label] = Cluster(containers=[], summaries=[])
+
+            clusters[target_label].containers.append(container)
+            clusters[target_label].summaries.append(summary)
 
         # Step 5: Generate combined commit messages for each cluster
         if clusters:
             cluster_messages_map = self.chunk_summarizer.summarize_clusters(
                 clusters={cid: cluster.summaries for cid, cluster in clusters.items()},
                 user_message=self.user_message,
+                source_style="descriptive",
             )
 
             # Create commit groups from clusters
             for cluster_id, cluster in clusters.items():
                 commit_message = cluster_messages_map[cluster_id]
+                # If it was a noise cluster (single item), maintain the original container type if simpler
+                if len(cluster.containers) == 1:
+                    container_to_use = cluster.containers[0]
+                else:
+                    container_to_use = CompositeContainer(cluster.containers)
+
                 group = CommitGroup(
-                    container=CompositeContainer(cluster.containers),
+                    container=container_to_use,
                     commit_message=commit_message,
                 )
                 groups.append(group)
