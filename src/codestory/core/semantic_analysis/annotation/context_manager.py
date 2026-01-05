@@ -299,8 +299,7 @@ class ContextManagerBuilder:
             if pbar is not None:
                 pbar.set_postfix(
                     {
-                        "phase": "parsing files",
-                        "files": f"{len(self._parsed_files)}/{len(self._required_contexts)}",
+                        "phase": f"parsing files {len(self._parsed_files)}/{len(self._required_contexts)}",
                     }
                 )
 
@@ -363,8 +362,7 @@ class ContextManagerBuilder:
                             files_processed_in_this_phase += 1
                             pbar.set_postfix(
                                 {
-                                    "phase": "build shared context",
-                                    "files": f"{files_processed_in_this_phase}/{total_files}",
+                                    "phase": f"building shared context {files_processed_in_this_phase}/{total_files}",
                                 }
                             )
 
@@ -395,8 +393,7 @@ class ContextManagerBuilder:
                     files_processed_in_this_phase += 1
                     pbar.set_postfix(
                         {
-                            "phase": "build file contexts",
-                            "contexts": f"{len(self._context_cache)}/{total_files}",
+                            "phase": f"building file contexts {files_processed_in_this_phase}/{total_files}",
                         }
                     )
 
