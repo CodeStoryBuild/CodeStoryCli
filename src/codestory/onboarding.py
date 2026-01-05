@@ -176,6 +176,7 @@ def check_run_onboarding(can_continue: bool) -> bool:
     # check a file in user config dir
     if not ONBOARDING_FLAG.exists():
         continue_ = run_onboarding()
+        ONBOARDING_FLAG.parent.mkdir(parents=True, exist_ok=True)
         ONBOARDING_FLAG.touch()
         if not continue_:
             raise typer.Exit(0)
@@ -188,4 +189,5 @@ def check_run_onboarding(can_continue: bool) -> bool:
 
 def set_ran_onboarding():
     if not ONBOARDING_FLAG.exists():
+        ONBOARDING_FLAG.parent.mkdir(parents=True, exist_ok=True)
         ONBOARDING_FLAG.touch()
