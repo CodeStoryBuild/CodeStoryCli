@@ -95,9 +95,7 @@ class AtomicChunker:
 
         for i, chunk in enumerate(diff_chunks):
             if pbar is not None:
-                pbar.set_postfix(
-                    {"phase": "chunking", "chunks": f"{i + 1}/{len(diff_chunks)}"}
-                )
+                pbar.set_postfix({"phase": f"chunking {i + 1}/{len(diff_chunks)}"})
 
             if not isinstance(chunk, StandardDiffChunk):
                 # Pass through ImmutableDiffChunks unchanged

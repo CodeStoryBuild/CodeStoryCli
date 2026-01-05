@@ -172,16 +172,13 @@ class ContainerLabler:
 
         pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
-            pbar.set_postfix(
-                {"phase": "annotating chunks", "chunks": f"0/{len(containers)}"}
-            )
+            pbar.set_postfix({"phase": f"annotating chunks 0/{len(containers)}"})
 
         for i, container in enumerate(containers):
             if pbar is not None:
                 pbar.set_postfix(
                     {
-                        "phase": "annotating chunks",
-                        "chunks": f"{i + 1}/{len(containers)}",
+                        "phase": f"annotating chunks {i + 1}/{len(containers)}",
                     }
                 )
 

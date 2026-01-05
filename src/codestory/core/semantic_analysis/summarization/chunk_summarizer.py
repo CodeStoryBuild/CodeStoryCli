@@ -358,8 +358,7 @@ class ContainerSummarizer:
             if pbar is not None:
                 pbar.set_postfix(
                     {
-                        "phase": "summarize chunks",
-                        "requests": f"{request_count['received']}/{request_count['sent']}",
+                        "phase": f"summarize chunks {request_count['received']}/{request_count['sent']}"
                     }
                 )
 
@@ -465,8 +464,7 @@ class ContainerSummarizer:
             if pbar is not None:
                 pbar.set_postfix(
                     {
-                        "phase": "finalize summaries",
-                        "requests": f"{cluster_progress_count['received']}/{cluster_progress_count['sent']}",
+                        "phase": f"finalize summaries {cluster_progress_count['received']}/{cluster_progress_count['sent']}"
                     }
                 )
 
