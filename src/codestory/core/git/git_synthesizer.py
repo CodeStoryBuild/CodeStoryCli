@@ -187,8 +187,7 @@ class GitSynthesizer:
                             msg = msg[:57] + "..."
                         pbar.set_postfix(
                             {
-                                "phase": "create commits",
-                                "progress": f"{i + 1}/{total}",
+                                "phase": f"creating commits {i + 1}/{total}",
                                 "msg": msg,
                             }
                         )
