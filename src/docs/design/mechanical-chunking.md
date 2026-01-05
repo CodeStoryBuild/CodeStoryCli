@@ -9,20 +9,29 @@ To enable precise history rewriting, Codestory CLI must be able to manipulate th
 
 ## Decomposition Strategy
 Codestory CLI analyzes each Git hunk and attempts to split it into smaller, independent pieces. This allows the engine to:
+
 1.  **Isolate Changes**: Separate unrelated modifications that happen to be near each other.
+
 2.  **Reorder Safely**: Move changes between different logical commits.
+
 3.  **Filter Precisely**: Exclude specific lines (like debug logs) without rejecting the entire file change.
 
 ## The Pairwise Disjoint Rule
 The most critical constraint in mechanical chunking is that all resulting chunks must be **pairwise disjoint**. This means:
+
 - No two chunks can modify the same line of code.
+
 - The sum of all chunks must exactly equal the original diff.
+
 - Each chunk must be "mechanically valid," meaning it contains enough context to be applied independently using standard patching tools.
 
 ## Configuration
 Users can control the granularity of this process through the `chunking_level` configuration:
+
 - `none`: No additional chunking beyond standard Git hunks.
+
 - `full_files`: Only split hunks that represent entire file additions or deletions.
+
 - `all_files`: Aggressively attempt to split all hunks into the smallest possible units.
 
 ## Why It Matters

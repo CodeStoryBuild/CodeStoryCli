@@ -4,8 +4,11 @@ Logical grouping is the final stage of change analysis, where Codestory CLI uses
 
 ## Why Logical Grouping?
 Static analysis (semantic grouping) is excellent for finding links within source code, but it cannot easily connect:
+
 - **Code and Documentation**: A change in a `.py` file and a corresponding update in a `.md` file.
+
 - **Code and Tests**: A new feature and its integration tests in a separate directory.
+
 - **Cross-Language Changes**: A frontend change in TypeScript and a backend change in Go.
 
 Logical grouping bridges these gaps by analyzing the *intent* and *context* of the changes.

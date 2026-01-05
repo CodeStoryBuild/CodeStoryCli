@@ -30,7 +30,7 @@ Most AI commit tools simply summarize a large diff. Codestory CLI actually **res
 
 - **Mechanical Safety**: Our algorithms ensure that every change can be safely applied or reverted at a granular level.
 
-- **Semantic Awareness**: By using Tree-sitter, Codestory CLI understands the structure of your code (functions, classes, etc.), ensuring that related logical blocks stay together.
+- **Semantic Awareness**: By using tree-sitter, Codestory CLI understands the structure of your code (functions, classes, etc.), ensuring that related logical blocks stay together.
 
 - **Human in the Loop**: You are always in control. Codestory CLI handles the heavy lifting of granular staging (`git add -p`), allowing you to review and approve every commit before it's finalized.
 

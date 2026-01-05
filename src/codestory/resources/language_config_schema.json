@@ -22,7 +22,7 @@
                             "properties": {
                                 "general_queries": {
                                     "type": "array",
-                                    "description": "Tree-sitter queries to find all occurrences of tokens belonging to this class. These queries should match singular nodes.",
+                                    "description": "tree-sitter queries to find all occurrences of tokens belonging to this class. These queries should match singular nodes.",
                                     "items": {
                                         "type": "string",
                                         "description": "A tree-sitter query with a '@placeholder' capture."
@@ -30,7 +30,7 @@
                                 },
                                 "definition_queries": {
                                     "type": "array",
-                                    "description": "Tree-sitter queries to find only the definition sites of tokens in this class.",
+                                    "description": "tree-sitter queries to find only the definition sites of tokens in this class.",
                                     "items": {
                                         "type": "string",
                                         "description": "A tree-sitter query with a '@placeholder' capture."
@@ -44,11 +44,11 @@
                 },
                 "scope_queries": {
                     "type": "object",
-                    "description": "Tree-sitter queries that match entire scope blocks. Contains named scopes (with identifiable names).",
+                    "description": "tree-sitter queries that match entire scope blocks. Contains named scopes (with identifiable names).",
                     "properties": {
                         "named_scope": {
                             "type": "array",
-                            "description": "Tree-sitter queries for scopes with names (e.g., functions, classes, methods) that can be used for fully qualified names.",
+                            "description": "tree-sitter queries for scopes with names (e.g., functions, classes, methods) that can be used for fully qualified names.",
                             "items": {
                                 "type": "string",
                                 "description": "A tree-sitter query with a '@placeholder' capture."
@@ -59,7 +59,7 @@
                 },
                 "comment_queries": {
                     "type": "array",
-                    "description": "Tree-sitter queries used to identify comment-only lines for special processing.",
+                    "description": "tree-sitter queries used to identify comment-only lines for special processing.",
                     "items": {
                         "type": "string",
                         "description": "A tree-sitter query with a '@placeholder' capture."

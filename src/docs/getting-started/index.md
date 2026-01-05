@@ -56,6 +56,6 @@ cst clean
 
 - **[Usage Guide](../usage/index.md)**: Explore advanced commands like `clean` and `fix`.
 
-- **[Architecture](../design/how-it-works.md)**: See how the engine uses Tree-sitter and LLMs to understand your code.
+- **[Architecture](../design/how-it-works.md)**: See how the engine uses tree-sitter and LLMs to understand your code.
 
 - **[Configuration](../configuration/index.md)**: Adjust filtering, models, and safety settings.

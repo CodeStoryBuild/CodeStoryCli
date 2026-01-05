@@ -32,21 +32,21 @@ Use the `cst config` command to view and modify your settings.
 
 ### Viewing Settings
 
-- `cst config`: Show all active configuration values and their sources.
+- `cst config <optional key>`: Show the value for a specific key. If key is omitted, shows all keys.
 
-- `cst config <key>`: Show the value for a specific setting.
+- `cst config <optional key> --scope <global|local|env>`: Show the value for a specific key and scope. If key is omitted, shows all keys.
 
 - `cst config --describe`: List all available configuration options and their descriptions.
 
 ### Changing Settings
 
-- `cst config model "openai:gpt-4"`: Set a local project-level value.
+- `cst config key <value>`: Set a local config value.
 
-- `cst config model "ollama:qwen2.5-coder" --scope global`: Set a system-wide value.
+- `cst config key <value> --scope <global|local|env>`: Set a config value for a specific scope.
 
-- `cst config --delete model`: Remove a local configuration override.
+- `cst config --delete <optional key> --scope <global|local|env>`: Remove a config key from a scope. If key is omitted, deletes all keys.
 
-- `cst config --deleteall`: Clear all local and global configurations.
+- `cst config --deleteall <optional key>`: Clear key from all scopes. If key is omitted, deletes all keys.
 
 ## Available Options
 
@@ -76,4 +76,4 @@ Below are the key configuration options available in Codestory CLI:
 | `num_retries` | How many times to retry failed LLM calls (0-10) | `3` |
 | `no_log_files` | Disable logging to files, only output to console | `false` |
 
-> Pro Tip: Use `cst config --describe` in your terminal to see the most up-to-date list of all experimental and advanced configuration flags.
+> Pro Tip: Use `cst config --describe` in your terminal to see the most up-to-date list of options.

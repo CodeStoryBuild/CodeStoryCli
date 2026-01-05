@@ -50,7 +50,7 @@ The `clean` command helps you improve the quality of a series of recent commits.
 cst clean
 
 # Start cleaning from a specific point, ignoring smaller commits
-cst clean abc1234 --min-size 10
+cst clean --start abc1234 --min-size 10
 ```
 
 ## On-the-Fly Overrides
@@ -94,4 +94,4 @@ cst config
 
 ## Pro Tip
 
-- **Extending Language Support**: Working with a newer or custom language? You can provide your own Tree-sitter definitions using `--custom-language-config`.
+- **Extending Language Support**: Working with a newer or custom language? You can provide your own tree-sitter definitions using `--custom-language-config`.

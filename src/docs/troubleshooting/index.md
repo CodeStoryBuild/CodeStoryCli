@@ -8,9 +8,13 @@ Codestory CLI (`cst`) is designed to make Git history management effortless. If 
 
 If the `Logical Grouping` step doesn't align with your vision for the commit history:
 
-- **Provide a descriptive hint**: Use `cst commit -m "Refactor the database layer"` to give the LLM specific context.
+- **Try a different model**: Different LLMs have different strengths and weaknesses. You can try a different model by setting `cst config model <provider>:<model_name>`. See [Supported Models](../reference/supported.md) for more information.
 
-- **Adjust the grouping logic**: You can fine-tune the similarity threshold in your config to control how closely related changes must be to stay together.
+- **Provide a descriptive hint**: Fix and Clean commands support the `-m` flag. Use `cst [command] -m "<Your message here>"` to give the model specific context it can leverage in its summaries.
+
+- **Adjust the grouping logic**: You can fine-tune the clustering similarity threshold (`cst config cluster_strictness <0-1>`) in your config to control how closely related changes must be to stay together. For example, if you find that unrelated changes are being grouped together, try increasing the value. If you find that related changes are being separated, try decreasing the value.
+
+- **Try a different embedding model**: We bundle a small embedding model by default. If you find the AI is grouping things incorrectly, you can try a different using a custom embedding model by setting `cst config custom_embedding_model <model_name>`. Any model supported by [fastembed](https://qdrant.github.io/fastembed/examples/Supported_Models/) can be used, and will download automatically the first time it is used.
 
 ### 2. Relevance Filtering: "It filtered changes I wanted to keep"
 
@@ -22,7 +26,7 @@ By default, Codestory CLI tries to focus on changes that match your current obje
 
     2. Disable relevance filtering for a specific run using `--relevance-filtering false` to see the full set of changes.
 
-### 3. Syntax Error during commit
+### 3. Syntax Error during commit (`cst commit` only)
 
 Codestory CLI will warn you if a file contains syntax errors (e.g., a missing bracket or typo) and perform a fallback semantic analysis. This ensures that the tool can still process your changes, even if the semantic map is incomplete.
 
@@ -44,6 +48,6 @@ If you run into a persistent issue:
 
 1. **Enable Verbose Logging**: Run your command with the `-v` flag to see detailed internal logs.
 
-2. **Check Your Configuration**: Run `cst config` to see all active settings and ensure there are no conflicting overrides.
+2. **Check Your Configuration**: Run `cst config` to see all active settings.
 
-3. **Community Support**: If you suspect a bug, please open an issue on GitHub with your verbose log output attached.
+3. **Report a Bug**: If you suspect a bug, please open an issue on GitHub with your log output attached. (Tip: use `cst -LD` to get the logs directory)

@@ -8,7 +8,7 @@ Explore the internal mechanics of Codestory CLI. Our architecture is designed to
 
 - **[Mechanical Chunking](./mechanical-chunking.md)**: How we break down raw diffs into independent, atomic units.
 
-- **[Semantic Grouping](./semantic-grouping.md)**: Using Tree-sitter to understand the structural context of your code.
+- **[Semantic Grouping](./semantic-grouping.md)**: Using tree-sitter to understand the structural context of your code.
 
 - **[Logical Grouping](./logical-grouping.md)**: The AI layer that identifies human intent and organizes changes into logical commits.
 

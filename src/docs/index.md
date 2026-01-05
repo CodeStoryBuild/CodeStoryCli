@@ -2,7 +2,7 @@
 
 Technical documentation for the Codestory CLI.
 
-Codestory CLI is a tool for developers who value a clean, searchable, and reviewable Git history. It automates the extraction of atomic commits from messy workflows using deterministic chunking and semantic analysis.
+Codestory CLI is a tool for developers who value a clean, searchable, and reviewable Git history. It automates the creation of atomic commits from messy workflows
 
 ## Technical Pillars
 
@@ -12,15 +12,20 @@ Codestory CLI is a tool for developers who value a clean, searchable, and review
 
 - **Fully Atomic**: Your branch history is only updated if the entire pipeline succeeds.
 
+- **Deterministic Semantic Analysis**: Before involving any AI, we use tree-sitter to understand the semantic structure of your code.
+
+- **AI-Driven Semantic Clustering**: We use AI to cluster your changes based on higher level relationships that cannot be captured by syntax.
+
+
 ---
 
 ## Core Documentation
 
-- **[Why Codestory CLI? (Philosophy)](./philosophy/index.md)**: Why atomic commits matter for a healthy development cycle.
+- **[Why Codestory CLI? (Philosophy)](./philosophy/index.md)**: Why atomic commits matter.
 
 - **[Quick Start Guide](./getting-started/index.md)**: Installation and initial setup.
 
-- **[Usage Guide](./usage/index.md)**: The daily workflow with `commit`, `fix`, and `clean`.
+- **[Usage Guide](./usage/index.md)**: Workflow examples with `commit`, `fix`, and `clean`.
 
 - **[Troubleshooting & Tips](./troubleshooting/index.md)**: How to refine behavior and resolve common issues.
 
@@ -32,7 +37,7 @@ Learn how we ensure safety and semantics:
 
 - **[Mechanical Chunking](./design/mechanical-chunking.md)**: Deterministic decomposition of diffs.
 
-- **[Semantic Grouping](./design/semantic-grouping.md)**: Using Tree-sitter to respect syntax.
+- **[Semantic Grouping](./design/semantic-grouping.md)**: Using tree-sitter to respect syntax.
 
 - **[Logical Grouping](./design/logical-grouping.md)**: AI-driven intent discovery.
 

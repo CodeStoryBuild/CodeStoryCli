@@ -2,8 +2,8 @@
 
 Semantic grouping is the process of aggregating mechanical chunks into logical units based on the structure of the source code. This ensures that related changes stay together and that each commit results in syntactically valid code.
 
-## Tree-sitter Integration
-Codestory CLI uses [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) to parse source files into Abstract Syntax Trees (ASTs). Unlike line-based diffs, ASTs provide a structured representation of the code, allowing the engine to understand the boundaries of functions, classes, and other logical blocks.
+## tree-sitter Integration
+Codestory CLI uses [tree-sitter](https://tree-sitter.github.io/tree-sitter/) to parse source files into Abstract Syntax Trees (ASTs). Unlike line-based diffs, ASTs provide a structured representation of the code, allowing the engine to understand the boundaries of functions, classes, and other logical blocks.
 
 ## Grouping Mechanisms
 
@@ -14,7 +14,7 @@ The engine identifies the "scope" of each change. If a modification occurs withi
 Codestory CLI tracks identifiers (symbols) across the codebase. If a change modifies a function definition, the engine can automatically group it with changes to the call sites of that function, even if they are in different files.
 
 ## Language Configuration
-Each supported language has a configuration that defines how to identify scopes and symbols using Tree-sitter queries.
+Each supported language has a configuration that defines how to identify scopes and symbols using tree-sitter queries.
 
 Example configuration for Python:
 ```json

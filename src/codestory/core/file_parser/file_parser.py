@@ -36,7 +36,7 @@ class ParsedFile:
 
 
 class FileParser:
-    """Parses files using Tree-sitter after detecting language."""
+    """Parses files using tree-sitter after detecting language."""
 
     @classmethod
     def parse_file(
@@ -69,7 +69,7 @@ class FileParser:
             )
             return None
 
-        # Get Tree-sitter parser for the detected language
+        # Get tree-sitter parser for the detected language
         try:
             parser = get_parser(detected_language)
         except Exception as e:
@@ -101,6 +101,6 @@ class FileParser:
             file_content: Content of the file (bytes)
 
         Returns:
-            Tree-sitter compatible language name, or None if detection failed
+            tree-sitter compatible language name, or None if detection failed
         """
         return detect_tree_sitter_language(file_path, file_content)

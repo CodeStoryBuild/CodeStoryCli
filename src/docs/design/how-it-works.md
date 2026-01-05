@@ -22,9 +22,9 @@ The raw diff is decomposed into the smallest possible independent units called *
 
 ### 5. Semantic Grouping
 
-Mechanical chunks are then aggregated into **semantic groups** using Tree-sitter. The engine analyzes the code's structure to ensure that related changes (e.g., a function definition and its internal logic) stay together. This prevents the creation of commits that result in invalid syntax.
+Mechanical chunks are then aggregated into **semantic groups** using tree-sitter. The engine analyzes the code's structure to ensure that related changes (e.g., a function definition and its internal logic) stay together. This prevents the creation of commits that result in invalid syntax.
 
-**[Semantic Grouping & Tree-sitter](./semantic-grouping.md)**
+**[Semantic Grouping & tree-sitter](./semantic-grouping.md)**
 
 ### 6. Filtering & Safety
 

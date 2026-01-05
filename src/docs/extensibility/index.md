@@ -1,10 +1,10 @@
 # Extensibility Guide
 
-Codestory CLI is designed to be highly extensible, particularly in how it understands different programming languages. This guide explains how to add support for new languages or customize existing ones using Tree-sitter queries.
+Codestory CLI is designed to be highly extensible, particularly in how it understands different programming languages. This guide explains how to add support for new languages or customize existing ones using tree-sitter queries.
 
 ## Language Configuration
 
-Semantic grouping relies on Tree-sitter to parse code and identify logical units (scopes) and identifiers. Each language's behavior is defined in a JSON configuration.
+Semantic grouping relies on tree-sitter to parse code and identify logical units (scopes) and identifiers. Each language's behavior is defined in a JSON configuration.
 
 ### Configuration Schema
 
@@ -39,7 +39,7 @@ A language configuration entry consists of several key components:
 
 #### `root_node_name`
 
-The name of the top-level node in the Tree-sitter grammar (e.g., `module` for Python, `program` for JavaScript).
+The name of the top-level node in the tree-sitter grammar (e.g., `module` for Python, `program` for JavaScript).
 
 #### `shared_token_queries`
 
@@ -63,9 +63,9 @@ Identifies comments and docstrings. These are linked to other code changes as co
 
 A boolean (`true` or `false`). If true, an identifier defined in one file can be linked to its usage in another file, allowing Codestory CLI to group cross-file changes logically.
 
-## Tree-sitter Queries
+## tree-sitter Queries
 
-Codestory CLI uses the standard Tree-sitter query syntax. You can test your queries using the Tree-sitter CLI or online playgrounds.
+Codestory CLI uses the standard tree-sitter query syntax. You can test your queries using the tree-sitter CLI or online playgrounds.
 
 ### Captures
 
@@ -131,7 +131,7 @@ cst -v [command]
 
 3. **Handle Edge Cases**: Consider different declaration styles (arrow functions, decorators, etc.).
 
-4. **Handle AST Structure**: Use Tree-sitter tools to inspect the actual AST structure.
+4. **Handle AST Structure**: Use tree-sitter tools to inspect the actual AST structure.
 
 5. **Start Simple**: Begin with basic identifier and scope queries, then expand.
 
