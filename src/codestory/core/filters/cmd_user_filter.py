@@ -99,8 +99,6 @@ class CMDUserFilter(Filter):
             all_affected_files.update(affected_files)
 
             files_preview = b", ".join(sorted(affected_files))
-            if len(files_preview) > 120:
-                files_preview = files_preview[:117] + b"..."
             logger.info(
                 "Files: {files}\n",
                 files=files_preview.decode("utf-8", errors="replace"),
