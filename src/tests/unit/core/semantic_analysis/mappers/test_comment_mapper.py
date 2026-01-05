@@ -369,7 +369,7 @@ def test_pure_comment_identification(
         [(0, len(clean_content.splitlines()) - 1)],
     )
 
-    assert parsed is not None, f"Tree-sitter failed to parse {language} content."
+    assert parsed is not None, f"tree-sitter failed to parse {language} content."
     assert parsed.detected_language == language
 
     cmap = mapper.build_comment_map(

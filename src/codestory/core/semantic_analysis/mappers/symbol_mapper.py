@@ -36,7 +36,7 @@ class SymbolMap:
 
 
 class SymbolMapper:
-    """Handles symbol mapping for source files using Tree-sitter queries."""
+    """Handles symbol mapping for source files using tree-sitter queries."""
 
     def __init__(self, query_manager: QueryManager):
         self.query_manager = query_manager

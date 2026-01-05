@@ -22,7 +22,7 @@ from codestory.core.semantic_analysis.mappers.query_manager import QueryManager
 
 
 class SymbolExtractor:
-    """Handles symbol extraction for source files using Tree-sitter queries."""
+    """Handles symbol extraction for source files using tree-sitter queries."""
 
     def __init__(self, query_manager: QueryManager):
         self.query_manager = query_manager
