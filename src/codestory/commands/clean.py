@@ -135,7 +135,7 @@ def run_clean(
         # The pipeline handles downstream rebasing if end_at != HEAD.
         # So we just update the branch pointer to the final result of the pipeline.
         logger.info(
-            "Finalizing update: {branch} -> {head}",
+            "Finalizing branch update: {branch} -> {head}",
             branch=global_context.current_branch,
             head=final_head,
         )

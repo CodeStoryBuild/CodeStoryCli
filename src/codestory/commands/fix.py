@@ -135,7 +135,7 @@ def run_fix(
     if final_head is not None:
         # Update the branch reference and sync the working directory
         logger.info(
-            "Finalizing update: {branch} -> {head}",
+            "Finalizing branch update: {branch} -> {head}",
             branch=global_context.current_branch,
             head=final_head,
         )

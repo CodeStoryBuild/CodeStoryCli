@@ -200,7 +200,7 @@ Task
 Write a descriptive summary of the change (3-5 sentences).
 - Focus on WHAT changed and WHY (if inferable).
 - precise technical details are encouraged.
-- Do NOT formatted as a commit message. Use full sentences.
+- Do NOT format as a commit message. Use full sentences.
 
 Example input:
 <metadata>

@@ -140,7 +140,7 @@ def run_commit(
     # now that we rewrote our changes into a clean link of commits, update the current branch to reference this
     if new_commit_hash is not None:
         logger.info(
-            "Finalizing update: {branch} -> {head}",
+            "Finalizing branch update: {branch} -> {head}",
             branch=global_context.current_branch,
             head=new_commit_hash,
         )
