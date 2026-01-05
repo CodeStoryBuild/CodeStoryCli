@@ -98,8 +98,8 @@ def group_by_overlapping_signatures(
             )
         if len(ids) > 1:
             first_chunk_id = ids[0]
-            for i in range(1, len(ids)):
-                uf.union(first_chunk_id, ids[i])
+            for j in range(1, len(ids)):
+                uf.union(first_chunk_id, ids[j])
 
     # Union chunks that share common scopes
     total_scopes = len(scope_to_chunks)
@@ -113,8 +113,8 @@ def group_by_overlapping_signatures(
             )
         if len(ids) > 1:
             first_chunk_id = ids[0]
-            for i in range(1, len(ids)):
-                uf.union(first_chunk_id, ids[i])
+            for j in range(1, len(ids)):
+                uf.union(first_chunk_id, ids[j])
 
     # Group chunks by their root in the Union-Find structure
     groups: dict[int, list[AnnotatedContainer]] = defaultdict(list)
@@ -226,8 +226,8 @@ def group_fallback_chunks(
             )
         if len(chunk_indices) > 1:
             first = chunk_indices[0]
-            for i in range(1, len(chunk_indices)):
-                uf.union(first, chunk_indices[i])
+            for j in range(1, len(chunk_indices)):
+                uf.union(first, chunk_indices[j])
 
     # Group chunks by their root in union-find
     groups: dict[int, list[AnnotatedContainer]] = defaultdict(list)
