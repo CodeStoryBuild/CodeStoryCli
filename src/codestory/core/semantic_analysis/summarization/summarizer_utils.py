@@ -61,15 +61,11 @@ def generate_annotated_patches(
     patches = []
     pbar = ProgressBarManager.get_pbar()
     if pbar is not None:
-        pbar.set_postfix(
-            {"phase": "preparing patches", "chunks": f"0/{len(containers)}"}
-        )
+        pbar.set_postfix({"phase": f"preparing patches 0/{len(containers)}"})
 
     for i, container in enumerate(containers):
         if pbar is not None:
-            pbar.set_postfix(
-                {"phase": "preparing patches", "chunks": f"{i + 1}/{len(containers)}"}
-            )
+            pbar.set_postfix({"phase": f"preparing patches {i + 1}/{len(containers)}"})
         patch = generate_annotated_patch(
             container=container,
             context_manager=context_manager,
