@@ -407,16 +407,9 @@ class ContextManagerBuilder:
         from loguru import logger
 
         # check if any of the new ast has syntax errors
-
-        def traverse_errors(node) -> bool:
-            if node.has_error:
-                return True
-            return any(traverse_errors(child) for child in node.children)
-
-        # TODO, with this switch to commit_hash, we dont actually know if its old or new version here
         # for now, we will just always fail on syntax errors if enabled
         # This is quite unideal, so should fix soon
-        if traverse_errors(parsed_file.root_node):
+        if parsed_file.root_node.has_error:
             file_path_str = file_path.decode("utf-8", errors="replace")
 
             if self.fail_on_syntax_errors:
