@@ -16,9 +16,13 @@
 #  */
 # -----------------------------------------------------------------------------
 
+from collections import defaultdict
 from typing import Literal
 
 from codestory.core.diff.data.atomic_chunk import AtomicDiffChunk
+from codestory.core.diff.data.atomic_container import AtomicContainer
+from codestory.core.diff.data.composite_container import CompositeContainer
+from codestory.core.diff.data.immutable_diff_chunk import ImmutableDiffChunk
 from codestory.core.diff.data.line_changes import Addition, Removal
 from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk
 from codestory.core.logging.progress_manager import ProgressBarManager
@@ -83,12 +87,12 @@ class AtomicChunker:
     def chunk(
         self,
         diff_chunks: list[AtomicDiffChunk],
-    ) -> list[AtomicDiffChunk]:
+    ) -> list[AtomicContainer]:
         """Split and group diff chunks into mechanical chunks.
 
-        Returns a list of StandardDiffChunk objects (contiguous lines
-        merged into single chunks). ImmutableDiffChunks are passed
-        through unchanged.
+        Returns a list of AtomicContainer objects (can be StandardDiffChunk
+        or CompositeContainer for context linking). ImmutableDiffChunks are
+        passed through unchanged.
         """
         pbar = ProgressBarManager.get_pbar()
         mechanical_chunks: list[AtomicDiffChunk] = []
@@ -116,7 +120,8 @@ class AtomicChunker:
             split_chunks = self._split_and_group_chunk(chunk)
             mechanical_chunks.extend(split_chunks)
 
-        return mechanical_chunks
+        # Second pass: Link non-continuous context chunks
+        return self._group_non_continuous_context(mechanical_chunks)
 
     def _split_and_group_chunk(
         self,
@@ -196,3 +201,67 @@ class AtomicChunker:
                 final_chunks.append(context_chunk)
 
         return final_chunks if final_chunks else [chunk]
+
+    def _group_non_continuous_context(
+        self, chunks: list[AtomicDiffChunk]
+    ) -> list[AtomicContainer]:
+        """Group context-only chunks with their nearest semantically meaningful neighbor."""
+        # 1. Group by file
+        files: dict[bytes, list[StandardDiffChunk]] = defaultdict(list)
+        final_containers: list[AtomicContainer] = []
+
+        for chunk in chunks:
+            if isinstance(chunk, ImmutableDiffChunk):
+                final_containers.append(chunk)
+                continue
+
+            files[chunk.canonical_path()].append(chunk)
+
+        for file_chunks in files.values():
+            sorted_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
+
+            processed_containers: list[AtomicContainer] = []
+            pending_context: list[StandardDiffChunk] = []
+
+            for chunk in sorted_chunks:
+                if self._is_context_chunk(chunk):
+                    pending_context.append(chunk)
+                else:
+                    # Non-context chunk found.
+                    # Group all pending context chunks with THIS chunk (we prefer to group context chunks with the chunk below)
+                    if pending_context:
+                        group = CompositeContainer(pending_context + [chunk])
+                        processed_containers.append(group)
+                        pending_context = []  # Reset
+                    else:
+                        processed_containers.append(chunk)
+
+            # Handle trailing context (no code below, so attach to closest above)
+            if pending_context:
+                if processed_containers:
+                    # Attach trailing context to the last non-context group/chunk above
+                    last_item = processed_containers[-1]
+                    if isinstance(last_item, CompositeContainer):
+                        new_group = CompositeContainer(
+                            last_item.containers + pending_context
+                        )
+                    else:
+                        new_group = CompositeContainer([last_item] + pending_context)
+                    processed_containers[-1] = new_group
+                else:
+                    # No non-context chunks in the file at all - group all context together
+                    if len(pending_context) > 1:
+                        processed_containers.append(CompositeContainer(pending_context))
+                    else:
+                        processed_containers.append(pending_context[0])
+
+            final_containers.extend(processed_containers)
+
+        return final_containers
+
+    def _is_context_chunk(self, chunk: StandardDiffChunk) -> bool:
+        """Check if a chunk consists entirely of context lines (whitespace/comments)."""
+        if not chunk.parsed_content:
+            return True
+
+        return all(self._line_is_context(item, chunk) for item in chunk.parsed_content)

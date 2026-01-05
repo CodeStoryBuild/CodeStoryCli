@@ -21,6 +21,7 @@ from unittest.mock import Mock
 import pytest
 
 from codestory.core.diff.creation.atomic_chunker import AtomicChunker
+from codestory.core.diff.data.composite_container import CompositeContainer
 from codestory.core.diff.data.line_changes import Addition, Removal
 from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk
 
@@ -190,3 +191,35 @@ def test_no_context(context_manager):
     assert len(result) == 2
     assert isinstance(result[0], StandardDiffChunk)
     assert isinstance(result[1], StandardDiffChunk)
+
+
+def test_non_continuous_context_grouping(context_manager):
+    """Test grouping of non-continuous chunks (separated by gaps)."""
+    chunker = AtomicChunker(context_manager=context_manager, chunking_level="all_files")
+
+    # Chunk 1: context (line 1)
+    c1 = create_chunk([b"+ "], start_line=1)
+    # Chunk 2: code (line 10)
+    c2 = create_chunk([b"+code"], start_line=10)
+    # Chunk 3: context (line 20)
+    c3 = create_chunk([b"+ "], start_line=20)
+    # Chunk 4: context (line 30) (different file)
+    c4 = create_chunk(
+        [b"+ "], old_path=b"other.txt", new_path=b"other.txt", start_line=30
+    )
+
+    result = chunker.chunk([c1, c2, c3, c4])
+
+    # result[0] should be a CompositeContainer for file.txt: [c1, c2, c3]
+    # result[1] should be c4 for other.txt
+    assert len(result) == 2
+
+    assert isinstance(result[0], CompositeContainer)
+    assert len(result[0].containers) == 3
+    assert result[0].containers[0] == c1
+    # Note: c2 is split by _split_and_group_chunk because level is all_files
+    # Wait, c2 has only one line, so it won't be split into multiple.
+    assert result[0].containers[1] == c2
+    assert result[0].containers[2] == c3
+
+    assert result[1] == c4
