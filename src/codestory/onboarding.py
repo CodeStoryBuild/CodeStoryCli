@@ -89,7 +89,6 @@ def run_model_setup(scope: str):
     # Prompt for model
     model_string = typer.prompt(
         f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})",
-        default="ollama:qwen2.5-coder:1.5b",
     ).strip()
     while ":" not in model_string:
         print(f"{Fore.RED}Invalid format! Must be 'provider:model'{Style.RESET_ALL}")
@@ -106,7 +105,7 @@ def run_model_setup(scope: str):
         # If provider is not local, ask for an optional API key and explain env var options
         print()
         print(
-            f"{Fore.WHITE}If this provider requires an API key you may enter it now (optional).{Style.RESET_ALL}"
+            f"{Fore.WHITE}This provider requires an API key, you may enter it now (optional).{Style.RESET_ALL}"
         )
         print(
             f"{Fore.WHITE}You can also set the API key via environment variables: {Fore.YELLOW}CODESTORY_API_KEY{Fore.WHITE} or the provider-specific standard var (e.g. {Fore.YELLOW}{provider.upper()}_API_KEY{Fore.WHITE}).{Style.RESET_ALL}"
@@ -173,14 +172,20 @@ def run_onboarding():
     return need_api_key
 
 
-def check_run_onboarding() -> None:
+def check_run_onboarding(can_continue: bool) -> bool:
     # check a file in user config dir
     if not ONBOARDING_FLAG.exists():
         continue_ = run_onboarding()
         ONBOARDING_FLAG.touch()
         if not continue_:
             raise typer.Exit(0)
-        else:
+        elif can_continue:
             print("Now continuing with command...\n")
+        return True
     else:
-        return
+        return False
+
+
+def set_ran_onboarding():
+    if not ONBOARDING_FLAG.exists():
+        ONBOARDING_FLAG.touch()

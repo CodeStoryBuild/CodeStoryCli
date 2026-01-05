@@ -36,7 +36,7 @@ from codestory.core.validation import (
     validate_default_branch,
     validate_git_repository,
 )
-from codestory.onboarding import check_run_onboarding
+from codestory.onboarding import check_run_onboarding, set_ran_onboarding
 from codestory.runtimeutil import (
     ensure_utf8_output,
     get_log_dir_callback,
@@ -392,7 +392,9 @@ def create_global_callback():
         with handle_codestory_exception():
             # conditions to not create global context
             if ctx.invoked_subcommand is None:
-                print(ctx.get_help())
+                if not check_run_onboarding(can_continue=False):
+                    print(ctx.get_help())
+
                 raise typer.Exit()
 
             # skip --help in subcommands
@@ -414,13 +416,16 @@ def create_global_callback():
             # if we run a command that requires a global context, check that the user has learned the onboarding process
             if not used_config_sources and used_default:
                 # we only used defaults (so no user set config)
-                check_run_onboarding()
+                check_run_onboarding(can_continue=True)
 
                 # reload any possible set configs through onboarding
                 config, used_config_sources, used_default = load_global_config(
                     custom_config,
                     **kwargs,
                 )
+            else:
+                # the user likely knows what they are doing
+                set_ran_onboarding()
 
             # Set custom language config override if provided
             if config.custom_language_config is not None:
