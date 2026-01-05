@@ -237,14 +237,12 @@ class SecretsFilter(Filter):
 
         pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
-            pbar.set_postfix(
-                {"phase": "scan secrets", "chunks": f"0/{len(containers)}"}
-            )
+            pbar.set_postfix({"phase": f"scanning secrets 0/{len(containers)}"})
 
         for i, container in enumerate(containers):
             if pbar is not None:
                 pbar.set_postfix(
-                    {"phase": "scan secrets", "chunks": f"{i + 1}/{len(containers)}"}
+                    {"phase": f"scanning secrets {i + 1}/{len(containers)}"}
                 )
             invalid = any(
                 self.__check_atomic_chunk(chunk, git_generator)

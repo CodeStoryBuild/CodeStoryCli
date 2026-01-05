@@ -55,9 +55,7 @@ def group_by_overlapping_signatures(
 
     pbar = ProgressBarManager.get_pbar()
     if pbar is not None:
-        pbar.set_postfix(
-            {"phase": "semantic grouping", "chunks": f"0/{len(annotated_chunks)}"}
-        )
+        pbar.set_postfix({"phase": f"semantic grouping 0/{len(annotated_chunks)}"})
 
     # Create an inverted index from symbol/scope -> list of chunk_ids
     symbol_to_chunks: dict[str, list[int]] = defaultdict(list)
@@ -66,8 +64,7 @@ def group_by_overlapping_signatures(
         if pbar is not None:
             pbar.set_postfix(
                 {
-                    "phase": "semantic grouping",
-                    "chunks": f"{i + 1}/{len(annotated_chunks)}",
+                    "phase": f"semantic grouping {i + 1}/{len(annotated_chunks)}",
                 }
             )
 
@@ -92,8 +89,7 @@ def group_by_overlapping_signatures(
         if pbar is not None:
             pbar.set_postfix(
                 {
-                    "phase": "union semantic symbols",
-                    "progress": f"{i + 1}/{total_symbols}",
+                    "phase": f"union semantic symbols {i + 1}/{total_symbols}",
                 }
             )
         if len(ids) > 1:
@@ -107,8 +103,7 @@ def group_by_overlapping_signatures(
         if pbar is not None:
             pbar.set_postfix(
                 {
-                    "phase": "union semantic scopes",
-                    "progress": f"{i + 1}/{total_scopes}",
+                    "phase": f"union semantic scopes {i + 1}/{total_scopes}",
                 }
             )
         if len(ids) > 1:
@@ -189,16 +184,13 @@ def group_fallback_chunks(
     chunk_signatures: list[set[str]] = []
     pbar = ProgressBarManager.get_pbar()
     if pbar is not None:
-        pbar.set_postfix(
-            {"phase": "fallback grouping", "chunks": f"0/{len(fallback_chunks)}"}
-        )
+        pbar.set_postfix({"phase": f"fallback grouping 0/{len(fallback_chunks)}"})
 
     for i, chunk in enumerate(fallback_chunks):
         if pbar is not None:
             pbar.set_postfix(
                 {
-                    "phase": "fallback grouping",
-                    "chunks": f"{i + 1}/{len(fallback_chunks)}",
+                    "phase": f"fallback grouping {i + 1}/{len(fallback_chunks)}",
                 }
             )
         # Get all canonical paths for this chunk
@@ -221,9 +213,7 @@ def group_fallback_chunks(
     total_sigs = len(sig_to_chunks)
     for i, (_, chunk_indices) in enumerate(sig_to_chunks.items()):
         if pbar is not None:
-            pbar.set_postfix(
-                {"phase": "union fallback chunks", "progress": f"{i + 1}/{total_sigs}"}
-            )
+            pbar.set_postfix({"phase": f"union fallback chunks {i + 1}/{total_sigs}"})
         if len(chunk_indices) > 1:
             first = chunk_indices[0]
             for j in range(1, len(chunk_indices)):

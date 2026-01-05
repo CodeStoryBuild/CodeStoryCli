@@ -73,16 +73,13 @@ class RelevanceFilter(Filter):
 
         pbar = ProgressBarManager.get_pbar()
         if pbar is not None:
-            pbar.set_postfix(
-                {"phase": "filter relevance", "chunks": f"0/{len(containers)}"}
-            )
+            pbar.set_postfix({"phase": f"filtering relevance 0/{len(containers)}"})
 
         for i, (container, vector) in enumerate(zip(containers, vectors, strict=False)):
             if pbar is not None:
                 pbar.set_postfix(
                     {
-                        "phase": "filter relevance",
-                        "chunks": f"{i + 1}/{len(containers)}",
+                        "phase": f"filtering relevance {i + 1}/{len(containers)}",
                     }
                 )
             similarity = cosine_similarity(vector, intent_vector)
