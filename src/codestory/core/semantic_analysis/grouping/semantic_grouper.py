@@ -16,9 +16,13 @@
 #  */
 # -----------------------------------------------------------------------------
 
+from collections import defaultdict
 from typing import Literal
 
 from codestory.core.diff.data.atomic_container import AtomicContainer
+from codestory.core.diff.data.composite_container import CompositeContainer
+from codestory.core.diff.data.line_changes import Addition
+from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk
 from codestory.core.semantic_analysis.annotation.chunk_lableler import (
     ContainerLabler,
 )
@@ -73,6 +77,9 @@ class SemanticGrouper:
         if not containers:
             return []
 
+        # Group context chunks first
+        containers = self._group_context_chunks(containers)
+
         # Generate signatures for regular chunks only
         annotated_chunks = ContainerLabler.annotate_containers(
             containers, self.context_manager
@@ -101,3 +108,109 @@ class SemanticGrouper:
             semantic_groups.extend(fallback_groups)
 
         return semantic_groups
+
+    def _group_context_chunks(
+        self, containers: list[AtomicContainer]
+    ) -> list[AtomicContainer]:
+        """Group context-only chunks with their nearest semantically meaningful neighbor."""
+        # 1. Group by file
+        files: dict[bytes, list[AtomicContainer]] = defaultdict(list)
+        for container in containers:
+            paths = container.canonical_paths()
+            if paths:
+                files[paths[0]].append(container)
+            else:
+                files[b""].append(container)
+
+        final_containers = []
+
+        for file_containers in files.values():
+            if not file_containers:
+                continue
+
+            # 2. Sort by line anchor
+            def get_sort_key(c: AtomicContainer):
+                chunks = c.get_atomic_chunks()
+                if chunks and isinstance(chunks[0], StandardDiffChunk):
+                    return chunks[0].get_sort_key()
+                return (0, 0)
+
+            sorted_containers = sorted(file_containers, key=get_sort_key)
+
+            # 3. Grouping logic
+            processed_containers: list[AtomicContainer] = []
+            pending_context: list[AtomicContainer] = []
+
+            for container in sorted_containers:
+                if self._is_context_container(container):
+                    pending_context.append(container)
+                else:
+                    # Non-context chunk found.
+                    # Group all pending context chunks with THIS chunk (below preference)
+                    if pending_context:
+                        group = CompositeContainer(pending_context + [container])
+                        processed_containers.append(group)
+                        pending_context = []  # Reset
+                    else:
+                        processed_containers.append(container)
+
+            # 4. Handle trailing context (no code below, so attach to closest above)
+            if pending_context:
+                if processed_containers:
+                    # Attach trailing context to the last non-context group/chunk above
+                    last_item = processed_containers[-1]
+                    if isinstance(last_item, CompositeContainer):
+                        new_group = CompositeContainer(
+                            last_item.containers + pending_context
+                        )
+                    else:
+                        new_group = CompositeContainer([last_item] + pending_context)
+                    processed_containers[-1] = new_group
+                else:
+                    # No non-context chunks in the file at all - group all context together
+                    if len(pending_context) > 1:
+                        processed_containers.append(CompositeContainer(pending_context))
+                    else:
+                        processed_containers.append(pending_context[0])
+
+            final_containers.extend(processed_containers)
+
+        return final_containers
+
+    def _is_context_container(self, container: AtomicContainer) -> bool:
+        """Check if a container consists entirely of context lines (whitespace/comments)."""
+        atomic_chunks = container.get_atomic_chunks()
+        standard_chunks = [c for c in atomic_chunks if isinstance(c, StandardDiffChunk)]
+
+        # If no standard chunks (e.g. binary/images), treat as non-context
+        if not standard_chunks:
+            return False
+
+        for chunk in standard_chunks:
+            if not chunk.has_content or not chunk.parsed_content:
+                continue
+
+            for item in chunk.parsed_content:
+                if item.content.strip() == b"":
+                    continue
+
+                if isinstance(item, Addition):
+                    file_path = chunk.new_file_path
+                    commit_hash = chunk.new_hash
+                    line_idx = item.abs_new_line - 1
+                else:  # Removal
+                    file_path = chunk.old_file_path
+                    commit_hash = chunk.base_hash
+                    line_idx = item.old_line - 1
+
+                if not file_path:
+                    return False
+
+                ctx = self.context_manager.get_context(file_path, commit_hash)
+                if not ctx:
+                    return False
+
+                if line_idx not in ctx.comment_map.pure_comment_lines:
+                    return False
+
+        return True

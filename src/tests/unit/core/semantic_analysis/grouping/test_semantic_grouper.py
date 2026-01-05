@@ -68,6 +68,7 @@ def context_manager():
         ctx.symbol_map.modified_line_symbols = symbols or {}
         ctx.symbol_map.extern_line_symbols = {}
         ctx.scope_map.structural_scope_lines = scopes or {}
+        ctx.comment_map.pure_comment_lines = set()
         # Build sorted version from scopes dict
         ctx.scope_map.semantic_named_scopes = {
             line: [NamedScope(name=s, scope_type="class") for s in scope_set]
