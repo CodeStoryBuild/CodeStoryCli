@@ -89,7 +89,7 @@ class StandardCLIPipeline:
 
         # create all contexts
         context_manager = ContextManagerBuilder(
-            base_chunks, file_manager, self.fail_on_syntax_errors
+            base_chunks, file_manager, self.fail_on_syntax_errors, old_hash=base_hash
         ).build()
 
         # split into our atomic chunks

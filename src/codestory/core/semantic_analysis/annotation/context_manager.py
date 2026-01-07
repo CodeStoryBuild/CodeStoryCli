@@ -117,6 +117,8 @@ class ContextManagerBuilder:
         chunks: list[AtomicContainer],
         file_manager: FileManager,
         fail_on_syntax_errors: bool = False,
+        # if provided we can do the syntax error check ignoring invalid old versions as the new changes are what matter
+        old_hash: str | None = None,
     ):
         self.file_manager = file_manager
 
@@ -130,6 +132,7 @@ class ContextManagerBuilder:
                     self.standard_diff_chunks.append(atomic_chunk)
 
         self.fail_on_syntax_errors = fail_on_syntax_errors
+        self.old_hash = old_hash
 
         # Initialize mappers
         self.query_manager = QueryManager.get_instance()
@@ -403,19 +406,17 @@ class ContextManagerBuilder:
         """Build analysis context for a specific file version."""
         from loguru import logger
 
-        # check if any of the new ast has syntax errors
-        # for now, we will just always fail on syntax errors if enabled
-        # This is quite unideal, so should fix soon
         if parsed_file.root_node.has_error:
             file_path_str = file_path.decode("utf-8", errors="replace")
 
-            if self.fail_on_syntax_errors:
+            # if its old_version we dont really care, as new changes are replacing it anyways
+            if self.old_hash != commit_hash and self.fail_on_syntax_errors:
                 raise SyntaxErrorDetected(
                     f"Exiting commit early! Syntax errors detected in current version of {file_path_str}! (fail_on_syntax_errors is enabled)"
                 )
 
             logger.warning(
-                f"Syntax errors detected in current version of {file_path_str}!"
+                f"Syntax errors detected in {'old' if self.old_hash == commit_hash else 'a'} version of {file_path_str}!"
             )
             return None
 
