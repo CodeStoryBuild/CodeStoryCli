@@ -30,6 +30,7 @@ from codestory.core.semantic_analysis.annotation.file_manager import FileManager
 class PatchGenerator:
     def __init__(self, containers: list[AtomicContainer], file_manager: FileManager):
         self.file_manager = file_manager
+        # TODO: this can move somewhere else
         standard_diff_chunks = flatten_containers(containers, (StandardDiffChunk,))
         self.__validate_chunks_are_disjoint(standard_diff_chunks)
 
