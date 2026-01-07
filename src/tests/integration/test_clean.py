@@ -95,3 +95,81 @@ class TestClean:
         print(result.stderr)
 
         assert result.returncode == 0
+
+    def test_clean_unpushed(self, cli_exe, repo_factory, temp_dir):
+        """Test cleaning only unpushed commits."""
+        # 1. Create a remote repo
+        remote_path = temp_dir / "remote"
+        remote_path.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "init", "--bare"], cwd=remote_path, check=True)
+
+        # 2. Create local repo and push to remote
+        repo = repo_factory("local_repo")
+        subprocess.run(
+            ["git", "remote", "add", "origin", str(remote_path)],
+            cwd=repo.path,
+            check=True,
+        )
+
+        # Pushed commit
+        repo.apply_changes({"pushed.txt": "pushed content"})
+        repo.stage_all()
+        repo.commit("pushed commit")
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"], cwd=repo.path, check=True
+        )
+        pushed_hash = repo.get_commit_hash()
+
+        # Unpushed commits
+        repo.apply_changes({"unpushed1.txt": "unpushed 1"})
+        repo.stage_all()
+        repo.commit("unpushed 1")
+        unpushed1_hash = repo.get_commit_hash()
+
+        repo.apply_changes({"unpushed2.txt": "unpushed 2"})
+        repo.stage_all()
+        repo.commit("unpushed 2")
+        unpushed2_hash = repo.get_commit_hash()
+
+        # Run clean --unpushed
+        result = run_cli(cli_exe, ["clean", "--unpushed"], cwd=repo.path)
+        assert result.returncode == 0
+
+        # Verify that pushed_hash is still in history
+        new_head = repo.get_commit_hash()
+        assert new_head != unpushed2_hash
+
+        # Check that pushed_hash is an ancestor of new_head
+        res = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", pushed_hash, new_head], cwd=repo.path
+        )
+        assert res.returncode == 0
+
+        # Check that pushed_hash itself has NOT been rewritten
+        # The first commit AFTER pushed_hash should be the first rewritten one.
+        # If we list commits from pushed_hash..HEAD, it should contain the rewritten ones.
+        revs = (
+            subprocess.run(
+                ["git", "rev-list", f"{pushed_hash}..HEAD"],
+                cwd=repo.path,
+                capture_output=True,
+                text=True,
+            )
+            .stdout.strip()
+            .splitlines()
+        )
+        assert len(revs) == 2
+        assert unpushed1_hash not in revs
+        assert unpushed2_hash not in revs
+
+    def test_clean_unpushed_validation(self, cli_exe, repo_factory):
+        """Test that --unpushed cannot be used with --start or --end."""
+        repo = repo_factory("validation_repo")
+        result = run_cli(
+            cli_exe, ["clean", "--unpushed", "--start", "HEAD"], cwd=repo.path
+        )
+        assert result.returncode != 0
+        assert (
+            "The --unpushed flag cannot be used with --start or --end flags."
+            in result.stderr
+        )

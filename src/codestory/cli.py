@@ -202,6 +202,11 @@ def main_clean(
         "--end",
         help="Where to end cleaning at. (inclusive). Defaults to HEAD.",
     ),
+    unpushed: bool = typer.Option(
+        False,
+        "--unpushed",
+        help="Only clean commits that have not been pushed to the upstream branch.",
+    ),
 ) -> None:
     """Fix your entire repository starting from the latest commit.
 
@@ -217,6 +222,9 @@ def main_clean(
 
         # Clean while ignoring certain commits
         cst clean --ignore def456 --ignore ghi789
+
+        # Clean only unpushed commits
+        cst clean --unpushed
     """
     from codestory.commands.clean import run_clean
 
@@ -227,6 +235,8 @@ def main_clean(
         description = f"Cleaning {start_from[:7]} to HEAD"
     elif end_at:
         description = f"Cleaning up to {end_at[:7]}"
+    elif unpushed:
+        description = "Cleaning unpushed commits"
     else:
         description = "Cleaning all possible commits"
 
@@ -236,7 +246,7 @@ def main_clean(
             description=description, silent=global_context.config.silent
         ),
     ):
-        if run_clean(ctx.obj, ignore, min_size, start_from, end_at):
+        if run_clean(ctx.obj, ignore, min_size, start_from, end_at, unpushed):
             raise typer.Exit(0)
         else:
             raise typer.Exit(1)

@@ -40,16 +40,18 @@ class CleanPipeline:
     def __init__(
         self,
         global_context: GlobalContext,
-        start_from: str,
-        end_at: str,
+        start_from: str | None,
+        end_at: str | None,
         ignore: list[str],
         min_size: int | None,
+        unpushed: bool = False,
     ):
         self.global_context = global_context
         self.start_from = start_from
         self.end_at = end_at
         self.ignore = ignore
         self.min_size = min_size
+        self.unpushed = unpushed
 
     def run(self) -> str | None:
         from loguru import logger
@@ -224,12 +226,34 @@ class CleanPipeline:
             range_spec = f"{parent}...{end_sha}" if parent else end_sha
         else:
             # Auto-detect mode: clean from last merge up to end
+            candidates = []
+
+            # 1. Last merge
             stop_commits = self.global_context.git_commands.get_rev_list(
                 end_sha, merges=True, n=1
             )
             if stop_commits:
-                stop_commit = stop_commits[0]
-                range_spec = f"{stop_commit}..{end_sha}"
+                candidates.append(stop_commits[0])
+
+            # 2. Upstream if requested
+            if self.unpushed:
+                try:
+                    upstream = self.global_context.git_commands.get_commit_hash(
+                        f"{self.global_context.current_branch}@{{u}}"
+                    )
+                    candidates.append(upstream)
+                except ValueError:
+                    # No upstream, just use others
+                    pass
+
+            if candidates:
+                # We want the candidate that is CLOSEST to end_sha.
+                # This is the one that is a descendant of all others.
+                boundary = candidates[0]
+                for c in candidates[1:]:
+                    if self.global_context.git_commands.is_ancestor(boundary, c):
+                        boundary = c
+                range_spec = f"{boundary}..{end_sha}"
             else:
                 range_spec = end_sha
 

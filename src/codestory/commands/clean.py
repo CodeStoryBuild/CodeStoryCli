@@ -35,8 +35,16 @@ def run_clean(
     min_size: int | None,
     start_from: str | None,
     end_at: str | None = None,
+    unpushed: bool = False,
 ) -> bool:
     from loguru import logger
+
+    from codestory.core.exceptions import ValidationError
+
+    if unpushed and (start_from or end_at):
+        raise ValidationError(
+            "The --unpushed flag cannot be used with --start or --end flags."
+        )
 
     validated_ignore = validate_ignore_patterns(ignore)
     validated_min_size = validate_min_size(min_size)
@@ -123,6 +131,7 @@ def run_clean(
                 validated_end_at,
                 validated_ignore,
                 validated_min_size,
+                unpushed,
             )
             final_head = runner.run()
 
