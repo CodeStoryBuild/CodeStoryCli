@@ -137,24 +137,13 @@ def generate_annotated_chunk_patch(
         path = chunk.canonical_path()
         groups[path].append((chunk, sig))
 
-    # Dynamically calculate patch cutoff if max_tokens is provided
-    num_paths = len(groups)
-    patch_cutoff_chars = 1000  # Default fallback
-    if max_tokens is not None and num_paths > 0:
-        # Use a safe offset for prompt overhead (system prompt, metadata, etc.)
-        # The user suggests 500-1000 tokens.
-        token_offset = 1000
-        # Estimate 3 characters per token (consistent with chunk_summarizer estimation)
-        chars_per_token = 3
+    # Pre-calculate metadata and diff bytes for each path
+    path_data = []
+    total_diff_bytes = 0
+    total_metadata_chars = 0
+    chars_per_token = 3
 
-        tokens_per_path = (max_tokens // num_paths) - token_offset
-        # Ensure we have a reasonable minimum per path
-        patch_cutoff_chars = max(tokens_per_path * chars_per_token, 1000)
-
-    file_sections = []
-
-    # Sort paths for consistency
-    for i, path in enumerate(sorted(groups.keys())):
+    for path in sorted(groups.keys()):
         chunk_sig_pairs = groups[path]
         group_chunks = [p[0] for p in chunk_sig_pairs]
         group_signatures = [sig for _, sig in chunk_sig_pairs if sig is not None]
@@ -162,23 +151,14 @@ def generate_annotated_chunk_patch(
         # Combine signatures for this file
         sig = Signature.from_signatures(group_signatures) if group_signatures else None
 
-        # Generate patch for this group
-        group_container = CompositeContainer(containers=group_chunks)
-        diff_bytes = patch_generator.get_patch(group_container, is_bytes=True)
-        truncated_diff_bytes = truncate_patch_bytes(diff_bytes, patch_cutoff_chars)
-        patch = truncated_diff_bytes.decode("utf-8", errors="replace")
-
-        # Start XML block
-        lines = [f'<change_group index="{i + 1}">']
-
+        # Metadata generation
+        metadata_lines = []
         if sig:
-            lines.append("<metadata>")
-            # Programming language
+            metadata_lines.append("<metadata>")
             if sig.languages:
                 lang = sorted(sig.languages)[0]
-                lines.append(f"<language>{lang}</language>")
+                metadata_lines.append(f"<language>{lang}</language>")
 
-            # Affected scopes
             modified_fqns = sig.new_fqns.intersection(sig.old_fqns)
             added_fqns = sig.new_fqns - modified_fqns
             removed_fqns = sig.old_fqns - modified_fqns
@@ -188,7 +168,7 @@ def generate_annotated_chunk_patch(
                     f"{fqn.fqn} ({fqn.fqn_type})"
                     for fqn in prioritize_longer_fqns(modified_fqns)[:3]
                 ]
-                lines.append(
+                metadata_lines.append(
                     f"<modified_scopes>{', '.join(top_mod_fqns)}</modified_scopes>"
                 )
 
@@ -197,18 +177,19 @@ def generate_annotated_chunk_patch(
                     f"{fqn.fqn} ({fqn.fqn_type})"
                     for fqn in prioritize_longer_fqns(added_fqns)[:3]
                 ]
-                lines.append(f"<added_scopes>{', '.join(top_add_fqns)}</added_scopes>")
+                metadata_lines.append(
+                    f"<added_scopes>{', '.join(top_add_fqns)}</added_scopes>"
+                )
 
             if removed_fqns:
                 top_rem_fqns = [
                     f"{fqn.fqn} ({fqn.fqn_type})"
                     for fqn in prioritize_longer_fqns(removed_fqns)[:3]
                 ]
-                lines.append(
+                metadata_lines.append(
                     f"<removed_scopes>{', '.join(top_rem_fqns)}</removed_scopes>"
                 )
 
-            # Symbols
             new_symbols_cleaned = {
                 QueryManager.extract_qualified_symbol_name(s)
                 for s in sig.def_new_symbols_filtered
@@ -224,23 +205,68 @@ def generate_annotated_chunk_patch(
 
             if modified_symbols:
                 top_mod = prioritize_longer_symbols(modified_symbols)[:3]
-                lines.append(
+                metadata_lines.append(
                     f"<modified_symbols>{', '.join(top_mod)}</modified_symbols>"
                 )
 
             if added_symbols:
                 top_add = prioritize_longer_symbols(added_symbols)[:3]
-                lines.append(f"<added_symbols>{', '.join(top_add)}</added_symbols>")
+                metadata_lines.append(
+                    f"<added_symbols>{', '.join(top_add)}</added_symbols>"
+                )
 
             if removed_symbols:
                 top_rem = prioritize_longer_symbols(removed_symbols)[:3]
-                lines.append(f"<removed_symbols>{', '.join(top_rem)}</removed_symbols>")
+                metadata_lines.append(
+                    f"<removed_symbols>{', '.join(top_rem)}</removed_symbols>"
+                )
 
-            lines.append("</metadata>")
+            metadata_lines.append("</metadata>")
 
-        # Patch block
+        metadata_str = "\n".join(metadata_lines)
+        total_metadata_chars += len(metadata_str)
+
+        # Full diff bytes
+        group_container = CompositeContainer(containers=group_chunks)
+        diff_bytes = patch_generator.get_patch(group_container, is_bytes=True)
+        total_diff_bytes += len(diff_bytes)
+
+        path_data.append(
+            {
+                "path": path,
+                "metadata_str": metadata_str,
+                "diff_bytes": diff_bytes,
+            }
+        )
+
+    # Calculate token allocation
+    token_alloc_chars = 3000 * len(path_data)  # Default fallback
+    if max_tokens is not None and total_diff_bytes > 0:
+        # max_tokens * .95 (5% buffer) - sum(metadatas)
+        # Convert max_tokens to characters first
+        available_chars = (max_tokens * 0.95 * chars_per_token) - total_metadata_chars
+        token_alloc_chars = max(available_chars, 0)
+
+    file_sections = []
+    for i, data in enumerate(path_data):
+        # Calculate max patch size as a weighted share
+        if total_diff_bytes > 0:
+            weight = len(data["diff_bytes"]) / total_diff_bytes
+            max_patch_size = int(weight * token_alloc_chars)
+        else:
+            max_patch_size = 0
+
+        # Truncate and convert to str
+        truncated_diff_bytes = truncate_patch_bytes(data["diff_bytes"], max_patch_size)
+        patch_str = truncated_diff_bytes.decode("utf-8", errors="replace")
+
+        # Assemble final XML
+        lines = [f'<change_group index="{i + 1}">']
+        if data["metadata_str"]:
+            lines.append(data["metadata_str"])
+
         lines.append("<patch>")
-        lines.append(patch.rstrip("\n"))
+        lines.append(patch_str.rstrip("\n"))
         lines.append("</patch>")
         lines.append("</change_group>")
 
