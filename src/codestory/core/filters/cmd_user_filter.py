@@ -150,7 +150,7 @@ class CMDUserFilter(Filter):
                             ).strip()
 
                     if custom_message:
-                        group = CommitGroup(group.get_atomic_chunks(), commit_message=custom_message)
+                        group = CommitGroup(group, commit_message=custom_message)
 
                     accepted_groups.append(group)
                 else:
