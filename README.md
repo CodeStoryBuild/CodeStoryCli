@@ -23,12 +23,14 @@ For detailed instructions on how to install and use the Codestory CLI, visit our
 For comprehensive guides, configuration priority, and supported languages, visit our **[docs](https://cli.codestory.build/docs)** page.
 
 The documentation site provides detailed information on:
+
 - [Usage Guides](https://cli.codestory.build/docs/usage/)
 - [Configuration Scopes (Global vs. Local vs. Env)](https://cli.codestory.build/docs/configuration/)
 - [Supported Model Providers and Languages](https://cli.codestory.build/docs/reference/supported/)
 - [Core Design and Architecture](https://cli.codestory.build/docs/design/)
 
 ## Main-Cleaned
+
 For a real example of what codestory can do, checkout the `main-cleaned` branch of this repository. It is a cleaned up version of the main branch of this repository, created using the `cst clean` command.
 
 ## Contributing
