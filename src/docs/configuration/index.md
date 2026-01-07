@@ -52,28 +52,28 @@ Use the `cst config` command to view and modify your settings.
 
 Below are the key configuration options available in Codestory CLI:
 
-| Key | Description | Default |
-|-----|-------------|---------|
-| `model` | LLM model (format: provider:model, e.g., openai:gpt-4) | `no-model` |
-| `api_key` | API key for the LLM provider | `None` |
-| `api_base` | Custom API base URL for the LLM provider (optional) | `None` |
-| `temperature` | Temperature for LLM responses (0.0-1.0) | `0` |
-| `max_tokens` | Maximum tokens to send per llm request | `32000` |
-| `relevance_filtering` | Whether to filter changes by relevance to your intent (`cst commit` only) | `false` |
-| `relevance_filter_similarity_threshold` | How similar do changes have to be to your intent to be included | `0.75` |
-| `secret_scanner_aggression` | How aggressively to scan for secrets (`safe`, `standard`, `strict`, `none`) | `safe` |
-| `fallback_grouping_strategy` | Strategy for grouping changes that were not able to be analyzed | `all_together` |
-| `chunking_level` | Which type of changes should be chunked further into smaller pieces | `all_files` |
-| `verbose` | Enable verbose logging output | `false` |
-| `auto_accept` | Automatically accept all prompts without user confirmation | `false` |
-| `silent` | Do not output any text to the console, except for prompting acceptance | `false` |
-| `ask_for_commit_message` | Allow manual commit message overrides | `false` |
-| `display_diff_type` | Type of diff to display (semantic or git) | `semantic` |
-| `custom_language_config` | Path to custom language configuration JSON file | `None` |
-| `batching_strategy` | Strategy for batching LLM requests (auto, requests, prompt) | `auto` |
-| `custom_embedding_model` | FastEmbed supported text embedding model | `None` |
-| `cluster_strictness` | Strictness of clustering logical groups together (0-1) | `0.5` |
-| `num_retries` | How many times to retry failed LLM calls (0-10) | `3` |
-| `no_log_files` | Disable logging to files, only output to console | `false` |
+| Key                                     | Description                                                                 | Default        |
+| --------------------------------------- | --------------------------------------------------------------------------- | -------------- |
+| `model`                                 | LLM model (format: provider:model, e.g., openai:gpt-4)                      | `no-model`     |
+| `api_key`                               | API key for the LLM provider                                                | `None`         |
+| `api_base`                              | Custom API base URL for the LLM provider (optional)                         | `None`         |
+| `temperature`                           | Temperature for LLM responses (0.0-1.0)                                     | `0`            |
+| `max_tokens`                            | Maximum tokens to send per llm request                                      | `32000`        |
+| `relevance_filtering`                   | Whether to filter changes by relevance to your intent (`cst commit` only)   | `false`        |
+| `relevance_filter_similarity_threshold` | How similar do changes have to be to your intent to be included             | `0.75`         |
+| `secret_scanner_aggression`             | How aggressively to scan for secrets (`safe`, `standard`, `strict`, `none`) | `safe`         |
+| `fallback_grouping_strategy`            | Strategy for grouping changes that were not able to be analyzed             | `all_together` |
+| `chunking_level`                        | Which type of changes should be chunked further into smaller pieces         | `all_files`    |
+| `verbose`                               | Enable verbose logging output                                               | `false`        |
+| `auto_accept`                           | Automatically accept all prompts without user confirmation                  | `false`        |
+| `silent`                                | Do not output any text to the console, except for prompting acceptance      | `false`        |
+| `ask_for_commit_message`                | Allow manual commit message overrides                                       | `false`        |
+| `display_diff_type`                     | Type of diff to display (semantic or git)                                   | `semantic`     |
+| `custom_language_config`                | Path to custom language configuration JSON file                             | `None`         |
+| `batching_strategy`                     | Strategy for batching LLM requests (auto, requests, prompt)                 | `auto`         |
+| `custom_embedding_model`                | FastEmbed supported text embedding model                                    | `None`         |
+| `cluster_strictness`                    | Strictness of clustering logical groups together (0-1)                      | `0.5`          |
+| `num_retries`                           | How many times to retry failed LLM calls (0-10)                             | `3`            |
+| `no_log_files`                          | Disable logging to files, only output to console                            | `false`        |
 
 > Pro Tip: Use `cst config --describe` in your terminal to see the most up-to-date list of options.

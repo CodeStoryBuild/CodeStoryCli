@@ -16,7 +16,6 @@ Codestory CLI is a tool for developers who value a clean, searchable, and review
 
 - **AI-Driven Semantic Clustering**: We use AI to cluster your changes based on higher level relationships that cannot be captured by syntax.
 
-
 ---
 
 ## Core Documentation

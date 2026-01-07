@@ -36,7 +36,7 @@ Before logical grouping, the semantic groups pass through a filtering layer:
 
 - **Syntax Validation**: Optionally ensures that each group results in valid, parsable code.
 
-*Note: Filtering is typically skipped during `fix` and `clean` operations to preserve the integrity of existing history.*
+_Note: Filtering is typically skipped during `fix` and `clean` operations to preserve the integrity of existing history._
 
 ### 7. Logical Grouping
 

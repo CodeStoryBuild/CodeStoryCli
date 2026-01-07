@@ -3,16 +3,20 @@
 Once changes are organized into logical groups, Codestory CLI must apply them to the repository to create a new history. This is not as simple as applying patches sequentially, due to the risk of overlapping contexts and line-offset conflicts.
 
 ## The Challenge: Context Overlap
+
 Consider two logical groups, `G1` and `G2`, both modifying the same file.
+
 - `G1` contains a change at the top of the file.
 - `G2` contains a change at the bottom of the file.
 
 If you apply `G1` and commit it, the file's state changes. When you then try to apply `G2`'s original patch to this new state, the line numbers may no longer match, or the surrounding context may have shifted, leading to patch failures.
 
 ## The Solution: Incremental Accumulation
-To solve this, Codestory CLI uses an **incremental accumulation strategy**. Instead of applying each group's patch to the *previous* commit's state, it applies an accumulated set of changes to the *original* base state.
+
+To solve this, Codestory CLI uses an **incremental accumulation strategy**. Instead of applying each group's patch to the _previous_ commit's state, it applies an accumulated set of changes to the _original_ base state.
 
 ### How It Works:
+
 1.  **Commit 1**: Apply changes from `G1` to the **Base State**.
 2.  **Commit 2**: Apply changes from **G1 + G2** to the **Base State**.
 3.  **Commit 3**: Apply changes from **G1 + G2 + G3** to the **Base State**.
@@ -20,6 +24,7 @@ To solve this, Codestory CLI uses an **incremental accumulation strategy**. Inst
 By comparing the state of **Commit N** with **Commit N-1**, we get exactly the changes intended for **Group N**, but applied in a way that is guaranteed to be mechanically consistent with all preceding changes.
 
 ## History Rewriting
+
 After all accumulated states are created, Codestory CLI uses Git's low-level plumbing to:
 
 1.  Chain these states into a linear history.
