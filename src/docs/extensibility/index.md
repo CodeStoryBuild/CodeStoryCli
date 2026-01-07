@@ -76,7 +76,7 @@ Codestory CLI uses the standard tree-sitter query syntax. You can test your quer
 ### Example: Python Function Definition
 
 ```query
-((function_definition 
+((function_definition
     name: (identifier) @placeholder.name) @placeholder)
 ```
 

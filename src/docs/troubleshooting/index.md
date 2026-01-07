@@ -18,13 +18,12 @@ If the `Logical Grouping` step doesn't align with your vision for the commit his
 
 ### 2. Relevance Filtering: "It filtered changes I wanted to keep"
 
-By default, Codestory CLI tries to focus on changes that match your current objective. 
+By default, Codestory CLI tries to focus on changes that match your current objective.
 
 - **Finding "Missing" Changes**: If you feel the tool is being too aggressive:
+  1. Check your `relevance_filter_similarity_threshold` in `cst config`. Lowering this value allows more loosely related changes through.
 
-    1. Check your `relevance_filter_similarity_threshold` in `cst config`. Lowering this value allows more loosely related changes through.
-
-    2. Disable relevance filtering for a specific run using `--relevance-filtering false` to see the full set of changes.
+  2. Disable relevance filtering for a specific run using `--relevance-filtering false` to see the full set of changes.
 
 ### 3. Syntax Error during commit (`cst commit` only)
 
