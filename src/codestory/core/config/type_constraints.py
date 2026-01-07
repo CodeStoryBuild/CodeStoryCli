@@ -106,10 +106,11 @@ class BoolConstraint(TypeConstraint):
     def coerce(self, value: Any) -> bool:
         if isinstance(value, bool):
             return value
-        try:
-            return bool(value)
-        except (ValueError, TypeError) as e:
-            raise ConfigurationError(f"Cannot coerce {value!r} to bool: {e}")
+        if value in ("yes", "true", "t", "1"):
+            return True
+        elif value in ("no", "false", "f", "0"):
+            return False
+        raise ConfigurationError(f"Cannot coerce {value!r} to bool")
 
     def __str__(self) -> str:
         return "bool"
