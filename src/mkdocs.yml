@@ -5,27 +5,27 @@ plugins:
   - mkdocs-typer2:
       pretty: true
 theme:
-    name: material
-    logo: assets/cstlogo.svg
-    favicon: assets/cstlogo.svg
-    features:
-      - navigation.sections
-      - content.code.copy
-    palette:
-      - media: "(prefers-color-scheme: light)"
-        scheme: default
-        primary: blue
-        accent: blue
-        toggle:
-          icon: material/brightness-7
-          name: Switch to dark mode
-      - media: "(prefers-color-scheme: dark)"
-        scheme: slate
-        primary: blue
-        accent: blue
-        toggle:
-          icon: material/brightness-4
-          name: Switch to light mode
+  name: material
+  logo: assets/cstlogo.svg
+  favicon: assets/cstlogo.svg
+  features:
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
 
 nav:
   - Introduction: index.md

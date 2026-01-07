@@ -2,10 +2,10 @@ name: Deploy Docs to Cloudflare
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - 'src/**'
-      - 'pyproject.toml'
+      - "src/**"
+      - "pyproject.toml"
   workflow_dispatch: # Allows manual trigger button
 
 jobs:
@@ -22,8 +22,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13' 
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
 
       - name: Install Dependencies
         # Installs your project dependencies from the root pyproject.toml
@@ -46,7 +46,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: codestory-docs 
+          projectName: codestory-docs
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
