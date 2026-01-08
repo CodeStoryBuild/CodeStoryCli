@@ -274,6 +274,11 @@ class GitCommands:
         # When not a repo, run_git_text returns None; treat as False
         return bool(result and result.strip() == "true")
 
+    def get_repo_root(self) -> str | None:
+        """Returns the absolute path to the top-level directory of the repository."""
+        res = self.git.run_git_text_out(["rev-parse", "--show-toplevel"])
+        return res.strip() if res else None
+
     def is_bare_repository(self) -> bool:
         """Checks if the current repository is bare."""
         res = self.git.run_git_text_out(["rev-parse", "--is-bare-repository"])

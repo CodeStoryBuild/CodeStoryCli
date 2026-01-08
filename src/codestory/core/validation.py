@@ -22,6 +22,7 @@ messages and type safety for all CLI parameters and configuration
 values.
 """
 
+import os
 import re
 
 from codestory.core.exceptions import (
@@ -241,17 +242,33 @@ def validate_min_size(value: int | None) -> int | None:
 
 
 def validate_git_repository(git_commands: GitCommands) -> None:
-    """Validate that we're in a git repository.
+    """Validate that we're in a git repository and that the current directory is the
+    repository root.
 
     Args:
         git_commands: Git commands to run
 
     Raises:
-        GitError: If git is not available or not in a repository
+        GitError: If git is not available, not in a repository, or not at the root
     """
-    # Check if git is available
+    # Check if git is available and we're inside a work tree
     if not git_commands.is_git_repo():
         # Keep error message compatible with existing tests
+        raise GitError("Not a git repository")
+
+    # Ensure the current directory is the repository root
+    repo_root = git_commands.get_repo_root()
+    if not repo_root:
+        raise GitError("Not a git repository")
+
+    try:
+        # Normalize paths for comparison (especially on Windows)
+        cwd = os.path.abspath(os.getcwd())
+        root = os.path.abspath(repo_root)
+
+        if cwd.lower() != root.lower() if os.name == "nt" else cwd != root:
+            raise GitError("Not a git repository")
+    except (OSError, ValueError):
         raise GitError("Not a git repository")
 
 
