@@ -90,6 +90,7 @@
                     "(method_definition name: (property_identifier) @placeholder)",
                     "(import_specifier name: (identifier) @placeholder)",
                     "(import_clause (identifier) @placeholder)",
+                    "(import_clause (namespace_import (identifier) @placeholder))",
                     "(interface_declaration name: (type_identifier) @placeholder)",
                     "(type_alias_declaration name: (type_identifier) @placeholder)",
                     "(enum_declaration name: (identifier) @placeholder)"
