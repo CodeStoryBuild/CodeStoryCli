@@ -16,7 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -85,9 +85,11 @@ def mock_git_commands():
 def test_validate_git_repository_success(mock_git_commands):
     # Setup mock to return success for is_git_repo
     mock_git_commands.is_git_repo.return_value = True
+    mock_git_commands.get_repo_root.return_value = "/fake"
 
     # Should not raise
-    validate_git_repository(mock_git_commands)
+    with patch("os.getcwd", return_value="/fake"):
+        validate_git_repository(mock_git_commands)
 
 
 def test_validate_git_repository_not_in_repo(mock_git_commands):
