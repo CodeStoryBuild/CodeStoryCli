@@ -39,7 +39,7 @@
             "((comment) @placeholder)",
             "(expression_statement (string) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "javascript": {
         "root_node_name": "program",
@@ -73,7 +73,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "typescript": {
         "root_node_name": "program",
@@ -120,7 +120,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "java": {
         "root_node_name": "program",
@@ -167,7 +167,7 @@
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "cpp": {
         "root_node_name": "translation_unit",
@@ -209,7 +209,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "csharp": {
         "root_node_name": "compilation_unit",
@@ -253,7 +253,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "go": {
         "root_node_name": "source_file",
@@ -298,7 +298,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "rust": {
         "root_node_name": "source_file",
@@ -349,7 +349,7 @@
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "ruby": {
         "root_node_name": "program",
@@ -393,7 +393,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "php": {
         "root_node_name": "",
@@ -438,7 +438,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "swift": {
         "root_node_name": "source_file",
@@ -477,7 +477,7 @@
             "((comment) @placeholder)",
             "((multiline_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "kotlin": {
         "root_node_name": "source_file",
@@ -515,7 +515,7 @@
             "((line_comment) @placeholder)",
             "((multiline_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "scala": {
         "root_node_name": "compilation_unit",
@@ -559,7 +559,7 @@
             "((comment) @placeholder)",
             "((block_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "r": {
         "root_node_name": "program",
@@ -580,7 +580,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "lua": {
         "root_node_name": "chunk",
@@ -610,7 +610,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "dart": {
         "root_node_name": "program",
@@ -648,7 +648,7 @@
             "((comment) @placeholder)",
             "((documentation_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "elixir": {
         "root_node_name": "source_file",
@@ -671,7 +671,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "haskell": {
         "root_node_name": [
@@ -707,7 +707,7 @@
             "((comment) @placeholder)",
             "((pragma) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "ocaml": {
         "root_node_name": "compilation_unit",
@@ -737,7 +737,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "erlang": {
         "root_node_name": "source_file",
@@ -767,7 +767,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "clojure": {
         "root_node_name": "source",
@@ -789,7 +789,7 @@
             "((comment) @placeholder)",
             "((dis_expr) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "solidity": {
         "root_node_name": "source_file",
@@ -830,7 +830,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "julia": {
         "root_node_name": "source_file",
@@ -876,7 +876,7 @@
             "((line_comment) @placeholder)",
             "((block_comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "bash": {
         "root_node_name": "program",
@@ -905,7 +905,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "c": {
         "root_node_name": "translation_unit",
@@ -951,7 +951,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "True"
+        "share_tokens_between_files": true
     },
     "toml": {
         "root_node_name": "document",
@@ -975,7 +975,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "json": {
         "root_node_name": "document",
@@ -993,7 +993,7 @@
             "named_scope": []
         },
         "comment_queries": [],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "yaml": {
         "root_node_name": "stream",
@@ -1013,7 +1013,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "markdown": {
         "root_node_name": "document",
@@ -1029,7 +1029,7 @@
         "comment_queries": [
             "((html_block) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "rst": {
         "root_node_name": "document",
@@ -1045,7 +1045,7 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     },
     "html": {
         "root_node_name": "document",
@@ -1067,6 +1067,6 @@
         "comment_queries": [
             "((comment) @placeholder)"
         ],
-        "share_tokens_between_files": "False"
+        "share_tokens_between_files": false
     }
 }
