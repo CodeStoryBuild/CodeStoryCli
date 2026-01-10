@@ -256,19 +256,9 @@ def validate_git_repository(git_commands: GitCommands) -> None:
         # Keep error message compatible with existing tests
         raise GitError("Not a git repository")
 
-    # Ensure the current directory is the repository root
-    repo_root = git_commands.get_repo_root()
-    if not repo_root:
-        raise GitError("Not a git repository")
-
-    try:
-        # Normalize paths for comparison (especially on Windows)
-        cwd = os.path.abspath(os.getcwd())
-        root = os.path.abspath(repo_root)
-
-        if cwd.lower() != root.lower() if os.name == "nt" else cwd != root:
-            raise GitError("Not a git repository")
-    except (OSError, ValueError):
+    # Ensure the target directory is the repository root by checking for .git
+    # to avoid path normalization issues in different environments.
+    if not os.path.exists(os.path.join(str(git_commands.git.repo_path), ".git")):
         raise GitError("Not a git repository")
 
 

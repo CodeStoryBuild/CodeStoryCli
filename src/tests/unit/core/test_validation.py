@@ -85,10 +85,12 @@ def mock_git_commands():
 def test_validate_git_repository_success(mock_git_commands):
     # Setup mock to return success for is_git_repo
     mock_git_commands.is_git_repo.return_value = True
-    mock_git_commands.get_repo_root.return_value = "/fake"
+    # Setup mock for the git interface and repo_path
+    mock_git_commands.git = Mock()
+    mock_git_commands.git.repo_path = "/fake"
 
-    # Should not raise
-    with patch("os.getcwd", return_value="/fake"):
+    # Should not raise when .git exists
+    with patch("os.path.exists", return_value=True):
         validate_git_repository(mock_git_commands)
 
 
@@ -96,6 +98,19 @@ def test_validate_git_repository_not_in_repo(mock_git_commands):
     mock_git_commands.is_git_repo.return_value = False
 
     with pytest.raises(GitError, match="Not a git repository"):
+        validate_git_repository(mock_git_commands)
+
+
+def test_validate_git_repository_subdirectory_fails(mock_git_commands):
+    mock_git_commands.is_git_repo.return_value = True
+    mock_git_commands.git = Mock()
+    mock_git_commands.git.repo_path = "/fake/subdir"
+
+    # Should raise when .git is missing in the target path
+    with (
+        patch("os.path.exists", return_value=False),
+        pytest.raises(GitError, match="Not a git repository"),
+    ):
         validate_git_repository(mock_git_commands)
 
 
