@@ -29,28 +29,17 @@ from codestory.core.git.git_temp_commiter import TempCommitCreator
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
-    validate_target_path,
 )
 from codestory.pipelines.standard_cli_pipeline import StandardCLIPipeline
 
 
-def verify_repo_state(commands: GitCommands, target: list[str] | None) -> bool:
+def verify_repo_state(commands: GitCommands) -> bool:
     from loguru import logger
 
     logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
 
     if commands.is_bare_repository():
         raise GitError("The 'commit' command cannot be run on a bare repository.")
-
-    # always track all files that are not explicitly excluded using gitignore or target path selector
-    # this is a very explicit design choice to simplify (remove) the concept of staged/unstaged changes
-    if commands.need_track_untracked(target):
-        target_desc = f'"{target}"' if target else "all files"
-        logger.debug(
-            f"Untracked files detected within {target_desc}, starting to track them.",
-        )
-
-        commands.track_untracked(target)
 
 
 def run_commit(
@@ -61,9 +50,6 @@ def run_commit(
     fail_on_syntax_errors: bool,
 ) -> bool:
     from loguru import logger
-
-    # Validate inputs
-    validated_target = validate_target_path(target)
 
     if message:
         validated_message = validate_message_length(message)
@@ -80,7 +66,6 @@ def run_commit(
     # verify repo state specifically for commit command
     verify_repo_state(
         global_context.git_commands,
-        validated_target,
     )
 
     # check if branch is empty
