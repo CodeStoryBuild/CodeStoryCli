@@ -78,7 +78,6 @@ body {
 /* Rounded corners for content elements */
 .md-content__inner img,
 .md-content__inner .admonition,
-.md-content__inner div.highlight,
 .md-search__form {
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -175,18 +174,31 @@ body {
 .md-typeset .highlight {
   background-color: var(--md-code-bg-color) !important;
   margin: 1.5rem 0;
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.md-typeset .highlight pre {
+  margin: 0;
+  padding: 1.25rem;
+  line-height: 1.6;
 }
 
 .md-typeset code {
+  font-family: var(--md-code-font);
   font-size: 0.85em;
-  border-radius: 4px;
-  padding: 2px 4px;
+  border-radius: 0;
+  padding: 0.1rem 0.3rem;
   background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
 }
 
 .md-typeset pre code {
   background-color: transparent;
   padding: 0;
+  border: none;
+  font-size: 0.85rem;
 }
 
 /* Admonitions (Callouts) */
