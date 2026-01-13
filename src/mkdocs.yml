@@ -1,31 +1,77 @@
 site_name: Codestory CLI Documentation
 site_url: https://cli.codestory.build/docs
+repo_url: https://github.com/CodeStoryBuild/CodeStoryCli
+repo_name: CodeStoryBuild/CodeStoryCli
+edit_uri: edit/main/src/docs/
+
 plugins:
   - search
   - mkdocs-typer2:
       pretty: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - md_in_html
+
 theme:
   name: material
   logo: assets/cstlogo.svg
   favicon: assets/cstlogo.svg
   features:
     - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.instant
     - content.code.copy
+    - search.suggest
+    - search.highlight
+    - search.share
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: blue
+      primary: white
       accent: blue
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: blue
+      primary: black
       accent: blue
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  font:
+    text: Inter
+    code: Roboto Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CodeStoryBuild/CodeStoryCli
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/codestory_ai
+  version:
+    provider: mike
 
 nav:
   - Introduction: index.md
