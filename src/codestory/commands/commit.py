@@ -48,6 +48,7 @@ def run_commit(
     message: str | None,
     intent: str | None,
     fail_on_syntax_errors: bool,
+    staged: bool = False,
 ) -> bool:
     from loguru import logger
 
@@ -104,6 +105,7 @@ def run_commit(
             global_context.git_commands,
             target,
             head_commit,
+            staged=staged,
         )
 
         pipeline = StandardCLIPipeline(

@@ -31,6 +31,7 @@ class TempCommitCreator:
         git_commands: GitCommands,
         pathspec: list[str] | None,
         head_hash: str,
+        staged: bool = False,
     ) -> str:
         """Save the current working directory into a dangling commit using index
         manipulation.
@@ -41,7 +42,10 @@ class TempCommitCreator:
         """
         from loguru import logger
 
-        logger.debug("Creating dangling commit from working directory state")
+        if staged:
+            logger.debug("Creating dangling commit from staged changes")
+        else:
+            logger.debug("Creating dangling commit from working directory state")
 
         # Create a temporary index file to build the backup commit
         temp_index_fd, temp_index_path = tempfile.mkstemp(prefix="codestory_backup_")
@@ -54,13 +58,32 @@ class TempCommitCreator:
         env["GIT_INDEX_FILE"] = temp_index_path
 
         try:
-            # Load the head tip into the temporary index
-            git_commands.read_tree(head_hash, env=env)
+            if staged:
+                # Load the head tip into the temporary index
+                git_commands.read_tree(head_hash, env=env)
 
-            # Add working directory changes to the temporary index
-            # Uses the pathspec if provided, otherwise adds current directory
-            add_args = pathspec if pathspec else ["."]
-            git_commands.add(add_args, env=env)
+                # Get staged diff relative to head_hash for the pathspec
+                # We use --binary to handle binary files and -p for the patch format
+                diff_args = ["diff-index", "--cached", "--binary", "-p", head_hash]
+                if pathspec:
+                    # pathspec can be a list of strings
+                    diff_args.extend(["--"] + pathspec)
+
+                staged_diff = git_commands.git.run_git_binary_out(diff_args)
+
+                # Apply the staged diff to the temporary index
+                if staged_diff:
+                    git_commands.apply(
+                        staged_diff, ["--cached", "--unidiff-zero"], env=env
+                    )
+            else:
+                # Load the head tip into the temporary index
+                git_commands.read_tree(head_hash, env=env)
+
+                # Add working directory changes to the temporary index
+                # Uses the pathspec if provided, otherwise adds current directory
+                add_args = pathspec if pathspec else ["."]
+                git_commands.add(add_args, env=env)
 
             # Write the index state to a tree object
             new_tree_hash = git_commands.write_tree(env=env)

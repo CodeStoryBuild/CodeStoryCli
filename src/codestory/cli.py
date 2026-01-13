@@ -85,6 +85,11 @@ def main_commit(
         "--fail-on-syntax-errors",
         help="Fail the commit if syntax errors are detected in the changes.",
     ),
+    staged: bool = typer.Option(
+        False,
+        "--staged",
+        help="Only commit changes that are already staged. Unstaged changes will be ignored.",
+    ),
 ) -> None:
     """Commit current changes into small logical commits. (If you wish to modify
     existing history, use codestory fix or codestory clean)
@@ -128,6 +133,7 @@ def main_commit(
             message,
             intent,
             fail_on_syntax_errors,
+            staged,
         ):
             raise typer.Exit(0)
         else:
