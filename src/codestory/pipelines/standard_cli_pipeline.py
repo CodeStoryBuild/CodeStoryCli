@@ -75,7 +75,7 @@ class StandardCLIPipeline:
         )
 
         if not base_chunks:
-            logger.warning(f"{Fore.YELLOW} No changes to process {Style.RESET_ALL}")
+            logger.warning(f"{Fore.YELLOW}No changes to process {Style.RESET_ALL}")
             if self.source == "fix" or self.source == "clean":
                 logger.info(f"{Fore.YELLOW}Is this an empty commit?{Style.RESET_ALL}")
             if self.source == "commit":
