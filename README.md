@@ -3,8 +3,8 @@
 ![Tests](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/pytest.yml?label=tests)
 ![Docs Deployment](https://img.shields.io/github/actions/workflow/status/CodeStoryBuild/CodeStoryCli/deploy-docs.yml?label=docs)
 ![GitHub Release](https://img.shields.io/github/v/release/CodeStoryBuild/CodeStoryCli?include_prereleases&label=release)
-![PyPI Version](https://img.shields.io/pypi/v/codestory-cli?color=blue&label=pypi)
-![PyPI Downloads](https://img.shields.io/pypi/dm/codestory-cli?color=blue&label=downloads)
+![PyPI Version](https://img.shields.io/pypi/v/codestory-cli?color=blue&label=pypi&cacheSeconds=86400)
+![PyPI Downloads](https://img.shields.io/pypi/dm/codestory-cli?color=blue&label=downloads&cacheSeconds=86400)
 
 The Codestory CLI is a high level interface over git. Why?
 Git is a powerful tool. It is also an excellent tool for shooting yourself in the foot.
