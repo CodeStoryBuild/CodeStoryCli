@@ -2,7 +2,7 @@
 
 Semantic grouping is the process of aggregating mechanical chunks into logical units based on the structure of the source code. This ensures that related changes stay together and that each commit results in syntactically valid code.
 
-## tree-sitter Integration
+## Tree-sitter Integration
 
 Codestory CLI uses [tree-sitter](https://tree-sitter.github.io/tree-sitter/) to parse source files into Abstract Syntax Trees (ASTs). Unlike line-based diffs, ASTs provide a structured representation of the code, allowing the engine to understand the boundaries of functions, classes, and other logical blocks.
 
