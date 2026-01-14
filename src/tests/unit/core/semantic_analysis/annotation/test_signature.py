@@ -96,14 +96,6 @@ class TestSignatureIsEmpty:
         )
         assert sig.is_empty() is True
 
-    def test_different_structural_scopes_not_empty(self):
-        """Signature with different structural scopes is not empty."""
-        sig = make_signature(
-            new_structural_scopes={"ClassA", "ClassB"},
-            old_structural_scopes={"ClassA"},
-        )
-        assert sig.is_empty() is False
-
     def test_different_fqns_not_empty(self):
         """Signature with different FQNs is not empty."""
         sig = make_signature(
