@@ -293,7 +293,7 @@ def _check_key_exists(key: str, exit_on_fail: bool = True) -> dict:
     return schema[key]
 
 
-def _add_to_gitignore(config_filename: str) -> None:
+def _add_to_gitignore(config_filename: str, quiet: bool = False) -> None:
     """Add config file to .gitignore if it exists, otherwise print warning."""
     gitignore_path = Path(".gitignore")
 
@@ -304,35 +304,41 @@ def _add_to_gitignore(config_filename: str) -> None:
                 if gitignore_content and not gitignore_content.endswith("\n"):
                     f.write("\n")
                 f.write(f"{config_filename}\n")
-            print(f"Added {config_filename} to .gitignore")
+            if not quiet:
+                print(f"Added {config_filename} to .gitignore")
     else:
-        print(
-            f"{Fore.YELLOW}Warning:{Style.RESET_ALL} .gitignore not found. "
-            f"Please consider adding {config_filename} to your .gitignore file to avoid committing API keys."
-        )
+        if not quiet:
+            print(
+                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} .gitignore not found. "
+                f"Please consider adding {config_filename} to your .gitignore file to avoid committing API keys."
+            )
 
 
-def set_config(key: str, value: str, scope: str) -> None:
+def set_config(key: str, value: str, scope: str, quiet: bool = False) -> None:
     """Set a configuration value in the specified scope.
 
     Args:
         key: Configuration key to set
         value: Value to set (as string from CLI)
         scope: Scope to set the value in (local, global, or env)
+        quiet: If True, suppress print statements
     """
     field_info = _check_key_exists(key)
 
     if scope == "env":
-        _print_env_instructions(key, value)
+        if not quiet:
+            _print_env_instructions(key, value)
         return
 
     # Check for sensitive keys in local scope
     if scope == "local" and key in ("api_key",):
-        print(
-            f"{Fore.YELLOW}Warning:{Style.RESET_ALL} You are setting a sensitive key ('{key}') in local configuration."
-        )
+        if not quiet:
+            print(
+                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} You are setting a sensitive key ('{key}') in local configuration."
+            )
         if not confirm_strict("Are you sure you want to proceed?"):
-            print("Operation cancelled.")
+            if not quiet:
+                print("Operation cancelled.")
             raise typer.Exit(0)
 
     # Determine config file path based on scope
@@ -341,13 +347,14 @@ def set_config(key: str, value: str, scope: str) -> None:
         config_path.parent.mkdir(parents=True, exist_ok=True)
     else:  # local
         config_path = LOCAL_CONFIG_FILE
-        _add_to_gitignore(CONFIG_FILENAME)
+        _add_to_gitignore(CONFIG_FILENAME, quiet=quiet)
 
     # Load existing config
     try:
         config_data = _load_toml_config(config_path)
     except ConfigurationError as e:
-        print(f"{Fore.YELLOW}Warning:{Style.RESET_ALL} {e}. Creating new config.")
+        if not quiet:
+            print(f"{Fore.YELLOW}Warning:{Style.RESET_ALL} {e}. Creating new config.")
         config_data = {}
 
     # Coerce and validate the value using the constraint
@@ -355,7 +362,8 @@ def set_config(key: str, value: str, scope: str) -> None:
     try:
         final_value = constraint.coerce(value)
     except ConfigurationError as e:
-        print(f"{Fore.RED}Error:{Style.RESET_ALL} Invalid value for {key}: {e}")
+        if not quiet:
+            print(f"{Fore.RED}Error:{Style.RESET_ALL} Invalid value for {key}: {e}")
         raise typer.Exit(1)
 
     # Update and save
@@ -363,10 +371,13 @@ def set_config(key: str, value: str, scope: str) -> None:
     _write_toml_config(config_path, config_data)
 
     # Display success message
-    scope_label = "global" if scope == "global" else "local"
-    display_value = _format_value_for_display(final_value)
-    print(f"{Fore.GREEN}Set {key} = {display_value} ({scope_label}){Style.RESET_ALL}")
-    print(f"Config file: {config_path.absolute()}")
+    if not quiet:
+        scope_label = "global" if scope == "global" else "local"
+        display_value = _format_value_for_display(final_value)
+        print(
+            f"{Fore.GREEN}Set {key} = {display_value} ({scope_label}){Style.RESET_ALL}"
+        )
+        print(f"Config file: {config_path.absolute()}")
 
 
 def get_config(key: str | None, scope: str | None) -> None:

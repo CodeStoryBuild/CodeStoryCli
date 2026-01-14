@@ -22,7 +22,12 @@ import typer
 from colorama import Fore, Style
 
 from codestory.commands.config import set_config
-from codestory.constants import LOCAL_PROVIDERS, ONBOARDING_FLAG, get_cloud_providers
+from codestory.constants import (
+    DEFAULT_EMBEDDING_MODEL,
+    LOCAL_PROVIDERS,
+    ONBOARDING_FLAG,
+    get_cloud_providers,
+)
 from codestory.runtimeutil import confirm_strict
 
 CODESTORY_ASCII = r"""
@@ -97,7 +102,7 @@ def run_model_setup(scope: str):
             f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})"
         ).strip()
 
-    set_config(key="model", value=model_string, scope=scope)
+    set_config(key="model", value=model_string, scope=scope, quiet=True)
 
     provider = model_string.split(":")[0].lower()
     need_api_key = provider in get_cloud_providers()
@@ -118,7 +123,7 @@ def run_model_setup(scope: str):
         ).strip()
 
         if api_key:
-            set_config(key="api_key", value=api_key, scope=scope)
+            set_config(key="api_key", value=api_key, scope=scope, quiet=True)
             need_set_api_key = False
         else:
             print(
@@ -143,6 +148,51 @@ def run_model_setup(scope: str):
     return need_set_api_key
 
 
+def run_embedding_setup(scope: str):
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== Embedding Model Setup ==={Style.RESET_ALL}")
+
+    try:
+        from fastembed import TextEmbedding
+
+        supported_models = [m["model"] for m in TextEmbedding.list_supported_models()]
+    except Exception:
+        supported_models = []
+
+    if not confirm_strict(
+        f"{Fore.WHITE}Do you want to specify a custom embedding model? (Default: {Fore.CYAN}{DEFAULT_EMBEDDING_MODEL}{Fore.WHITE}){Style.RESET_ALL}",
+    ):
+        return
+
+    if supported_models:
+        print(f"\n{Fore.WHITE}Supported embedding models:{Style.RESET_ALL}")
+        # print up to 2 models per line to keep it readable
+        for i in range(0, len(supported_models), 2):
+            chunk = supported_models[i : i + 2]
+            print(f"    - {', '.join(chunk)}")
+
+    print(
+        f"\n{Fore.WHITE}You can choose one from the list above or enter a custom model name.{Style.RESET_ALL}"
+    )
+
+    while True:
+        model = typer.prompt(
+            f"{Fore.WHITE}Enter embedding model",
+            default=DEFAULT_EMBEDDING_MODEL,
+        ).strip()
+
+        if not model:
+            model = DEFAULT_EMBEDDING_MODEL
+            break
+
+        if model == DEFAULT_EMBEDDING_MODEL or model in supported_models:
+            break
+
+        print(f"{Fore.YELLOW}Invalid model!{Style.RESET_ALL}")
+
+    set_config(key="custom_embedding_model", value=model, scope=scope, quiet=True)
+    print(f"\n{Fore.GREEN}✓ Embedding model configured: {model}{Style.RESET_ALL}")
+
+
 def run_onboarding():
     print(f"{Fore.CYAN}{Style.BRIGHT}{CODESTORY_ASCII}{Style.RESET_ALL}")
     print(
@@ -161,6 +211,7 @@ def run_onboarding():
 
     # Configure embedding grouper
     need_api_key = run_model_setup(scope)
+    run_embedding_setup(scope)
 
     # Final message
     print(f"\n{Fore.GREEN}{Style.BRIGHT}✓ Configuration completed!{Style.RESET_ALL}")
