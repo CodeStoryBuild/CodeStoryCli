@@ -33,6 +33,7 @@ from codestory.constants import (
     LOCAL_CONFIG_FILE,
 )
 from codestory.core.exceptions import ConfigurationError
+from codestory.runtimeutil import confirm_strict
 
 # Initialize colorama
 init(autoreset=True)
@@ -330,7 +331,7 @@ def set_config(key: str, value: str, scope: str) -> None:
         print(
             f"{Fore.YELLOW}Warning:{Style.RESET_ALL} You are setting a sensitive key ('{key}') in local configuration."
         )
-        if not typer.confirm("Are you sure you want to proceed?", default=False):
+        if not confirm_strict("Are you sure you want to proceed?"):
             print("Operation cancelled.")
             raise typer.Exit(0)
 
@@ -546,7 +547,7 @@ def delete_config(key: str | None, scope: str) -> None:
             )
             return
 
-        if not typer.confirm(
+        if not confirm_strict(
             f"Are you sure you want to delete '{key}' from {scope} config?"
         ):
             print("Delete cancelled.")
@@ -557,7 +558,7 @@ def delete_config(key: str | None, scope: str) -> None:
     else:
         # Delete all keys
         keys_list = ", ".join(config_data.keys())
-        if not typer.confirm(
+        if not confirm_strict(
             f"Are you sure you want to delete ALL config from {scope} scope?\n"
             f"Keys to be deleted: {keys_list}"
         ):
@@ -583,7 +584,7 @@ def deleteall_config(key: str | None) -> None:
     """
     if key is not None:
         # Confirmation prompt for specific key across all scopes
-        if not typer.confirm(
+        if not confirm_strict(
             f"Are you sure you want to delete '{key}' from BOTH global and local config?"
         ):
             print("Delete cancelled.")
@@ -608,7 +609,7 @@ def deleteall_config(key: str | None) -> None:
             print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
     else:
         # Delete all from both scopes
-        if not typer.confirm(
+        if not confirm_strict(
             "Are you sure you want to delete ALL config from BOTH global and local scopes?"
         ):
             print("Delete cancelled.")

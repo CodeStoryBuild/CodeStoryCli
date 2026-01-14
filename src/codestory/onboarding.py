@@ -23,6 +23,7 @@ from colorama import Fore, Style
 
 from codestory.commands.config import set_config
 from codestory.constants import LOCAL_PROVIDERS, ONBOARDING_FLAG, get_cloud_providers
+from codestory.runtimeutil import confirm_strict
 
 CODESTORY_ASCII = r"""
   ___  __  ____  ____    ____  ____  __  ____  _  _
@@ -150,12 +151,11 @@ def run_onboarding():
         f"- These settings can be changed later using {Fore.CYAN}cst config{Fore.WHITE}.\n"
     )
 
-    typer.confirm(f"{Fore.WHITE}Ready to start?", default=True, abort=True)
+    confirm_strict(f"{Fore.WHITE}Ready to start?", abort=True)
 
     # Ask if global or local config
-    global_ = typer.confirm(
+    global_ = confirm_strict(
         "\nDo you want to set this as the global configuration (applies to all repos)?",
-        default=True,
     )
     scope = "global" if global_ else "local"
 

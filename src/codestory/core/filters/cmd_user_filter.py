@@ -28,6 +28,7 @@ from codestory.core.diff.patch.git_patch_generator import GitPatchGenerator
 from codestory.core.diff.patch.semantic_patch_generator import SemanticPatchGenerator
 from codestory.core.diff.pipeline.filter import Filter
 from codestory.core.semantic_analysis.annotation.file_manager import FileManager
+from codestory.runtimeutil import confirm_strict
 
 
 class CMDUserFilter(Filter):
@@ -156,7 +157,7 @@ class CMDUserFilter(Filter):
                 else:
                     if self.can_partially_reject_changes:
                         with tqdm.external_write_mode():
-                            keep = typer.confirm("Do you want to commit this change?")
+                            keep = confirm_strict("Do you want to commit this change?")
                         if keep:
                             accepted_groups.append(group)
                         else:
@@ -177,7 +178,7 @@ class CMDUserFilter(Filter):
             logger.info(f"Auto-confirm: Accepted {num_acc} proposed groups")
         else:
             with tqdm.external_write_mode():
-                apply_final = typer.confirm(
+                apply_final = confirm_strict(
                     f"Accept {num_acc} proposed groups?",
                 )
 

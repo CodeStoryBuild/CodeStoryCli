@@ -88,3 +88,24 @@ def get_supported_providers_callback(value: bool):
         all_providers = list(LOCAL_PROVIDERS.union(get_cloud_providers()))
         typer.echo(f"{all_providers}")
         raise typer.Exit()
+
+
+def confirm_strict(text: str, abort: bool = False) -> bool:
+    """A version of typer.confirm that reprompts until a valid 'yes' or 'no' is provided.
+    Does not accept empty input (pressing Enter) as a default.
+
+    If abort is True, raises typer.Abort() if the user chooses no.
+    """
+    while True:
+        response = (
+            typer.prompt(f"{text} [y/n]", default="", show_default=False)
+            .strip()
+            .lower()
+        )
+        if response in ("y", "yes"):
+            return True
+        if response in ("n", "no"):
+            if abort:
+                raise typer.Abort()
+            return False
+        # If we got here, it was either empty or invalid input, so we loop and reprompt
