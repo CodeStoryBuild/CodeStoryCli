@@ -381,3 +381,130 @@ def test_pure_comment_identification(
 
     # Use set comparison for clear pytest diffs
     assert cmap.pure_comment_lines == expected_lines
+
+
+# -------------------------------------------------------------------------
+# Tests for Enhanced CommentMap Fields
+# -------------------------------------------------------------------------
+
+
+def test_any_comment_lines_includes_inline_comments(tools):
+    """Test that any_comment_lines includes lines with inline comments."""
+    parser, mapper = tools
+
+    content = """\
+x = 1  # inline comment
+y = 2
+z = 3  # another inline
+"""
+    parsed = parser.parse_file(
+        b"test.py",
+        content.encode("utf-8"),
+        [(0, 2)],
+    )
+
+    cmap = mapper.build_comment_map(
+        parsed.detected_language,
+        parsed.root_node,
+        parsed.content_bytes,
+        parsed.line_ranges,
+    )
+
+    # Lines 0 and 2 have comments (inline), but they're not pure comment lines
+    assert 0 in cmap.any_comment_lines
+    assert 2 in cmap.any_comment_lines
+    assert 1 not in cmap.any_comment_lines
+
+    # But they're not pure comment lines
+    assert 0 not in cmap.pure_comment_lines
+    assert 2 not in cmap.pure_comment_lines
+
+
+def test_line_to_comments_captures_comment_text(tools):
+    """Test that line_to_comments captures the actual comment strings."""
+    parser, mapper = tools
+
+    content = """\
+# This is comment one
+x = 1
+# This is comment two
+"""
+    parsed = parser.parse_file(
+        b"test.py",
+        content.encode("utf-8"),
+        [(0, 2)],
+    )
+
+    cmap = mapper.build_comment_map(
+        parsed.detected_language,
+        parsed.root_node,
+        parsed.content_bytes,
+        parsed.line_ranges,
+    )
+
+    assert 0 in cmap.line_to_comments
+    assert "# This is comment one" in cmap.line_to_comments[0]
+
+    assert 2 in cmap.line_to_comments
+    assert "# This is comment two" in cmap.line_to_comments[2]
+
+    # Line 1 has no comments
+    assert 1 not in cmap.line_to_comments
+
+
+def test_multiline_comment_tracking(tools):
+    """Test that multiline comments are tracked across all their lines."""
+    parser, mapper = tools
+
+    content = """\
+/* Line 0
+   Line 1
+   Line 2 */
+x = 1
+"""
+    parsed = parser.parse_file(
+        b"test.js",
+        content.encode("utf-8"),
+        [(0, 3)],
+    )
+
+    cmap = mapper.build_comment_map(
+        parsed.detected_language,
+        parsed.root_node,
+        parsed.content_bytes,
+        parsed.line_ranges,
+    )
+
+    # All three lines of the multiline comment should be in any_comment_lines
+    assert 0 in cmap.any_comment_lines
+    assert 1 in cmap.any_comment_lines
+    assert 2 in cmap.any_comment_lines
+    assert 3 not in cmap.any_comment_lines
+
+
+def test_comment_content_differs_for_different_comments(tools):
+    """Test that different comment content is captured distinctly."""
+    parser, mapper = tools
+
+    content = """\
+# First
+# Second
+# Third
+"""
+    parsed = parser.parse_file(
+        b"test.py",
+        content.encode("utf-8"),
+        [(0, 2)],
+    )
+
+    cmap = mapper.build_comment_map(
+        parsed.detected_language,
+        parsed.root_node,
+        parsed.content_bytes,
+        parsed.line_ranges,
+    )
+
+    # Each line should have its own distinct comment
+    assert cmap.line_to_comments.get(0) == {"# First"}
+    assert cmap.line_to_comments.get(1) == {"# Second"}
+    assert cmap.line_to_comments.get(2) == {"# Third"}

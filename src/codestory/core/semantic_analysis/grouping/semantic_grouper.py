@@ -83,10 +83,15 @@ class SemanticGrouper:
         fallback_chunks = []
 
         for annotated_chunk in annotated_chunks:
-            if annotated_chunk.signature.has_valid_sig():
-                analyzable_chunks.append(annotated_chunk)
-            else:
+            if not annotated_chunk.signature.has_valid_sig():
+                # No valid signature (e.g., binary files, unsupported languages)
                 fallback_chunks.append(annotated_chunk)
+            elif annotated_chunk.signature.total_signature.is_empty():
+                # Valid but empty signature (whitespace-only changes)
+                fallback_chunks.append(annotated_chunk)
+            else:
+                # Has meaningful semantic signature
+                analyzable_chunks.append(annotated_chunk)
 
         # Group analyzable chunks using Union-Find based on overlapping signatures
         semantic_groups = []

@@ -62,13 +62,15 @@ def context_manager():
     contexts = {}
 
     # Helper to configure context for a specific file/version
-    def configure_context(path, is_old, symbols=None, scopes=None):
+    def configure_context(path, is_old, symbols=None, scopes=None, comments=None):
         ctx = Mock()
         ctx.detected_language = "python"
         ctx.symbol_map.modified_line_symbols = symbols or {}
         ctx.symbol_map.extern_line_symbols = {}
         ctx.scope_map.structural_scope_lines = scopes or {}
         ctx.comment_map.pure_comment_lines = set()
+        ctx.comment_map.any_comment_lines = set(comments.keys()) if comments else set()
+        ctx.comment_map.line_to_comments = comments or {}
         # Build sorted version from scopes dict
         ctx.scope_map.semantic_named_scopes = {
             line: [NamedScope(name=s, scope_type="class") for s in scope_set]
@@ -226,3 +228,64 @@ def test_chunk_types(grouper, context_manager):
     # Should group because they share "shared" symbol
     assert len(groups) == 1
     assert len(groups[0].get_atomic_chunks()) == 2
+
+
+def test_whitespace_only_change_goes_to_fallback(grouper, context_manager):
+    """Test that whitespace-only changes (empty signature) go to fallback."""
+    # Create a chunk that will have no symbols, scopes, or comments changed
+    c1 = create_chunk(new_len=1, new_start=5)
+
+    # Configure context with NO symbols, NO scopes, and identical comments
+    # This simulates a whitespace-only change
+    context_manager.configure_context(b"file.txt", True)  # old - empty
+    context_manager.configure_context(b"file.txt", False)  # new - empty
+
+    groups = grouper.group([c1])
+
+    # Should be in fallback since signature is empty
+    assert len(groups) == 1
+    assert c1 in groups[0].get_atomic_chunks()
+
+
+def test_comment_change_stays_analyzable(grouper, context_manager):
+    """Test that comment-only changes stay in analyzable chunks."""
+    c1 = create_chunk(new_len=1, new_start=5)
+
+    # Configure context with different comments between old and new
+    context_manager.configure_context(
+        b"file.txt", True, comments={4: {"# old comment"}}
+    )
+    context_manager.configure_context(
+        b"file.txt", False, comments={4: {"# new comment"}}
+    )
+
+    groups = grouper.group([c1])
+
+    # Should be in a single group (analyzable, not fallback)
+    assert len(groups) == 1
+    assert c1 in groups[0].get_atomic_chunks()
+
+
+def test_mixed_semantic_and_whitespace_chunks(grouper, context_manager):
+    """Test that semantic changes stay separate from whitespace-only changes."""
+    # c1 has a real symbol change
+    c1 = create_chunk(
+        old_path=b"code.txt", new_path=b"code.txt", new_len=1, new_start=1
+    )
+    # c2 is whitespace-only (no symbols, scopes, or comment changes)
+    c2 = create_chunk(
+        old_path=b"whitespace.txt", new_path=b"whitespace.txt", new_len=1, new_start=1
+    )
+
+    # Configure code.txt with symbols
+    context_manager.configure_context(b"code.txt", True)
+    context_manager.configure_context(b"code.txt", False, symbols={0: {"foo"}})
+
+    # Configure whitespace.txt with no semantic content
+    context_manager.configure_context(b"whitespace.txt", True)
+    context_manager.configure_context(b"whitespace.txt", False)
+
+    groups = grouper.group([c1, c2])
+
+    # Should have 2 groups: one analyzable (c1) and one fallback (c2)
+    assert len(groups) == 2

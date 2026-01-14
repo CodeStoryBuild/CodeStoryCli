@@ -39,9 +39,13 @@ _WHITESPACE_TRANSLATION_TABLE = str.maketrans("", "", string.whitespace)
 
 @dataclass(frozen=True)
 class CommentMap:
-    """Represents the set of pure comment lines (0-indexed)."""
+    """Represents the comment-related information of a file."""
 
-    pure_comment_lines: set[int]
+    pure_comment_lines: set[int]  # 0-indexed lines that contain only comments
+    any_comment_lines: set[int]  # 0-indexed lines that contain at least one comment
+    line_to_comments: dict[
+        int, set[str]
+    ]  # Map from line index to set of comment strings on that line
 
 
 class CommentMapper:
@@ -82,9 +86,13 @@ class CommentMapper:
 
         # line_index -> total number of characters covered by comments.
         coverage_counts: dict[int, int] = {}
+        line_to_comments: dict[int, set[str]] = {}
 
         for _, nodes in comment_captures.items():
             for node in nodes:
+                text = node.text.decode("utf8", errors="replace")
+                comment_lines = text.splitlines()
+
                 start_line, start_col = node.start_point
                 end_line, end_col = node.end_point
 
@@ -97,6 +105,7 @@ class CommentMapper:
                     coverage_counts[start_line] = (
                         coverage_counts.get(start_line, 0) + length
                     )
+                    line_to_comments.setdefault(start_line, set()).add(text)
                 else:
                     # Multi-line comment: calculate length for each line spanned.
                     # Start line: from start_col to the end of the line.
@@ -105,21 +114,34 @@ class CommentMapper:
                     coverage_counts[start_line] = (
                         coverage_counts.get(start_line, 0) + length
                     )
+                    if comment_lines:
+                        line_to_comments.setdefault(start_line, set()).add(
+                            comment_lines[0]
+                        )
 
                     # Middle lines: the entire line is part of the comment.
-                    for line_idx in range(start_line + 1, end_line):
+                    for i, line_idx in enumerate(range(start_line + 1, end_line)):
                         if line_idx < num_lines:
                             coverage_counts[line_idx] = coverage_counts.get(
                                 line_idx, 0
                             ) + len(lines[line_idx])
+                            if i + 1 < len(comment_lines):
+                                line_to_comments.setdefault(line_idx, set()).add(
+                                    comment_lines[i + 1]
+                                )
 
                     # End line: from column 0 to the end_col.
                     if end_line < num_lines:
                         coverage_counts[end_line] = (
                             coverage_counts.get(end_line, 0) + end_col
                         )
+                        if len(comment_lines) > (end_line - start_line):
+                            line_to_comments.setdefault(end_line, set()).add(
+                                comment_lines[-1]
+                            )
 
         pure_comment_lines: set[int] = set()
+        any_comment_lines: set[int] = set()
         for line_idx, comment_length in coverage_counts.items():
             # The line must have some comment coverage to be considered.
             if comment_length == 0:
@@ -129,6 +151,7 @@ class CommentMapper:
             if line_idx >= num_lines:
                 continue
 
+            any_comment_lines.add(line_idx)
             line_text = lines[line_idx]
 
             # Efficiently strip all whitespace and get the length of what remains.
@@ -144,4 +167,8 @@ class CommentMapper:
             if len(non_whitespace_text) <= comment_length:
                 pure_comment_lines.add(line_idx)
 
-        return CommentMap(pure_comment_lines=pure_comment_lines)
+        return CommentMap(
+            pure_comment_lines=pure_comment_lines,
+            any_comment_lines=any_comment_lines,
+            line_to_comments=line_to_comments,
+        )

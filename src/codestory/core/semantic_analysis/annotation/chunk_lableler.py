@@ -64,12 +64,27 @@ class Signature:
     def_old_symbols_filtered: set[str]
     extern_new_symbols_filtered: set[str]
     extern_old_symbols_filtered: set[str]
+    new_comments: set[str]
+    old_comments: set[str]
+
+    def is_empty(self) -> bool:
+        """Returns True if the signature represents no semantic changes (e.g., whitespace only)."""
+        return (
+            self.new_fqns == self.old_fqns
+            and self.def_new_symbols == self.def_old_symbols
+            and self.extern_new_symbols == self.extern_old_symbols
+            and self.def_new_symbols_filtered == self.def_old_symbols_filtered
+            and self.extern_new_symbols_filtered == self.extern_old_symbols_filtered
+            and self.new_comments == self.old_comments
+        )
 
     @staticmethod
     def from_signatures(signatures: list["Signature"]) -> "Signature":
         # combine multiple signatures into one big one
         if len(signatures) == 0:
             return Signature(
+                set(),
+                set(),
                 set(),
                 set(),
                 set(),
@@ -103,6 +118,8 @@ class Signature:
         base_def_old_symbols_filtered = set(base_sig.def_old_symbols_filtered)
         base_extern_new_symbols_filtered = set(base_sig.extern_new_symbols_filtered)
         base_extern_old_symbols_filtered = set(base_sig.extern_old_symbols_filtered)
+        base_new_comments = set(base_sig.new_comments)
+        base_old_comments = set(base_sig.old_comments)
 
         for s in signatures:
             if s is None or s is base_sig:
@@ -123,6 +140,8 @@ class Signature:
             base_def_old_symbols_filtered.update(s.def_old_symbols_filtered)
             base_extern_new_symbols_filtered.update(s.extern_new_symbols_filtered)
             base_extern_old_symbols_filtered.update(s.extern_old_symbols_filtered)
+            base_new_comments.update(s.new_comments)
+            base_old_comments.update(s.old_comments)
 
         return Signature(
             file_names=base_file_names,
@@ -140,6 +159,8 @@ class Signature:
             def_old_symbols_filtered=base_def_old_symbols_filtered,
             extern_new_symbols_filtered=base_extern_new_symbols_filtered,
             extern_old_symbols_filtered=base_extern_old_symbols_filtered,
+            new_comments=base_new_comments,
+            old_comments=base_old_comments,
         )
 
 
@@ -319,6 +340,8 @@ class ContainerLabler:
         def_old_symbols_filtered_acc = set()
         extern_new_symbols_filtered_acc = set()
         extern_old_symbols_filtered_acc = set()
+        new_comments_acc = set()
+        old_comments_acc = set()
 
         if diff_chunk.is_standard_modification or diff_chunk.is_file_rename:
             # For modifications/renames, analyze both old and new line ranges
@@ -337,6 +360,7 @@ class ContainerLabler:
                     extern_old_symbols_filtered,
                     old_structural_scopes,
                     old_fqns,
+                    old_comments,
                 ) = ContainerLabler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
@@ -347,6 +371,7 @@ class ContainerLabler:
                 extern_old_symbols_filtered_acc.update(extern_old_symbols_filtered)
                 old_structural_scopes_acc.update(old_structural_scopes)
                 old_fqns_acc.update(old_fqns)
+                old_comments_acc.update(old_comments)
 
             # New version signature
             new_name = diff_chunk.new_file_path.decode("utf-8", errors="replace")
@@ -363,6 +388,7 @@ class ContainerLabler:
                     extern_new_symbols_filtered,
                     new_structural_scopes,
                     new_fqns,
+                    new_comments,
                 ) = ContainerLabler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
@@ -373,6 +399,7 @@ class ContainerLabler:
                 extern_new_symbols_filtered_acc.update(extern_new_symbols_filtered)
                 new_structural_scopes_acc.update(new_structural_scopes)
                 new_fqns_acc.update(new_fqns)
+                new_comments_acc.update(new_comments)
 
         elif diff_chunk.is_file_addition:
             # For additions, analyze new version only
@@ -390,6 +417,7 @@ class ContainerLabler:
                     extern_new_symbols_filtered_acc,
                     new_structural_scopes_acc,
                     new_fqns_acc,
+                    new_comments_acc,
                 ) = ContainerLabler._get_signature_for_line_range(
                     abs_new_start, abs_new_end, new_name, new_context
                 )
@@ -410,6 +438,7 @@ class ContainerLabler:
                     extern_old_symbols_filtered_acc,
                     old_structural_scopes_acc,
                     old_fqns_acc,
+                    old_comments_acc,
                 ) = ContainerLabler._get_signature_for_line_range(
                     diff_chunk.old_start, old_end, old_name, old_context
                 )
@@ -431,12 +460,16 @@ class ContainerLabler:
             def_old_symbols_filtered=def_old_symbols_filtered_acc,
             extern_new_symbols_filtered=extern_new_symbols_filtered_acc,
             extern_old_symbols_filtered=extern_old_symbols_filtered_acc,
+            new_comments=new_comments_acc,
+            old_comments=old_comments_acc,
         )
 
     @staticmethod
     def _get_signature_for_line_range(
         start_line: int, end_line: int, file_name: str, context: AnalysisContext
-    ) -> tuple[set[str], set[str], set[str], set[str], set[str], set[TypedFQN]]:
+    ) -> tuple[
+        set[str], set[str], set[str], set[str], set[str], set[TypedFQN], set[str]
+    ]:
         """Get signature and scope information for a specific line range using the
         analysis context.
 
@@ -458,6 +491,7 @@ class ContainerLabler:
         extern_range_symbols_filtered = set()
         structural_scopes_range = set()
         fqns: set[TypedFQN] = set()  # Set of TypedFQN objects
+        any_comments_range = set()
 
         if start_line < 1 or end_line < start_line:
             # Chunks that are pure deletions can fall into this
@@ -468,6 +502,7 @@ class ContainerLabler:
                 extern_range_symbols_filtered,
                 structural_scopes_range,
                 fqns,
+                any_comments_range,
             )
 
         # convert to zero indexed
@@ -486,6 +521,12 @@ class ContainerLabler:
             structural_scopes = context.scope_map.structural_scope_lines.get(line)
             if structural_scopes:
                 structural_scopes_range.update(structural_scopes)
+
+            # handle comments
+            if line in context.comment_map.any_comment_lines:
+                line_comments = context.comment_map.line_to_comments.get(line)
+                if line_comments:
+                    any_comments_range.update(line_comments)
 
             # Get named scopes for this line (already sorted, list of NamedScope)
             current_scopes_list = context.scope_map.semantic_named_scopes.get(line, [])
@@ -578,4 +619,5 @@ class ContainerLabler:
             extern_range_symbols_filtered,
             structural_scopes_range,
             fqns,
+            any_comments_range,
         )
