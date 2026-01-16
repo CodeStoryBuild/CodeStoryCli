@@ -16,6 +16,7 @@
 #  */
 # -----------------------------------------------------------------------------
 
+from collections import Counter
 from dataclasses import dataclass
 
 from codestory.core.diff.data.atomic_chunk import AtomicDiffChunk
@@ -54,18 +55,18 @@ class Signature:
     languages: set[str]  # Programming languages/File types of the signature
     new_structural_scopes: set[str]
     old_structural_scopes: set[str]
-    new_fqns: set[TypedFQN]
-    old_fqns: set[TypedFQN]
-    def_new_symbols: set[str]
-    def_old_symbols: set[str]
-    extern_new_symbols: set[str]
-    extern_old_symbols: set[str]
-    def_new_symbols_filtered: set[str]
-    def_old_symbols_filtered: set[str]
-    extern_new_symbols_filtered: set[str]
-    extern_old_symbols_filtered: set[str]
-    new_comments: set[str]
-    old_comments: set[str]
+    new_fqns: Counter[TypedFQN]
+    old_fqns: Counter[TypedFQN]
+    def_new_symbols: Counter[str]
+    def_old_symbols: Counter[str]
+    extern_new_symbols: Counter[str]
+    extern_old_symbols: Counter[str]
+    def_new_symbols_filtered: Counter[str]
+    def_old_symbols_filtered: Counter[str]
+    extern_new_symbols_filtered: Counter[str]
+    extern_old_symbols_filtered: Counter[str]
+    new_comments: Counter[str]
+    old_comments: Counter[str]
 
     def is_empty(self) -> bool:
         """Returns True if the signature represents no semantic changes (e.g., whitespace only)."""
@@ -86,20 +87,20 @@ class Signature:
                 set(),
                 set(),
                 set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
-                set(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
+                Counter(),
             )
 
         base_sig = next(sig for sig in signatures if sig is not None)
@@ -108,18 +109,18 @@ class Signature:
         base_languages = set(base_sig.languages)
         base_new_structural_scopes = set(base_sig.new_structural_scopes)
         base_old_structural_scopes = set(base_sig.old_structural_scopes)
-        base_new_fqns = set(base_sig.new_fqns)
-        base_old_fqns = set(base_sig.old_fqns)
-        base_def_new_symbols = set(base_sig.def_new_symbols)
-        base_def_old_symbols = set(base_sig.def_old_symbols)
-        base_extern_new_symbols = set(base_sig.extern_new_symbols)
-        base_extern_old_symbols = set(base_sig.extern_old_symbols)
-        base_def_new_symbols_filtered = set(base_sig.def_new_symbols_filtered)
-        base_def_old_symbols_filtered = set(base_sig.def_old_symbols_filtered)
-        base_extern_new_symbols_filtered = set(base_sig.extern_new_symbols_filtered)
-        base_extern_old_symbols_filtered = set(base_sig.extern_old_symbols_filtered)
-        base_new_comments = set(base_sig.new_comments)
-        base_old_comments = set(base_sig.old_comments)
+        base_new_fqns = Counter(base_sig.new_fqns)
+        base_old_fqns = Counter(base_sig.old_fqns)
+        base_def_new_symbols = Counter(base_sig.def_new_symbols)
+        base_def_old_symbols = Counter(base_sig.def_old_symbols)
+        base_extern_new_symbols = Counter(base_sig.extern_new_symbols)
+        base_extern_old_symbols = Counter(base_sig.extern_old_symbols)
+        base_def_new_symbols_filtered = Counter(base_sig.def_new_symbols_filtered)
+        base_def_old_symbols_filtered = Counter(base_sig.def_old_symbols_filtered)
+        base_extern_new_symbols_filtered = Counter(base_sig.extern_new_symbols_filtered)
+        base_extern_old_symbols_filtered = Counter(base_sig.extern_old_symbols_filtered)
+        base_new_comments = Counter(base_sig.new_comments)
+        base_old_comments = Counter(base_sig.old_comments)
 
         for s in signatures:
             if s is None or s is base_sig:
@@ -325,23 +326,23 @@ class ContainerLabler:
             Scope is determined by the LCA scope of the chunk's line ranges.
         """
         languages = set()
-        def_old_symbols_acc = set()
-        def_new_symbols_acc = set()
-        extern_old_symbols_acc = set()
-        extern_new_symbols_acc = set()
+        def_old_symbols_acc = Counter()
+        def_new_symbols_acc = Counter()
+        extern_old_symbols_acc = Counter()
+        extern_new_symbols_acc = Counter()
 
         new_structural_scopes_acc = set()
         old_structural_scopes_acc = set()
 
-        new_fqns_acc = set()  # Use set for FQNs
-        old_fqns_acc = set()  # Use set for FQNs
+        new_fqns_acc = Counter()  # Use Counter for FQNs
+        old_fqns_acc = Counter()  # Use Counter for FQNs
 
-        def_new_symbols_filtered_acc = set()
-        def_old_symbols_filtered_acc = set()
-        extern_new_symbols_filtered_acc = set()
-        extern_old_symbols_filtered_acc = set()
-        new_comments_acc = set()
-        old_comments_acc = set()
+        def_new_symbols_filtered_acc = Counter()
+        def_old_symbols_filtered_acc = Counter()
+        extern_new_symbols_filtered_acc = Counter()
+        extern_old_symbols_filtered_acc = Counter()
+        new_comments_acc = Counter()
+        old_comments_acc = Counter()
 
         if diff_chunk.is_standard_modification or diff_chunk.is_file_rename:
             # For modifications/renames, analyze both old and new line ranges
@@ -468,7 +469,13 @@ class ContainerLabler:
     def _get_signature_for_line_range(
         start_line: int, end_line: int, file_name: str, context: AnalysisContext
     ) -> tuple[
-        set[str], set[str], set[str], set[str], set[str], set[TypedFQN], set[str]
+        Counter[str],
+        Counter[str],
+        Counter[str],
+        Counter[str],
+        set[str],
+        Counter[TypedFQN],
+        Counter[str],
     ]:
         """Get signature and scope information for a specific line range using the
         analysis context.
@@ -485,13 +492,13 @@ class ContainerLabler:
         from codestory.core.semantic_analysis.mappers.query_manager import QueryManager
         from codestory.core.semantic_analysis.mappers.scope_mapper import NamedScope
 
-        defined_range_symbols = set()
-        defined_range_symbols_filtered = set()
-        extern_range_symbols = set()
-        extern_range_symbols_filtered = set()
+        defined_range_symbols = Counter()
+        defined_range_symbols_filtered = Counter()
+        extern_range_symbols = Counter()
+        extern_range_symbols_filtered = Counter()
         structural_scopes_range = set()
-        fqns: set[TypedFQN] = set()  # Set of TypedFQN objects
-        any_comments_range = set()
+        fqns: Counter[TypedFQN] = Counter()  # Counter of TypedFQN objects
+        any_comments_range = Counter()
 
         if start_line < 1 or end_line < start_line:
             # Chunks that are pure deletions can fall into this
@@ -547,7 +554,7 @@ class ContainerLabler:
                 # Type of FQN is the type of the last scope component
                 fqn_type = scope_stack[-1].scope_type if scope_stack else "unknown"
                 if fqn_str:  # Only add non-empty FQNs
-                    fqns.add(TypedFQN(fqn=fqn_str, fqn_type=fqn_type))
+                    fqns[TypedFQN(fqn=fqn_str, fqn_type=fqn_type)] += 1
                     scopes_added_since_last_save = False  # Reset after saving
 
             # Update the stack to match current scopes
@@ -610,7 +617,7 @@ class ContainerLabler:
             fqn_str = f"{file_name}:{'.'.join(scope_names)}"
             fqn_type = scope_stack[-1].scope_type if scope_stack else "unknown"
             if fqn_str:
-                fqns.add(TypedFQN(fqn=fqn_str, fqn_type=fqn_type))
+                fqns[TypedFQN(fqn=fqn_str, fqn_type=fqn_type)] += 1
 
         return (
             defined_range_symbols,

@@ -23,6 +23,7 @@ from codestory.core.semantic_analysis.annotation.chunk_lableler import (
     Signature,
     TypedFQN,
 )
+from collections import Counter
 
 # -----------------------------------------------------------------------------
 # Fixtures
@@ -52,18 +53,30 @@ def make_signature(
         languages={"python"},
         new_structural_scopes=new_structural_scopes or set(),
         old_structural_scopes=old_structural_scopes or set(),
-        new_fqns=new_fqns or set(),
-        old_fqns=old_fqns or set(),
-        def_new_symbols=def_new_symbols or set(),
-        def_old_symbols=def_old_symbols or set(),
-        extern_new_symbols=extern_new_symbols or set(),
-        extern_old_symbols=extern_old_symbols or set(),
-        def_new_symbols_filtered=def_new_symbols_filtered or set(),
-        def_old_symbols_filtered=def_old_symbols_filtered or set(),
-        extern_new_symbols_filtered=extern_new_symbols_filtered or set(),
-        extern_old_symbols_filtered=extern_old_symbols_filtered or set(),
-        new_comments=new_comments or set(),
-        old_comments=old_comments or set(),
+        new_fqns=Counter(new_fqns) if new_fqns else Counter(),
+        old_fqns=Counter(old_fqns) if old_fqns else Counter(),
+        def_new_symbols=Counter(def_new_symbols) if def_new_symbols else Counter(),
+        def_old_symbols=Counter(def_old_symbols) if def_old_symbols else Counter(),
+        extern_new_symbols=Counter(extern_new_symbols)
+        if extern_new_symbols
+        else Counter(),
+        extern_old_symbols=Counter(extern_old_symbols)
+        if extern_old_symbols
+        else Counter(),
+        def_new_symbols_filtered=Counter(def_new_symbols_filtered)
+        if def_new_symbols_filtered
+        else Counter(),
+        def_old_symbols_filtered=Counter(def_old_symbols_filtered)
+        if def_old_symbols_filtered
+        else Counter(),
+        extern_new_symbols_filtered=Counter(extern_new_symbols_filtered)
+        if extern_new_symbols_filtered
+        else Counter(),
+        extern_old_symbols_filtered=Counter(extern_old_symbols_filtered)
+        if extern_old_symbols_filtered
+        else Counter(),
+        new_comments=Counter(new_comments) if new_comments else Counter(),
+        old_comments=Counter(old_comments) if old_comments else Counter(),
     )
 
 
@@ -162,6 +175,26 @@ class TestSignatureIsEmpty:
         )
         assert sig.is_empty() is True
 
+    def test_duplicate_symbols_change_is_not_empty(self):
+        """
+        Duplicate symbols change (e.g., removing one occurrence) should not be empty.
+        """
+        sig = make_signature(
+            def_new_symbols={"foo": 2},
+            def_old_symbols={"foo": 1},
+        )
+        assert sig.is_empty() is False
+
+    def test_duplicate_symbols_same_both_sides_is_empty(self):
+        """
+        Duplicate symbols that are same on both sides should be empty.
+        """
+        sig = make_signature(
+            def_new_symbols={"foo": 2},
+            def_old_symbols={"foo": 2},
+        )
+        assert sig.is_empty() is True
+
 
 # -----------------------------------------------------------------------------
 # ContainerSignature.has_valid_sig() Tests
@@ -232,8 +265,8 @@ class TestSignatureFromSignatures:
 
         result = Signature.from_signatures([sig1, sig2])
 
-        assert result.new_comments == {"# comment 1", "# comment 2"}
-        assert result.old_comments == {"# old 1", "# old 2"}
+        assert result.new_comments == Counter({"# comment 1", "# comment 2"})
+        assert result.old_comments == Counter({"# old 1", "# old 2"})
 
     def test_merges_all_fields(self):
         """from_signatures correctly merges all signature fields."""
@@ -251,8 +284,8 @@ class TestSignatureFromSignatures:
         result = Signature.from_signatures([sig1, sig2])
 
         assert result.new_structural_scopes == {"ClassA", "ClassB"}
-        assert result.def_new_symbols == {"foo", "bar"}
-        assert result.new_comments == {"# c1", "# c2"}
+        assert result.def_new_symbols == Counter({"foo", "bar"})
+        assert result.new_comments == Counter({"# c1", "# c2"})
 
     def test_handles_none_in_list(self):
         """from_signatures handles None values in the list."""
@@ -260,4 +293,4 @@ class TestSignatureFromSignatures:
 
         result = Signature.from_signatures([sig1, None])
 
-        assert result.def_new_symbols == {"foo"}
+        assert result.def_new_symbols == Counter({"foo"})

@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING
 
 from codestory.core.diff.data.atomic_container import AtomicContainer
@@ -97,12 +98,12 @@ def generate_annotated_patch(
     )
 
 
-def prioritize_longer_symbols(symbols: set[str]) -> list[str]:
+def prioritize_longer_symbols(symbols: set[str] | Counter[str]) -> list[str]:
     """Prioritize longer symbol names as they will likely be more meaningful."""
     return sorted(symbols, key=lambda s: (-len(s), s))
 
 
-def prioritize_longer_fqns(fqns: set[TypedFQN]) -> list[TypedFQN]:
+def prioritize_longer_fqns(fqns: set[TypedFQN] | Counter[TypedFQN]) -> list[TypedFQN]:
     """Prioritize longer FQNs as they will likely be more meaningful."""
     return sorted(fqns, key=lambda f: (-len(f.fqn), f.fqn))
 
@@ -159,7 +160,7 @@ def generate_annotated_chunk_patch(
                 lang = sorted(sig.languages)[0]
                 metadata_lines.append(f"<language>{lang}</language>")
 
-            modified_fqns = sig.new_fqns.intersection(sig.old_fqns)
+            modified_fqns = sig.new_fqns & sig.old_fqns
             added_fqns = sig.new_fqns - modified_fqns
             removed_fqns = sig.old_fqns - modified_fqns
 
