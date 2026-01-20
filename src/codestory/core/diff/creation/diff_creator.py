@@ -259,6 +259,10 @@ class DiffCreator:
 
         # 1. First pass: Extract primary data (paths and mode)
         for line in lines:
+            # Check for hunk header - we MUST STOP parsing metadata here
+            if line.startswith(b"@@ "):
+                break
+
             # Check for file mode (new, deleted, old, new)
             mode_match = self._MODE_RE.match(line)
             if mode_match:
