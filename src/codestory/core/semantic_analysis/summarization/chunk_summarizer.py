@@ -30,16 +30,20 @@ from codestory.core.exceptions import LLMResponseError
 from codestory.core.logging.progress_manager import ProgressBarManager
 from codestory.core.semantic_analysis.annotation.utils import sanitize_llm_text
 from codestory.core.semantic_analysis.summarization.prompts import (
+    BATCHED_CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM,
     BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM,
     BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_USER,
     BATCHED_CLUSTER_SUMMARY_SYSTEM,
     BATCHED_CLUSTER_SUMMARY_USER,
+    BATCHED_DESCRIPTIVE_COMMIT_SYSTEM,
     BATCHED_DESCRIPTIVE_SUMMARY_SYSTEM,
     BATCHED_SUMMARY_SYSTEM,
     BATCHED_SUMMARY_USER,
+    CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM,
     CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM,
     CLUSTER_SUMMARY_SYSTEM,
     CLUSTER_SUMMARY_USER,
+    INITIAL_DESCRIPTIVE_COMMIT_SYSTEM,
     INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_USER,
@@ -118,6 +122,7 @@ class ContainerSummarizer:
         containers: list[AtomicContainer],
         user_message: str | None = None,
         output_style: Literal["brief", "descriptive"] = "brief",
+        descriptive_commit_messages: bool = False,
     ) -> list[str]:
         """Generate summaries for a list of chunks.
 
@@ -148,7 +153,10 @@ class ContainerSummarizer:
         # Generate summaries from patches
         formatted_intent = self._create_user_guidance_message(user_message)
         return self._generate_summaries(
-            annotated_patches, formatted_intent, output_style
+            annotated_patches,
+            formatted_intent,
+            output_style,
+            descriptive_commit_messages,
         )
 
     def summarize_container(
@@ -158,6 +166,7 @@ class ContainerSummarizer:
         patch_generator: PatchGenerator,
         user_message: str | None = None,
         output_style: Literal["brief", "descriptive"] = "brief",
+        descriptive_commit_messages: bool = False,
     ) -> str:
         """Generate a summary for a single container.
 
@@ -174,6 +183,7 @@ class ContainerSummarizer:
             containers=[container],
             user_message=user_message,
             output_style=output_style,
+            descriptive_commit_messages=descriptive_commit_messages,
         )
         return summaries[0]
 
@@ -232,14 +242,15 @@ class ContainerSummarizer:
         2. Second item
         ...
         """
-        # Match numbered list items: "1. content", "2. content", etc.
-        pattern = r"^\s*(\d+)\.\s+(.+)$"
-        items = []
+        # Match numbered list items: "1. content", "2. content", etc. accurately even with multiple lines
+        pattern = r"^\s*(\d+)\.\s+"
+        matches = list(re.finditer(pattern, response, re.MULTILINE))
 
-        for line in response.strip().split("\n"):
-            match = re.match(pattern, line.strip())
-            if match:
-                items.append(match.group(2).strip())
+        items = []
+        for i in range(len(matches)):
+            start = matches[i].end()
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(response)
+            items.append(response[start:end].strip())
 
         if len(items) != expected_count:
             raise LLMResponseError(
@@ -280,6 +291,7 @@ class ContainerSummarizer:
         self,
         partitions: list[list[tuple[int, str]]],
         output_style: Literal["brief", "descriptive"],
+        descriptive_commit_messages: bool,
     ) -> list[SummaryTask]:
         """Converts partitions of patches into actionable LLM Tasks.
 
@@ -326,6 +338,7 @@ class ContainerSummarizer:
         annotated_chunk_patches: list[str],
         intent_message: str,
         output_style: Literal["brief", "descriptive"],
+        descriptive_commit_messages: bool,
     ) -> list[str]:
         """Generate summaries for annotated chunk patches (markdown strings)."""
         from loguru import logger
@@ -343,7 +356,9 @@ class ContainerSummarizer:
         )
 
         # 2. Create Tasks
-        tasks = self._create_summary_tasks(partitions, output_style)
+        tasks = self._create_summary_tasks(
+            partitions, output_style, descriptive_commit_messages
+        )
 
         logger.debug(
             f"Generating summaries for {len(annotated_chunk_patches)} changes (Strategy: {strategy})."
@@ -368,7 +383,10 @@ class ContainerSummarizer:
                 {
                     "role": "system",
                     "content": self._get_summary_system_prompt(
-                        t.output_style, t.is_multiple, intent_message
+                        t.output_style,
+                        t.is_multiple,
+                        intent_message,
+                        descriptive_commit_messages,
                     ),
                 },
                 {"role": "user", "content": t.prompt},
@@ -387,6 +405,8 @@ class ContainerSummarizer:
             if not task.is_multiple:
                 # Single task: simple cleanup + sanitize LLM output
                 clean_res = sanitize_llm_text(response.strip('"').strip("'"))
+                if descriptive_commit_messages and task.output_style == "descriptive":
+                    clean_res = self._format_descriptive_message(clean_res)
                 final_summaries[task.indices[0]] = clean_res
             else:
                 batch_summaries = self._parse_markdown_list_response(
@@ -394,21 +414,69 @@ class ContainerSummarizer:
                 )
                 # Distribute results, sanitizing each summary
                 for idx, summary in zip(task.indices, batch_summaries, strict=True):
-                    final_summaries[idx] = sanitize_llm_text(summary)
+                    clean_res = sanitize_llm_text(summary)
+                    if (
+                        descriptive_commit_messages
+                        and task.output_style == "descriptive"
+                    ):
+                        clean_res = self._format_descriptive_message(clean_res)
+                    final_summaries[idx] = clean_res
 
         return final_summaries
+
+    def _format_descriptive_message(self, message: str) -> str:
+        """Enforce standard git commit message style (Subject \n \n Body)."""
+        lines = message.strip().splitlines()
+        if not lines:
+            return ""
+
+        subject = lines[0].strip()
+
+        # Find the start of the body (first non-empty line after the subject)
+        body_start = 1
+        while body_start < len(lines) and not lines[body_start].strip():
+            body_start += 1
+
+        if body_start >= len(lines):
+            return subject
+
+        # Clean up body lines: trim absolute whitespace but preserve relative empty lines
+        body_lines = []
+        for line in lines[body_start:]:
+            trimmed = line.strip()
+            if trimmed:
+                body_lines.append(trimmed)
+            elif body_lines and body_lines[-1] != "":
+                body_lines.append("")
+
+        # Trim trailing empty lines from the body
+        while body_lines and not body_lines[-1]:
+            body_lines.pop()
+
+        if not body_lines:
+            return subject
+
+        return f"{subject}\n\n" + "\n".join(body_lines)
 
     def _get_summary_system_prompt(
         self,
         style: Literal["brief", "descriptive"],
         is_multiple: bool,
         intent_message: str,
+        descriptive_commit_messages: bool,
     ) -> str:
         if style == "brief":
             if is_multiple:
                 return BATCHED_SUMMARY_SYSTEM.format(message=intent_message)
             return INITIAL_SUMMARY_SYSTEM.format(message=intent_message)
         else:
+            if descriptive_commit_messages:
+                if is_multiple:
+                    return BATCHED_DESCRIPTIVE_COMMIT_SYSTEM.format(
+                        message=intent_message
+                    )
+                return INITIAL_DESCRIPTIVE_COMMIT_SYSTEM.format(message=intent_message)
+
             if is_multiple:
                 return BATCHED_DESCRIPTIVE_SUMMARY_SYSTEM.format(message=intent_message)
             return INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM.format(message=intent_message)
@@ -422,6 +490,7 @@ class ContainerSummarizer:
         clusters: dict[int, list[str]],
         user_message: str | None = None,
         source_style: Literal["brief", "descriptive"] = "brief",
+        descriptive_commit_messages: bool = False,
     ) -> dict[int, str]:
         """Generate combined commit messages for clusters of related summaries.
 
@@ -474,7 +543,10 @@ class ContainerSummarizer:
                 {
                     "role": "system",
                     "content": self._get_cluster_system_prompt(
-                        t.source_style, t.is_multiple, formatted_intent
+                        t.source_style,
+                        t.is_multiple,
+                        formatted_intent,
+                        descriptive_commit_messages,
                     ),
                 },
                 {"role": "user", "content": t.prompt},
@@ -491,6 +563,8 @@ class ContainerSummarizer:
             if not task.is_multiple:
                 # Single cluster: sanitize LLM output
                 clean_msg = sanitize_llm_text(response.strip('"').strip("'"))
+                if descriptive_commit_messages and task.source_style == "descriptive":
+                    clean_msg = self._format_descriptive_message(clean_msg)
                 cluster_messages_map[task.cluster_ids[0]] = clean_msg
             else:
                 batch_messages = self._parse_markdown_list_response(
@@ -500,7 +574,13 @@ class ContainerSummarizer:
                 for cluster_id, message in zip(
                     task.cluster_ids, batch_messages, strict=True
                 ):
-                    cluster_messages_map[cluster_id] = sanitize_llm_text(message)
+                    clean_msg = sanitize_llm_text(message)
+                    if (
+                        descriptive_commit_messages
+                        and task.source_style == "descriptive"
+                    ):
+                        clean_msg = self._format_descriptive_message(clean_msg)
+                    cluster_messages_map[cluster_id] = clean_msg
 
         return cluster_messages_map
 
@@ -509,12 +589,20 @@ class ContainerSummarizer:
         source_style: Literal["brief", "descriptive"],
         is_multiple: bool,
         intent_message: str,
+        descriptive_commit_messages: bool,
     ) -> str:
         if source_style == "brief":
             if is_multiple:
                 return BATCHED_CLUSTER_SUMMARY_SYSTEM.format(message=intent_message)
             return CLUSTER_SUMMARY_SYSTEM.format(message=intent_message)
         else:
+            if descriptive_commit_messages:
+                if is_multiple:
+                    return BATCHED_CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM.format(
+                        message=intent_message
+                    )
+                return CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM.format(message=intent_message)
+
             if is_multiple:
                 return BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_SYSTEM.format(
                     message=intent_message

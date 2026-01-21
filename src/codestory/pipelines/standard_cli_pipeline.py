@@ -154,6 +154,7 @@ class StandardCLIPipeline:
                 self.context.get_embedder(),
                 clusterer,
                 user_message,
+                self.context.config.descriptive_commit_messages,
             ).group(semantic_groups)
         else:
             logical_groups = SingleGrouper().group(semantic_groups)

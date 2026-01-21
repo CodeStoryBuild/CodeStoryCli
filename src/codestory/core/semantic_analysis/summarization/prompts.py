@@ -310,3 +310,135 @@ BATCHED_CLUSTER_FROM_DESCRIPTIVE_SUMMARY_USER = """Here are {count} groups of ch
 {groups}
 
 Provide {count} combined commit messages as a numbered list:"""
+
+
+# -----------------------------------------------------------------------------
+# Descriptive Commit Message Prompts
+# -----------------------------------------------------------------------------
+
+INITIAL_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
+
+Input Format
+The user will provide an annotated code change in XML.
+- <metadata>: Context about the languages and symbols.
+- <patch>: The diff for the change.
+
+Task
+Write a professional, descriptive commit message for the change.
+- Use only plaintext. Do NOT use Markdown formatting (like **bold**, `code`, [links], or # headers).
+- Capture the technical details and impact.
+{message}
+
+Format:
+tag: (high level description)
+
+(specific things actually changed)
+- Logic change 1
+- Logic change 2
+
+Constraints:
+- "tag" should be a category like Feat, Fix, Refactor, Docs, Build, etc.
+- Max 72 characters for the first line.
+- Use a single empty line between the first line and the body.
+
+Example input:
+<metadata>
+languages: python
+symbols: class Authenticator
+</metadata>
+<patch>
+[h] --- a/auth.py
+[h] +++ b/auth.py
+[ctx] class Authenticator:
+[add]     def login(self, user, pwd):
+[add]         return True
+</patch>
+
+Example output:
+Feat: add login capability to Authenticator
+
+Implemented the initial login flow in the Authenticator class.
+- Added login method to auth.py
+- Provided basic return value for credential validation
+"""
+
+BATCHED_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
+
+Given multiple code changes in XML format, write one professional, descriptive commit message per change.
+{message}
+
+Rules:
+- Output a numbered list with one message per change.
+- Each message must use plaintext only (no Markdown like **bold** or `code`).
+- Use the format: tag: (subject) \n\n (body).
+- Match input order exactly.
+
+Example output:
+1. Feat: add login method to Authenticator
+
+   Implemented initial authentication logic.
+   - Added login method to auth.py
+   - Set up basic validation placeholder
+
+2. Fix: update config parser error handling
+
+   Improved robustness of configuration loading.
+   - Added try-except block to parse_config
+   - Now returns default config on failure
+"""
+
+CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
+
+Given multiple related commit messages or summaries, combine them into one professional, descriptive commit message.
+{message}
+
+Rules:
+- Use only plaintext. Do NOT use Markdown formatting.
+- Synthesis the high-level intent into the first line (tag: subject).
+- Use a single empty line between the first line and the body.
+- Use bullet points for specific details.
+
+Example output:
+Feat: enhance user authentication and session management
+
+Implemented comprehensive login, logout, and session validation flows.
+- Added login method for credential verification
+- Updated session logic to handle token expiration
+- Exposed new logout endpoint in the API
+"""
+
+BATCHED_CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
+
+Given multiple groups of related commit messages, combine each group into one professional, descriptive commit message.
+{message}
+
+Rules:
+- Output a numbered list with one message per group.
+- Each message must use plaintext only (no Markdown like **bold** or `code`).
+- Use the format: tag: (subject) \n\n (body).
+- Match input order exactly.
+
+Example input:
+### Group 1
+- Add login method
+- Fix session validation
+- Update logout logic
+
+### Group 2
+- Add YAML support to config parser
+- Add unit tests for YAML parsing
+
+Example output:
+1. Feat: implement authentication logic
+
+   Added core login and session validation components.
+   - Implemented Authenticator.login
+   - Added session state tracking
+
+2. Build: add project scaffolding and configuration
+
+   Established the repository basic structure and documentation.
+   - Added .gitignore with standard Python patterns
+   - Added README.md with project overview
+   - Updated config.py with default settings
+"""

@@ -68,6 +68,7 @@ class GlobalConfig:
     cluster_strictness: float = 0.5
     num_retries: int = 3
     no_log_files: bool = False
+    descriptive_commit_messages: bool = True
 
     constraints = {
         "model": StringConstraint(),
@@ -107,6 +108,7 @@ class GlobalConfig:
         "cluster_strictness": RangeTypeConstraint(min_value=0.0, max_value=1.0),
         "num_retries": RangeTypeConstraint(min_value=0, max_value=10, is_int=True),
         "no_log_files": BoolConstraint(),
+        "descriptive_commit_messages": BoolConstraint(),
     }
 
     descriptions = {
@@ -131,6 +133,7 @@ class GlobalConfig:
         "cluster_strictness": "Strictness of clustering logical groups together. (0-1) Higher value = higher threshold of similarity required to group together.",
         "num_retries": "How many times to retry calling a model if it fails to return an output (0-10)",
         "no_log_files": "Disable logging to files, only output to console",
+        "descriptive_commit_messages": "Whether to use more descriptive and professional commit messages by default",
     }
 
     arg_options = {
@@ -157,6 +160,7 @@ class GlobalConfig:
         "cluster_strictness": ["--cluster-strictness"],
         "num_retries": ["--num-retries"],
         "no_log_files": ["--no-log-files"],
+        "descriptive_commit_messages": ["--descriptive-commit-messages"],
     }
 
     @classmethod

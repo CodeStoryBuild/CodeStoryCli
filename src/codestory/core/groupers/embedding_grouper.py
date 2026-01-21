@@ -58,12 +58,14 @@ class EmbeddingGrouper(Grouper):
         embedder: Embedder,
         clusterer: Clusterer,
         user_message: str | None = None,
+        descriptive_commit_messages: bool = True,
     ):
         self.embedder = embedder
         self.chunk_summarizer = summarizer
         self.clusterer = clusterer
 
         self.user_message = user_message
+        self.descriptive_commit_messages = descriptive_commit_messages
 
     def group(
         self,
@@ -86,7 +88,10 @@ class EmbeddingGrouper(Grouper):
             return []
 
         summaries = self.chunk_summarizer.summarize_containers(
-            containers, user_message=self.user_message, output_style="descriptive"
+            containers,
+            user_message=self.user_message,
+            output_style="descriptive",
+            descriptive_commit_messages=self.descriptive_commit_messages,
         )
 
         # Step 2: Handle single chunk case (no clustering needed)
@@ -97,6 +102,7 @@ class EmbeddingGrouper(Grouper):
                 clusters={0: [summaries[0]]},
                 user_message=self.user_message,
                 source_style="descriptive",
+                descriptive_commit_messages=self.descriptive_commit_messages,
             )[0]
             return [CommitGroup(container=containers[0], commit_message=cluster_msg)]
 
@@ -130,6 +136,7 @@ class EmbeddingGrouper(Grouper):
                 clusters={cid: cluster.summaries for cid, cluster in clusters.items()},
                 user_message=self.user_message,
                 source_style="descriptive",
+                descriptive_commit_messages=self.descriptive_commit_messages,
             )
 
             # Create commit groups from clusters
