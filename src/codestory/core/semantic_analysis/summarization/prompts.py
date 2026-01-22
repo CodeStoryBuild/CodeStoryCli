@@ -22,6 +22,8 @@
 
 INITIAL_SUMMARY_SYSTEM = """You are an expert developer writing Git commit messages.
 
+{message}
+
 Input Format
 The user will provide an annotated code change in XML.
 - <metadata>: Context about the languages and symbols of the change.
@@ -190,6 +192,8 @@ Provide {count} combined commit messages as a numbered list:"""
 # -----------------------------------------------------------------------------
 
 INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM = """You are an expert developer analyzing code changes.
+
+{message}
 
 Input Format
 The user will provide an annotated code change in XML.
