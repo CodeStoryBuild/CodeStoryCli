@@ -18,40 +18,21 @@ Codestory CLI is a tool for developers who value a clean, searchable, and review
 
 ---
 
-## Core Documentation
+## Getting Started
 
-- **[Why Codestory CLI? (Philosophy)](./philosophy/index.md)**: Why atomic commits matter.
+- **[Installation Guide](./getting-started/index.md)** - Get up and running in minutes.
+- **[Philosophy](./philosophy/index.md)** - Why atomic commits and clean history matter.
+- **[Usage Guide](./usage/index.md)** - Learn the <code>commit</code>, <code>fix</code>, and <code>clean</code> workflows.
 
-- **[Quick Start Guide](./getting-started/index.md)**: Installation and initial setup.
+## Deep Dives
 
-- **[Usage Guide](./usage/index.md)**: Workflow examples with `commit`, `fix`, and `clean`.
-
-- **[Troubleshooting & Tips](./troubleshooting/index.md)**: How to refine behavior and resolve common issues.
-
-## Technical Internals
-
-Learn how we ensure safety and semantics:
-
-- **[The Core Logic](./design/how-it-works.md)**: High-level overview of the pipeline.
-
-- **[Mechanical Chunking](./design/mechanical-chunking.md)**: Deterministic decomposition of diffs.
-
-- **[Semantic Grouping](./design/semantic-grouping.md)**: Using tree-sitter to respect syntax.
-
-- **[Logical Grouping](./design/logical-grouping.md)**: AI-driven intent discovery.
-
-- **[Commit Strategy](./design/commit-strategy.md)**: Safe history reconstruction.
+- **[Architecture Overview](./design/how-it-works.md)** - How the pipeline coordinates analysis.
+- **[Mechanical Chunking](./design/mechanical-chunking.md)** - Deterministic decomposition of diffs.
+- **[Semantic Grouping](./design/semantic-grouping.md)** - Respecting code syntax with tree-sitter.
+- **[Logical Grouping](./design/logical-grouping.md)** - Intent discovery and message generation.
 
 ## Reference
 
-- **[CLI Reference](./reference/root.md)**: Command-line arguments and flags.
-
-- **[Configuration](./configuration/index.md)**: Global, local, and environmental settings.
-
-- **[Extensibility Guide](./extensibility/index.md)**: Adding support for new languages.
-
-- **[Supported Lists](./reference/supported.md)**: AI providers and built-in languages.
-
----
-
-Codestory CLI is licensed under GPLv2.
+- **[Command Reference](./reference/root.md)** - CLI flags and detailed command usage.
+- **[Configuration](./configuration/index.md)** - Settings and environment variables.
+- **[Extensibility](./extensibility/index.md)** - Adding language support.
