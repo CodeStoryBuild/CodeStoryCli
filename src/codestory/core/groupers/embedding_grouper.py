@@ -91,7 +91,7 @@ class EmbeddingGrouper(Grouper):
             containers,
             user_message=self.user_message,
             output_style="descriptive",
-            descriptive_commit_messages=self.descriptive_commit_messages,
+            descriptive_commit_messages=True,  # internally, we use the descriptive messages always
         )
 
         # Step 2: Handle single chunk case (no clustering needed)
