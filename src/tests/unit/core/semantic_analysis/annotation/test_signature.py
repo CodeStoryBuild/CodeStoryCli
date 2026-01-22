@@ -18,12 +18,13 @@
 
 """Tests for Signature.is_empty() and ContainerSignature.has_valid_sig()."""
 
+from collections import Counter
+
 from codestory.core.semantic_analysis.annotation.chunk_lableler import (
     ContainerSignature,
     Signature,
     TypedFQN,
 )
-from collections import Counter
 
 # -----------------------------------------------------------------------------
 # Fixtures
