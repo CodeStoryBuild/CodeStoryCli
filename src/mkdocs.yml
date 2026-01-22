@@ -74,6 +74,7 @@ extra:
     provider: mike
 
 nav:
+  - 🏠 CLI Home: https://cli.codestory.build/
   - Introduction: index.md
   - Why Codestory CLI?: philosophy/index.md
   - Getting Started: getting-started/index.md
