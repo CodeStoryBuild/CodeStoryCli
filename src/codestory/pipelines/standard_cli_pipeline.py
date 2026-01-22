@@ -124,12 +124,16 @@ class StandardCLIPipeline:
                 context_lines=2,
                 skip_whitespace=True,
             )
+            recent_commits = self.context.git_commands.get_recent_commit_messages(
+                self.context.config.num_recent_commits
+            )
             container_summarizer = ContainerSummarizer(
                 self.context.get_model(),
                 context_manager,
                 semantic_patch_generator,
                 self.context.config.batching_strategy,
                 self.context.config.max_tokens,
+                recent_commits=recent_commits,
             )
             embedder = self.context.get_embedder()
 

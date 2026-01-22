@@ -103,6 +103,24 @@ class GitCommands:
             return ""
         return res.strip()
 
+    def get_recent_commit_messages(self, n: int) -> list[str]:
+        """Returns the last n commit messages from the current branch."""
+        res = self.git.run_git_text_out(["log", f"-{n}", "--pretty=%B"])
+        if res is None:
+            return []
+
+        # Git log --pretty=%B separates commits with a single newline,
+        # but commit messages themselves can have multiple newlines.
+        # It's better to use a unique delimiter.
+        res = self.git.run_git_text_out(
+            ["log", f"-{n}", "--pretty=format:%B%n---COMMIT_END---"]
+        )
+        if res is None:
+            return []
+
+        messages = res.split("---COMMIT_END---")
+        return [msg.strip() for msg in messages if msg.strip()]
+
     def get_commit_metadata(self, commit_hash: str, log_format: str) -> str | None:
         """Returns metadata for a commit using the specified git log format."""
         return self.git.run_git_text_out(

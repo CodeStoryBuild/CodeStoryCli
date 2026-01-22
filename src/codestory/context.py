@@ -68,7 +68,8 @@ class GlobalConfig:
     cluster_strictness: float = 0.5
     num_retries: int = 3
     no_log_files: bool = False
-    descriptive_commit_messages: bool = True
+    descriptive_commit_messages: bool = False
+    num_recent_commits: int = 5
 
     constraints = {
         "model": StringConstraint(),
@@ -109,6 +110,9 @@ class GlobalConfig:
         "num_retries": RangeTypeConstraint(min_value=0, max_value=10, is_int=True),
         "no_log_files": BoolConstraint(),
         "descriptive_commit_messages": BoolConstraint(),
+        "num_recent_commits": RangeTypeConstraint(
+            min_value=0, max_value=50, is_int=True
+        ),
     }
 
     descriptions = {
@@ -134,6 +138,7 @@ class GlobalConfig:
         "num_retries": "How many times to retry calling a model if it fails to return an output (0-10)",
         "no_log_files": "Disable logging to files, only output to console",
         "descriptive_commit_messages": "Whether to use more descriptive and professional commit messages by default",
+        "num_recent_commits": "Number of recent commit messages to include in the context for summarization (0-50)",
     }
 
     arg_options = {
@@ -161,6 +166,7 @@ class GlobalConfig:
         "num_retries": ["--num-retries"],
         "no_log_files": ["--no-log-files"],
         "descriptive_commit_messages": ["--descriptive-commit-messages"],
+        "num_recent_commits": ["--num-recent-commits"],
     }
 
     @classmethod

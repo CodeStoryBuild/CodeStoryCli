@@ -103,6 +103,7 @@ class ContainerSummarizer:
         patch_generator: PatchGenerator,
         batching_strategy: Literal["auto", "requests", "prompt"] = "auto",
         max_tokens: int = 32000,
+        recent_commits: list[str] | None = None,
     ):
         """Initialize the ChunkSummarizer.
 
@@ -110,12 +111,14 @@ class ContainerSummarizer:
             codestory_adapter: The CodeStoryAdapter for LLM invocation
             batching_strategy: Strategy for batching LLM requests
             max_tokens: Maximum tokens per request
+            recent_commits: List of recent commit messages for context
         """
         self.model = codestory_adapter
         self.context_manager = context_manager
         self.patch_generator = patch_generator
         self.batching_strategy = batching_strategy
         self.max_tokens = max_tokens
+        self.recent_commits = recent_commits
 
     def summarize_containers(
         self,
@@ -188,11 +191,24 @@ class ContainerSummarizer:
         return summaries[0]
 
     def _create_user_guidance_message(self, intent_message: str | None) -> str:
-        """Format the intent message for inclusion in prompts."""
-        if intent_message is None:
+        """Format the intent message and git history for inclusion in prompts."""
+        context_parts = []
+
+        if intent_message:
+            context_parts.append(
+                f"The user has provided additional information about the global intent of all their changes. If relevant you should use this information to enhance your summaries\nBEGIN INTENT\n{intent_message}\nEND INTENT"
+            )
+
+        if self.recent_commits:
+            history = "\n".join(f"- {msg}" for msg in self.recent_commits)
+            context_parts.append(
+                f"To help maintain consistency with recent work, here are the last {len(self.recent_commits)} commit messages from the git history:\nBEGIN GIT HISTORY\n{history}\nEND GIT HISTORY"
+            )
+
+        if not context_parts:
             return ""
 
-        return f"\nThe user has provided additional information about the global intent of all their changes. If relevant you should use this information to enhance your summaries\nBEGIN INTENT\n{intent_message}\nEND INTENT\n"
+        return "\n" + "\n\n".join(context_parts) + "\n"
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count based on 3 chars per token."""
