@@ -330,16 +330,20 @@ Write a professional, descriptive commit message for the change.
 {message}
 
 Format:
-tag: (high level description)
+<optional tag>: (high level description)
 
 (specific things actually changed)
-- Logic change 1
-- Logic change 2
+- High level Logic change 1
+- High level Logic change 2
 
 Constraints:
 - "tag" should be a category like Feat, Fix, Refactor, Docs, Build, etc.
 - Max 72 characters for the first line.
 - Use a single empty line between the first line and the body.
+- Imperative mood (Add, Update, Remove, Refactor) for both the subject and the body.
+- Capture the high-level intent that groups these changes.
+- Combine similar changes into the same high level change.
+- Keep descriptions concise and technical.
 
 Example input:
 <metadata>
@@ -357,9 +361,8 @@ symbols: class Authenticator
 Example output:
 Feat: add login capability to Authenticator
 
-Implemented the initial login flow in the Authenticator class.
-- Added login method to auth.py
-- Provided basic return value for credential validation
+Implement initial authentication flow in Authenticator.
+- Add login method with placeholder validation
 """
 
 BATCHED_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
@@ -367,24 +370,65 @@ BATCHED_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git c
 Given multiple code changes in XML format, write one professional, descriptive commit message per change.
 {message}
 
+Format:
+
+<group #>. <optional tag>: (high level description)
+
+(specific things actually changed)
+- High level Logic change 1
+- High level Logic change 2
+
 Rules:
 - Output a numbered list with one message per change.
 - Each message must use plaintext only (no Markdown like **bold** or `code`).
-- Use the format: tag: (subject) \n\n (body).
+- Imperative mood (Add, Update, Remove, Refactor) for both the subject and the body.
+- Capture the high-level intent that groups these changes.
+- Combine similar changes descriptions into the same high level change
+- Be concise and technical.
 - Match input order exactly.
+
+Example input:
+### Group 1
+<metadata>
+languages: python
+symbols: class Authenticator
+</metadata>
+<patch>
+[h] --- a/auth.py
+[h] +++ b/auth.py
+[ctx] class Authenticator:
+[add]     def login(self, user, pwd):
+[add]         return True
+</patch>
+### Group 2
+<metadata>
+languages: javascript
+symbols: function parseConfig
+</metadata>
+<patch>
+[h] --- a/config.js
+[h] +++ b/config.js
+[ctx] function parseConfig(){{
+[add]  try{{
+[add]     doParse();
+[add]  }} catch (error) {{
+[add]     return defaultConfig;
+[add]  }}
+</patch>
+
 
 Example output:
 1. Feat: add login method to Authenticator
 
-   Implemented initial authentication logic.
-   - Added login method to auth.py
+   Implement initial authentication logic.
+   - Add login method to Authenticator
    - Set up basic validation placeholder
 
 2. Fix: update config parser error handling
 
-   Improved robustness of configuration loading.
-   - Added try-except block to parse_config
-   - Now returns default config on failure
+   Improve robustness of configuration loading.
+   - Add try-catch block to parseConfig
+   - Return default config on failure
 """
 
 CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
@@ -396,15 +440,22 @@ Rules:
 - Use only plaintext. Do NOT use Markdown formatting.
 - Synthesis the high-level intent into the first line (tag: subject).
 - Use a single empty line between the first line and the body.
+- Imperative mood (Add, Update, Remove, Refactor) for both the subject and the body.
 - Use bullet points for specific details.
+- Be concise and technical.
+
+Example input:
+- Add login method
+- Fix session validation
+- Update logout logic
 
 Example output:
 Feat: enhance user authentication and session management
 
-Implemented comprehensive login, logout, and session validation flows.
-- Added login method for credential verification
-- Updated session logic to handle token expiration
-- Exposed new logout endpoint in the API
+Improve authentication and session validation flows.
+- Add login method for credential verification
+- Update session logic to handle token expiration
+- Expose new logout endpoint in the API
 """
 
 BATCHED_CLUSTER_DESCRIPTIVE_COMMIT_SYSTEM = """You are an expert developer writing Git commit messages.
@@ -416,6 +467,8 @@ Rules:
 - Output a numbered list with one message per group.
 - Each message must use plaintext only (no Markdown like **bold** or `code`).
 - Use the format: tag: (subject) \n\n (body).
+- Imperative mood (Add, Update, Remove, Refactor) for both the subject and the body.
+- Be concise and technical.
 - Match input order exactly.
 
 Example input:
@@ -431,14 +484,14 @@ Example input:
 Example output:
 1. Feat: implement authentication logic
 
-   Added core login and session validation components.
-   - Implemented Authenticator.login
-   - Added session state tracking
+   Add core login and session validation components.
+   - Implement Authenticator.login
+   - Add session state tracking
 
 2. Build: add project scaffolding and configuration
 
-   Established the repository basic structure and documentation.
-   - Added .gitignore with standard Python patterns
-   - Added README.md with project overview
-   - Updated config.py with default settings
+   Establish repository basic structure and documentation.
+   - Add .gitignore with standard Python patterns
+   - Add README.md with project overview
+   - Update config.py with default settings
 """
