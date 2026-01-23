@@ -47,6 +47,7 @@ from codestory.core.semantic_analysis.summarization.prompts import (
     INITIAL_DESCRIPTIVE_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_SYSTEM,
     INITIAL_SUMMARY_USER,
+    _create_extra_context_header,
 )
 from codestory.core.semantic_analysis.summarization.summarizer_utils import (
     generate_annotated_patch,
@@ -154,7 +155,9 @@ class ContainerSummarizer:
 
         # Generate summaries from patches
         # Generate summaries from patches
-        formatted_intent = self._create_user_guidance_message(user_message)
+        formatted_intent = _create_extra_context_header(
+            self.recent_commits, user_message
+        )
         return self._generate_summaries(
             annotated_patches,
             formatted_intent,
@@ -189,26 +192,6 @@ class ContainerSummarizer:
             descriptive_commit_messages=descriptive_commit_messages,
         )
         return summaries[0]
-
-    def _create_user_guidance_message(self, intent_message: str | None) -> str:
-        """Format the intent message and git history for inclusion in prompts."""
-        context_parts = []
-
-        if intent_message:
-            context_parts.append(
-                f"The user has provided additional information about the global intent of all their changes. If relevant you should use this information to enhance your summaries\nBEGIN INTENT\n{intent_message}\nEND INTENT"
-            )
-
-        if self.recent_commits:
-            history = "\n".join(f"- {msg}" for msg in self.recent_commits)
-            context_parts.append(
-                f"To help maintain consistency with recent work, here are the last {len(self.recent_commits)} commit messages from the git history:\nBEGIN GIT HISTORY\n{history}\nEND GIT HISTORY"
-            )
-
-        if not context_parts:
-            return ""
-
-        return "\n" + "\n\n".join(context_parts) + "\n"
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count based on 3 chars per token."""
@@ -522,9 +505,12 @@ class ContainerSummarizer:
         if not clusters:
             return {}
 
-        formatted_intent = self._create_user_guidance_message(user_message)
+        formatted_intent = _create_extra_context_header(
+            self.recent_commits, user_message
+        )
 
         strategy = self.batching_strategy
+
         if strategy == "auto":
             strategy = "requests" if self.model.is_local() else "prompt"
 

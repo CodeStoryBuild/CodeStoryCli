@@ -499,3 +499,58 @@ Example output:
    - Add README.md with project overview
    - Update config.py with default settings
 """
+
+# -----------------------------------------------------------------------------
+# Extra Context Header
+# -----------------------------------------------------------------------------
+
+EXTRA_CONTEXT_INSTRUCTIONS = """The following information provides extra context for the changes you are summarizing.
+This context should influence the summaries and decisions you make."""
+
+GIT_HISTORY_SECTION = """To help maintain consistency with recent work, here are the historical commit messages:
+BEGIN GIT HISTORY
+{history}
+END GIT HISTORY"""
+
+USER_INTENT_SECTION = """The user has provided additional information about the global intent of all their changes.
+You should attempt to use this information to adjust your summaries.
+BEGIN INTENT
+{intent}
+END INTENT"""
+
+EXAMPLES_SECTION = """
+### Examples of Context-Aware Summarization
+
+Example 1: Using User Intent
+- User Intent: "Refactoring the authentication module to use JWT instead of sessions"
+- Standard Summary: "Add token validator and update auth"
+- Context-Aware Summary: "Refactor auth: implement JWT token validation"
+
+Example 2: Maintaining History Consistency
+- Recent History:
+  - "Fix: resolve null pointer in user service"
+  - "Temp: add hardcoded validation for email format"
+- Standard Summary: "remove hardcoded validation for email format"
+- Context-Aware Summary: "Fix the hardcoded validation for email format"
+"""
+
+
+def _create_extra_context_header(
+    recent_commits: list[str], intent_message: str | None
+) -> str:
+    """Format the intent message and git history for inclusion in prompts."""
+    if not recent_commits and not intent_message:
+        return ""
+
+    context_parts = [EXTRA_CONTEXT_INSTRUCTIONS]
+
+    if recent_commits:
+        history = "\n".join(f"- {msg}" for msg in recent_commits)
+        context_parts.append(GIT_HISTORY_SECTION.format(history=history))
+
+    if intent_message:
+        context_parts.append(USER_INTENT_SECTION.format(intent=intent_message))
+
+    context_parts.append(EXAMPLES_SECTION)
+
+    return "\n" + "\n\n".join(context_parts) + "\n"
