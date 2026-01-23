@@ -262,7 +262,7 @@ def print_describe_options():
             {
                 "Key": config_key,
                 "Description": description,
-                "Value": default_str,
+                "Default Value": "Default: " + default_str,
                 "Source": "Options: " + str(info["constraint"]),
             }
         )
@@ -271,7 +271,7 @@ def print_describe_options():
         table_data,
         description_field="Description",
         key_field="Key",
-        value_field="Value",
+        value_field="Default Value",
         source_field="Source",
         max_value_length=80,
     )
