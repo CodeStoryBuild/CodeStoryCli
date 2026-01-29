@@ -312,3 +312,12 @@ class GitCommands:
         if parent_hash_result is None:
             return EMPTYTREEHASH if empty_on_fail else None
         return parent_hash_result.strip()
+
+    def run_hook(self, hook_name: str) -> bool:
+        """Run a git hook by name (e.g., 'pre-commit', 'post-commit').
+
+        Uses 'git hook run' which is available in Git 2.36+.
+        Returns True if the hook ran successfully (or doesn't exist), False if it failed.
+        """
+        result = self.git.run_git_text(["hook", "run", hook_name])
+        return result is not None

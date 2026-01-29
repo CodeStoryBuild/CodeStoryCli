@@ -70,6 +70,7 @@ class GlobalConfig:
     no_log_files: bool = False
     descriptive_commit_messages: bool = False
     num_recent_commits: int = 5
+    run_commit_hooks: bool = False
 
     constraints = {
         "model": StringConstraint(),
@@ -113,6 +114,7 @@ class GlobalConfig:
         "num_recent_commits": RangeTypeConstraint(
             min_value=0, max_value=50, is_int=True
         ),
+        "run_commit_hooks": BoolConstraint(),
     }
 
     descriptions = {
@@ -139,6 +141,7 @@ class GlobalConfig:
         "no_log_files": "Disable logging to files, only output to console",
         "descriptive_commit_messages": "Whether to use more descriptive and professional commit messages by default",
         "num_recent_commits": "Number of recent commit messages to include in the context for summarization (0-50)",
+        "run_commit_hooks": "Whether to run git pre-commit and post-commit hooks during 'cst commit'",
     }
 
     arg_options = {
@@ -167,6 +170,7 @@ class GlobalConfig:
         "no_log_files": ["--no-log-files"],
         "descriptive_commit_messages": ["--descriptive-commit-messages"],
         "num_recent_commits": ["--num-recent-commits"],
+        "run_commit_hooks": ["--run-commit-hooks"],
     }
 
     @classmethod

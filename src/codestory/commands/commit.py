@@ -22,6 +22,7 @@ from colorama import Fore, Style
 from codestory.context import GlobalContext
 from codestory.core.exceptions import (
     GitError,
+    HookError,
 )
 from codestory.core.git.git_commands import GitCommands
 from codestory.core.git.git_sandbox import GitSandbox
@@ -98,6 +99,13 @@ def run_commit(
             global_context.current_branch, head_commit
         )
 
+    # Run pre-commit hook before creating the temp commit
+    # This allows hooks like formatters to modify files before we capture the diff
+    if global_context.config.run_commit_hooks:
+        logger.debug("Running pre-commit hook...")
+        if not global_context.git_commands.run_hook("pre-commit"):
+            raise HookError("pre-commit hook failed")
+
     # Create a dangling commit for the current working tree state.
     # This also runs in a sandbox to avoid polluting the main object directory.
     with GitSandbox.from_context(global_context) as sandbox:
@@ -136,6 +144,11 @@ def run_commit(
             global_context.current_branch, new_commit_hash
         )
         global_context.git_commands.read_tree(global_context.current_branch)
+
+        # Run post-commit hook after successful commit
+        if global_context.config.run_commit_hooks:
+            logger.debug("Running post-commit hook...")
+            global_context.git_commands.run_hook("post-commit")
 
         logger.success(
             "Commit command completed successfully",

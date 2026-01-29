@@ -59,6 +59,12 @@ class GitRebaseFailed(GitError):
     """Errors during rebasing of commits."""
 
 
+class HookError(GitError):
+    """Raised when a git hook fails (e.g., pre-commit, post-commit)."""
+
+    pass
+
+
 class ValidationError(CodestoryError):
     """Input validation errors.
 
