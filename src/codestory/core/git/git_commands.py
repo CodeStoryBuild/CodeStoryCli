@@ -17,6 +17,8 @@
 # -----------------------------------------------------------------------------
 
 
+from pathlib import Path
+
 from codestory.core.git.git_const import EMPTYTREEHASH
 from codestory.core.git.git_interface import GitInterface
 
@@ -301,6 +303,23 @@ class GitCommands:
         """Checks if the current repository is bare."""
         res = self.git.run_git_text_out(["rev-parse", "--is-bare-repository"])
         return res.strip() == "true" if res else False
+
+    def get_repo_lock(self) -> str | None:
+        """Checks if the repository is locked by another git process.
+
+        Returns the path to the lock file if it exists, otherwise None.
+        """
+        # index.lock is the most common git lock.
+        # We use rev-parse --git-path to correctly handle worktrees and submodules.
+        res = self.git.run_git_text_out(["rev-parse", "--git-path", "index.lock"])
+        if res:
+            lock_path = Path(res.strip())
+            # Handle both absolute and relative paths from git
+            if not lock_path.is_absolute():
+                lock_path = self.git.repo_path / lock_path
+            if lock_path.exists():
+                return str(lock_path)
+        return None
 
     def try_get_parent_hash(
         self, commit_hash: str, empty_on_fail: bool = False

@@ -261,6 +261,29 @@ def validate_git_repository(git_commands: GitCommands) -> None:
     if not os.path.exists(os.path.join(str(git_commands.git.repo_path), ".git")):
         raise GitError("Not a git repository")
 
+    # Check if the repository is locked
+    validate_repo_not_locked(git_commands)
+
+
+def validate_repo_not_locked(git_commands: GitCommands) -> None:
+    """Validate that the repository is not locked by another git process.
+
+    Args:
+        git_commands: Git commands to run
+
+    Raises:
+        GitError: If the repository is locked
+    """
+    lock_file = git_commands.get_repo_lock()
+    if lock_file:
+        raise GitError(
+            "Another git process seems to be running in this repository, e.g.\n"
+            "an editor opened by 'git commit'. Please make sure all processes\n"
+            "are terminated then try again. If it still fails, a git process\n"
+            "may have crashed in this repository earlier:\n"
+            f"remove the file '{lock_file}' manually to continue."
+        )
+
 
 def validate_default_branch(git_commands: GitCommands) -> None:
     """Validate that we are on a branch (not in detached HEAD state).
