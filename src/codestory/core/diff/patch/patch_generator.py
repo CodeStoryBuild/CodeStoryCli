@@ -102,7 +102,9 @@ class PatchGenerator:
         - Removes any trailing tabs.
         - Leaves other characters unchanged.
         """
-        return filename.rstrip(b"\t").strip()  # remove trailing tabs
+        sanitized = filename.rstrip(b"\t")
+        sanitized = sanitized.replace(b" ", b"\\ ")
+        return sanitized.strip()
 
     def get_patch(
         self, container: AtomicContainer, is_bytes: bool = False
