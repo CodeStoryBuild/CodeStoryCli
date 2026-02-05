@@ -115,6 +115,19 @@ def test_coordinates_mixed():
     assert c.get_old_line_range() == (1, 1)  # old_len is 1
 
 
+def test_coordinates_deletion_only_abs_new_line():
+    # Deletions only should still provide abs_new_line range
+    content = [
+        Removal(5, 12, b"old_a"),
+        Removal(6, 13, b"old_b"),
+    ]
+    c = create_chunk(parsed_content=content, old_start=5)
+
+    assert c.get_abs_new_line_start() == 12
+    assert c.get_abs_new_line_end() == 13
+    assert c.get_abs_new_line_range() == (12, 13)
+
+
 def test_is_disjoint():
     # Chunk 1: lines 1-5
     # old_start=1, old_len=5 -> ends at 6

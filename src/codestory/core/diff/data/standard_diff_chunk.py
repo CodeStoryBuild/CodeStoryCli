@@ -58,26 +58,32 @@ class StandardDiffChunk(AtomicDiffChunk):
     def get_abs_new_line_start(self) -> int | None:
         """Get the absolute new file line start (for semantic grouping ONLY!).
 
-        This finds the abs_new_line value from the first Addition in the
-        chunk. Returns None if there are no additions.
+        Prefer the first Addition. If there are no additions, fall back to the
+        first Removal's abs_new_line to support deletion-only chunks.
         """
         if not self.parsed_content:
             return None
         for item in self.parsed_content:
             if isinstance(item, Addition):
                 return item.abs_new_line
+        for item in self.parsed_content:
+            if isinstance(item, Removal):
+                return item.abs_new_line
         return None
 
     def get_abs_new_line_end(self) -> int | None:
         """Get the absolute new file line end (for semantic grouping ONLY!).
 
-        This finds the abs_new_line value from the last Addition in the
-        chunk. Returns None if there are no additions.
+        Prefer the last Addition. If there are no additions, fall back to the
+        last Removal's abs_new_line to support deletion-only chunks.
         """
         if not self.parsed_content:
             return None
         for item in reversed(self.parsed_content):
             if isinstance(item, Addition):
+                return item.abs_new_line
+        for item in reversed(self.parsed_content):
+            if isinstance(item, Removal):
                 return item.abs_new_line
         return None
 

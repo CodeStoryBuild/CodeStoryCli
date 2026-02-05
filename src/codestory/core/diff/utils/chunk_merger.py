@@ -19,7 +19,6 @@
 from itertools import groupby
 
 from codestory.core.diff.data.atomic_container import AtomicContainer
-from codestory.core.diff.data.line_changes import Addition, Removal
 from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk
 
 
@@ -107,21 +106,12 @@ def __merge_diff_chunks(
 
         # Flatten the content from all chunks in the group.
         merged_parsed_content = []
-        removals = []
-        additions = []
-
         # Also combine the newline markers.
         contains_newline_fallback = False
 
         for chunk in group:
-            removals.extend([c for c in chunk.parsed_content if isinstance(c, Removal)])
-            additions.extend(
-                [c for c in chunk.parsed_content if isinstance(c, Addition)]
-            )
+            merged_parsed_content.extend(chunk.parsed_content)
             contains_newline_fallback |= chunk.contains_newline_fallback
-
-        merged_parsed_content.extend(removals)
-        merged_parsed_content.extend(additions)
 
         # Let the factory method do the hard work of creating the new valid chunk.
         merged_chunk = StandardDiffChunk.from_parsed_content_slice(
