@@ -108,7 +108,18 @@ class SemanticPatchGenerator(PatchGenerator):
                 patches[file_path] = ("\n".join(out_lines) + "\n").encode("utf-8")
                 continue
 
-            old_file_lines = self._get_file_lines(file_path, base_hash)
+            single = file_chunks[0]
+            # Use old path for context when the base file lives at the old name
+            # (renames or deletions). Otherwise use the canonical path.
+            context_file_path = (
+                single.old_file_path
+                if (single.is_file_rename or single.is_file_deletion)
+                else file_path
+            )
+            if context_file_path is None:
+                context_file_path = file_path
+
+            old_file_lines = self._get_file_lines(context_file_path, base_hash)
             sorted_file_chunks = sorted(file_chunks, key=lambda c: c.get_sort_key())
 
             last_line_emitted = 0
