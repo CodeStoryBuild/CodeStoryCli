@@ -24,7 +24,7 @@ from textwrap import shorten
 from typing import Any
 
 import typer
-from colorama import Fore, Style, init
+from colorama import init
 
 from codestory.constants import (
     CONFIG_FILENAME,
@@ -33,6 +33,7 @@ from codestory.constants import (
     LOCAL_CONFIG_FILE,
 )
 from codestory.core.exceptions import ConfigurationError
+from codestory.core.ui.theme import themed
 from codestory.runtimeutil import confirm_strict
 
 # Initialize colorama
@@ -62,15 +63,9 @@ def display_config(
         value_display = shorten(value, width=max_value_length, placeholder="...")
 
         # Line 1: Key + Description
-        print(
-            f"{Fore.CYAN}{Style.BRIGHT}{key}{Style.RESET_ALL}: "
-            f"{Fore.WHITE}{description}{Style.RESET_ALL}"
-        )
+        print(f"{themed('label', key)}: {themed('primary', description)}")
         # Line 2: Value + Source (Indented)
-        print(
-            f"  {Fore.GREEN}{value_display}{Style.RESET_ALL} "
-            f"{Fore.YELLOW}({source}){Style.RESET_ALL}"
-        )
+        print(f"  {themed('value', value_display)} {themed('source', f'({source})')}")
         print()  # Spacer
 
 
@@ -176,14 +171,14 @@ def _print_env_instructions(key: str, value: str, is_delete: bool = False) -> No
 
     if is_delete:
         print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst."
+            f"{themed('info', 'Info:')} Cannot delete environment variables through cst."
         )
         print("Please delete them through your terminal/OS:")
         print(f"  Windows (PowerShell): Remove-Item Env:\\{env_var}")
         print(f"  Windows (CMD): set {env_var}=")
         print(f"  Linux/macOS: unset {env_var}")
     else:
-        print(f"{Fore.GREEN}To set this as an environment variable:{Style.RESET_ALL}")
+        print(f"{themed('success', 'To set this as an environment variable:')}")
         print(f"  Windows (PowerShell): $env:{env_var}='{value}'")
         print(f"  Windows (CMD): set {env_var}={value}")
         print(f"  Linux/macOS: export {env_var}='{value}'")
@@ -203,13 +198,11 @@ def _delete_key_from_config(config_path: Path, key: str, scope: str) -> bool:
     config_data = _load_toml_config(config_path)
 
     if not config_data:
-        print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found")
+        print(f"{themed('info', 'Info:')} No {scope} config file found")
         return False
 
     if key not in config_data:
-        print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config"
-        )
+        print(f"{themed('info', 'Info:')} Key '{key}' not found in {scope} config")
         return False
 
     del config_data[key]
@@ -220,7 +213,7 @@ def _delete_key_from_config(config_path: Path, key: str, scope: str) -> bool:
         config_path.unlink()
         print(f"Removed empty config file: {config_path}")
 
-    print(f"{Fore.GREEN}Deleted {key} from {scope} config{Style.RESET_ALL}")
+    print(f"{themed('success', f'Deleted {key} from {scope} config')}")
     return True
 
 
@@ -237,22 +230,18 @@ def _delete_all_from_config(config_path: Path, scope: str) -> bool:
     config_data = _load_toml_config(config_path)
 
     if not config_data:
-        print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty"
-        )
+        print(f"{themed('info', 'Info:')} {scope.capitalize()} config is already empty")
         return False
 
     config_path.unlink()
-    print(f"{Fore.GREEN}Deleted all config from {scope} scope{Style.RESET_ALL}")
+    print(f"{themed('success', f'Deleted all config from {scope} scope')}")
     return True
 
 
 def print_describe_options():
     schema = _get_config_schema()
 
-    print(
-        f"{Fore.WHITE}{Style.BRIGHT}Available configuration options:{Style.RESET_ALL}\n"
-    )
+    print(f"{themed('primary', 'Available configuration options:')}\n")
 
     table_data = []
     for config_key, info in sorted(schema.items()):
@@ -285,7 +274,7 @@ def _check_key_exists(key: str, exit_on_fail: bool = True) -> dict:
     schema = _get_config_schema()
 
     if key not in schema:
-        print(f"{Fore.RED}Error:{Style.RESET_ALL} Unknown configuration key '{key}'\n")
+        print(f"{themed('error', 'Error:')} Unknown configuration key '{key}'\n")
         print_describe_options()
         if exit_on_fail:
             raise typer.Exit(1)
@@ -309,7 +298,7 @@ def _add_to_gitignore(config_filename: str, quiet: bool = False) -> None:
     else:
         if not quiet:
             print(
-                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} .gitignore not found. "
+                f"{themed('warn', 'Warning:')} .gitignore not found. "
                 f"Please consider adding {config_filename} to your .gitignore file to avoid committing API keys."
             )
 
@@ -334,7 +323,7 @@ def set_config(key: str, value: str, scope: str, quiet: bool = False) -> None:
     if scope == "local" and key in ("api_key",):
         if not quiet:
             print(
-                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} You are setting a sensitive key ('{key}') in local configuration."
+                f"{themed('warn', 'Warning:')} You are setting a sensitive key ('{key}') in local configuration."
             )
         if not confirm_strict("Are you sure you want to proceed?"):
             if not quiet:
@@ -354,7 +343,7 @@ def set_config(key: str, value: str, scope: str, quiet: bool = False) -> None:
         config_data = _load_toml_config(config_path)
     except ConfigurationError as e:
         if not quiet:
-            print(f"{Fore.YELLOW}Warning:{Style.RESET_ALL} {e}. Creating new config.")
+            print(f"{themed('warn', 'Warning:')} {e}. Creating new config.")
         config_data = {}
 
     # Coerce and validate the value using the constraint
@@ -363,7 +352,7 @@ def set_config(key: str, value: str, scope: str, quiet: bool = False) -> None:
         final_value = constraint.coerce(value)
     except ConfigurationError as e:
         if not quiet:
-            print(f"{Fore.RED}Error:{Style.RESET_ALL} Invalid value for {key}: {e}")
+            print(f"{themed('error', 'Error:')} Invalid value for {key}: {e}")
         raise typer.Exit(1)
 
     # Update and save
@@ -374,9 +363,7 @@ def set_config(key: str, value: str, scope: str, quiet: bool = False) -> None:
     if not quiet:
         scope_label = "global" if scope == "global" else "local"
         display_value = _format_value_for_display(final_value)
-        print(
-            f"{Fore.GREEN}Set {key} = {display_value} ({scope_label}){Style.RESET_ALL}"
-        )
+        print(f"{themed('success', f'Set {key} = {display_value} ({scope_label})')}")
         print(f"Config file: {config_path.absolute()}")
 
 
@@ -464,7 +451,7 @@ def get_config(key: str | None, scope: str | None) -> None:
 
         if found:
             print(
-                f"{Fore.WHITE}{Style.BRIGHT}Configuration for key={key} displayed in order of priority:{Style.RESET_ALL}"
+                f"{themed('primary', f'Configuration for key={key} displayed in order of priority:')}"
             )
 
         display_config(table_data)
@@ -521,7 +508,7 @@ def delete_config(key: str | None, scope: str) -> None:
             _print_env_instructions(key, "", is_delete=True)
         else:
             print(
-                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Cannot delete environment variables through cst."
+                f"{themed('info', 'Info:')} Cannot delete environment variables through cst."
             )
             print("Please delete them through your terminal/OS:")
             print(f"  Windows (PowerShell): Remove-Item Env:\\{ENV_APP_PREFIX}*")
@@ -533,7 +520,7 @@ def delete_config(key: str | None, scope: str) -> None:
 
     if not config_path.exists():
         print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} No {scope} config file found at {config_path}"
+            f"{themed('info', 'Info:')} No {scope} config file found at {config_path}"
         )
         return
 
@@ -541,21 +528,17 @@ def delete_config(key: str | None, scope: str) -> None:
     try:
         config_data = _load_toml_config(config_path)
     except ConfigurationError as e:
-        print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
+        print(f"{themed('error', 'Error:')} {e}")
         raise typer.Exit(1)
 
     if not config_data:
-        print(
-            f"{Fore.YELLOW}Info:{Style.RESET_ALL} {scope.capitalize()} config is already empty"
-        )
+        print(f"{themed('info', 'Info:')} {scope.capitalize()} config is already empty")
         return
 
     if key is not None:
         # Delete specific key
         if key not in config_data:
-            print(
-                f"{Fore.YELLOW}Info:{Style.RESET_ALL} Key '{key}' not found in {scope} config"
-            )
+            print(f"{themed('info', 'Info:')} Key '{key}' not found in {scope} config")
             return
 
         if not confirm_strict(
@@ -565,7 +548,7 @@ def delete_config(key: str | None, scope: str) -> None:
             return
 
         del config_data[key]
-        print(f"{Fore.GREEN}Deleted {key} from {scope} config{Style.RESET_ALL}")
+        print(f"{themed('success', f'Deleted {key} from {scope} config')}")
     else:
         # Delete all keys
         keys_list = ", ".join(config_data.keys())
@@ -577,7 +560,7 @@ def delete_config(key: str | None, scope: str) -> None:
             return
 
         config_data.clear()
-        print(f"{Fore.GREEN}Deleted all config from {scope} scope{Style.RESET_ALL}")
+        print(f"{themed('success', f'Deleted all config from {scope} scope')}")
 
     # Write back to file or remove if empty
     if config_data:
@@ -601,23 +584,23 @@ def deleteall_config(key: str | None) -> None:
             print("Delete cancelled.")
             return
 
-        print(f"\n{Fore.CYAN}Deleting from local scope:{Style.RESET_ALL}")
+        print(f"\n{themed('primary', 'Deleting from local scope:')}")
         if LOCAL_CONFIG_FILE.exists():
             try:
                 _delete_key_from_config(LOCAL_CONFIG_FILE, key, "local")
             except ConfigurationError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
+                print(f"{themed('error', 'Error:')} {e}")
         else:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
+            print(f"{themed('info', 'Info:')} No local config file found")
 
-        print(f"\n{Fore.CYAN}Deleting from global scope:{Style.RESET_ALL}")
+        print(f"\n{themed('primary', 'Deleting from global scope:')}")
         if GLOBAL_CONFIG_FILE.exists():
             try:
                 _delete_key_from_config(GLOBAL_CONFIG_FILE, key, "global")
             except ConfigurationError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
+                print(f"{themed('error', 'Error:')} {e}")
         else:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
+            print(f"{themed('info', 'Info:')} No global config file found")
     else:
         # Delete all from both scopes
         if not confirm_strict(
@@ -626,23 +609,23 @@ def deleteall_config(key: str | None) -> None:
             print("Delete cancelled.")
             return
 
-        print(f"\n{Fore.CYAN}Deleting from local scope:{Style.RESET_ALL}")
+        print(f"\n{themed('primary', 'Deleting from local scope:')}")
         if LOCAL_CONFIG_FILE.exists():
             try:
                 _delete_all_from_config(LOCAL_CONFIG_FILE, "local")
             except ConfigurationError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
+                print(f"{themed('error', 'Error:')} {e}")
         else:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No local config file found")
+            print(f"{themed('info', 'Info:')} No local config file found")
 
-        print(f"\n{Fore.CYAN}Deleting from global scope:{Style.RESET_ALL}")
+        print(f"\n{themed('primary', 'Deleting from global scope:')}")
         if GLOBAL_CONFIG_FILE.exists():
             try:
                 _delete_all_from_config(GLOBAL_CONFIG_FILE, "global")
             except ConfigurationError as e:
-                print(f"{Fore.RED}Error:{Style.RESET_ALL} {e}")
+                print(f"{themed('error', 'Error:')} {e}")
         else:
-            print(f"{Fore.YELLOW}Info:{Style.RESET_ALL} No global config file found")
+            print(f"{themed('info', 'Info:')} No global config file found")
 
 
 def describe_callback(ctx: typer.Context, param, value: bool):
@@ -659,25 +642,25 @@ def run_config(
     # Check for conflicting operations
     if delete and deleteall:
         raise ConfigurationError(
-            f"{Fore.RED}Error:{Style.RESET_ALL} Cannot use --delete and --deleteall together"
+            f"{themed('error', 'Error:')} Cannot use --delete and --deleteall together"
         )
 
     if deleteall:
         # DELETEALL operation
         if value is not None:
             raise ConfigurationError(
-                f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
+                f"{themed('error', 'Error:')} Cannot specify a value when deleting"
             )
         if scope is not None:
             print(
-                f"{Fore.YELLOW}Warning:{Style.RESET_ALL} --scope is ignored when using --deleteall"
+                f"{themed('warn', 'Warning:')} --scope is ignored when using --deleteall"
             )
         deleteall_config(key)
     elif delete:
         # DELETE operation
         if value is not None:
             raise ConfigurationError(
-                f"{Fore.RED}Error:{Style.RESET_ALL} Cannot specify a value when deleting"
+                f"{themed('error', 'Error:')} Cannot specify a value when deleting"
             )
         # Default to local if deleting and no scope provided
         target_scope = scope if scope is not None else "local"
@@ -686,7 +669,7 @@ def run_config(
         # SET operation
         if key is None:
             raise ConfigurationError(
-                f"{Fore.RED}Error:{Style.RESET_ALL} Key is required when setting a value"
+                f"{themed('error', 'Error:')} Key is required when setting a value"
             )
 
         # Default to local if setting and no scope provided

@@ -16,8 +16,6 @@
 #  */
 # -----------------------------------------------------------------------------
 
-from colorama import Fore, Style
-
 from codestory.context import GlobalContext
 from codestory.core.exceptions import (
     DetachedHeadError,
@@ -25,6 +23,7 @@ from codestory.core.exceptions import (
 )
 from codestory.core.git.git_rebaser import GitRebaser
 from codestory.core.git.git_sandbox import GitSandbox
+from codestory.core.ui.theme import themed
 from codestory.core.validation import (
     is_root_commit,
     validate_commit_hash,
@@ -151,5 +150,5 @@ def run_fix(
         logger.success("Fix command completed successfully")
         return True
     else:
-        logger.error(f"{Fore.RED}Failed to fix commit{Style.RESET_ALL}")
+        logger.error(f"{themed('error', 'Failed to fix commit')}")
         return False

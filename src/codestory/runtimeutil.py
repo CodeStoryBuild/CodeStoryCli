@@ -20,7 +20,8 @@ import signal
 import sys
 
 import typer
-from colorama import Fore, Style
+
+from codestory.core.ui.theme import themed
 
 
 def ensure_utf8_output():
@@ -41,7 +42,7 @@ def setup_signal_handlers(global_context=None):
     def signal_handler(sig, frame):
         from loguru import logger
 
-        logger.info(f"\n{Fore.YELLOW}Operation cancelled by user{Style.RESET_ALL}")
+        logger.info(f"\n{themed('info', 'Operation cancelled by user')}")
         import os
 
         os._exit(130)  # Hard exit

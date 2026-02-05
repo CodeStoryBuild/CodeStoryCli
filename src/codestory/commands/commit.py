@@ -17,8 +17,6 @@
 # -----------------------------------------------------------------------------
 
 
-from colorama import Fore, Style
-
 from codestory.context import GlobalContext
 from codestory.core.exceptions import (
     GitError,
@@ -27,6 +25,7 @@ from codestory.core.exceptions import (
 from codestory.core.git.git_commands import GitCommands
 from codestory.core.git.git_sandbox import GitSandbox
 from codestory.core.git.git_temp_commiter import TempCommitCreator
+from codestory.core.ui.theme import themed
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
@@ -37,7 +36,7 @@ from codestory.pipelines.standard_cli_pipeline import StandardCLIPipeline
 def verify_repo_state(commands: GitCommands) -> bool:
     from loguru import logger
 
-    logger.debug(f"{Fore.GREEN} Checking repository status... {Style.RESET_ALL}")
+    logger.debug(f"{themed('success', 'Checking repository status...')}")
 
     if commands.is_bare_repository():
         raise GitError("The 'commit' command cannot be run on a bare repository.")
@@ -155,5 +154,5 @@ def run_commit(
         )
         return True
     else:
-        logger.error(f"{Fore.YELLOW}No commits were created{Style.RESET_ALL}")
+        logger.error(f"{themed('warn', 'No commits were created')}")
         return False

@@ -71,6 +71,7 @@ class GlobalConfig:
     descriptive_commit_messages: bool = False
     num_recent_commits: int = 5
     run_commit_hooks: bool = False
+    console_theme: Literal["classic", "ocean", "mono"] = "classic"
 
     constraints = {
         "model": StringConstraint(),
@@ -115,6 +116,7 @@ class GlobalConfig:
             min_value=0, max_value=50, is_int=True
         ),
         "run_commit_hooks": BoolConstraint(),
+        "console_theme": LiteralTypeConstraint(allowed=["classic", "ocean", "mono"]),
     }
 
     descriptions = {
@@ -142,6 +144,7 @@ class GlobalConfig:
         "descriptive_commit_messages": "Whether to use more descriptive and professional commit messages by default",
         "num_recent_commits": "Number of recent commit messages to include in the context for summarization (0-50)",
         "run_commit_hooks": "Whether to run git pre-commit and post-commit hooks during 'cst commit'",
+        "console_theme": "Console theme for colored output (classic, ocean, mono)",
     }
 
     arg_options = {
@@ -171,6 +174,7 @@ class GlobalConfig:
         "descriptive_commit_messages": ["--descriptive-commit-messages"],
         "num_recent_commits": ["--num-recent-commits"],
         "run_commit_hooks": ["--run-commit-hooks"],
+        "console_theme": ["--console-theme"],
     }
 
     @classmethod

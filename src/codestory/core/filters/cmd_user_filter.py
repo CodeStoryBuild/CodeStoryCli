@@ -18,7 +18,6 @@
 
 
 import typer
-from colorama import Fore, Style
 from loguru import logger
 from tqdm import tqdm
 
@@ -28,6 +27,7 @@ from codestory.core.diff.patch.git_patch_generator import GitPatchGenerator
 from codestory.core.diff.patch.semantic_patch_generator import SemanticPatchGenerator
 from codestory.core.diff.pipeline.filter import Filter
 from codestory.core.semantic_analysis.annotation.file_manager import FileManager
+from codestory.core.ui.theme import get_theme, themed
 from codestory.runtimeutil import confirm_strict
 
 
@@ -119,7 +119,7 @@ class CMDUserFilter(Filter):
                         else:
                             CMDUserFilter.print_patch_cleanly(diff_text, max_lines=120)
                     else:
-                        print(f"{Fore.YELLOW}(no diff){Style.RESET_ALL}")
+                        print(f"{themed('info', '(no diff)')}")
 
             logger.debug(
                 "Group preview: idx={idx} chunks={chunk_count} files={files}",
@@ -197,15 +197,16 @@ class CMDUserFilter(Filter):
     def print_patch_cleanly(patch_content: str, max_lines: int = 120):
         """Displays a patch/diff content cleanly using direct Colorama styling."""
         # Direct mapping to Colorama styles
+        theme = get_theme()
         styles = {
-            "diff_header": Fore.BLUE,
-            "between_diff": Fore.WHITE + Style.BRIGHT,
-            "header_removed": Fore.RED + Style.BRIGHT,
-            "header_added": Fore.GREEN + Style.BRIGHT,
-            "hunk": Fore.BLUE,
-            "removed": Fore.RED,
-            "added": Fore.GREEN,
-            "context": Fore.WHITE + Style.DIM,
+            "diff_header": theme.styles.get("diff_header", ""),
+            "between_diff": theme.styles.get("diff_between", ""),
+            "header_removed": theme.styles.get("diff_header_removed", ""),
+            "header_added": theme.styles.get("diff_header_added", ""),
+            "hunk": theme.styles.get("diff_hunk", ""),
+            "removed": theme.styles.get("diff_removed", ""),
+            "added": theme.styles.get("diff_added", ""),
+            "context": theme.styles.get("diff_context", ""),
         }
 
         # Iterate through the patch content line by line
@@ -241,20 +242,24 @@ class CMDUserFilter(Filter):
             # we print because this is a required output, the user needs to know what changes to accept/reject
 
             # Apply style directly
-            print(f"{styles[style_key]}{line}{Style.RESET_ALL}")
+            if styles[style_key]:
+                print(f"{styles[style_key]}{line}{theme.reset}")
+            else:
+                print(line)
 
         if len(patch_content.splitlines()) > max_lines:
-            print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
+            print(f"{themed('info', '(Diff truncated)')}\n")
         print("---  End Patch  ---")
 
     @staticmethod
     def print_patch_cleanly_semantic(patch_content: str, max_lines: int = 120):
         """Displays a semantic patch content cleanly using direct Colorama styling."""
+        theme = get_theme()
         styles = {
-            "h": Fore.BLUE,
-            "rem": Fore.RED,
-            "add": Fore.GREEN,
-            "ctx": Fore.WHITE + Style.DIM,
+            "h": theme.styles.get("semantic_header", ""),
+            "rem": theme.styles.get("semantic_removed", ""),
+            "add": theme.styles.get("semantic_added", ""),
+            "ctx": theme.styles.get("semantic_context", ""),
         }
 
         print("--- Begin Semantic Patch ---")
@@ -273,8 +278,11 @@ class CMDUserFilter(Filter):
                 style_key = "ctx"
 
             # Apply style directly
-            print(f"{styles[style_key]}{line}{Style.RESET_ALL}")
+            if styles[style_key]:
+                print(f"{styles[style_key]}{line}{theme.reset}")
+            else:
+                print(line)
 
         if len(patch_content.splitlines()) > max_lines:
-            print(f"{Fore.YELLOW}(Diff truncated){Style.RESET_ALL}\n")
+            print(f"{themed('info', '(Diff truncated)')}\n")
         print("---  End Semantic Patch  ---")

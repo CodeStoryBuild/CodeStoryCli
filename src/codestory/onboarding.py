@@ -19,7 +19,6 @@
 import subprocess
 
 import typer
-from colorama import Fore, Style
 
 from codestory.commands.config import set_config
 from codestory.constants import (
@@ -28,6 +27,7 @@ from codestory.constants import (
     ONBOARDING_FLAG,
     get_cloud_providers,
 )
+from codestory.core.ui.theme import themed
 from codestory.runtimeutil import confirm_strict
 
 CODESTORY_ASCII = r"""
@@ -65,41 +65,45 @@ def get_ollama_models() -> list[str]:
 
 
 def run_model_setup(scope: str):
-    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== Model Setup ==={Style.RESET_ALL}")
+    print(f"\n{themed('primary', '=== Model Setup ===')}")
 
     # Inform about supported providers
     local = sorted(LOCAL_PROVIDERS)
     cloud = sorted(get_cloud_providers())
 
-    print(f"{Fore.WHITE}Supported providers:{Style.RESET_ALL}")
+    print(f"{themed('primary', 'Supported providers:')}")
 
-    def _print_grouped(title: str, items: list[str], color: str):
+    def _print_grouped(title: str, items: list[str], color_key: str):
         if not items:
             return
-        print(f"  {color}{title}:{Style.RESET_ALL}")
+        print(f"  {themed(color_key, f'{title}:')}")
         # print up to 3 providers per line
         for i in range(0, len(items), 3):
             chunk = items[i : i + 3]
             print(f"    - {', '.join(chunk)}")
 
-    _print_grouped("Local providers", local, Fore.GREEN)
-    _print_grouped("Cloud providers", cloud, Fore.CYAN)
+    _print_grouped("Local providers", local, "success")
+    _print_grouped("Cloud providers", cloud, "primary")
 
     # Show expected format
     print()
-    print(f"{Fore.WHITE}Model format: provider:model{Style.RESET_ALL}")
+    print(themed("primary", "Model format: provider:model"))
     print(
-        f"{Fore.WHITE}Examples: ollama:qwen2.5-coder:1.5b, openai:gpt-4o{Style.RESET_ALL}\n"
+        themed("primary", "Examples: ollama:qwen2.5-coder:1.5b, openai:gpt-4o") + "\n"
     )
 
     # Prompt for model
     model_string = typer.prompt(
-        f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})",
+        themed("primary", "Enter model (format: ")
+        + themed("label", "provider:model")
+        + themed("primary", ")"),
     ).strip()
     while ":" not in model_string:
-        print(f"{Fore.RED}Invalid format! Must be 'provider:model'{Style.RESET_ALL}")
+        print(themed("error", "Invalid format! Must be 'provider:model'"))
         model_string = typer.prompt(
-            f"{Fore.WHITE}Enter model (format: {Fore.CYAN}provider:model{Fore.WHITE})"
+            themed("primary", "Enter model (format: ")
+            + themed("label", "provider:model")
+            + themed("primary", ")")
         ).strip()
 
     set_config(key="model", value=model_string, scope=scope, quiet=True)
@@ -111,10 +115,19 @@ def run_model_setup(scope: str):
         # If provider is not local, ask for an optional API key and explain env var options
         print()
         print(
-            f"{Fore.WHITE}This provider requires an API key, you may enter it now (optional).{Style.RESET_ALL}"
+            themed(
+                "primary",
+                "This provider requires an API key, you may enter it now (optional).",
+            )
         )
         print(
-            f"{Fore.WHITE}You can also set the API key via environment variables: {Fore.YELLOW}CODESTORY_API_KEY{Fore.WHITE} or the provider-specific standard var (e.g. {Fore.YELLOW}{provider.upper()}_API_KEY{Fore.WHITE}).{Style.RESET_ALL}"
+            themed(
+                "primary", "You can also set the API key via environment variables: "
+            )
+            + themed("info", "CODESTORY_API_KEY")
+            + themed("primary", " or the provider-specific standard var (e.g. ")
+            + themed("info", provider.upper() + "_API_KEY")
+            + themed("primary", ").")
         )
         api_key = typer.prompt(
             f"Enter API key for {provider} (leave blank to use environment variables)",
@@ -127,29 +140,42 @@ def run_model_setup(scope: str):
             need_set_api_key = False
         else:
             print(
-                f"{Fore.YELLOW}No API key provided. Please make sure to set as an environment variable.{Style.RESET_ALL}"
+                themed(
+                    "warn",
+                    "No API key provided. Please make sure to set as an environment variable.",
+                )
             )
             need_set_api_key = True
     else:
         need_set_api_key = False
 
-    print(f"\n{Fore.GREEN}✓ Model configured: {model_string}{Style.RESET_ALL}")
+    print(f"\n{themed('success', f'✓ Model configured: {model_string}')}")
     if need_set_api_key:
         print(
-            f"{Fore.YELLOW}Codestory will exit for you to set your api key as an environment variable{Style.RESET_ALL}"
+            themed(
+                "warn",
+                "Codestory will exit for you to set your api key as an environment variable",
+            )
         )
         print(
-            f"{Fore.WHITE}You can set the API key via environment variables: {Fore.YELLOW}CODESTORY_API_KEY{Fore.WHITE} or the provider-specific standard var (e.g. {Fore.YELLOW}{provider.upper()}_API_KEY{Fore.WHITE}).{Style.RESET_ALL}"
+            themed("primary", "You can set the API key via environment variables: ")
+            + themed("info", "CODESTORY_API_KEY")
+            + themed("primary", " or the provider-specific standard var (e.g. ")
+            + themed("info", provider.upper() + "_API_KEY")
+            + themed("primary", ").")
         )
         print(
-            f"{Fore.WHITE}After setting the environment variable, please rerun the codestory command.{Style.RESET_ALL}"
+            themed(
+                "primary",
+                "After setting the environment variable, please rerun the codestory command.",
+            )
         )
 
     return need_set_api_key
 
 
 def run_embedding_setup(scope: str):
-    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== Embedding Model Setup ==={Style.RESET_ALL}")
+    print(f"\n{themed('primary', '=== Embedding Model Setup ===')}")
 
     try:
         from fastembed import TextEmbedding
@@ -159,24 +185,25 @@ def run_embedding_setup(scope: str):
         supported_models = []
 
     if not confirm_strict(
-        f"{Fore.WHITE}Do you want to specify a custom embedding model? (Default: {Fore.CYAN}{DEFAULT_EMBEDDING_MODEL}{Fore.WHITE}){Style.RESET_ALL}",
+        f"{themed('primary', 'Do you want to specify a custom embedding model? (Default: ')}"
+        f"{themed('label', DEFAULT_EMBEDDING_MODEL)}{themed('primary', ')')}",
     ):
         return
 
     if supported_models:
-        print(f"\n{Fore.WHITE}Supported embedding models:{Style.RESET_ALL}")
+        print(f"\n{themed('primary', 'Supported embedding models:')}")
         # print up to 2 models per line to keep it readable
         for i in range(0, len(supported_models), 2):
             chunk = supported_models[i : i + 2]
             print(f"    - {', '.join(chunk)}")
 
     print(
-        f"\n{Fore.WHITE}You can choose one from the list above or enter a custom model name.{Style.RESET_ALL}"
+        f"\n{themed('primary', 'You can choose one from the list above or enter a custom model name.')}"
     )
 
     while True:
         model = typer.prompt(
-            f"{Fore.WHITE}Enter embedding model",
+            f"{themed('primary', 'Enter embedding model')}",
             default=DEFAULT_EMBEDDING_MODEL,
         ).strip()
 
@@ -187,21 +214,21 @@ def run_embedding_setup(scope: str):
         if model == DEFAULT_EMBEDDING_MODEL or model in supported_models:
             break
 
-        print(f"{Fore.YELLOW}Invalid model!{Style.RESET_ALL}")
+        print(f"{themed('warn', 'Invalid model!')}")
 
     set_config(key="custom_embedding_model", value=model, scope=scope, quiet=True)
-    print(f"\n{Fore.GREEN}✓ Embedding model configured: {model}{Style.RESET_ALL}")
+    print(f"\n{themed('success', f'✓ Embedding model configured: {model}')}")
 
 
 def run_onboarding():
-    print(f"{Fore.CYAN}{Style.BRIGHT}{CODESTORY_ASCII}{Style.RESET_ALL}")
+    print(f"{themed('primary', CODESTORY_ASCII)}")
     print(
-        f"{Fore.WHITE}{Style.BRIGHT}Welcome to CodeStory!{Style.RESET_ALL}\n"
-        f"{Fore.WHITE}- We will help you configure your preferred AI model.\n"
-        f"- These settings can be changed later using {Fore.CYAN}cst config{Fore.WHITE}.\n"
+        f"{themed('primary', 'Welcome to CodeStory!')}\n"
+        f"{themed('primary', '- We will help you configure your preferred AI model.')}\n"
+        f"{themed('primary', '- These settings can be changed later using ')}{themed('label', 'cst config')}{themed('primary', '.')}\n"
     )
 
-    confirm_strict(f"{Fore.WHITE}Ready to start?", abort=True)
+    confirm_strict(f"{themed('primary', 'Ready to start?')}", abort=True)
 
     # Ask if global or local config
     global_ = confirm_strict(
@@ -214,10 +241,12 @@ def run_onboarding():
     run_embedding_setup(scope)
 
     # Final message
-    print(f"\n{Fore.GREEN}{Style.BRIGHT}✓ Configuration completed!{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}There are many other configuration options available.")
+    print(f"\n{themed('success', '✓ Configuration completed!')}")
     print(
-        f"You can view and change them at any time using: {Fore.CYAN}cst config{Style.RESET_ALL}\n"
+        f"{themed('primary', 'There are many other configuration options available.')}"
+    )
+    print(
+        f"You can view and change them at any time using: {themed('label', 'cst config')}\n"
     )
 
     return need_api_key

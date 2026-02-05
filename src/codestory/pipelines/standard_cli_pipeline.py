@@ -18,8 +18,6 @@
 
 from typing import Literal
 
-from colorama import Fore, Style
-
 from codestory.context import GlobalContext
 from codestory.core.diff.creation.atomic_chunker import AtomicChunker
 from codestory.core.diff.creation.diff_creator import DiffCreator
@@ -40,6 +38,7 @@ from codestory.core.semantic_analysis.grouping.semantic_grouper import SemanticG
 from codestory.core.semantic_analysis.summarization.chunk_summarizer import (
     ContainerSummarizer,
 )
+from codestory.core.ui.theme import themed
 
 
 class StandardCLIPipeline:
@@ -75,12 +74,12 @@ class StandardCLIPipeline:
         )
 
         if not base_chunks:
-            logger.warning(f"{Fore.YELLOW}No changes to process {Style.RESET_ALL}")
+            logger.warning(f"{themed('warn', 'No changes to process')}")
             if self.source == "fix" or self.source == "clean":
-                logger.info(f"{Fore.YELLOW}Is this an empty commit?{Style.RESET_ALL}")
+                logger.info(f"{themed('info', 'Is this an empty commit?')}")
             if self.source == "commit":
                 logger.info(
-                    f"{Fore.YELLOW}If you meant to modify existing git history, please use codestory fix or codestory clean commands{Style.RESET_ALL}"
+                    f"{themed('info', 'If you meant to modify existing git history, please use codestory fix or codestory clean commands')}"
                 )
             return None
 
@@ -165,7 +164,7 @@ class StandardCLIPipeline:
 
             if self.allow_filtering and self.context.filter_relevance():
                 logger.warning(
-                    f"{Fore.YELLOW}Relevance Filtering Enabled, But no model provided. Relevance Filtering will be skipped.{Style.RESET_ALL}"
+                    f"{themed('warn', 'Relevance Filtering Enabled, But no model provided. Relevance Filtering will be skipped.')}"
                 )
 
         accepted_groups, rej = CMDUserFilter(

@@ -31,6 +31,7 @@ from codestory.core.git.git_commands import GitCommands
 from codestory.core.git.git_interface import GitInterface
 from codestory.core.logging.logging import setup_logger
 from codestory.core.logging.progress_manager import ProgressBarManager
+from codestory.core.ui.theme import set_theme
 from codestory.core.validation import (
     validate_branch,
     validate_default_branch,
@@ -457,6 +458,7 @@ def create_global_callback():
                 silent=config.silent,
                 no_log_files=config.no_log_files,
             )
+            set_theme(config.console_theme)
 
             if config.model == "no-model":
                 from loguru import logger
