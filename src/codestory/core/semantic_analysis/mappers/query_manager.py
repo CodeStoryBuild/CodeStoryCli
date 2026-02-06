@@ -344,7 +344,7 @@ class QueryManager:
         # Prepare result dictionary
         results: dict[str, list[Node]] = {}
         for start_line, end_line in line_ranges:
-            if end_line < start_line:
+            if start_line < 0 or end_line < 0 or end_line < start_line:
                 # cases like empty hunks will head to invalid range
                 continue
             start_point = (start_line, 0)
@@ -411,7 +411,7 @@ class QueryManager:
         # Otherwise, loop over line ranges and accumulate results
         results = []
         for start_line, end_line in line_ranges:
-            if end_line < start_line:
+            if start_line < 0 or end_line < 0 or end_line < start_line:
                 # cases like empty hunks will head to invalid range
                 continue
             start_point = (start_line, 0)
