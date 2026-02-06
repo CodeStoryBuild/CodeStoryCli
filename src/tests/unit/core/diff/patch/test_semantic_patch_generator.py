@@ -60,3 +60,27 @@ def test_semantic_patch_rename_uses_old_path_for_context():
 
     patch = gen.get_patch(chunk)
     assert "[ctx] line1" in patch
+
+
+def test_semantic_patch_preserves_old_start_zero():
+    chunk = StandardDiffChunk(
+        base_hash="base",
+        new_hash="head",
+        old_file_path=b"old.py",
+        new_file_path=b"old.py",
+        parsed_content=[
+            Addition(old_line=0, abs_new_line=1, content=b"line0_new"),
+        ],
+        old_start=0,
+    )
+
+    fm = MockFileManager()
+    gen = SemanticPatchGenerator(
+        containers=[chunk],
+        file_manager=fm,
+        context_lines=1,
+        skip_whitespace=False,
+    )
+
+    patch = gen.get_patch(chunk)
+    assert "[h] Line 0:" in patch

@@ -254,6 +254,8 @@ class ContextManagerBuilder:
     ) -> tuple[int, int]:
         # Returns 0-indexed line range from chunk
         if is_old_range:
+            if chunk.old_start is None or chunk.old_start <= 0:
+                return (0, 0)
             return (chunk.old_start - 1, chunk.old_start + chunk.old_len() - 2)
         else:
             # For new file ranges, use abs_new_line (absolute position from original diff)
@@ -262,6 +264,8 @@ class ContextManagerBuilder:
             end = chunk.get_abs_new_line_end()
             if start is None or end is None:
                 # No additions in this chunk, use old_start as fallback
+                if chunk.old_start is None or chunk.old_start <= 0:
+                    return (0, 0)
                 return (chunk.old_start - 1, chunk.old_start - 1)
             return (start - 1, end - 1)
 
@@ -433,9 +437,17 @@ class ContextManagerBuilder:
             if self.query_manager.get_config(
                 parsed_file.detected_language
             ).share_tokens_between_files:
-                symbols = self._shared_context_cache.get(
+                shared_ctx = self._shared_context_cache.get(
                     (parsed_file.detected_language, commit_hash)
-                ).defined_symbols
+                )
+                if shared_ctx is not None:
+                    symbols = shared_ctx.defined_symbols
+                else:
+                    symbols = self.symbol_extractor.extract_defined_symbols(
+                        parsed_file.detected_language,
+                        parsed_file.root_node,
+                        parsed_file.line_ranges,
+                    )
             else:
                 symbols = self.symbol_extractor.extract_defined_symbols(
                     parsed_file.detected_language,

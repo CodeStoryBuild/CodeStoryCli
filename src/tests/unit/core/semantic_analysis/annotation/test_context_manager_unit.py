@@ -259,3 +259,53 @@ def test_build_context_syntax_error(context_manager_deps):
             context_manager_deps["file_manager"],
             True,
         ).build()
+
+
+def test_get_line_range_clamps_negative():
+    from codestory.core.diff.data.standard_diff_chunk import StandardDiffChunk
+    from codestory.core.semantic_analysis.annotation.context_manager import (
+        ContextManagerBuilder,
+    )
+
+    chunk = StandardDiffChunk(
+        base_hash="base",
+        new_hash="patched",
+        old_file_path=None,
+        new_file_path=b"new.txt",
+        parsed_content=[],
+        old_start=0,
+    )
+
+    assert ContextManagerBuilder._get_line_range(chunk, True) == (0, 0)
+    assert ContextManagerBuilder._get_line_range(chunk, False) == (0, 0)
+
+
+def test_shared_context_missing_falls_back_to_extractor(context_manager_deps):
+    chunk = create_chunk()
+
+    parsed_file = Mock()
+    parsed_file.root_node.has_error = False
+    parsed_file.root_node.children = []
+    parsed_file.detected_language = "python"
+    parsed_file.content_bytes = b"content"
+    parsed_file.line_ranges = []
+
+    context_manager_deps["file_parser_parse"].return_value = parsed_file
+
+    config = Mock()
+    config.share_tokens_between_files = True
+    context_manager_deps["query_manager"].get_config.return_value = config
+
+    # Force shared context cache to be empty and ensure extractor is used.
+    context_manager_deps["symbol_extractor"].extract_defined_symbols.return_value = {
+        "sym"
+    }
+
+    builder = ContextManagerBuilder(
+        [chunk], context_manager_deps["file_manager"], False
+    )
+    builder._shared_context_cache = {}
+    cm = builder.build()
+
+    context_manager_deps["symbol_extractor"].extract_defined_symbols.assert_called()
+    assert cm.has_context(b"file.txt", "base")

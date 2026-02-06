@@ -129,7 +129,7 @@ class SemanticPatchGenerator(PatchGenerator):
                 if not chunk.has_content:
                     continue
 
-                curr_start = chunk.old_start or 1
+                curr_start = chunk.old_start if chunk.old_start is not None else 1
                 curr_end = curr_start + (chunk.old_len() - 1)
 
                 # Determine where context should start for this chunk
