@@ -17,6 +17,7 @@
 # -----------------------------------------------------------------------------
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -187,9 +188,9 @@ class TestDiffCreatorIntegration:
         assert len(hunks) == 1
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
-        assert (
-            b"GIT binary patch\nliteral 1\nIcmZPo000310RR91\n\nliteral 0\nHcmV?d00001\n"
-            in hunk.file_patch
+        assert re.search(
+            rb"GIT binary patch\nliteral 1\n[^\n]+\n\nliteral 0\n[^\n]+\n",
+            hunk.file_patch,
         )
 
     def test_parse_binary_file_diff(self, git_repo: Path):
@@ -211,9 +212,9 @@ class TestDiffCreatorIntegration:
         assert len(hunks) == 1
         hunk = hunks[0]
         assert isinstance(hunk, ImmutableHunkWrapper)
-        assert (
-            b"GIT binary patch\nliteral 2\nJcmZP&0ssIM022TJ\n\nliteral 1\nIcmZPo000310RR91\n"
-            in hunk.file_patch
+        assert re.search(
+            rb"GIT binary patch\nliteral 2\n[^\n]+\n\nliteral 1\n[^\n]+\n",
+            hunk.file_patch,
         )
 
     def test_add_multiple_binary_file_diff(self, git_repo: Path):

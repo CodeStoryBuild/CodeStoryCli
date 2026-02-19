@@ -47,6 +47,7 @@ class DiffCreator:
         base_hash: str,
         new_hash: str,
         target: str | list[str] | None = None,
+        similarity: int = 50,
     ) -> list[AtomicDiffChunk]:
         """Parses the git diff once and converts each hunk directly into an atomic
         StandardDiffChunk object (StandardDiffChunk) or ImmutableDiffChunk for
@@ -55,7 +56,7 @@ class DiffCreator:
         Returns a unified list containing both StandardDiffChunk and
         ImmutableDiffChunk objects.
         """
-        hunks = self.get_full_working_diff(base_hash, new_hash, target)
+        hunks = self.get_full_working_diff(base_hash, new_hash, target, similarity)
         return self.convert_hunks(hunks, base_hash, new_hash)
 
     def convert_hunks(
