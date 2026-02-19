@@ -183,6 +183,26 @@ def test_get_full_working_diff_binary(diff_creator, mock_git):
     assert hunks[0].new_file_path == b"bin.dat"
 
 
+def test_get_full_working_diff_custom_similarity(diff_creator, mock_git):
+    diff_output = (
+        b"diff --git a/file.txt b/file.txt\n"
+        b"index 111..222 100644\n"
+        b"--- a/file.txt\n"
+        b"+++ b/file.txt\n"
+        b"@@ -1,1 +1,1 @@\n"
+        b"-old\n"
+        b"+new\n"
+    )
+    mock_git.run_git_binary_out.return_value = diff_output
+    diff_creator._get_binary_files = Mock(return_value=set())
+
+    diff_creator.get_full_working_diff("base", "new", similarity=87)
+
+    mock_git.run_git_binary_out.assert_called_once_with(
+        ["diff", "base", "new", "--binary", "--unified=0", "-M87", "--"]
+    )
+
+
 # -----------------------------------------------------------------------------
 # Binary Detection Tests
 # -----------------------------------------------------------------------------
