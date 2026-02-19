@@ -57,6 +57,7 @@ class GlobalConfig:
         "all_together", "by_file_path", "by_file_name", "by_file_extension", "all_alone"
     ] = "all_together"
     chunking_level: Literal["none", "full_files", "all_files"] = "all_files"
+    rename_similarity_threshold: int = 50
     verbose: bool = False
     auto_accept: bool = False
     silent: bool = False
@@ -66,6 +67,7 @@ class GlobalConfig:
     batching_strategy: Literal["auto", "requests", "prompt"] = "auto"
     custom_embedding_model: str | None = None
     cluster_strictness: float = 0.5
+    min_commit_size: int = 1
     num_retries: int = 3
     no_log_files: bool = False
     descriptive_commit_messages: bool = False
@@ -98,6 +100,9 @@ class GlobalConfig:
         "chunking_level": LiteralTypeConstraint(
             allowed=["none", "full_files", "all_files"]
         ),
+        "rename_similarity_threshold": RangeTypeConstraint(
+            min_value=0, max_value=100, is_int=True
+        ),
         "verbose": BoolConstraint(),
         "auto_accept": BoolConstraint(),
         "silent": BoolConstraint(),
@@ -109,6 +114,9 @@ class GlobalConfig:
         ),
         "custom_embedding_model": StringConstraint(),
         "cluster_strictness": RangeTypeConstraint(min_value=0.0, max_value=1.0),
+        "min_commit_size": RangeTypeConstraint(
+            min_value=1, max_value=10000, is_int=True
+        ),
         "num_retries": RangeTypeConstraint(min_value=0, max_value=10, is_int=True),
         "no_log_files": BoolConstraint(),
         "descriptive_commit_messages": BoolConstraint(),
@@ -130,6 +138,7 @@ class GlobalConfig:
         "secret_scanner_aggression": "How aggresively to scan for secrets ('cst commit' only)",
         "fallback_grouping_strategy": "Strategy for grouping changes that were not able to be analyzed",
         "chunking_level": "Which type of changes should be chunked further into smaller pieces",
+        "rename_similarity_threshold": "Git rename detection similarity threshold percent for diff parsing (0-100)",
         "verbose": "Enable verbose logging output",
         "auto_accept": "Automatically accept all prompts without user confirmation",
         "silent": "Do not output any text to the console, except for prompting acceptance",
@@ -139,6 +148,7 @@ class GlobalConfig:
         "batching_strategy": "Strategy for batching LLM requests (auto, requests, prompt)",
         "custom_embedding_model": "FastEmbed supported text embedding model (will download on first run if not cached)",
         "cluster_strictness": "Strictness of clustering logical groups together. (0-1) Higher value = higher threshold of similarity required to group together.",
+        "min_commit_size": "Default minimum line-change size for each generated commit group (1-10000)",
         "num_retries": "How many times to retry calling a model if it fails to return an output (0-10)",
         "no_log_files": "Disable logging to files, only output to console",
         "descriptive_commit_messages": "Whether to use more descriptive and professional commit messages by default",
@@ -160,6 +170,7 @@ class GlobalConfig:
         "secret_scanner_aggression": ["--secret-scanner-aggression"],
         "fallback_grouping_strategy": ["--fallback-grouping-strategy"],
         "chunking_level": ["--chunking-level"],
+        "rename_similarity_threshold": ["--rename-similarity-threshold"],
         "verbose": ["--verbose", "-v"],
         "auto_accept": ["--yes", "-y"],
         "silent": ["--silent", "-s"],
@@ -169,6 +180,7 @@ class GlobalConfig:
         "batching_strategy": ["--batching-strategy"],
         "custom_embedding_model": ["--custom-embedding-model"],
         "cluster_strictness": ["--cluster-strictness"],
+        "min_commit_size": ["--min-commit-size"],
         "num_retries": ["--num-retries"],
         "no_log_files": ["--no-log-files"],
         "descriptive_commit_messages": ["--descriptive-commit-messages"],

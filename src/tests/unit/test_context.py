@@ -35,6 +35,8 @@ def test_global_config_defaults():
     assert config.model == "no-model"
     assert config.api_key is None
     assert config.temperature == 0
+    assert config.min_commit_size == 1
+    assert config.rename_similarity_threshold == 50
     assert config.verbose is False
     assert config.auto_accept is False
 
@@ -45,12 +47,16 @@ def test_global_config_custom_values():
         model="openai/gpt-4",
         api_key="sk-test",
         temperature=0.5,
+        min_commit_size=12,
+        rename_similarity_threshold=90,
         verbose=True,
         auto_accept=True,
     )
     assert config.model == "openai/gpt-4"
     assert config.api_key == "sk-test"
     assert config.temperature == 0.5
+    assert config.min_commit_size == 12
+    assert config.rename_similarity_threshold == 90
     assert config.verbose is True
     assert config.auto_accept is True
 

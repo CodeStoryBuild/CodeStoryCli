@@ -86,6 +86,11 @@ def main_commit(
         "--fail-on-syntax-errors",
         help="Fail the commit if syntax errors are detected in the changes.",
     ),
+    min_commit_size: int | None = typer.Option(
+        None,
+        "--min-commit-size",
+        help="Minimum line-change size for each generated commit group.",
+    ),
     staged: bool = typer.Option(
         False,
         "--staged",
@@ -134,6 +139,7 @@ def main_commit(
             message,
             intent,
             fail_on_syntax_errors,
+            min_commit_size,
             staged,
         ):
             raise typer.Exit(0)
@@ -156,6 +162,11 @@ def main_fix(
         None,
         "--start",
         help="Hash of the start commit, non inclusive (optional). If not provided, uses end commit's parent.",
+    ),
+    min_commit_size: int | None = typer.Option(
+        None,
+        "--min-commit-size",
+        help="Minimum line-change size for each generated commit group.",
     ),
 ) -> None:
     """Turn a past commit or range of commits into small logical commits.
@@ -180,7 +191,7 @@ def main_fix(
             description=description, silent=global_context.config.silent
         ),
     ):
-        if run_fix(ctx.obj, commit_hash, start_commit, message):
+        if run_fix(ctx.obj, commit_hash, start_commit, message, min_commit_size):
             raise typer.Exit(0)
         else:
             raise typer.Exit(1)

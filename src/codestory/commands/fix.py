@@ -27,6 +27,7 @@ from codestory.core.ui.theme import themed
 from codestory.core.validation import (
     is_root_commit,
     validate_commit_hash,
+    validate_min_size,
     validate_no_merge_commits_in_range,
 )
 from codestory.pipelines.standard_cli_pipeline import StandardCLIPipeline
@@ -98,6 +99,7 @@ def run_fix(
     commit_hash: str,
     start_commit: str | None,
     message: str | None,
+    min_commit_size: int | None = None,
 ):
     from loguru import logger
 
@@ -115,11 +117,20 @@ def run_fix(
     base_hash, new_hash = get_info(
         global_context, validated_start_hash, validated_end_hash
     )
+    effective_min_commit_size = (
+        min_commit_size
+        if min_commit_size is not None
+        else global_context.config.min_commit_size
+    )
+    validated_min_commit_size = validate_min_size(effective_min_commit_size)
 
     # Create diff context for the fix range
     with GitSandbox.from_context(global_context) as sandbox:
         pipeline = StandardCLIPipeline(
-            global_context, allow_filtering=False, source="fix"
+            global_context,
+            allow_filtering=False,
+            source="fix",
+            min_commit_size=validated_min_commit_size,
         )
         new_commit_hash = pipeline.run(base_hash, new_hash, user_message=message)
         if new_commit_hash:

@@ -29,6 +29,7 @@ from codestory.core.filters.secret_filter import ScannerConfig, SecretsFilter
 from codestory.core.filters.utils import describe_rejected_changes
 from codestory.core.git.git_synthesizer import GitSynthesizer
 from codestory.core.groupers.embedding_grouper import EmbeddingGrouper
+from codestory.core.groupers.min_commit_size_grouper import MinCommitSizeGrouper
 from codestory.core.groupers.single_grouper import SingleGrouper
 from codestory.core.semantic_analysis.annotation.context_manager import (
     ContextManagerBuilder,
@@ -51,12 +52,14 @@ class StandardCLIPipeline:
         allow_filtering: bool,
         source: Literal["commit", "fix", "clean"],
         fail_on_syntax_errors: bool = False,
+        min_commit_size: int | None = None,
     ):
         self.context = context
         self.diff_creator = DiffCreator(self.context.git_interface)
         self.allow_filtering = allow_filtering
         self.source = source
         self.fail_on_syntax_errors = fail_on_syntax_errors
+        self.min_commit_size = min_commit_size
 
     def run(
         self,
@@ -70,7 +73,10 @@ class StandardCLIPipeline:
 
         # base diff
         base_chunks = self.diff_creator.get_processed_working_diff(
-            base_hash, new_hash, target
+            base_hash,
+            new_hash,
+            target,
+            self.context.config.rename_similarity_threshold,
         )
 
         if not base_chunks:
@@ -152,20 +158,25 @@ class StandardCLIPipeline:
                     return None
 
             clusterer = Clusterer(self.context.config.cluster_strictness)
-            logical_groups = EmbeddingGrouper(
+            base_grouper = EmbeddingGrouper(
                 container_summarizer,
                 self.context.get_embedder(),
                 clusterer,
                 user_message,
                 self.context.config.descriptive_commit_messages,
-            ).group(semantic_groups)
+            )
         else:
-            logical_groups = SingleGrouper().group(semantic_groups)
+            base_grouper = SingleGrouper()
 
             if self.allow_filtering and self.context.filter_relevance():
                 logger.warning(
                     f"{themed('warn', 'Relevance Filtering Enabled, But no model provided. Relevance Filtering will be skipped.')}"
                 )
+
+        logical_groups = MinCommitSizeGrouper(
+            base_grouper=base_grouper,
+            min_size=self.min_commit_size,
+        ).group(semantic_groups)
 
         accepted_groups, rej = CMDUserFilter(
             self.context.config.auto_accept,

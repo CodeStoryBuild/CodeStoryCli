@@ -29,6 +29,7 @@ from codestory.core.ui.theme import themed
 from codestory.core.validation import (
     sanitize_user_input,
     validate_message_length,
+    validate_min_size,
 )
 from codestory.pipelines.standard_cli_pipeline import StandardCLIPipeline
 
@@ -48,6 +49,7 @@ def run_commit(
     message: str | None,
     intent: str | None,
     fail_on_syntax_errors: bool,
+    min_commit_size: int | None = None,
     staged: bool = False,
 ) -> bool:
     from loguru import logger
@@ -63,6 +65,13 @@ def run_commit(
         validated_intent = sanitize_user_input(validated_intent)
     else:
         validated_intent = None
+
+    effective_min_commit_size = (
+        min_commit_size
+        if min_commit_size is not None
+        else global_context.config.min_commit_size
+    )
+    validated_min_commit_size = validate_min_size(effective_min_commit_size)
 
     # verify repo state specifically for commit command
     verify_repo_state(
@@ -120,6 +129,7 @@ def run_commit(
             allow_filtering=True,
             source="commit",
             fail_on_syntax_errors=fail_on_syntax_errors,
+            min_commit_size=validated_min_commit_size,
         )
         new_commit_hash = pipeline.run(
             head_commit,
